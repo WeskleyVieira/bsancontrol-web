@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acompanhamento · Grupo Bsan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+
+:root{
+  --bg:#080c12;--bg2:#0d1119;--surf:#101520;--surf2:#151c28;--surf3:#1a2235;
+  --bdr:rgba(255,255,255,.06);--bdr2:rgba(255,255,255,.10);
+  --t1:#f0eed8;--t2:#8891a8;--t3:#3d4760;
+  --a:#00c2a8;--a2:#00e5cc;--a3:rgba(0,194,168,.12);
+  --pos:#34d399;--neg:#f87171;--warn:#fbbf24; --r:12px;--gap:16px; color-scheme:dark;
+}
+html{background:#080c12;color-scheme:dark}
+body.light{
+  --bg:#f4f6f9;--bg2:#ffffff;--surf:#ffffff;--surf2:#f0f2f5;--surf3:#e5e8ed;
+  --bdr:rgba(0,0,0,.08);--bdr2:rgba(0,0,0,.14);
+  --t1:#0f1923;--t2:#556070;--t3:#9aa3b0;
+  --a:#009982;--a2:#00b89c;--a3:rgba(0,153,130,.10);
+  --pos:#059669;--neg:#dc2626;--warn:#d97706; color-scheme:light;
+}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--t1);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.bc-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bdr2);background:var(--bg2);position:sticky;top:0;z-index:50}
+.bc-logo{font-weight:800;font-size:16px;letter-spacing:-.01em}.bc-logo span{color:var(--t3);font-weight:600}
+.bc-hdr button{border:1px solid var(--bdr2);background:var(--surf2);color:var(--t2);font-size:12px;padding:6px 11px;border-radius:8px;cursor:pointer;font-family:inherit}
+.bc-wrap{max-width:1080px;margin:0 auto;padding:16px 18px 60px}
+</style>
+</head>
+<body>
+<div class="bc-hdr"><div class="bc-logo">Bsan Control <span>· Acompanhamento</span></div>
+  <button onclick="document.body.classList.toggle('light');try{localStorage.setItem('bc_theme',document.body.classList.contains('light')?'light':'dark')}catch(e){}">tema</button></div>
+<div class="bc-wrap"><div id="ac2-root"></div></div>
+<script>
+try{ if(localStorage.getItem('bc_theme')==='light') document.body.classList.add('light'); }catch(e){}
+</script>
+<script>
+/* ===== código extraído do BsanControl (módulo ac2 + login + tratativa) — NÃO editar aqui; editar no BsanControl e rodar build-online.js ===== */
+const AC2_GESTOR = {
+  "Bsan Shop|Mercado Livre":"Ana Júlia/João","Jowcase|Mercado Livre":"Ana Júlia/João",
+  "Bsan Shop|Amazon":"David","Powerfull Imports|Amazon":"David","Bsan Shop|Shein":"David",
+  "Bsan Shop|Shopee":"Hugo","Bsan Shop|TikTok Shop":"Hugo","Jowcase|Kwai Shop":"Hugo",
+  "Powerfull Filial|Mercado Livre":"Larissa",
+  "Powerfull Imports|Mercado Livre":"Marcos","Powerfull Imports|Shopee":"Marcos",
+  "Jowcase|Magazine Luiza":"Maressa","Mary Kase|Mercado Livre":"Maressa","Pesseguinho Store|Mercado Livre":"Maressa",
+};
+const AC2_GCOR = {"Ana Júlia/João":"#4f8ef7","David":"#0ea5a0","Hugo":"#c2683a","Larissa":"#8b5cf6","Marcos":"#22a34a","Maressa":"#e06d2f"};
+// Ponto por ESTOQUE_ORIGEM (não por CNPJ). Override p/ operações com estoque cruzado (ex.: Amazon Powerfull = estoque Bsan).
+const AC2_PONTO_OVER = {"Powerfull Imports|Amazon":"Bsan"};
+function ac2Ponto(emp,mkt){ return AC2_PONTO_OVER[emp+"|"+mkt] || (/powerfull/i.test(emp)?"Powerfull":"Bsan"); }
+const AC2_META = 0.15; // meta de margem padrão (fallback); risco = fat × (meta − mc%)
+// Gera as DEMANDAS do diagnóstico a partir do DETALHE (anúncios com margem abaixo da meta / em prejuízo).
+function ac2BuildDemandas(){
+  const vnd = (typeof DETALHE!=='undefined'?DETALHE:[]).filter(r=>/venda/i.test(r.stat||'venda'));
+  const agg = {};
+  vnd.forEach(r=>{ const k=r.emp+'|'+r.mkt+'|'+(r.anuncio||r.sku);
+    const o=agg[k]||(agg[k]={emp:r.emp,mkt:r.mkt,sku:r.sku,anuncio:r.anuncio||'',tit:r.tit||'',fat:0,mc:0,qtd:0});
+    o.fat+=(+r.fat||0); o.mc+=(r.mccom!=null?+r.mccom:+r.mc||0); o.qtd+=(+r.qtd||0); });
+  const out=[];
+  Object.values(agg).forEach(o=>{ if(o.fat<=0) return; const mcPct=o.mc/o.fat;
+    const dono=AC2_GESTOR[o.emp+'|'+o.mkt]; if(!dono) return;            // só operações com dono mapeado
+    if(mcPct>=AC2_META) return;                                          // saudável, não é demanda
+    const tipo = mcPct<0 ? 'Estancamento de Prejuízo' : 'Correção de Margem';
+    const risco = Math.round(o.fat*(AC2_META-mcPct));
+    out.push({ id:o.emp+'|'+o.mkt+'|'+(o.anuncio||o.sku), empresa:o.emp, mkt:o.mkt, ponto:ac2Ponto(o.emp,o.mkt), gestor:dono, sku:o.sku, anuncio:o.anuncio,
+      titulo:o.tit, tipo, mcPct:+(mcPct*100).toFixed(1), meta:AC2_META*100, fat:Math.round(o.fat), risco,
+      estado:'diag', trat:null, reacaoH:null, tratD:null, demora:0, causa:'—', recuperado:0, funcionou:null }); });
+  return out.sort((a,b)=>b.risco-a.risco);
+}
+// ═══════════ ACOMPANHAMENTO v2 — UI (3 níveis · filtros em cascata · fila real · drill) ═══════════
+var ac2 = { pts:new Set(), emp:new Set(), mkt:new Set(), ges:new Set(), nivel:'direcao', gestorSel:null, voltar:'direcao', menu:null, DEM:[] };
+const AC2_BRL  = v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
+const AC2_BRLk = v=>Math.abs(v)>=1000?'R$ '+(v/1000).toFixed(1).replace('.',',')+'k':'R$ '+Math.round(v);
+const AC2_GES  = (()=>{const s=[];Object.values(AC2_GESTOR).forEach(g=>{if(!s.includes(g))s.push(g);});return s;})();
+const AC2_DIMS = [{k:'pts',l:'Ponto',g:i=>i.ponto},{k:'emp',l:'Empresa',g:i=>i.empresa},{k:'mkt',l:'Marketplace',g:i=>i.mkt},{k:'ges',l:'Gestor',g:i=>i.gestor}];
+function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=document.createElement('style'); s.id='ac2-css'; s.textContent=`
+#ac2-root{--c-s:var(--surf);--c-s2:var(--surf2);--c-ink:var(--t1);--c-mut:var(--t3);--c-ln:var(--bdr2);--c-acc:#4f8ef7;--c-accb:rgba(79,142,247,.14);--c-pos:#22c55e;--c-posb:rgba(34,197,94,.13);--c-warn:#f59e0b;--c-warnb:rgba(245,158,11,.14);--c-neg:#f87171;--c-negb:rgba(248,113,113,.13);font-family:'Inter',sans-serif;}
+#ac2-root .a2-lv{display:flex;gap:4px;border-bottom:1px solid var(--c-ln);margin-top:10px}
+#ac2-root .a2-lvb{background:none;border:none;color:var(--c-mut);font-weight:700;font-size:13.5px;padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent}
+#ac2-root .a2-lvb small{font-weight:500;font-size:11px;color:var(--c-mut);margin-left:4px}
+#ac2-root .a2-lvb.on{color:var(--c-ink);border-bottom-color:var(--c-acc)}
+#ac2-root .a2-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
+#ac2-root .a2-dd{position:relative}
+#ac2-root .a2-db{display:inline-flex;align-items:center;gap:6px;background:var(--c-s2);border:1px solid var(--c-ln);border-radius:9px;padding:6px 11px;font-size:12.5px;font-weight:600;color:var(--c-ink);cursor:pointer}
+#ac2-root .a2-db.on{background:var(--c-accb);border-color:var(--c-acc);color:var(--c-acc)}
+#ac2-root .a2-db .cnt{background:var(--c-acc);color:#fff;border-radius:99px;font-size:10px;padding:0 6px;font-weight:700}
+#ac2-root .a2-dm{position:absolute;top:calc(100% + 5px);left:0;background:var(--c-s);border:1px solid var(--c-ln);border-radius:11px;box-shadow:0 10px 30px rgba(0,0,0,.4);padding:6px;min-width:190px;z-index:60;display:none;max-height:300px;overflow:auto}
+#ac2-root .a2-dm.on{display:block}
+#ac2-root .a2-op{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;font-size:12.5px;cursor:pointer;color:var(--c-ink)}
+#ac2-root .a2-op:hover{background:var(--c-s2)} #ac2-root .a2-op.on{font-weight:700}
+#ac2-root .a2-op .bx{width:15px;height:15px;border:1.6px solid var(--c-mut);border-radius:4px;display:grid;place-items:center;font-size:10px;color:#fff}
+#ac2-root .a2-op.on .bx{background:var(--c-acc);border-color:var(--c-acc)}
+#ac2-root .a2-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+#ac2-root .a2-k{background:var(--c-s);border:1px solid var(--c-ln);border-radius:12px;padding:12px 13px;position:relative;overflow:hidden;cursor:pointer;transition:border-color .12s,transform .12s}
+#ac2-root .a2-k[data-d]:hover{border-color:var(--c-acc);transform:translateY(-2px)}
+#ac2-root .a2-k .st{position:absolute;left:0;top:0;bottom:0;width:4px}
+#ac2-root .a2-k.pos .st{background:var(--c-pos)} #ac2-root .a2-k.neg .st{background:var(--c-neg)} #ac2-root .a2-k.warn .st{background:var(--c-warn)} #ac2-root .a2-k.acc .st{background:var(--c-acc)}
+#ac2-root .a2-k .kl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--c-mut)}
+#ac2-root .a2-k .kv{font-size:22px;font-weight:800;margin-top:6px;line-height:1}
+#ac2-root .a2-k.pos .kv{color:var(--c-pos)} #ac2-root .a2-k.neg .kv{color:var(--c-neg)}
+#ac2-root .a2-k .ks{font-size:11px;color:var(--c-mut);margin-top:5px}
+#ac2-root .a2-sh{font-size:13px;font-weight:800;color:var(--c-ink);margin:16px 2px 9px;text-transform:uppercase;letter-spacing:.08em}
+#ac2-root .a2-sh small{font-weight:500;font-size:12px;color:var(--c-mut);text-transform:none;letter-spacing:0;margin-left:8px}
+#ac2-root .a2-card{background:var(--c-s);border:1px solid var(--c-ln);border-radius:13px;overflow:hidden}
+#ac2-root .a2-rk{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--c-ln);cursor:pointer;flex-wrap:wrap}
+#ac2-root .a2-rk:last-child{border-bottom:none} #ac2-root .a2-rk:hover{background:var(--c-s2)}
+#ac2-root .a2-ava{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;font-weight:800;font-size:12px;color:#fff;flex:none}
+#ac2-root .a2-rk .nm{font-weight:700;font-size:13.5px} #ac2-root .a2-rk .sp{flex:1}
+#ac2-root .a2-rk .mi{font-size:11.5px;color:var(--c-mut)}
+#ac2-root .a2-rk .rv{font-weight:800;font-size:17px;color:var(--c-neg)}
+#ac2-root .a2-bar2{width:100px;height:6px;border-radius:99px;background:var(--c-s2);overflow:hidden;flex:none} #ac2-root .a2-bar2>span{display:block;height:100%;background:var(--c-neg)}
+#ac2-root .a2-it{display:grid;grid-template-columns:4px 1fr auto;border-bottom:1px solid var(--c-ln)} #ac2-root .a2-it:last-child{border-bottom:none}
+#ac2-root .a2-it .str{background:var(--c-ln)} #ac2-root .a2-it.alta .str{background:var(--c-neg)} #ac2-root .a2-it.media .str{background:var(--c-warn)}
+#ac2-root .a2-ib{padding:11px 13px;min-width:0}
+#ac2-root .a2-ic{font-weight:700;font-size:13px} #ac2-root .a2-it .tt{font-size:12px;color:var(--c-ink);opacity:.8;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:48ch}
+#ac2-root .a2-mt{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px;align-items:center}
+#ac2-root .a2-tag{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--c-s2);color:var(--c-mut)}
+#ac2-root .a2-tag.tp{background:var(--c-accb);color:var(--c-acc)} #ac2-root .a2-tag.pz{background:var(--c-negb);color:var(--c-neg)}
+#ac2-root .a2-tag.est{background:var(--c-s2);color:var(--c-mut);border:1px dashed var(--c-mut)}
+#ac2-root .a2-ir{padding:11px 14px;text-align:right;border-left:1px solid var(--c-ln);min-width:120px}
+#ac2-root .a2-ir .rr{font-weight:800;font-size:16px;color:var(--c-neg)} #ac2-root .a2-ir small{font-size:10px;color:var(--c-mut);text-transform:uppercase;display:block}
+#ac2-root .a2-ch{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--c-s2);border-bottom:1px solid var(--c-ln);font-weight:700;font-size:12.5px} #ac2-root .a2-ch .ct{margin-left:auto;font-weight:500;font-size:11.5px;color:var(--c-mut)}
+#ac2-root .a2-tg{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--c-ln);cursor:pointer;flex-wrap:wrap;gap:8px} #ac2-root .a2-tg:hover{background:var(--c-s2)} #ac2-root .a2-tg:last-child{border-bottom:none}
+#ac2-root .a2-tg .nums{display:flex;gap:16px;font-size:12px;color:var(--c-mut)} #ac2-root .a2-tg b{color:var(--c-ink)}
+#ac2-root .a2-note{background:var(--c-warnb);border:1px solid var(--c-warn);border-radius:10px;padding:11px 14px;font-size:12.5px;color:var(--c-ink);margin:10px 0}
+#ac2-root .a2-bk{background:var(--c-s2);border:1px solid var(--c-ln);border-radius:8px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--c-ink);cursor:pointer}
+#ac2-root .a2-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto} #ac2-root .a2-ov.on{display:flex}
+#ac2-root .a2-mo{background:var(--c-s);border:1px solid var(--c-ln);border-radius:14px;max-width:760px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#ac2-root .a2-mh{display:flex;align-items:flex-start;gap:12px;padding:15px 17px;border-bottom:1px solid var(--c-ln)} #ac2-root .a2-mh h3{font-size:15px;font-weight:800;margin:0;color:var(--c-ink)} #ac2-root .a2-mh .mv{margin-left:auto;font-size:22px;font-weight:800;color:var(--c-ink)}
+#ac2-root .a2-mx{background:var(--c-s2);border:1px solid var(--c-ln);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--c-mut)}
+#ac2-root .a2-mb{max-height:68vh;overflow:auto}
+@media(max-width:860px){#ac2-root .a2-kpis{grid-template-columns:repeat(2,1fr)}}
+`; document.head.appendChild(s); }
+async function ac2Open(){ ac2injectCSS(); bcAuthInjectCSS(); const root=document.getElementById('ac2-root'); if(!root)return;
+  root.innerHTML=`<div id="bc-authbar" style="display:flex;justify-content:flex-end;margin-bottom:6px"></div><div class="a2-lv" id="a2-lv"></div><div class="a2-bar" id="a2-bar"></div><div id="a2-kpi"></div><div id="a2-body"></div>
+   <div class="a2-ov" id="a2-ov" onclick="if(event.target===this)ac2.closeDrill()"><div class="a2-mo"><div class="a2-mh" id="a2-mh"></div><div class="a2-mb" id="a2-mb"></div></div></div>`;
+  bcRenderAuthBar();
+  const b=document.getElementById('a2-body'); if(b) b.innerHTML='<div style="padding:34px;text-align:center;color:var(--t3)">⏳ carregando do banco…</div>';
+  try{ const r=await authFetch('/api/demandas',{cache:'no-store'}); if(!r.ok) throw 0; ac2.DEM=await r.json(); ac2._fonte='banco (API)'; }
+  catch(e){ ac2.DEM=ac2BuildDemandas(); ac2._fonte='embed (offline)'; }   // fallback: abriu o arquivo direto, sem servidor
+  const _u=BCAUTH.user; if(_u&&_u.perfil==='gestor'){ ac2.gestorSel=_u.gestor_ref; ac2.nivel='gestor'; }   // gestor logado abre direto na própria lista
+  bcRenderAuthBar(); ac2.render(); }
+ac2.filt=function(){ return ac2.DEM.filter(i=>AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)); };
+ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risco:l.reduce((s,i)=>s+i.risco,0), prej:prej.length, riscoPrej:prej.reduce((s,i)=>s+i.risco,0), corr:l.length-prej.length}; };
+ac2.go=function(n){ ac2.nivel=n; if(n!=='gestor')ac2.gestorSel=null; ac2.render(); };
+ac2.goGes=function(g,from){ ac2.gestorSel=g; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
+ac2.render=function(){
+  const lv=document.getElementById('a2-lv'); lv.innerHTML=[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor','a lista dele']].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('');
+  ac2RenderFiltros();
+  const kpi=document.getElementById('a2-kpi'), body=document.getElementById('a2-body');
+  if(ac2.nivel==='direcao'){ kpi.innerHTML=ac2TopoKPI(); body.innerHTML=ac2Direcao(); }
+  else if(ac2.nivel==='coord'){ kpi.innerHTML=ac2TopoKPI(); body.innerHTML=ac2Coord(); }
+  else { kpi.innerHTML=ac2TopoKPI(true); body.innerHTML=ac2Gestor(); }
+};
+function ac2TopoKPI(pers){ const g=pers?ac2.gestorSel:null; const l=ac2.filt(); const m=ac2.met(l);
+  const k=(c,lb,v,s,d)=>`<div class="a2-k ${c}" ${d?`data-d="${d}" onclick="ac2.drill('${d}')"`:''}><div class="st"></div><div class="kl">${lb}</div><div class="kv">${v}</div><div class="ks">${s}</div></div>`;
+  return `<div class="a2-sh">${pers?('Minhas demandas — '+g):(ac2.nivel==='coord'?'Operação — Coordenação':'Visão geral — Direção')}<small>fila de diagnóstico · dados: <b style="color:var(--a2)">${ac2._fonte||'—'}</b> · tratativa/resultado chegam com o preenchimento</small></div>
+   <div class="a2-kpis">${k('neg','Demandas a resolver',m.n,(l.filter(aberto=>true).length)+' anúncios fora da meta','tinha')}
+    ${k('neg','R$ em risco',AC2_BRLk(m.risco),'margem abaixo da meta','risco')}
+    ${k('neg','Em prejuízo',m.prej,AC2_BRLk(m.riscoPrej)+' · margem negativa','prej')}
+    ${k('warn','Correção de margem',m.corr,'abaixo da meta, sem prejuízo','corr')}</div>`;
+}
+function ac2Direcao(){ const l=ac2.filt();
+  const glist=(ac2.ges.size?[...ac2.ges]:AC2_GES).filter(g=>l.some(i=>i.gestor===g));
+  const rk=glist.map(g=>{const m=ac2.met(l.filter(i=>i.gestor===g));return {g,m};}).sort((a,b)=>b.m.risco-a.m.risco);
+  const mx=Math.max(...rk.map(r=>r.m.risco),1);
+  const rows=rk.map((r,i)=>`<div class="a2-rk" onclick="ac2.goGes('${r.g}','direcao')"><div style="width:26px;text-align:center;font-weight:800">${i+1}º</div><div class="a2-ava" style="background:${AC2_GCOR[r.g]||'#777'}">${r.g[0]}</div><div class="nm">${r.g}</div><div class="sp"></div><div class="mi">${r.m.n} demandas · ${r.m.prej} em prejuízo</div><div class="rv">${AC2_BRLk(r.m.risco)}</div><div class="a2-bar2"><span style="width:${r.m.risco/mx*100}%"></span></div></div>`).join('');
+  const pontos={}; l.forEach(i=>{(pontos[i.ponto]=pontos[i.ponto]||{n:0,r:0}).n++;pontos[i.ponto].r+=i.risco;});
+  const prows=Object.entries(pontos).sort((a,b)=>b[1].r-a[1].r).map(([p,o])=>`<div class="a2-tg" style="cursor:default"><div><b>📦 ${p}</b></div><div class="nums"><span><b>${o.n}</b> demandas</span><span><b>${AC2_BRLk(o.r)}</b> em risco</span></div></div>`).join('');
+  return `<div class="a2-sh">Ranking por gestor<small>quem tem mais R$ de margem pra resolver · clique p/ ver a lista</small></div><div class="a2-card">${rows||'<div style="padding:24px;text-align:center;color:var(--t3)">sem demandas no filtro</div>'}</div>
+   <div class="a2-sh">Por ponto (estoque)<small>Bsan × Powerfull</small></div><div class="a2-card">${prows}</div>
+   <div class="a2-note">⏳ <b>Tratativa, tempo de reação e resultado</b> aparecem aqui quando o loop de preenchimento (gestor registra a ação) estiver ligado. Hoje a página já mostra o <b>diagnóstico real</b>: onde está o R$ e de quem é.</div>`;
+}
+function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(full||ac2.nivel!=='gestor')?`<span style="font-size:11.5px;color:var(--t3)">${i.gestor}</span>`:'';
+  const conta=(full||ac2.nivel!=='gestor')?`<span class="a2-ic">${i.empresa} · ${i.mkt}</span>`:'';
+  const tratada=i.estado==='trat';
+  const estTag=tratada?`<span class="a2-tag est" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">✓ tratada${i.trat?' · '+i.trat:''}</span>`:`<span class="a2-tag est">a diagnosticar</span>`;
+  const online=(ac2._fonte||'').indexOf('API')>=0;
+  const btn=(online&&i.id&&!tratada)?`<button class="a2-trbtn" onclick="event.stopPropagation();ac2.tratar(this.dataset.id)" data-id="${encodeURIComponent(i.id)}">registrar</button>`:'';
+  return `<div class="a2-it ${sev}"><div class="str"></div><div class="a2-ib"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${conta}${estTag}${dono}</div><div class="tt" title="${(i.titulo||'').replace(/"/g,'')}">${i.sku} — ${i.titulo||''}</div><div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span><span class="a2-tag">margem ${i.mcPct}% <span style="opacity:.6">(meta ${i.meta}%)</span></span><span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span></div></div><div class="a2-ir"><div class="rr"><small>em risco</small>${AC2_BRLk(i.risco)}</div>${btn}</div></div>`;
+}
+function ac2Coord(){ const l=ac2.filt().slice().sort((a,b)=>b.risco-a.risco);
+  const glist=(ac2.ges.size?[...ac2.ges]:AC2_GES).filter(g=>l.some(i=>i.gestor===g));
+  const tg=glist.map(g=>{const m=ac2.met(l.filter(i=>i.gestor===g));return `<div class="a2-tg" onclick="ac2.goGes('${g}','coord')"><div style="display:flex;align-items:center;gap:9px"><span class="a2-ava" style="width:26px;height:26px;background:${AC2_GCOR[g]||'#777'}">${g[0]}</span><b>${g}</b></div><div class="nums"><span><b>${m.n}</b> demandas</span><span><b>${m.prej}</b> em prejuízo</span><span><b>${AC2_BRLk(m.risco)}</b> em risco</span><span style="color:var(--c-acc);font-weight:600">ver ›</span></div></div>`;}).join('');
+  const cap=60; const rows=l.slice(0,cap).map(i=>ac2itemRow(i)).join(''); const mais=l.length>cap?`<div style="padding:10px 14px;color:var(--t3);font-size:12px">+${l.length-cap} demandas (refine os filtros p/ ver todas)</div>`:'';
+  return `<div class="a2-sh">Tarefas por gestor<small>quantidade e R$ de cada um · clique p/ abrir</small></div><div class="a2-card">${tg}</div>
+   <div class="a2-sh">Fila de diagnóstico<small>${l.length} demandas · ordenadas por R$ em risco</small></div><div class="a2-card">${rows}${mais}</div>`;
+}
+function ac2Gestor(){ const present=[...new Set(ac2.filt().map(i=>i.gestor))]; const g=ac2.gestorSel||(ac2.ges.size?[...ac2.ges][0]:(present[0]||AC2_GES[0])); const l=ac2.filt().filter(i=>i.gestor===g);
+  const volta=ac2.voltar==='coord'?'coordenação':'direção';
+  const back=`<div style="margin:10px 0"><button class="a2-bk" onclick="ac2.go('${ac2.voltar}')">‹ voltar à ${volta}</button></div>`;
+  const contas=[...new Set(l.map(i=>i.empresa+'|'+i.mkt))];
+  const grupos=contas.map(ck=>{const[e,mk]=ck.split('|');const its=l.filter(i=>i.empresa+'|'+i.mkt===ck).sort((a,b)=>b.risco-a.risco);const r=its.reduce((s,i)=>s+i.risco,0);
+    return `<div class="a2-ch">📦 ${e} · ${mk}<span class="ct">${its.length} demandas · ${AC2_BRLk(r)} em risco</span></div>${its.map(i=>ac2itemRow(i)).join('')}`;}).join('');
+  return back+`<div class="a2-card">${grupos||'<div style="padding:24px;text-align:center;color:var(--t3)">sem demandas</div>'}</div>`;
+}
+const AC2_DRILL={tinha:{t:'Demandas a resolver',f:()=>true},risco:{t:'R$ em risco',f:()=>true,v:l=>AC2_BRL(l.reduce((s,i)=>s+i.risco,0))},prej:{t:'Em prejuízo (margem negativa)',f:i=>i.mcPct<0},corr:{t:'Correção de margem',f:i=>i.mcPct>=0}};
+ac2.drill=function(key){ const cfg=AC2_DRILL[key]; if(!cfg)return; const l=ac2.filt().filter(cfg.f).sort((a,b)=>b.risco-a.risco);
+  const porG={}; l.forEach(i=>{(porG[i.gestor]=porG[i.gestor]||{n:0,r:0}).n++;porG[i.gestor].r+=i.risco;});
+  const gr=Object.entries(porG).sort((a,b)=>b[1].r-a[1].r).map(([g,o])=>`<div class="a2-tg" style="cursor:default"><div style="display:flex;align-items:center;gap:9px"><span class="a2-ava" style="width:24px;height:24px;background:${AC2_GCOR[g]||'#777'}">${g[0]}</span>${g}</div><div class="nums"><span><b>${o.n}</b></span><span><b>${AC2_BRLk(o.r)}</b></span></div></div>`).join('');
+  document.getElementById('a2-mh').innerHTML=`<div><h3>${cfg.t}</h3><div style="font-size:12px;color:var(--t3);margin-top:3px">${l.length} demandas · filtro atual</div></div><div class="mv">${cfg.v?cfg.v(l):l.length}</div><button class="a2-mx" onclick="ac2.closeDrill()">✕</button>`;
+  document.getElementById('a2-mb').innerHTML=`<div class="a2-ch">Por gestor</div>${gr}<div class="a2-ch">Demandas (${l.length})</div>${l.slice(0,120).map(i=>ac2itemRow(i,true)).join('')}`;
+  document.getElementById('a2-ov').classList.add('on');
+};
+ac2.closeDrill=function(){ document.getElementById('a2-ov').classList.remove('on'); };
+// filtros dropdown com cascata
+function ac2opcoes(dim){ const its=ac2.DEM.filter(i=>AC2_DIMS.every(d=>d.k===dim.k||!ac2[d.k].size||ac2[d.k].has(d.g(i)))); const u=[];its.forEach(i=>{const v=dim.g(i);if(!u.includes(v))u.push(v);});return u; }
+function ac2RenderFiltros(){ const bar=document.getElementById('a2-bar');
+  bar.innerHTML=AC2_DIMS.map(d=>{const n=ac2[d.k].size;return `<div class="a2-dd"><button class="a2-db ${n?'on':''}" onclick="event.stopPropagation();ac2.menuTog('${d.k}')">${d.l}${n?` <span class="cnt">${n}</span>`:''} ▾</button><div class="a2-dm" data-m="${d.k}"></div></div>`;}).join('')
+   + (AC2_DIMS.some(d=>ac2[d.k].size)?`<button class="a2-bk" style="background:none;border:none;color:var(--c-acc)" onclick="ac2.limpar()">limpar</button>`:'');
+  if(ac2.menu) ac2.menuOpen(ac2.menu,true);
+}
+ac2.menuTog=function(k){ ac2.menuOpen(k); };
+ac2.menuOpen=function(k,keep){ if(!keep&&ac2.menu===k){ac2.menu=null;document.querySelectorAll('#ac2-root .a2-dm').forEach(m=>m.classList.remove('on'));return;}
+  ac2.menu=k; document.querySelectorAll('#ac2-root .a2-dm').forEach(m=>m.classList.remove('on'));
+  const dim=AC2_DIMS.find(d=>d.k===k), menu=document.querySelector(`#ac2-root .a2-dm[data-m="${k}"]`), opts=ac2opcoes(dim);
+  menu.innerHTML=(opts.length?opts.map(o=>`<div class="a2-op ${ac2[k].has(o)?'on':''}" onclick="event.stopPropagation();ac2.optTog('${k}',this.dataset.v)" data-v="${o}"><span class="bx">${ac2[k].has(o)?'✓':''}</span>${o}</div>`).join(''):'<div class="a2-op" style="color:var(--t3)">nada aqui</div>');
+  menu.classList.add('on');
+};
+ac2.optTog=function(k,v){ ac2[k].has(v)?ac2[k].delete(v):ac2[k].add(v); if(k==='ges'&&ac2.gestorSel&&!ac2.ges.has(ac2.gestorSel))ac2.gestorSel=null; ac2.render(); };
+ac2.limpar=function(){ AC2_DIMS.forEach(d=>ac2[d.k].clear()); ac2.gestorSel=null; ac2.menu=null; ac2.render(); };
+document.addEventListener('click',()=>{ if(ac2.menu){ac2.menu=null;document.querySelectorAll('#ac2-root .a2-dm').forEach(m=>m.classList.remove('on'));} });
+// ═══════════ BsanControl 2.0 — LOGIN (JWT) + TRATATIVA (loop de preenchimento) ═══════════
+const BCAUTH = {
+  get token(){ try{return localStorage.getItem('bc_token')||'';}catch(e){return '';} },
+  get user(){ try{return JSON.parse(localStorage.getItem('bc_user')||'null');}catch(e){return null;} },
+  _set(tok,u){ try{localStorage.setItem('bc_token',tok);localStorage.setItem('bc_user',JSON.stringify(u));}catch(e){} },
+  clear(){ try{localStorage.removeItem('bc_token');localStorage.removeItem('bc_user');}catch(e){} },
+  async login(email,senha){
+    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:String(email||'').toLowerCase(),senha})});
+    let d={}; try{d=await r.json();}catch(e){}
+    if(!r.ok||!d.ok) throw new Error(d.erro||('HTTP '+r.status));
+    BCAUTH._set(d.token,{nome:d.nome,perfil:d.perfil,gestor_ref:d.gestor_ref}); return d;
+  }
+};
+async function authFetch(url,opts){ opts=opts||{}; const h=Object.assign({},opts.headers||{}); const t=BCAUTH.token; if(t) h['Authorization']='Bearer '+t; opts.headers=h;
+  const r=await fetch(url,opts);
+  if(r.status===401){ BCAUTH.clear(); try{bcRenderAuthBar();}catch(e){} bcShowLogin(true); throw new Error('sessão expirada'); }
+  return r; }
+function bcAuthInjectCSS(){ if(document.getElementById('bc-auth-css'))return; const s=document.createElement('style'); s.id='bc-auth-css'; s.textContent=`
+  #bc-login,#bc-trat{position:fixed;inset:0;z-index:9999;background:rgba(8,12,20,.72);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px;font-family:'Inter',sans-serif}
+  #bc-login.on,#bc-trat.on{display:flex}
+  .bcl-card,.bct-card{width:100%;max-width:370px;background:var(--surf,#fff);border:1px solid var(--bdr2,#e6e8ee);border-radius:16px;padding:26px 24px;box-shadow:0 24px 70px rgba(0,0,0,.45);color:var(--t1,#1a2030)}
+  .bct-card{max-width:450px;max-height:88vh;overflow:auto}
+  .bcl-card h3,.bct-card h3{margin:0 0 4px;font-size:17px;color:var(--t1,#1a2030)}
+  .bcl-card p,.bct-sub{margin:0 0 16px;font-size:12.5px;color:var(--t3,#8891a8);line-height:1.5}
+  .bcl-f,.bct-f{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+  .bcl-f label,.bct-f label{font-size:11px;font-weight:600;color:var(--t2,#5a6578);text-transform:uppercase;letter-spacing:.04em}
+  .bcl-f input,.bct-f select,.bct-f textarea{padding:10px 12px;border:1px solid var(--bdr2,#e6e8ee);border-radius:9px;font-size:14px;background:var(--surf2,#f7f8fa);color:var(--t1,#1a2030);font-family:inherit}
+  .bcl-f input:focus,.bct-f select:focus,.bct-f textarea:focus{outline:none;border-color:#4f8ef7}
+  .bct-f textarea{min-height:64px;resize:vertical}
+  .bcl-btn{width:100%;padding:11px;border:none;border-radius:9px;background:#4f8ef7;color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
+  .bcl-btn:disabled{opacity:.6;cursor:default}
+  .bcl-err,.bct-err{font-size:12.5px;color:#f87171;margin-top:9px;min-height:16px}
+  .bct-row{display:flex;gap:10px;margin-top:8px}
+  .bct-row button{flex:1;padding:10px;border-radius:9px;font-size:13.5px;font-weight:700;cursor:pointer;border:1px solid var(--bdr2,#e6e8ee);font-family:inherit}
+  .bct-row .ok{background:#16a34a;color:#fff;border:none} .bct-row .ok:disabled{opacity:.6}
+  .bct-row .cancel{background:var(--surf2,#f7f8fa);color:var(--t2,#5a6578)}
+  #bc-authbar .bc-chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:5px 11px;border:1px solid var(--bdr2,#e6e8ee);border-radius:999px;background:var(--surf2,#f7f8fa);color:var(--t2,#5a6578)}
+  #bc-authbar .bc-chip b{font-weight:700;color:var(--t1,#1a2030)}
+  #bc-authbar .perf{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#fff;padding:1px 8px;border-radius:999px;font-weight:700}
+  #bc-authbar .bc-chip button{border:none;background:none;color:#4f8ef7;font-size:12px;cursor:pointer;font-weight:600;padding:0 2px}
+  #bc-authbar .ent{background:#4f8ef7!important;color:#fff!important;padding:5px 13px!important;border-radius:999px}
+  #ac2-root .a2-trbtn{border:1px solid #4f8ef7;background:none;color:#4f8ef7;font-size:11px;font-weight:600;padding:3px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;margin-top:6px}
+  #ac2-root .a2-trbtn:hover{background:rgba(79,142,247,.12)}
+  `; document.head.appendChild(s); }
+function bcShowLogin(force){ bcAuthInjectCSS(); let ov=document.getElementById('bc-login');
+  if(!ov){ ov=document.createElement('div'); ov.id='bc-login';
+    ov.innerHTML=`<div class="bcl-card"><h3>Entrar no BsanControl</h3><p>Acesse com seu usuário do Grupo Bsan.</p>
+      <form onsubmit="return bcDoLogin(event)">
+      <div class="bcl-f"><label>Usuário (e-mail)</label><input id="bcl-email" type="text" autocomplete="username" placeholder="ex.: david@grupobsan"></div>
+      <div class="bcl-f"><label>Senha</label><input id="bcl-senha" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+      <button class="bcl-btn" id="bcl-sub" type="submit">Entrar</button>
+      <div class="bcl-err" id="bcl-err"></div></form></div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener('click',e=>{ if(e.target===ov && !ov.dataset.force) bcHideLogin(); });
+  }
+  ov.dataset.force=force?'1':''; ov.classList.add('on'); setTimeout(()=>{const el=document.getElementById('bcl-email');if(el)el.focus();},50);
+}
+function bcHideLogin(){ const ov=document.getElementById('bc-login'); if(ov)ov.classList.remove('on'); }
+async function bcDoLogin(ev){ ev.preventDefault(); const btn=document.getElementById('bcl-sub'), err=document.getElementById('bcl-err');
+  const email=document.getElementById('bcl-email').value.trim(), senha=document.getElementById('bcl-senha').value;
+  err.textContent=''; btn.disabled=true; btn.textContent='Entrando…';
+  try{ await BCAUTH.login(email,senha); bcHideLogin(); bcRenderAuthBar(); if(typeof ac2Open==='function') ac2Open(); }
+  catch(e){ err.textContent='⚠️ '+(/inválid|401/i.test(e.message)?'Usuário ou senha incorretos.':e.message); }
+  finally{ btn.disabled=false; btn.textContent='Entrar'; }
+  return false;
+}
+function bcLogout(){ BCAUTH.clear(); bcRenderAuthBar(); if(typeof ac2Open==='function') ac2Open(); }
+function bcRenderAuthBar(){ const bar=document.getElementById('bc-authbar'); if(!bar)return; const u=BCAUTH.user;
+  if(u){ const cor=AC2_GCOR[u.gestor_ref]||'#64748b'; const pf={direcao:'Direção',coordenacao:'Coordenação',gestor:'Gestor'}[u.perfil]||u.perfil;
+    bar.innerHTML=`<span class="bc-chip">👤 <b>${u.nome}</b> <span class="perf" style="background:${cor}">${pf}</span> <button onclick="bcLogout()">sair</button></span>`; }
+  else { bar.innerHTML=`<span class="bc-chip"><button class="ent" onclick="bcShowLogin()">Entrar</button> <span style="color:var(--t3)">vendo tudo (local)</span></span>`; }
+}
+// ── tratativa: gestor registra a ação na demanda ──
+const BC_ACOES=['Ajustei o preço','Ativei/ajustei Ads','Revisei custo/ficha','Pausei o anúncio','Renegociei frete/embalagem','Troquei/montei kit','Sem ação (justificado)','Outro'];
+const BC_CAUSAS=['Preço desalinhado','Ads caro (ACOS alto)','Custo subiu','Frete/embalagem pesado','Concorrência','Erro de cadastro','Produto em fim de vida','Outro'];
+ac2.tratar=function(encId){ const id=decodeURIComponent(encId); const it=ac2.DEM.find(x=>x.id===id); if(!it)return; bcAuthInjectCSS();
+  let ov=document.getElementById('bc-trat'); if(!ov){ ov=document.createElement('div'); ov.id='bc-trat'; document.body.appendChild(ov);
+    ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('on');}); }
+  const opt=arr=>arr.map(o=>`<option>${o}</option>`).join('');
+  ov.innerHTML=`<div class="bct-card"><h3>Registrar tratativa</h3>
+    <div class="bct-sub"><b>${it.sku}</b> — ${(it.titulo||'').slice(0,60)}<br>${it.empresa} · ${it.mkt} · margem ${it.mcPct}% (meta ${it.meta}%) · ${AC2_BRLk(it.risco)} em risco</div>
+    <div class="bct-f"><label>O que você fez</label><select id="bct-acao">${opt(BC_ACOES)}</select></div>
+    <div class="bct-f"><label>Causa (por que estava fora da meta)</label><select id="bct-causa">${opt(BC_CAUSAS)}</select></div>
+    <div class="bct-f"><label>Observação (opcional)</label><textarea id="bct-obs" placeholder="detalhe rápido…"></textarea></div>
+    <div class="bct-err" id="bct-err"></div>
+    <div class="bct-row"><button class="cancel" onclick="document.getElementById('bc-trat').classList.remove('on')">Cancelar</button>
+    <button class="ok" id="bct-sub" onclick="bcTratarSubmit('${encodeURIComponent(id)}')">✓ Registrar</button></div></div>`;
+  ov.classList.add('on');
+};
+async function bcTratarSubmit(encId){ const id=decodeURIComponent(encId); const btn=document.getElementById('bct-sub'), err=document.getElementById('bct-err');
+  const acao=document.getElementById('bct-acao').value, causa=document.getElementById('bct-causa').value, obs=document.getElementById('bct-obs').value;
+  err.textContent=''; btn.disabled=true; btn.textContent='Enviando…';
+  try{
+    const r=await authFetch('/api/tratativas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({demanda_id:id,acao,causa,obs,estado:'trat',registrado_em:new Date().toISOString()})});
+    const d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.erro||('HTTP '+r.status));
+    const it=ac2.DEM.find(x=>x.id===id); if(it){ it.estado='trat'; it.trat=acao; it.causa=causa; }
+    document.getElementById('bc-trat').classList.remove('on'); ac2.render();
+  }catch(e){ err.textContent='⚠️ '+(/escopo|403/i.test(e.message)?'Essa demanda não é do seu escopo.':/autenticad|401|expir/i.test(e.message)?'Faça login para registrar.':e.message); btn.disabled=false; btn.textContent='✓ Registrar'; }
+}
+</script>
+<script>
+/* bootstrap online: sem token → portão de login (tela cheia); com token → carrega a fila escopada */
+(function(){ bcAuthInjectCSS(); if(BCAUTH && BCAUTH.token){ ac2Open(); } else { bcShowLogin(true); } })();
+</script>
+</body>
+</html>

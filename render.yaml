@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: bsancontrol
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node api.js
+    envVars:
+      - key: AUTH_REQUIRED
+        value: "1"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
