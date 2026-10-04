@@ -203,6 +203,33 @@ const server = http.createServer(async (req, res) => {
       for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k);   // invalida cache
       return J(res, { ok: true, n: rows.length });
     }
+    // ── ADMIN de usuários (SÓ Direção) ──
+    if (u.pathname.startsWith("/api/admin/")) {
+      const user = userDe(req);
+      if ((AUTH_REQ && !user) || (user && user.perfil !== "direcao")) return J(res, { ok: false, erro: "acesso só de administrador (Direção)" }, 403);
+      if (req.method === "GET" && u.pathname === "/api/admin/usuarios") {
+        const us = await dbx.all("SELECT id, nome, email, perfil, gestor_ref, ativo, senha FROM usuarios ORDER BY perfil, nome");
+        const gestores = (await dbx.all("SELECT DISTINCT gestor FROM operacoes ORDER BY gestor")).map(r => r.gestor);
+        return J(res, { ok: true, gestores, usuarios: us.map(x => ({ id: x.id, nome: x.nome, email: x.email, perfil: x.perfil, gestor_ref: x.gestor_ref, ativo: x.ativo, senha_padrao: verificaSenha(SENHA_PADRAO, x.senha) })) });
+      }
+      if (req.method === "POST" && u.pathname === "/api/admin/usuarios") {
+        const o = await body(req);
+        const nome = String(o.nome || "").trim(), email = String(o.email || "").trim().toLowerCase(), perfil = String(o.perfil || "gestor").trim();
+        if (!nome || !email) return J(res, { ok: false, erro: "nome e e-mail são obrigatórios" }, 400);
+        if (!["direcao", "coordenacao", "gestor"].includes(perfil)) return J(res, { ok: false, erro: "perfil inválido" }, 400);
+        const gestor_ref = perfil === "gestor" ? (String(o.gestor_ref || "").trim() || null) : null;
+        const ativo = (o.ativo === 0 || o.ativo === false) ? 0 : 1;
+        const existe = await dbx.get("SELECT id FROM usuarios WHERE email=?", [email]);
+        if (existe) { await dbx.run("UPDATE usuarios SET nome=?, perfil=?, gestor_ref=?, ativo=? WHERE email=?", [nome, perfil, gestor_ref, ativo, email]); return J(res, { ok: true, acao: "atualizado" }); }
+        await dbx.run("INSERT INTO usuarios(nome,email,senha,perfil,gestor_ref,ativo) VALUES(?,?,?,?,?,?)", [nome, email, hashSenha(SENHA_PADRAO), perfil, gestor_ref, ativo]);
+        return J(res, { ok: true, acao: "criado", senha_inicial: SENHA_PADRAO });
+      }
+      if (req.method === "POST" && u.pathname === "/api/admin/reset-senha") {
+        const o = await body(req); await dbx.run("UPDATE usuarios SET senha=? WHERE id=?", [hashSenha(SENHA_PADRAO), +o.id]);
+        return J(res, { ok: true, senha_inicial: SENHA_PADRAO });
+      }
+      return J(res, { ok: false, erro: "rota admin não encontrada" }, 404);
+    }
     // ── GET da API ──
     if (req.method === "GET" && u.pathname.startsWith("/api/")) {
       const user = userDe(req);
