@@ -4,9 +4,10 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const dbx = require("./dbx");
-const { verificaSenha, assinaToken, verificaToken } = require("./auth");
+const { hashSenha, verificaSenha, assinaToken, verificaToken } = require("./auth");
 
 const PORT = process.env.PORT || 8787;
+const SENHA_PADRAO = "bsan@2026";   // quem ainda tem essa é obrigado a trocar no 1º acesso
 const AUTH_REQ = process.env.AUTH_REQUIRED === "1";                      // em produção: 1 (exige login)
 // ONLINE (AUTH_REQ): serve só esta pasta e a página enxuta (Acompanhamento). LOCAL: serve o BsanControl do Drive.
 const STATIC_ROOT = AUTH_REQ ? __dirname : path.resolve(__dirname, "..", "..");
@@ -59,7 +60,21 @@ const server = http.createServer(async (req, res) => {
       const us = await dbx.get("SELECT * FROM usuarios WHERE email=? AND ativo=1", [String(b.email || "").toLowerCase()]);
       if (!us || !verificaSenha(b.senha || "", us.senha)) return J(res, { ok: false, erro: "credenciais inválidas" }, 401);
       const token = assinaToken({ id: us.id, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref });
-      return J(res, { ok: true, token, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref });
+      const trocar = verificaSenha(SENHA_PADRAO, us.senha);   // ainda na senha padrão → front força a troca
+      return J(res, { ok: true, token, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref, trocar });
+    }
+    // ── POST /api/trocar-senha (usuário logado troca a própria senha) ──
+    if (req.method === "POST" && u.pathname === "/api/trocar-senha") {
+      const user = userDe(req);
+      if (!user) return J(res, { ok: false, erro: "não autenticado" }, 401);
+      const o = await body(req);
+      const us = await dbx.get("SELECT * FROM usuarios WHERE id=? AND ativo=1", [user.id]);
+      if (!us || !verificaSenha(o.senha_atual || "", us.senha)) return J(res, { ok: false, erro: "senha atual incorreta" }, 400);
+      const nova = String(o.senha_nova || "");
+      if (nova.length < 6) return J(res, { ok: false, erro: "a nova senha precisa de ao menos 6 caracteres" }, 400);
+      if (verificaSenha(nova, us.senha)) return J(res, { ok: false, erro: "a nova senha não pode ser igual à atual" }, 400);
+      await dbx.run("UPDATE usuarios SET senha=? WHERE id=?", [hashSenha(nova), us.id]);
+      return J(res, { ok: true });
     }
     // ── POST /api/tratativas (gestor registra; calcula reação) ──
     if (req.method === "POST" && u.pathname === "/api/tratativas") {
