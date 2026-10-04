@@ -6928,10 +6928,12 @@ function renderPageOnly(id){
 function populatePontoLens(){
   const el=document.getElementById('ponto-lens'); if(!el) return;
   const pts=[...new Set((ROWS||[]).map(r=>r.ponto).filter(Boolean))].sort();
-  if(pts.length<2){ el.style.display='none'; PONTO_SEL=''; return; }         // só faz sentido com 2+ pontos
-  if(PONTO_SEL && !pts.includes(PONTO_SEL)){ PONTO_SEL=''; try{localStorage.setItem('bc_ponto','');}catch(e){} } // guarda contra ponto salvo inexistente
+  const ehGestor=(typeof BCAUTH!=='undefined' && BCAUTH.user && BCAUTH.user.perfil==='gestor');   // gestor não tem visão "Grupo" (só coord/direção)
+  if(pts.length<2){ el.style.display='none'; PONTO_SEL=''; return; }         // 1 ponto só: sem toggle (já vê o dele)
+  if(ehGestor){ if(!pts.includes(PONTO_SEL)) PONTO_SEL=pts[0]; }             // gestor fica sempre num ponto específico
+  else if(PONTO_SEL && !pts.includes(PONTO_SEL)){ PONTO_SEL=''; try{localStorage.setItem('bc_ponto','');}catch(e){} }
   el.style.display='inline-flex';
-  const opts=[['','Grupo']].concat(pts.map(p=>[p,p]));
+  const opts=(ehGestor?[]:[['','Grupo']]).concat(pts.map(p=>[p,p]));         // sem "Grupo" p/ gestor
   el.innerHTML=opts.map(([v,l])=>{const on=PONTO_SEL===v;return `<button type="button" onclick="setPonto('${v}')" style="border:none;background:${on?'var(--a)':'transparent'};color:${on?'#fff':'var(--t2)'};font-size:12px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;">${l}</button>`;}).join('');
   try{ updateScopeChip(); }catch(e){}
 }
@@ -8386,8 +8388,6 @@ renderAll();
     try{ renderAll(); }catch(err){ console.error('renderAll',err); }
     try{ updateScopeChip(); }catch(_){}
     try{ updateDataFreshness(); }catch(_){}
-    // lente de ponto: gestor começa no ponto dele (separação visual) se ainda não escolheu; pode trocar livremente
-    try{ var u=(typeof BCAUTH!=='undefined'?BCAUTH.user:null); if(u&&u.perfil==='gestor'&&u.ponto&&typeof PONTO_SEL!=='undefined'&&!PONTO_SEL&&typeof setPonto==='function') setPonto(u.ponto); }catch(_){}
   }
   function bcVisibilidade(){
     var u=(typeof BCAUTH!=='undefined'?BCAUTH.user:null);

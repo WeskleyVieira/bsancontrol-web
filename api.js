@@ -29,6 +29,11 @@ const GZ_TTL = +(process.env.CACHE_TTL_MS || 15 * 60 * 1000);
 const GZ_CAP = 90 * 1024 * 1024;   // ~90MB de teto (Render free tem 512MB)
 function gzCacheGet(k) { const e = _gzCache.get(k); if (e && Date.now() - e.t < GZ_TTL) { _gzCache.delete(k); _gzCache.set(k, e); return e.buf; } if (e) _gzCache.delete(k); return null; }
 function gzCacheSet(k, buf) { let tot = buf.length; for (const e of _gzCache.values()) tot += e.buf.length; while (tot > GZ_CAP && _gzCache.size) { const first = _gzCache.keys().next().value; tot -= _gzCache.get(first).buf.length; _gzCache.delete(first); } _gzCache.set(k, { t: Date.now(), buf }); }
+// ponto(s) em que um gestor opera (1 ou 2) — restringe a visão dele; direção/coord veem tudo
+async function pontosDoGestor(gestorRef) {
+  const rs = await dbx.all("SELECT DISTINCT v.ponto p FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=?", [gestorRef]);
+  return rs.map(r => r.p).filter(Boolean);
+}
 const body = req => new Promise(r => { let b = ""; req.on("data", c => b += c); req.on("end", () => { try { r(JSON.parse(b || "{}")); } catch (e) { r({}); } }); });
 const userDe = req => { const h = req.headers["authorization"] || ""; return verificaToken(h.replace(/^Bearer\s+/i, "")); };
 
@@ -76,7 +81,8 @@ async function rotaGET(u, user) {
       const dt = new Date(maxd + "T00:00:00Z"); dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() - (meses - 1));
       de = de || dt.toISOString().slice(0, 10);
     }
-    const w = ["data>=?", "data<=?"]; const args = [de, ate];   // gestor vê TODAS as operações (separação por ponto é só a lente visual)
+    const w = ["data>=?", "data<=?"]; const args = [de, ate];
+    if (user && user.perfil === "gestor") { const pts = await pontosDoGestor(user.gestor_ref); if (pts.length) { w.push("ponto IN (" + pts.map(() => "?").join(",") + ")"); args.push(...pts); } }
     const W = "WHERE " + w.join(" AND ");
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const mapMoney = (a, campos) => a.map(o => { for (const c of campos) o[c] = r2(o[c]); return o; });
@@ -109,7 +115,8 @@ async function rotaGET(u, user) {
       const dt = new Date(maxd + "T00:00:00Z"); dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() - (meses - 1));
       de = de || dt.toISOString().slice(0, 10);
     }
-    const w = ["data>=?", "data<=?"]; const args = [de, ate];   // gestor vê tudo (sem filtro de ponto)
+    const w = ["data>=?", "data<=?"]; const args = [de, ate];
+    if (user && user.perfil === "gestor") { const pts = await pontosDoGestor(user.gestor_ref); if (pts.length) { w.push("ponto IN (" + pts.map(() => "?").join(",") + ")"); args.push(...pts); } }
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const raw = await dbx.all(`SELECT data, empresa, canal, ponto, sku, anuncio_id, titulo, pedido,
         qtd, receita, liquido, ctp, imposto, mc_real, mc_comissao, fonte_liquido, status FROM vendas WHERE ${w.join(" AND ")}`, args);
@@ -124,9 +131,18 @@ async function rotaGET(u, user) {
     const dsr = await dbx.all("SELECT nome, json FROM datasets");
     const got = {};
     for (const r of dsr) { try { got[r.nome] = JSON.parse(r.json); } catch (e) {} }
-    if (user && user.perfil === "gestor") {   // gestor vê tudo; só a COMISSÃO é filtrada pra dele (não vê a dos outros)
-      const opGestor = {};   // "empresa · marketplace" → gestor
-      (await dbx.all("SELECT empresa, marketplace, gestor FROM operacoes")).forEach(o => { opGestor[o.empresa + " · " + o.marketplace] = o.gestor; });
+    if (user && user.perfil === "gestor") {   // gestor: dados do(s) ponto(s) dele; comissão só das operações dele
+      const pts = new Set(await pontosDoGestor(user.gestor_ref));
+      const opm = {};   // op (emp|mkt) → ponto dominante
+      (await dbx.all("SELECT empresa, canal, ponto, COUNT(*) n FROM vendas GROUP BY empresa, canal, ponto ORDER BY n DESC")).forEach(r => { const k = r.empresa + "|" + r.canal; if (!(k in opm)) opm[k] = r.ponto; });
+      const porOp = r => pts.has(opm[(r.emp || "") + "|" + (r.mkt || "")]);
+      if (got.ads) got.ads = got.ads.filter(porOp);
+      if (got.adsCamp) got.adsCamp = got.adsCamp.filter(porOp);
+      if (got.adsDia) got.adsDia = got.adsDia.filter(porOp);
+      if (got.estoque) got.estoque = got.estoque.filter(r => pts.has(r.ponto));
+      if (got.produtos) got.produtos = got.produtos.filter(r => pts.has(r.ponto));
+      if (got.envios) { const empm = {}; (await dbx.all("SELECT empresa, ponto, COUNT(*) n FROM vendas GROUP BY empresa, ponto ORDER BY n DESC")).forEach(r => { if (!(r.empresa in empm)) empm[r.empresa] = r.ponto; }); got.envios = got.envios.filter(r => pts.has(empm[r.empresa])); }
+      const opGestor = {}; (await dbx.all("SELECT empresa, marketplace, gestor FROM operacoes")).forEach(o => { opGestor[o.empresa + " · " + o.marketplace] = o.gestor; });
       if (got.comissao) got.comissao = got.comissao.filter(r => opGestor[r.operacao] === user.gestor_ref);
       if (got.comissaoDet) got.comissaoDet = got.comissaoDet.filter(r => opGestor[r.operacao] === user.gestor_ref);
     }
@@ -194,8 +210,8 @@ const server = http.createServer(async (req, res) => {
       // cache (gzip) das rotas pesadas, por escopo (perfil+gestor) — 1º acesso busca, demais são instantâneos
       const pesada = (u.pathname === "/api/dataset" || u.pathname === "/api/detalhe" || u.pathname === "/api/extras");
       const aceitaGz = /\bgzip\b/.test(String(req.headers["accept-encoding"] || ""));
-      // dataset/detalhe são iguais p/ todos → cache compartilhado; extras difere (comissão por gestor) → por escopo
-      const ckey = u.pathname + u.search + "#" + (u.pathname === "/api/extras" ? (user ? user.perfil + ":" + (user.gestor_ref || "") : "anon") : "shared");
+      // cache por escopo (dados do gestor são restritos ao ponto dele; direção/coord compartilham)
+      const ckey = u.pathname + u.search + "#" + (user ? user.perfil + ":" + (user.gestor_ref || "") : "anon");
       if (pesada && aceitaGz) { const hit = gzCacheGet(ckey); if (hit) { res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "HIT" }); return res.end(hit); } }
       const out = await rotaGET(u, user);
       if (out === null) return J(res, { erro: "rota não encontrada" }, 404);
