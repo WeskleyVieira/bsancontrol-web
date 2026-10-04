@@ -146,7 +146,8 @@ async function rotaGET(u, user) {
       if (got.comissao) got.comissao = got.comissao.filter(r => opGestor[r.operacao] === user.gestor_ref);
       if (got.comissaoDet) got.comissaoDet = got.comissaoDet.filter(r => opGestor[r.operacao] === user.gestor_ref);
     }
-    return { ms: Date.now() - t0, ...got };
+    const mx = await dbx.get("SELECT MAX(atualizado) m FROM datasets");   // carimbo do último db-sync (frescor)
+    return { ms: Date.now() - t0, ...got, _sync: (mx && mx.m) ? mx.m : null };
   }
   return null;
 }

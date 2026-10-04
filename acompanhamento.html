@@ -2017,7 +2017,7 @@ function _custoOpEmp(meses){
 function _investEmp(meses){const out={};if(!CUSTOS)return out;CUSTOS.investimento.filter(i=>meses.includes(i.mes)).forEach(i=>{out[i.emp]=(out[i.emp]||0)+i.ads+i.afi+i.live;});return out;}
 function _boxwyl(meses){let fat=0,cus=0;if(!CUSTOS)return null;CUSTOS.boxwyl.filter(b=>meses.includes(b.mes)).forEach(b=>{fat+=b.fat;cus+=b.custos;});return (fat||cus)?{fat,cus}:null;}
 
-const DRE_HASH = "575b7329f8ea02fc3479e20656752741b2caf6fdf38198c4bfb4ace8621ceaba"; // SHA-256 da senha do DRE (vazio = sem trava)
+const DRE_HASH = ""; // SHA-256 da senha do DRE (vazio = sem trava)
 let _dreOK = false;
 async function _sha256(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 async function _pedirSenhaDRE(btn){const s=prompt('🔒 Senha do DRE:');if(s==null)return;const hh=await _sha256(s);if(hh===DRE_HASH){_dreOK=true;goPage('dre',btn);}else alert('Senha incorreta.');}
@@ -8446,6 +8446,7 @@ renderAll();
       if(d.skuCad) CAD_SKU=d.skuCad;
       if(d.comissao) COMISSAO=d.comissao; if(d.comissaoDet) COMISSAO_DET=d.comissaoDet;
       if(d.envios && typeof ENVIOS!=='undefined') ENVIOS=d.envios;
+      if(d._sync){ try{ var el=document.getElementById('hdr-src'); if(el){ var mins=Math.round((Date.now()-new Date(d._sync).getTime())/60000); var rel=mins<1?'agora':(mins<60?('há '+mins+' min'):(mins<1440?('há '+Math.round(mins/60)+'h'):('há '+Math.round(mins/1440)+'d'))); el.textContent='🔄 Atualizado '+rel; el.title='última sincronização: '+new Date(d._sync).toLocaleString('pt-BR'); } }catch(e){} }
       _extLoaded=true;
       try{ renderPageOnly(activePage); }catch(e){}
     }catch(e){ console.error('extras',e); }
