@@ -2014,7 +2014,12 @@ function _custoOpEmp(meses){
   });
   return out;
 }
-function _investEmp(meses){const out={};if(!CUSTOS)return out;CUSTOS.investimento.filter(i=>meses.includes(i.mes)).forEach(i=>{out[i.emp]=(out[i.emp]||0)+i.ads+i.afi+i.live;});return out;}
+function _investEmp(meses){const out={};
+  // Ads vem do DATASET de Ads (pipeline/API, todos os canais processados) — não re-digitar no custos
+  (typeof ADS!=='undefined'&&ADS?ADS:[]).forEach(a=>{ if(meses.includes(a.comp)) out[a.emp]=(out[a.emp]||0)+(+a.inv||0); });
+  // afiliados + lives continuam do custos (não vêm no Ads)
+  if(CUSTOS&&CUSTOS.investimento)CUSTOS.investimento.filter(i=>meses.includes(i.mes)).forEach(i=>{out[i.emp]=(out[i.emp]||0)+(+i.afi||0)+(+i.live||0);});
+  return out;}
 function _boxwyl(meses){let fat=0,cus=0;if(!CUSTOS)return null;CUSTOS.boxwyl.filter(b=>meses.includes(b.mes)).forEach(b=>{fat+=b.fat;cus+=b.custos;});return (fat||cus)?{fat,cus}:null;}
 
 const DRE_HASH = ""; // SHA-256 da senha do DRE (vazio = sem trava)
