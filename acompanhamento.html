@@ -8370,7 +8370,7 @@ renderAll();
 (function(){
   // aplica o dataset da API nos globais e re-renderiza (mesma sequência do handleFile)
   function bcAplicaDataset(d){
-    ROWS = d.rows||[]; DETALHE = d.detalhe||[];
+    ROWS = d.rows||[];   // DETALHE vem depois (lazy, em 2º plano)
     SKU_MON = d.skuMon||[]; SKU_MKT = d.skuMkt||[]; SKU_MKT_MON = d.skuMktMon||[];
     try{ window._projCache=null; window._custosCache=null; window._skuMktIdxKey=null; }catch(e){}
     try{ projAllRows=[]; skuRentAllRows=[]; skuMktIndex={}; mktSkuIndex={}; }catch(e){}
@@ -8402,12 +8402,25 @@ renderAll();
       bcAplicaDataset(d);
       bcVisibilidade();
       if(el) el.style.display='none';
+      bcCarregaDetalhe();   // puxa o DETALHE em 2º plano (Raio-X/Panorama)
     }catch(e){
       console.error('dataset',e);
       var t=document.getElementById('bc-dataload-txt');
       if(t){ t.innerHTML='Erro ao carregar dados.<br><small>'+String(e.message||e)+'</small><br><button onclick="window.bcCarregaDataset()" style="margin-top:10px;padding:7px 14px;border-radius:8px;border:1px solid #4f8ef7;background:none;color:#4f8ef7;cursor:pointer">tentar de novo</button>'; }
     }
   }
+  var _detLoaded=false;
+  async function bcCarregaDetalhe(){
+    if(_detLoaded) return;
+    try{
+      var r=await authFetch('/api/detalhe?meses=4',{cache:'no-store'});
+      if(!r.ok) return;
+      var d=await r.json();
+      DETALHE = d.detalhe||[]; _detLoaded=true;
+      if(typeof activePage!=='undefined' && (activePage==='rx'||activePage==='gerencial')){ try{ renderPageOnly(activePage); }catch(e){} }
+    }catch(e){ console.error('detalhe',e); }
+  }
+  window.bcCarregaDetalhe = bcCarregaDetalhe;
   window.bcCarregaDataset = bcCarrega;
   window.bcAposLogin = function(){ bcVisibilidade(); bcCarrega(); };   // chamado pelo fluxo de login (bcPosLogin)
   // bootstrap: sem token → portão de login; com token → (troca forçada?) → carrega dataset

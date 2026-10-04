@@ -79,35 +79,48 @@ async function rotaGET(u, user) {
     }
     const W = "WHERE " + w.join(" AND ");
     const r2 = n => Math.round((+n || 0) * 100) / 100;
-    // UMA query só; os agregados (ROWS/SKU_*) são montados no Node (ms) — bem mais rápido que 5 GROUP BY
-    const raw = await dbx.all(`SELECT data, competencia, empresa, canal, ponto, sku, anuncio_id, titulo, pedido,
-        qtd, receita, liquido, ctp, imposto, mc_real, mc_comissao, fonte_liquido, status FROM vendas ${W}`, args);
-    const detalhe = [], rowsM = new Map(), smM = new Map(), skM = new Map(), smmM = new Map();
-    for (const v of raw) {
-      const date = v.data, emp = v.empresa, mkt = v.canal, ponto = v.ponto, sku = v.sku, mes = v.competencia;
-      const fat = +v.receita || 0, liq = +v.liquido || 0, ctp = +v.ctp || 0, imp = +v.imposto || 0,
-        mcr = +v.mc_real || 0, mcc = +v.mc_comissao || 0, qtd = +v.qtd || 0;
-      detalhe.push({ date, emp, mkt, sku, tit: v.titulo, ped: v.pedido, anuncio: v.anuncio_id, qtd: r2(qtd),
-        fat: r2(fat), liq: r2(liq), ctp: r2(ctp), imp: r2(imp), mc: r2(mcc), mccom: r2(mcc), mcReal: r2(mcr),
-        fonte: v.fonte_liquido, stat: v.status, ponto });
-      let k, o;
-      k = date + "|" + emp + "|" + mkt; o = rowsM.get(k); if (!o) { o = { date, emp, mkt, ponto, fat: 0, liq: 0, ctp: 0, imp: 0, mc: 0, mcReal: 0, qtd: 0, ped: 0 }; rowsM.set(k, o); }
-      o.fat += fat; o.liq += liq; o.ctp += ctp; o.imp += imp; o.mc += mcc; o.mcReal += mcr; o.qtd += qtd; o.ped += 1;
-      k = mes + "|" + sku; o = smM.get(k); if (!o) { o = { mes, SKU: sku, fat: 0, liq: 0, ctp: 0, imp: 0, mc: 0, qtd: 0 }; smM.set(k, o); }
-      o.fat += fat; o.liq += liq; o.ctp += ctp; o.imp += imp; o.mc += mcr; o.qtd += qtd;   // SKU: margem real
-      k = mkt + "|" + sku; o = skM.get(k); if (!o) { o = { mkt, sku, qtd: 0, fat: 0, mc: 0, liq: 0 }; skM.set(k, o); }
-      o.qtd += qtd; o.fat += fat; o.mc += mcr; o.liq += liq;
-      k = mes + "|" + mkt + "|" + sku; o = smmM.get(k); if (!o) { o = { mes, mkt, sku, fat: 0, mc: 0, qtd: 0, liq: 0 }; smmM.set(k, o); }
-      o.fat += fat; o.mc += mcr; o.qtd += qtd; o.liq += liq;
-    }
-    const round = (arr, flds) => { for (const o of arr) for (const f of flds) o[f] = r2(o[f]); return arr; };
-    const rows = round([...rowsM.values()], ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd"]);
-    const skuMon = round([...smM.values()], ["fat", "liq", "ctp", "imp", "mc", "qtd"]);
-    const skuMkt = round([...skM.values()], ["qtd", "fat", "mc", "liq"]);
-    const skuMktMon = round([...smmM.values()], ["fat", "mc", "qtd", "liq"]);
+    const mapMoney = (a, campos) => a.map(o => { for (const c of campos) o[c] = r2(o[c]); return o; });
+    // AGREGADOS via GROUP BY no banco (retorna ~11k linhas, não as 37k cruas) — carga inicial leve.
+    // O DETALHE (linha a linha, pesado) é lazy: /api/detalhe, só quando Raio-X/Panorama precisam.
+    const rows = mapMoney(await dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto,
+        SUM(receita) AS fat, SUM(liquido) AS liq, SUM(ctp) AS ctp, SUM(imposto) AS imp,
+        SUM(mc_comissao) AS mc, SUM(mc_real) AS "mcReal", SUM(qtd) AS qtd, COUNT(*) AS ped
+      FROM vendas ${W} GROUP BY data, empresa, canal, ponto`, args), ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd"]);
+    rows.forEach(o => { o.ped = +o.ped; });
+    const skuMon = mapMoney(await dbx.all(`SELECT competencia AS mes, sku AS "SKU", SUM(receita) AS fat, SUM(liquido) AS liq,
+        SUM(ctp) AS ctp, SUM(imposto) AS imp, SUM(mc_real) AS mc, SUM(qtd) AS qtd FROM vendas ${W} GROUP BY competencia, sku`, args), ["fat", "liq", "ctp", "imp", "mc", "qtd"]);
+    const skuMkt = mapMoney(await dbx.all(`SELECT canal AS mkt, sku, SUM(qtd) AS qtd, SUM(receita) AS fat, SUM(mc_real) AS mc,
+        SUM(liquido) AS liq FROM vendas ${W} GROUP BY canal, sku`, args), ["qtd", "fat", "mc", "liq"]);
+    const skuMktMon = mapMoney(await dbx.all(`SELECT competencia AS mes, canal AS mkt, sku, SUM(receita) AS fat, SUM(mc_real) AS mc,
+        SUM(qtd) AS qtd, SUM(liquido) AS liq FROM vendas ${W} GROUP BY competencia, canal, sku`, args), ["fat", "mc", "qtd", "liq"]);
     return { periodo: [de, ate], ponto: pontoScope, ms: Date.now() - t0,
-      contagem: { rows: rows.length, detalhe: detalhe.length, skuMon: skuMon.length, skuMkt: skuMkt.length, skuMktMon: skuMktMon.length },
-      rows, detalhe, skuMon, skuMkt, skuMktMon };
+      contagem: { rows: rows.length, skuMon: skuMon.length, skuMkt: skuMkt.length, skuMktMon: skuMktMon.length },
+      rows, skuMon, skuMkt, skuMktMon };
+  }
+  // ── /api/detalhe — DETALHE linha a linha (lazy; Raio-X / Panorama), mesmo escopo/janela ──
+  if (u.pathname === "/api/detalhe") {
+    const t0 = Date.now();
+    let de = q.de, ate = q.ate;
+    if (!de || !ate) {
+      const mx = await dbx.get("SELECT MAX(data) d FROM vendas");
+      const maxd = (mx && mx.d) ? String(mx.d).slice(0, 10) : "2026-12-31";
+      ate = ate || maxd;
+      const meses = Math.max(1, Math.min(36, parseInt(q.meses || "4", 10)));
+      const dt = new Date(maxd + "T00:00:00Z"); dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() - (meses - 1));
+      de = de || dt.toISOString().slice(0, 10);
+    }
+    const w = ["data>=?", "data<=?"]; const args = [de, ate];
+    if (user && user.perfil === "gestor") {
+      const pr = await dbx.get("SELECT v.ponto p, COUNT(*) n FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=? GROUP BY v.ponto ORDER BY n DESC", [user.gestor_ref]);
+      w.push("ponto=?"); args.push(pr ? pr.p : "__nenhum__");
+    }
+    const r2 = n => Math.round((+n || 0) * 100) / 100;
+    const raw = await dbx.all(`SELECT data, empresa, canal, ponto, sku, anuncio_id, titulo, pedido,
+        qtd, receita, liquido, ctp, imposto, mc_real, mc_comissao, fonte_liquido, status FROM vendas WHERE ${w.join(" AND ")}`, args);
+    const detalhe = raw.map(v => ({ date: v.data, emp: v.empresa, mkt: v.canal, sku: v.sku, tit: v.titulo, ped: v.pedido,
+      anuncio: v.anuncio_id, qtd: r2(v.qtd), fat: r2(v.receita), liq: r2(v.liquido), ctp: r2(v.ctp), imp: r2(v.imposto),
+      mc: r2(v.mc_comissao), mccom: r2(v.mc_comissao), mcReal: r2(v.mc_real), fonte: v.fonte_liquido, stat: v.status, ponto: v.ponto }));
+    return { periodo: [de, ate], ms: Date.now() - t0, n: detalhe.length, detalhe };
   }
   return null;
 }
