@@ -128,6 +128,27 @@ async function rotaGET(u, user) {
       mc: r2(v.mc_comissao), mccom: r2(v.mc_comissao), mcReal: r2(v.mc_real), fonte: v.fonte_liquido, stat: v.status, ponto: v.ponto }));
     return { periodo: [de, ate], ms: Date.now() - t0, n: detalhe.length, detalhe };
   }
+  // ── /api/extras — datasets não-vendas (Ads/Estoque/Comissão/Produtos/…) escopados por ponto ──
+  if (u.pathname === "/api/extras") {
+    const t0 = Date.now();
+    const dsr = await dbx.all("SELECT nome, json FROM datasets");
+    const got = {};
+    for (const r of dsr) { try { got[r.nome] = JSON.parse(r.json); } catch (e) {} }
+    if (user && user.perfil === "gestor") {   // escopo por ponto; comissão oculta
+      const pr = await dbx.get("SELECT v.ponto p, COUNT(*) n FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=? GROUP BY v.ponto ORDER BY n DESC", [user.gestor_ref]);
+      const ponto = pr ? pr.p : "__nenhum__";
+      const opm = {};   // op (emp|mkt) → ponto dominante
+      (await dbx.all("SELECT empresa, canal, ponto, COUNT(*) n FROM vendas GROUP BY empresa, canal, ponto ORDER BY n DESC")).forEach(r => { const k = r.empresa + "|" + r.canal; if (!(k in opm)) opm[k] = r.ponto; });
+      const porOp = r => opm[(r.emp || "") + "|" + (r.mkt || "")] === ponto;
+      if (got.ads) got.ads = got.ads.filter(porOp);
+      if (got.adsCamp) got.adsCamp = got.adsCamp.filter(porOp);
+      if (got.adsDia) got.adsDia = got.adsDia.filter(porOp);
+      if (got.estoque) got.estoque = got.estoque.filter(r => r.ponto === ponto);
+      if (got.produtos) got.produtos = got.produtos.filter(r => r.ponto === ponto);
+      delete got.comissao; delete got.comissaoDet;
+    }
+    return { ms: Date.now() - t0, ...got };
+  }
   return null;
 }
 
@@ -174,7 +195,7 @@ const server = http.createServer(async (req, res) => {
       const user = userDe(req);
       if (AUTH_REQ && u.pathname !== "/api/health" && !user) return J(res, { erro: "não autenticado" }, 401);
       // cache (gzip) das rotas pesadas, por escopo (perfil+gestor) — 1º acesso busca, demais são instantâneos
-      const pesada = (u.pathname === "/api/dataset" || u.pathname === "/api/detalhe");
+      const pesada = (u.pathname === "/api/dataset" || u.pathname === "/api/detalhe" || u.pathname === "/api/extras");
       const aceitaGz = /\bgzip\b/.test(String(req.headers["accept-encoding"] || ""));
       const ckey = u.pathname + u.search + "#" + (user ? user.perfil + ":" + (user.gestor_ref || "") : "anon");
       if (pesada && aceitaGz) { const hit = gzCacheGet(ckey); if (hit) { res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "HIT" }); return res.end(hit); } }

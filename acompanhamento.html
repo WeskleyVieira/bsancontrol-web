@@ -8403,6 +8403,7 @@ renderAll();
       bcVisibilidade();
       if(el) el.style.display='none';
       bcCarregaDetalhe();   // puxa o DETALHE em 2º plano (Raio-X/Panorama)
+      bcCarregaExtras();    // puxa Ads/Estoque/Comissão/Produtos em 2º plano
     }catch(e){
       console.error('dataset',e);
       var t=document.getElementById('bc-dataload-txt');
@@ -8421,6 +8422,23 @@ renderAll();
     }catch(e){ console.error('detalhe',e); }
   }
   window.bcCarregaDetalhe = bcCarregaDetalhe;
+  var _extLoaded=false;
+  async function bcCarregaExtras(){
+    if(_extLoaded) return;
+    try{
+      var r=await authFetch('/api/extras',{cache:'no-store'});
+      if(!r.ok) return;
+      var d=await r.json();
+      if(d.ads) ADS=d.ads; if(d.adsCamp) ADS_CAMP=d.adsCamp; if(d.adsDia) ADS_DIA=d.adsDia;
+      if(d.estoque) ESTOQUE=d.estoque; if(d.produtos) PRODUTOS=d.produtos;
+      if(d.acomp) ACOMP=d.acomp; if(d.acompItens) ACOMP_ITENS=d.acompItens;
+      if(d.skuCad) CAD_SKU=d.skuCad;
+      if(d.comissao) COMISSAO=d.comissao; if(d.comissaoDet) COMISSAO_DET=d.comissaoDet;
+      _extLoaded=true;
+      try{ renderPageOnly(activePage); }catch(e){}
+    }catch(e){ console.error('extras',e); }
+  }
+  window.bcCarregaExtras = bcCarregaExtras;
   window.bcCarregaDataset = bcCarrega;
   window.bcAposLogin = function(){ bcVisibilidade(); bcCarrega(); };   // chamado pelo fluxo de login (bcPosLogin)
   // bootstrap: sem token → portão de login; com token → (troca forçada?) → carrega dataset
