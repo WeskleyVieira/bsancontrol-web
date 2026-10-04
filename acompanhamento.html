@@ -1994,6 +1994,7 @@ async function carregarCustos(file){
     CUSTOS={rateio,custos,investimento,boxwyl};
     st.textContent='✓ carregado ('+custos.length+' custos, '+investimento.length+' invest.)';st.style.color='#22c55e';
     renderDRE();
+    if(window.bcSalvaCustos){ try{ await window.bcSalvaCustos(CUSTOS); st.textContent+=' · salvo na nuvem ✓'; }catch(e){ st.textContent+=' · ⚠️ falha ao salvar: '+(e.message||e); } }   // online: persiste pra coord/direção
   }catch(e){st.textContent='❌ erro: '+e.message;st.style.color='#f87171';}
 }
 
@@ -8451,6 +8452,7 @@ renderAll();
       if(d.skuCad) CAD_SKU=d.skuCad;
       if(d.comissao) COMISSAO=d.comissao; if(d.comissaoDet) COMISSAO_DET=d.comissaoDet;
       if(d.envios && typeof ENVIOS!=='undefined') ENVIOS=d.envios;
+      if(d.custos && typeof CUSTOS!=='undefined' && d.custos.custos){ CUSTOS=d.custos; }   // custos op + afi/lives (Ads vem do dataset)
       if(d._sync){ try{ var el=document.getElementById('hdr-src'); if(el){ var mins=Math.round((Date.now()-new Date(d._sync).getTime())/60000); var rel=mins<1?'agora':(mins<60?('há '+mins+' min'):(mins<1440?('há '+Math.round(mins/60)+'h'):('há '+Math.round(mins/1440)+'d'))); el.textContent='🔄 Atualizado '+rel; el.title='última sincronização: '+new Date(d._sync).toLocaleString('pt-BR'); } }catch(e){} }
       _extLoaded=true;
       try{ renderPageOnly(activePage); }catch(e){}
@@ -8460,6 +8462,11 @@ renderAll();
   // coord/direção sobem a planilha de Envios na própria plataforma → salva na nuvem pra todos
   window.bcSalvaEnvios = async function(rows){
     var r=await authFetch('/api/envios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:rows})});
+    var d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.erro||('HTTP '+r.status)); return d;
+  };
+  // coord/direção sobem o custos_2026.xlsx na plataforma (custos op + afi/lives; Ads já vem do dataset)
+  window.bcSalvaCustos = async function(custos){
+    var r=await authFetch('/api/custos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({custos:custos})});
     var d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.erro||('HTTP '+r.status)); return d;
   };
   // ── ADMIN de usuários (só Direção) ──

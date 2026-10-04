@@ -145,6 +145,7 @@ async function rotaGET(u, user) {
       const opGestor = {}; (await dbx.all("SELECT empresa, marketplace, gestor FROM operacoes")).forEach(o => { opGestor[o.empresa + " · " + o.marketplace] = o.gestor; });
       if (got.comissao) got.comissao = got.comissao.filter(r => opGestor[r.operacao] === user.gestor_ref);
       if (got.comissaoDet) got.comissaoDet = got.comissaoDet.filter(r => opGestor[r.operacao] === user.gestor_ref);
+      delete got.custos;   // custos/DRE é financeiro — gestor não vê
     }
     const mx = await dbx.get("SELECT MAX(atualizado) m FROM datasets");   // carimbo do último db-sync (frescor)
     return { ms: Date.now() - t0, ...got, _sync: (mx && mx.m) ? mx.m : null };
@@ -203,6 +204,17 @@ const server = http.createServer(async (req, res) => {
         ["envios", JSON.stringify(rows), new Date().toISOString()]);
       for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k);   // invalida cache
       return J(res, { ok: true, n: rows.length });
+    }
+    // ── POST /api/custos (coord/direção sobem custos operacionais + afi/lives; Ads já vem do dataset) ──
+    if (req.method === "POST" && u.pathname === "/api/custos") {
+      const user = userDe(req);
+      if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
+      if (user && user.perfil === "gestor") return J(res, { ok: false, erro: "sem permissão (só coordenação/direção)" }, 403);
+      const o = await body(req);
+      await dbx.run("INSERT INTO datasets(nome,json,atualizado) VALUES(?,?,?) ON CONFLICT(nome) DO UPDATE SET json=EXCLUDED.json, atualizado=EXCLUDED.atualizado",
+        ["custos", JSON.stringify(o.custos || {}), new Date().toISOString()]);
+      for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k);
+      return J(res, { ok: true });
     }
     // ── ADMIN de usuários (SÓ Direção) ──
     if (u.pathname.startsWith("/api/admin/")) {
