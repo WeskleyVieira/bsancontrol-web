@@ -23,6 +23,12 @@ const JZ = (req, res, obj, code = 200) => {
     h["Content-Encoding"] = "gzip"; res.writeHead(code, h); res.end(zlib.gzipSync(buf));
   } else { res.writeHead(code, h); res.end(buf); }
 };
+// cache em memória de respostas pesadas (buffer já gzipado), por escopo, com TTL — evita re-buscar 44MB a cada acesso
+const _gzCache = new Map();
+const GZ_TTL = +(process.env.CACHE_TTL_MS || 15 * 60 * 1000);
+const GZ_CAP = 90 * 1024 * 1024;   // ~90MB de teto (Render free tem 512MB)
+function gzCacheGet(k) { const e = _gzCache.get(k); if (e && Date.now() - e.t < GZ_TTL) { _gzCache.delete(k); _gzCache.set(k, e); return e.buf; } if (e) _gzCache.delete(k); return null; }
+function gzCacheSet(k, buf) { let tot = buf.length; for (const e of _gzCache.values()) tot += e.buf.length; while (tot > GZ_CAP && _gzCache.size) { const first = _gzCache.keys().next().value; tot -= _gzCache.get(first).buf.length; _gzCache.delete(first); } _gzCache.set(k, { t: Date.now(), buf }); }
 const body = req => new Promise(r => { let b = ""; req.on("data", c => b += c); req.on("end", () => { try { r(JSON.parse(b || "{}")); } catch (e) { r({}); } }); });
 const userDe = req => { const h = req.headers["authorization"] || ""; return verificaToken(h.replace(/^Bearer\s+/i, "")); };
 
@@ -167,9 +173,15 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && u.pathname.startsWith("/api/")) {
       const user = userDe(req);
       if (AUTH_REQ && u.pathname !== "/api/health" && !user) return J(res, { erro: "não autenticado" }, 401);
+      // cache (gzip) das rotas pesadas, por escopo (perfil+gestor) — 1º acesso busca, demais são instantâneos
+      const pesada = (u.pathname === "/api/dataset" || u.pathname === "/api/detalhe");
+      const aceitaGz = /\bgzip\b/.test(String(req.headers["accept-encoding"] || ""));
+      const ckey = u.pathname + u.search + "#" + (user ? user.perfil + ":" + (user.gestor_ref || "") : "anon");
+      if (pesada && aceitaGz) { const hit = gzCacheGet(ckey); if (hit) { res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "HIT" }); return res.end(hit); } }
       const out = await rotaGET(u, user);
-      if (out !== null) return JZ(req, res, out);
-      return J(res, { erro: "rota não encontrada" }, 404);
+      if (out === null) return J(res, { erro: "rota não encontrada" }, 404);
+      if (pesada && aceitaGz) { const buf = zlib.gzipSync(Buffer.from(JSON.stringify(out))); gzCacheSet(ckey, buf); res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "MISS" }); return res.end(buf); }
+      return JZ(req, res, out);
     }
     // ── estático ──
     let p = decodeURIComponent(u.pathname); if (p === "/") p = INDEX;

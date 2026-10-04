@@ -8396,7 +8396,7 @@ renderAll();
     var el=document.getElementById('bc-dataload');
     try{
       if(el) el.style.display='flex';
-      var r=await authFetch('/api/dataset?meses=4',{cache:'no-store'});
+      var r=await authFetch('/api/dataset?meses=24',{cache:'no-store'});
       if(!r.ok) throw new Error('HTTP '+r.status);
       var d=await r.json();
       bcAplicaDataset(d);
@@ -8413,7 +8413,7 @@ renderAll();
   async function bcCarregaDetalhe(){
     if(_detLoaded) return;
     try{
-      var r=await authFetch('/api/detalhe?meses=4',{cache:'no-store'});
+      var r=await authFetch('/api/detalhe?meses=24',{cache:'no-store'});
       if(!r.ok) return;
       var d=await r.json();
       DETALHE = d.detalhe||[]; _detLoaded=true;
