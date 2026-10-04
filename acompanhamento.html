@@ -893,7 +893,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
 <!-- ═══════════ ENVIOS (fluxo de saída — input manual) ═══════════ -->
 <div id="page-envios" class="page">
   <div class="perf-fbar" id="env-filter-bar" style="flex-wrap:wrap;gap:10px;">
-    <div style="display:flex;align-items:center;gap:8px;">
+    <div style="display:flex;align-items:center;gap:8px;" id="env-upload-box">
       <span class="pf-lbl">Fluxo de envios</span>
       <label for="env-inp" style="background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:7px 14px;cursor:pointer;">📦 Carregar envios_2026.xlsx</label>
       <input id="env-inp" type="file" accept=".xlsx,.xls" style="display:none;" onchange="carregarEnvios(this.files[0])">
@@ -2163,6 +2163,7 @@ async function carregarEnvios(file){
     st.textContent='✓ '+ENVIOS.length+' registros · até '+([...new Set(ENVIOS.map(r=>r.data))].sort().pop());
     st.style.color='#22c55e';
     renderEnvios();
+    if(window.bcSalvaEnvios){ try{ await window.bcSalvaEnvios(ENVIOS); st.textContent+=' · salvo na nuvem ✓'; }catch(e){ st.textContent+=' · ⚠️ falha ao salvar: '+(e.message||e); } }   // online: persiste pra todos
   }catch(e){ st.textContent='❌ '+e.message; st.style.color='#f87171'; }
 }
 const MOD=[['coleta','Coleta','#4f8ef7'],['flex','Flex','#f59e0b'],['full','Full','#22c55e']];
@@ -8390,7 +8391,7 @@ renderAll();
     var u=(typeof BCAUTH!=='undefined'?BCAUTH.user:null);
     function hide(id){ var x=document.getElementById(id); if(x)x.style.display='none'; }
     try{ var ub=document.querySelector('.upload-btn'); if(ub)ub.style.display='none'; }catch(e){}   // online: dados vêm da API, sem upload de xlsx
-    if(u && u.perfil==='gestor'){ hide('nav-dre'); hide('btn-ger-comissao'); }   // gestor não vê DRE nem Comissão
+    if(u && u.perfil==='gestor'){ hide('nav-dre'); hide('btn-ger-comissao'); hide('env-upload-box'); }   // gestor não vê DRE/Comissão nem sobe envios
   }
   async function bcCarrega(){
     var el=document.getElementById('bc-dataload');
@@ -8434,11 +8435,17 @@ renderAll();
       if(d.acomp) ACOMP=d.acomp; if(d.acompItens) ACOMP_ITENS=d.acompItens;
       if(d.skuCad) CAD_SKU=d.skuCad;
       if(d.comissao) COMISSAO=d.comissao; if(d.comissaoDet) COMISSAO_DET=d.comissaoDet;
+      if(d.envios && typeof ENVIOS!=='undefined') ENVIOS=d.envios;
       _extLoaded=true;
       try{ renderPageOnly(activePage); }catch(e){}
     }catch(e){ console.error('extras',e); }
   }
   window.bcCarregaExtras = bcCarregaExtras;
+  // coord/direção sobem a planilha de Envios na própria plataforma → salva na nuvem pra todos
+  window.bcSalvaEnvios = async function(rows){
+    var r=await authFetch('/api/envios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:rows})});
+    var d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.erro||('HTTP '+r.status)); return d;
+  };
   window.bcCarregaDataset = bcCarrega;
   window.bcAposLogin = function(){ bcVisibilidade(); bcCarrega(); };   // chamado pelo fluxo de login (bcPosLogin)
   // bootstrap: sem token → portão de login; com token → (troca forçada?) → carrega dataset

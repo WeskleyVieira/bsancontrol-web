@@ -145,6 +145,7 @@ async function rotaGET(u, user) {
       if (got.adsDia) got.adsDia = got.adsDia.filter(porOp);
       if (got.estoque) got.estoque = got.estoque.filter(r => r.ponto === ponto);
       if (got.produtos) got.produtos = got.produtos.filter(r => r.ponto === ponto);
+      if (got.envios) { const empm = {}; (await dbx.all("SELECT empresa, ponto, COUNT(*) n FROM vendas GROUP BY empresa, ponto ORDER BY n DESC")).forEach(r => { if (!(r.empresa in empm)) empm[r.empresa] = r.ponto; }); got.envios = got.envios.filter(r => empm[r.empresa] === ponto); }
       delete got.comissao; delete got.comissaoDet;
     }
     return { ms: Date.now() - t0, ...got };
@@ -189,6 +190,18 @@ const server = http.createServer(async (req, res) => {
         [o.demanda_id, (user && user.gestor_ref) || o.gestor || "", o.acao || "", o.causa || "", o.obs || "", o.estado || "trat", o.registrado_em || new Date().toISOString(), reacaoH]);
       if (o.estado) await dbx.run("UPDATE demandas SET estado=? WHERE id=?", [o.estado, o.demanda_id]);
       return J(res, { ok: true, reacaoH });
+    }
+    // ── POST /api/envios (coord/direção sobe a planilha de envios → salva na nuvem) ──
+    if (req.method === "POST" && u.pathname === "/api/envios") {
+      const user = userDe(req);
+      if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
+      if (user && user.perfil === "gestor") return J(res, { ok: false, erro: "sem permissão (só coordenação/direção)" }, 403);
+      const o = await body(req);
+      const rows = Array.isArray(o.rows) ? o.rows : [];
+      await dbx.run("INSERT INTO datasets(nome,json,atualizado) VALUES(?,?,?) ON CONFLICT(nome) DO UPDATE SET json=EXCLUDED.json, atualizado=EXCLUDED.atualizado",
+        ["envios", JSON.stringify(rows), new Date().toISOString()]);
+      for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k);   // invalida cache
+      return J(res, { ok: true, n: rows.length });
     }
     // ── GET da API ──
     if (req.method === "GET" && u.pathname.startsWith("/api/")) {
