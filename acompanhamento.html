@@ -3274,7 +3274,7 @@ const BCAUTH = {
     const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:String(email||'').toLowerCase(),senha})});
     let d={}; try{d=await r.json();}catch(e){}
     if(!r.ok||!d.ok) throw new Error(d.erro||('HTTP '+r.status));
-    BCAUTH._set(d.token,{nome:d.nome,perfil:d.perfil,gestor_ref:d.gestor_ref,trocar:!!d.trocar}); return d;
+    BCAUTH._set(d.token,{nome:d.nome,perfil:d.perfil,gestor_ref:d.gestor_ref,ponto:d.ponto||null,trocar:!!d.trocar}); return d;
   }
 };
 async function authFetch(url,opts){ opts=opts||{}; const h=Object.assign({},opts.headers||{}); const t=BCAUTH.token; if(t) h['Authorization']='Bearer '+t; opts.headers=h;
@@ -8386,12 +8386,14 @@ renderAll();
     try{ renderAll(); }catch(err){ console.error('renderAll',err); }
     try{ updateScopeChip(); }catch(_){}
     try{ updateDataFreshness(); }catch(_){}
+    // lente de ponto: gestor começa no ponto dele (separação visual) se ainda não escolheu; pode trocar livremente
+    try{ var u=(typeof BCAUTH!=='undefined'?BCAUTH.user:null); if(u&&u.perfil==='gestor'&&u.ponto&&typeof PONTO_SEL!=='undefined'&&!PONTO_SEL&&typeof setPonto==='function') setPonto(u.ponto); }catch(_){}
   }
   function bcVisibilidade(){
     var u=(typeof BCAUTH!=='undefined'?BCAUTH.user:null);
     function hide(id){ var x=document.getElementById(id); if(x)x.style.display='none'; }
     try{ var ub=document.querySelector('.upload-btn'); if(ub)ub.style.display='none'; }catch(e){}   // online: dados vêm da API, sem upload de xlsx
-    if(u && u.perfil==='gestor'){ hide('nav-dre'); hide('btn-ger-comissao'); hide('env-upload-box'); }   // gestor não vê DRE/Comissão nem sobe envios
+    if(u && u.perfil==='gestor'){ hide('nav-dre'); hide('env-upload-box'); }   // gestor: só DRE oculto; comissão fica (filtrada pra dele); upload só coord/direção
   }
   async function bcCarrega(){
     var el=document.getElementById('bc-dataload');

@@ -76,13 +76,7 @@ async function rotaGET(u, user) {
       const dt = new Date(maxd + "T00:00:00Z"); dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() - (meses - 1));
       de = de || dt.toISOString().slice(0, 10);
     }
-    const w = ["data>=?", "data<=?"]; const args = [de, ate];
-    let pontoScope = null;
-    if (user && user.perfil === "gestor") {   // gestor: escopo pelo ponto (estoque) das contas dele
-      const pr = await dbx.get("SELECT v.ponto p, COUNT(*) n FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=? GROUP BY v.ponto ORDER BY n DESC", [user.gestor_ref]);
-      pontoScope = pr ? pr.p : "__nenhum__";
-      w.push("ponto=?"); args.push(pontoScope);
-    }
+    const w = ["data>=?", "data<=?"]; const args = [de, ate];   // gestor vê TODAS as operações (separação por ponto é só a lente visual)
     const W = "WHERE " + w.join(" AND ");
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const mapMoney = (a, campos) => a.map(o => { for (const c of campos) o[c] = r2(o[c]); return o; });
@@ -99,7 +93,7 @@ async function rotaGET(u, user) {
         SUM(liquido) AS liq FROM vendas ${W} GROUP BY canal, sku`, args), ["qtd", "fat", "mc", "liq"]);
     const skuMktMon = mapMoney(await dbx.all(`SELECT competencia AS mes, canal AS mkt, sku, SUM(receita) AS fat, SUM(mc_real) AS mc,
         SUM(qtd) AS qtd, SUM(liquido) AS liq FROM vendas ${W} GROUP BY competencia, canal, sku`, args), ["fat", "mc", "qtd", "liq"]);
-    return { periodo: [de, ate], ponto: pontoScope, ms: Date.now() - t0,
+    return { periodo: [de, ate], ms: Date.now() - t0,
       contagem: { rows: rows.length, skuMon: skuMon.length, skuMkt: skuMkt.length, skuMktMon: skuMktMon.length },
       rows, skuMon, skuMkt, skuMktMon };
   }
@@ -115,11 +109,7 @@ async function rotaGET(u, user) {
       const dt = new Date(maxd + "T00:00:00Z"); dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() - (meses - 1));
       de = de || dt.toISOString().slice(0, 10);
     }
-    const w = ["data>=?", "data<=?"]; const args = [de, ate];
-    if (user && user.perfil === "gestor") {
-      const pr = await dbx.get("SELECT v.ponto p, COUNT(*) n FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=? GROUP BY v.ponto ORDER BY n DESC", [user.gestor_ref]);
-      w.push("ponto=?"); args.push(pr ? pr.p : "__nenhum__");
-    }
+    const w = ["data>=?", "data<=?"]; const args = [de, ate];   // gestor vê tudo (sem filtro de ponto)
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const raw = await dbx.all(`SELECT data, empresa, canal, ponto, sku, anuncio_id, titulo, pedido,
         qtd, receita, liquido, ctp, imposto, mc_real, mc_comissao, fonte_liquido, status FROM vendas WHERE ${w.join(" AND ")}`, args);
@@ -134,19 +124,11 @@ async function rotaGET(u, user) {
     const dsr = await dbx.all("SELECT nome, json FROM datasets");
     const got = {};
     for (const r of dsr) { try { got[r.nome] = JSON.parse(r.json); } catch (e) {} }
-    if (user && user.perfil === "gestor") {   // escopo por ponto; comissão oculta
-      const pr = await dbx.get("SELECT v.ponto p, COUNT(*) n FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=? GROUP BY v.ponto ORDER BY n DESC", [user.gestor_ref]);
-      const ponto = pr ? pr.p : "__nenhum__";
-      const opm = {};   // op (emp|mkt) → ponto dominante
-      (await dbx.all("SELECT empresa, canal, ponto, COUNT(*) n FROM vendas GROUP BY empresa, canal, ponto ORDER BY n DESC")).forEach(r => { const k = r.empresa + "|" + r.canal; if (!(k in opm)) opm[k] = r.ponto; });
-      const porOp = r => opm[(r.emp || "") + "|" + (r.mkt || "")] === ponto;
-      if (got.ads) got.ads = got.ads.filter(porOp);
-      if (got.adsCamp) got.adsCamp = got.adsCamp.filter(porOp);
-      if (got.adsDia) got.adsDia = got.adsDia.filter(porOp);
-      if (got.estoque) got.estoque = got.estoque.filter(r => r.ponto === ponto);
-      if (got.produtos) got.produtos = got.produtos.filter(r => r.ponto === ponto);
-      if (got.envios) { const empm = {}; (await dbx.all("SELECT empresa, ponto, COUNT(*) n FROM vendas GROUP BY empresa, ponto ORDER BY n DESC")).forEach(r => { if (!(r.empresa in empm)) empm[r.empresa] = r.ponto; }); got.envios = got.envios.filter(r => empm[r.empresa] === ponto); }
-      delete got.comissao; delete got.comissaoDet;
+    if (user && user.perfil === "gestor") {   // gestor vê tudo; só a COMISSÃO é filtrada pra dele (não vê a dos outros)
+      const opGestor = {};   // "empresa · marketplace" → gestor
+      (await dbx.all("SELECT empresa, marketplace, gestor FROM operacoes")).forEach(o => { opGestor[o.empresa + " · " + o.marketplace] = o.gestor; });
+      if (got.comissao) got.comissao = got.comissao.filter(r => opGestor[r.operacao] === user.gestor_ref);
+      if (got.comissaoDet) got.comissaoDet = got.comissaoDet.filter(r => opGestor[r.operacao] === user.gestor_ref);
     }
     return { ms: Date.now() - t0, ...got };
   }
@@ -163,7 +145,9 @@ const server = http.createServer(async (req, res) => {
       if (!us || !verificaSenha(b.senha || "", us.senha)) return J(res, { ok: false, erro: "credenciais inválidas" }, 401);
       const token = assinaToken({ id: us.id, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref });
       const trocar = verificaSenha(SENHA_PADRAO, us.senha);   // ainda na senha padrão → front força a troca
-      return J(res, { ok: true, token, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref, trocar });
+      let ponto = null;   // ponto do gestor (só p/ a lente visual começar nele; não restringe dados)
+      if (us.perfil === "gestor") { const pr = await dbx.get("SELECT v.ponto p, COUNT(*) n FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=? GROUP BY v.ponto ORDER BY n DESC", [us.gestor_ref]); ponto = pr ? pr.p : null; }
+      return J(res, { ok: true, token, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref, ponto, trocar });
     }
     // ── POST /api/trocar-senha (usuário logado troca a própria senha) ──
     if (req.method === "POST" && u.pathname === "/api/trocar-senha") {
@@ -210,7 +194,8 @@ const server = http.createServer(async (req, res) => {
       // cache (gzip) das rotas pesadas, por escopo (perfil+gestor) — 1º acesso busca, demais são instantâneos
       const pesada = (u.pathname === "/api/dataset" || u.pathname === "/api/detalhe" || u.pathname === "/api/extras");
       const aceitaGz = /\bgzip\b/.test(String(req.headers["accept-encoding"] || ""));
-      const ckey = u.pathname + u.search + "#" + (user ? user.perfil + ":" + (user.gestor_ref || "") : "anon");
+      // dataset/detalhe são iguais p/ todos → cache compartilhado; extras difere (comissão por gestor) → por escopo
+      const ckey = u.pathname + u.search + "#" + (u.pathname === "/api/extras" ? (user ? user.perfil + ":" + (user.gestor_ref || "") : "anon") : "shared");
       if (pesada && aceitaGz) { const hit = gzCacheGet(ckey); if (hit) { res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "HIT" }); return res.end(hit); } }
       const out = await rotaGET(u, user);
       if (out === null) return J(res, { erro: "rota não encontrada" }, 404);
