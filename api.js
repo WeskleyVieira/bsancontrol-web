@@ -3,6 +3,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const zlib = require("zlib");
 const dbx = require("./dbx");
 const { hashSenha, verificaSenha, assinaToken, verificaToken } = require("./auth");
 
@@ -14,6 +15,14 @@ const STATIC_ROOT = AUTH_REQ ? __dirname : path.resolve(__dirname, "..", "..");
 const INDEX = AUTH_REQ ? "/acompanhamento.html" : "/BsanControl.html";
 
 const J = (res, obj, code = 200) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" }); res.end(JSON.stringify(obj)); };
+// envia JSON com gzip quando o cliente aceita (datasets grandes ~10x menores no fio)
+const JZ = (req, res, obj, code = 200) => {
+  const buf = Buffer.from(JSON.stringify(obj));
+  const h = { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" };
+  if (/\bgzip\b/.test(String(req.headers["accept-encoding"] || "")) && buf.length > 1400) {
+    h["Content-Encoding"] = "gzip"; res.writeHead(code, h); res.end(zlib.gzipSync(buf));
+  } else { res.writeHead(code, h); res.end(buf); }
+};
 const body = req => new Promise(r => { let b = ""; req.on("data", c => b += c); req.on("end", () => { try { r(JSON.parse(b || "{}")); } catch (e) { r({}); } }); });
 const userDe = req => { const h = req.headers["authorization"] || ""; return verificaToken(h.replace(/^Bearer\s+/i, "")); };
 
@@ -47,6 +56,51 @@ async function rotaGET(u, user) {
     const kpi = await dbx.get("SELECT COUNT(*) n, ROUND(SUM(receita)) fat, ROUND(SUM(mc_comissao)) mc FROM vendas WHERE data>=? AND data<=? AND status LIKE '%venda%'", [de, ate]);
     const porOp = await dbx.all("SELECT empresa, canal, ROUND(SUM(receita)) fat, ROUND(SUM(mc_comissao)) mc, COUNT(*) n FROM vendas WHERE data>=? AND data<=? AND status LIKE '%venda%' GROUP BY empresa, canal ORDER BY mc DESC", [de, ate]);
     return { periodo: [de, ate], ms: Date.now() - t0, kpi, por_operacao: porOp };
+  }
+  // ── /api/dataset — datasets do painel (ROWS/DETALHE/agregados) escopados por PONTO, janela de meses ──
+  if (u.pathname === "/api/dataset") {
+    const t0 = Date.now();
+    // janela: de/ate explícitos, ou últimos N meses presentes (default 4)
+    let de = q.de, ate = q.ate;
+    if (!de || !ate) {
+      const mx = await dbx.get("SELECT MAX(data) d FROM vendas");
+      const maxd = (mx && mx.d) ? String(mx.d).slice(0, 10) : "2026-12-31";
+      ate = ate || maxd;
+      const meses = Math.max(1, Math.min(36, parseInt(q.meses || "4", 10)));
+      const dt = new Date(maxd + "T00:00:00Z"); dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() - (meses - 1));
+      de = de || dt.toISOString().slice(0, 10);
+    }
+    const w = ["data>=?", "data<=?"]; const args = [de, ate];
+    let pontoScope = null;
+    if (user && user.perfil === "gestor") {   // gestor: escopo pelo ponto (estoque) das contas dele
+      const pr = await dbx.get("SELECT v.ponto p, COUNT(*) n FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=? GROUP BY v.ponto ORDER BY n DESC", [user.gestor_ref]);
+      pontoScope = pr ? pr.p : "__nenhum__";
+      w.push("ponto=?"); args.push(pontoScope);
+    }
+    const W = "WHERE " + w.join(" AND ");
+    const r2 = n => Math.round((+n || 0) * 100) / 100;
+    const mapMoney = (a, campos) => a.map(o => { for (const c of campos) o[c] = r2(o[c]); return o; });
+    // ROWS: rollup diário por emp×mkt (mc=comissao/capada, mcReal=real, ped=nº de linhas)
+    const rows = mapMoney(await dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto,
+        SUM(receita) AS fat, SUM(liquido) AS liq, SUM(ctp) AS ctp, SUM(imposto) AS imp,
+        SUM(mc_comissao) AS mc, SUM(mc_real) AS "mcReal", SUM(qtd) AS qtd, COUNT(*) AS ped
+      FROM vendas ${W} GROUP BY data, empresa, canal, ponto`, args), ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd"]);
+    rows.forEach(o => { o.ped = +o.ped; });
+    // DETALHE: linha a linha (mc=comissao, mcReal=real)
+    const detalhe = mapMoney(await dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, sku, titulo AS tit, pedido AS ped,
+        anuncio_id AS anuncio, qtd, receita AS fat, liquido AS liq, ctp, imposto AS imp,
+        mc_comissao AS mc, mc_comissao AS mccom, mc_real AS "mcReal", fonte_liquido AS fonte, status AS stat, ponto
+      FROM vendas ${W}`, args), ["qtd", "fat", "liq", "ctp", "imp", "mc", "mccom", "mcReal"]);
+    // agregados por SKU (margem real)
+    const skuMon = mapMoney(await dbx.all(`SELECT competencia AS mes, sku AS "SKU", SUM(receita) AS fat, SUM(liquido) AS liq,
+        SUM(ctp) AS ctp, SUM(imposto) AS imp, SUM(mc_real) AS mc, SUM(qtd) AS qtd FROM vendas ${W} GROUP BY competencia, sku`, args), ["fat", "liq", "ctp", "imp", "mc", "qtd"]);
+    const skuMkt = mapMoney(await dbx.all(`SELECT canal AS mkt, sku, SUM(qtd) AS qtd, SUM(receita) AS fat, SUM(mc_real) AS mc,
+        SUM(liquido) AS liq FROM vendas ${W} GROUP BY canal, sku`, args), ["qtd", "fat", "mc", "liq"]);
+    const skuMktMon = mapMoney(await dbx.all(`SELECT competencia AS mes, canal AS mkt, sku, SUM(receita) AS fat, SUM(mc_real) AS mc,
+        SUM(qtd) AS qtd, SUM(liquido) AS liq FROM vendas ${W} GROUP BY competencia, canal, sku`, args), ["fat", "mc", "qtd", "liq"]);
+    return { periodo: [de, ate], ponto: pontoScope, ms: Date.now() - t0,
+      contagem: { rows: rows.length, detalhe: detalhe.length, skuMon: skuMon.length, skuMkt: skuMkt.length, skuMktMon: skuMktMon.length },
+      rows, detalhe, skuMon, skuMkt, skuMktMon };
   }
   return null;
 }
@@ -94,7 +148,7 @@ const server = http.createServer(async (req, res) => {
       const user = userDe(req);
       if (AUTH_REQ && u.pathname !== "/api/health" && !user) return J(res, { erro: "não autenticado" }, 401);
       const out = await rotaGET(u, user);
-      if (out !== null) return J(res, out);
+      if (out !== null) return JZ(req, res, out);
       return J(res, { erro: "rota não encontrada" }, 404);
     }
     // ── estático ──

@@ -2,7 +2,7 @@
   "name": "bsancontrol-web",
   "private": true,
   "version": "1.0.0",
-  "description": "BsanControl · Acompanhamento online (API + login por perfil)",
+  "description": "BsanControl online (painel completo, API + login por perfil, escopo por ponto)",
   "engines": {
     "node": ">=20"
   },
