@@ -43,7 +43,7 @@ const userDe = req => { const h = req.headers["authorization"] || ""; return ver
 // demanda do banco → modelo que o Acompanhamento (ac2) consome
 const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa, mkt: r.canal, ponto: r.ponto, gestor: r.gestor, sku: r.sku, anuncio: r.anuncio_id,
   titulo: r.titulo, tipo: r.tipo, causa: r.causa, mcPct: r.mc_pct, meta: r.meta, fat: r.fat, risco: r.risco, qtd: r.qtd, pedidos: r.pedidos,
-  estado: r.estado || "diag", trat: r.acao || null, reacaoH: r.reacao_h, tratD: null, demora: 0,
+  estado: (r.estado && r.estado !== "diag") ? r.estado : (r.acao ? "trat" : "diag"), trat: r.acao || null, reacaoH: r.reacao_h, tratD: null, demora: 0,
   recuperado: r.recuperado || 0, funcionou: r.desfecho ? (r.desfecho === "Resolvido" || r.desfecho === "Progrediu") : null });
 
 async function rotaGET(u, user) {
