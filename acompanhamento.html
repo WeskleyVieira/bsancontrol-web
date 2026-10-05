@@ -3460,6 +3460,10 @@ function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(ful
   const vendas=(i.qtd!=null&&i.qtd!=='')?`<span class="a2-tag">${Math.round(i.qtd)} un${i.pedidos?(' · '+i.pedidos+' vendas'):''}</span>`:'';
   const acao=i.mcPct<0
     ? '🚨 <b>Margem negativa</b> — estanque já: corrija preço/custo ou pause o anúncio (está vendendo no prejuízo).'
+    : /Queima/.test(i.tipo||'')
+    ? '🛡️ <b>Margem caindo</b> — aja antes de virar prejuízo: revise preço, custo da ficha ou gasto de Ads e volte ao nível saudável.'
+    : /Matura/.test(i.tipo||'')
+    ? '🌱 <b>Produto novo</b> — trabalhe a margem enquanto ganha tração (preço, ficha de custo e Ads).'
     : '📈 <b>Suba a margem até a meta</b> — revise o preço, o custo da ficha ou o gasto de Ads deste anúncio.';
   return `<div class="a2-it ${sev}"><div class="str"></div><div class="a2-ib">`
     +`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${conta}${estTag}${dono}</div>`
