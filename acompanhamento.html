@@ -3268,18 +3268,24 @@ ac2.metricsDe=function(l){
   const comRes=trat.filter(i=>i.funcionou!=null); const hit=comRes.length?comRes.filter(i=>i.funcionou===true).length/comRes.length:null;
   const reac=l.filter(i=>i.reacaoH!=null).map(i=>i.reacaoH), trd=l.filter(i=>i.tratD!=null).map(i=>i.tratD);
   return { total:l.length, abertas:ab.length, tratadas:trat.length, resolvidas:l.filter(i=>i.funcionou===true).length,
+    disciplina:l.length?trat.length/l.length:0,   // % das demandas que o gestor registrou (preenchimento = compromisso)
     risco:ab.reduce((s,i)=>s+i.risco,0), recuperado:l.reduce((s,i)=>s+(i.recuperado||0),0), demora:l.reduce((s,i)=>s+(i.demora||0),0),
     mediaReacaoH:reac.length?reac.reduce((a,b)=>a+b,0)/reac.length:null, mediaTratD:trd.length?trd.reduce((a,b)=>a+b,0)/trd.length:null,
     noPrazo:reac.length?reac.filter(h=>h<=24).length/reac.length:null, hit,
     semRegistro:l.filter(i=>!i.trat&&i.estado!=='trat'&&i.funcionou==null).length, reincidentes:l.filter(i=>i.rein).length }; };
-ac2.desemp=function(m){ // sem relógio ainda → julga pelo RETORNO (acerto); com reação, cruza rapidez×retorno
-  if(m.hit==null && m.mediaReacaoH==null) return {k:'gira',t:'Sem dados'};
-  if(m.mediaReacaoH==null){ if(m.hit>=0.7) return {k:'ideal',t:'Ideal'}; if(m.hit<0.4) return {k:'crit',t:'Crítico'}; return {k:'gira',t:'Girando'}; }
+ac2.desemp=function(m){ // REGISTRO é pré-requisito: quem não preenche não pode estar bem. Depois cruza rapidez×retorno.
+  if(m.total===0) return {k:'gira',t:'Sem dados'};
+  const disc=m.disciplina!=null?m.disciplina:(m.total?m.tratadas/m.total:0);
+  if(disc<0.3) return {k:'crit',t:'Não registra'};   // sem preenchimento → não sobe no ranking
+  if(m.hit==null && m.mediaReacaoH==null) return disc>=0.7?{k:'ideal',t:'Registra bem'}:{k:'gira',t:'Girando'};
+  if(m.mediaReacaoH==null){ if(m.hit>=0.7&&disc>=0.6) return {k:'ideal',t:'Ideal'}; if(m.hit<0.4) return {k:'crit',t:'Crítico'}; return {k:'gira',t:'Girando'}; }
   const agil=(m.mediaReacaoH<=24)&&(m.mediaTratD==null||m.mediaTratD<=2), eficaz=(m.hit!=null&&m.hit>=0.7);
-  if(agil&&eficaz) return {k:'ideal',t:'Ideal'}; if(!agil&&eficaz) return {k:'gira',t:'Eficaz, lento'}; if(agil&&!eficaz) return {k:'gira',t:'Ágil, girando'}; return {k:'crit',t:'Crítico'}; };
-ac2.nota=function(m){ const acerto=m.hit!=null?m.hit*100:50, rapidez=m.mediaReacaoH==null?50:m.mediaReacaoH<=24?100:m.mediaReacaoH<=48?70:m.mediaReacaoH<=72?50:30,
-  semDemora=m.demora===0?100:Math.max(30,100-m.demora/50), disc=m.noPrazo!=null?m.noPrazo*100:50;
-  return Math.round(0.40*acerto+0.25*rapidez+0.20*semDemora+0.15*disc); };
+  if(agil&&eficaz&&disc>=0.6) return {k:'ideal',t:'Ideal'}; if(!agil&&eficaz) return {k:'gira',t:'Eficaz, lento'}; if(agil&&!eficaz) return {k:'gira',t:'Ágil, girando'}; return {k:'crit',t:'Crítico'}; };
+// nota 0–100: DISCIPLINA (registro) e RAPIDEZ dominam; progressão/acerto em 2º; não deixar sangrar no fim.
+ac2.nota=function(m){ const disc=(m.disciplina!=null?m.disciplina:(m.total?m.tratadas/m.total:0))*100,
+  acerto=m.hit!=null?m.hit*100:40, rapidez=m.mediaReacaoH==null?50:m.mediaReacaoH<=24?100:m.mediaReacaoH<=48?70:m.mediaReacaoH<=72?50:30,
+  semDemora=m.demora===0?100:Math.max(30,100-m.demora/50);
+  return Math.round(0.40*disc+0.25*rapidez+0.20*acerto+0.15*semDemora); };
 ac2.statusGer=function(m){ const k=(m.demora>0&&m.hit!=null&&m.hit<.7)?'bad':((m.demora>0||(m.hit!=null&&m.hit<.7)||(m.noPrazo!=null&&m.noPrazo<.8))?'warn':'good'); return {k,t:k==='good'?'BOM':k==='warn'?'ATENÇÃO':'CRÍTICO'}; };
 ac2.evolRec=function(g){ const A=(typeof ACOMP!=='undefined'&&Array.isArray(ACOMP))?ACOMP:[]; const byW={};
   A.forEach(r=>{ const p=String(r.operacao||'').split(' · '); if(AC2_GESTOR[(p[0]||'').trim()+'|'+(p[1]||'').trim()]!==g)return; byW[r.semana]=(byW[r.semana]||0)+(+r.resolvido||0); });
@@ -3288,8 +3294,8 @@ function ac2Ranking(l,glist){
   const ranked=glist.map(g=>{const m=ac2.metricsDe(l.filter(i=>i.gestor===g));return {g,m,nota:ac2.nota(m)};}).sort((a,b)=>b.nota-a.nota);
   const medal=i=>i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'º';
   const rows=ranked.map((r,i)=>{const cor=AC2_GCOR[r.g]||'#777';const nc=r.nota>=70?'#22c55e':r.nota>=50?'#f59e0b':'#f87171';
-    return `<div class="a2-rk" onclick="ac2.goGes('${r.g}','direcao')"><div style="width:30px;text-align:center;font-weight:800;font-size:16px">${medal(i)}</div><div class="a2-ava" style="width:28px;height:28px;background:${cor}">${r.g[0]}</div><div class="nm">${r.g}</div><div class="sp"></div><div class="mi">✅ ${AC2_BRLk(r.m.recuperado)} · 🎯 ${r.m.hit!=null?Math.round(r.m.hit*100)+'%':'—'} acerto · ⚡ ${ac2.reacF(r.m.mediaReacaoH)}</div><div class="rv" style="color:${nc}">${r.nota}<small style="font-size:10px;color:var(--c-mut);font-weight:600">/100</small></div><div class="a2-bar2"><span style="width:${r.nota}%;background:${nc}"></span></div></div>`;}).join('');
-  return `<div class="a2-sh">Ranking da equipe<small>nota = acerto + rapidez + sem deixar sangrar + disciplina (0–100)</small></div><div class="a2-card">${rows}</div>`;
+    return `<div class="a2-rk" onclick="ac2.goGes('${r.g}','direcao')"><div style="width:30px;text-align:center;font-weight:800;font-size:16px">${medal(i)}</div><div class="a2-ava" style="width:28px;height:28px;background:${cor}">${r.g[0]}</div><div class="nm">${r.g}</div><div class="sp"></div><div class="mi">📝 ${Math.round(r.m.disciplina*100)}% registrado · 🎯 ${r.m.hit!=null?Math.round(r.m.hit*100)+'%':'—'} acerto · ⚡ ${ac2.reacF(r.m.mediaReacaoH)}</div><div class="rv" style="color:${nc}">${r.nota}<small style="font-size:10px;color:var(--c-mut);font-weight:600">/100</small></div><div class="a2-bar2"><span style="width:${r.nota}%;background:${nc}"></span></div></div>`;}).join('');
+  return `<div class="a2-sh">Ranking da equipe<small>nota = <b>registra</b> + <b>rápido</b> + resolve + não deixa sangrar · quem não registra não sobe (0–100)</small></div><div class="a2-card">${rows}</div>`;
 }
 ac2.filt=function(){ const ms=ac2.mesesSel(); return ac2.DEM.filter(i=>(!ms||ms.has(ac2.compDe(i)))&&AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)); };
 ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risco:l.reduce((s,i)=>s+i.risco,0), prej:prej.length, riscoPrej:prej.reduce((s,i)=>s+i.risco,0), corr:l.length-prej.length}; };
@@ -3373,8 +3379,8 @@ function ac2DirScore(){ const l=ac2.filt(); const glist=(ac2.ges.size?[...ac2.ge
     const pin=d.k==='ideal'?'🟢':d.k==='crit'?'🔴':'🟡';
     return `<div class="a2-gc" style="cursor:pointer" onclick="ac2.goGes('${g}','direcao')"><div class="a2-gch"><span class="a2-ava" style="background:${AC2_GCOR[g]||'#777'}">${g[0]}</span><div><div class="gn">${g}</div><div class="gsub">${m.total} demandas · ${m.abertas} abertas · ${mkts} marketplace${mkts!==1?'s':''}</div></div><span class="a2-pill ${d.k}">${pin} ${d.t}</span></div>
      <div class="a2-gm">
+      ${mm('📝 Registrado',Math.round(m.disciplina*100)+'%',m.disciplina>=.6?'#22c55e':m.disciplina<.3?'#f87171':'#f59e0b')}
       ${mm('⚡ Reação',ac2.reacF(m.mediaReacaoH))}
-      ${mm('🔧 Tratativa',m.mediaTratD!=null?m.mediaTratD.toFixed(1).replace('.',',')+'d':'—')}
       ${mm('🎯 Acerto',m.hit!=null?Math.round(m.hit*100)+'%':'—',m.hit!=null?(m.hit>=.7?'#22c55e':'#f87171'):'')}
       ${mm('💸 Em risco',AC2_BRLk(m.risco),'#f87171')}
       ${mm('✅ Recuperado',AC2_BRLk(m.recuperado),'#22c55e')}
@@ -3390,8 +3396,8 @@ function ac2Comparar(){ const l=ac2.filt(); const glist=(ac2.ges.size?[...ac2.ge
     const row=(lb,v,cor)=>`<div class="row"><span class="lb">${lb}</span><span class="vl" ${cor?`style="color:${cor}"`:''}>${v}</span></div>`;
     return `<div class="a2-cc" style="cursor:pointer" onclick="ac2.goGes('${g}','direcao')"><div class="a2-gch" style="margin-bottom:6px"><span class="a2-ava" style="background:${AC2_GCOR[g]||'#777'}">${g[0]}</span><div class="gn">${g}</div></div><div><span class="a2-pill ${d.k}">${pin} ${d.t}</span></div>
      ${row('Demandas',m.total)}
+     ${row('📝 Registrado',Math.round(m.disciplina*100)+'%',m.disciplina>=.6?'#22c55e':m.disciplina<.3?'#f87171':'#f59e0b')}
      ${row('⚡ Reação',ac2.reacF(m.mediaReacaoH))}
-     ${row('🔧 Tratativa',m.mediaTratD!=null?m.mediaTratD.toFixed(1).replace('.',',')+'d':'—')}
      ${row('🎯 Acerto',m.hit!=null?Math.round(m.hit*100)+'%':'—',hitCor)}
      ${row('💸 Em risco',AC2_BRLk(m.risco),'#f87171')}
      ${row('✅ Recuperado',AC2_BRLk(m.recuperado),'#22c55e')}
@@ -3440,8 +3446,10 @@ function ac2Hist(g){ const ev=ac2.evolGestor(g), rc=ac2.evolRec(g), cor=AC2_GCOR
 }
 function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(full||ac2.nivel!=='gestor')?`<span style="font-size:11.5px;color:var(--t3)">${i.gestor}</span>`:'';
   const conta=(full||ac2.nivel!=='gestor')?`<span class="a2-ic">${i.empresa} · ${i.mkt}</span>`:'';
-  const tratada=i.estado==='trat';
-  const estTag=tratada?`<span class="a2-tag est" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">✓ tratada${i.trat?' · '+i.trat:''}</span>`:`<span class="a2-tag est">a diagnosticar</span>`;
+  const tratada=i.estado==='trat'; const resolvido=i.funcionou===true;
+  const estTag=resolvido?`<span class="a2-tag est" style="background:rgba(34,197,94,.14);color:#16a34a;border:1px solid rgba(34,197,94,.35)">✅ resolvido${i.trat?' · '+i.trat:''}</span>`:tratada?`<span class="a2-tag est" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">✓ tratada${i.trat?' · '+i.trat:''}</span>`:`<span class="a2-tag est">a diagnosticar</span>`;
+  const causaTag=(i.causa&&i.causa!=='—')?`<span class="a2-tag causa" style="opacity:.85">${i.causa}</span>`:'';
+  const prog=(i.mcDepois!=null)?` <span style="color:${i.mcDepois>=i.meta?'#22c55e':'#f59e0b'}">→ ${i.mcDepois}%</span>`:'';
   const online=(ac2._fonte||'').indexOf('API')>=0;
   const btn=(online&&i.id&&!tratada)?`<button class="a2-trbtn" onclick="event.stopPropagation();ac2.tratar(this.dataset.id)" data-id="${encodeURIComponent(i.id)}">registrar</button>`:'';
   const anuncio=i.anuncio?`<span class="a2-tag" style="font-family:ui-monospace,monospace;letter-spacing:.2px">${i.anuncio}</span>`:'';
@@ -3452,7 +3460,7 @@ function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(ful
   return `<div class="a2-it ${sev}"><div class="str"></div><div class="a2-ib">`
     +`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${conta}${estTag}${dono}</div>`
     +`<div class="tt" title="${(i.titulo||'').replace(/"/g,'')}">${i.sku} — ${i.titulo||''}</div>`
-    +`<div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span><span class="a2-tag">margem ${i.mcPct}% <span style="opacity:.6">(meta ${i.meta}%)</span></span><span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span>${vendas}${anuncio}</div>`
+    +`<div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span><span class="a2-tag">margem ${i.mcPct}%${prog} <span style="opacity:.6">(meta ${i.meta}%)</span></span>${causaTag}<span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span>${vendas}${anuncio}</div>`
     +(tratada?'':`<div class="a2-acao">${acao}</div>`)
     +`</div><div class="a2-ir"><div class="rr"><small>em risco</small>${AC2_BRLk(i.risco)}</div>${btn}</div></div>`;
 }
