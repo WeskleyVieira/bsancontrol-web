@@ -2337,13 +2337,17 @@ const _normMLB=id=>{const d=String(id||'').replace(/\D/g,'');return d?'MLB'+d:''
 // a venda traz o id do anúncio). Demais (Amazon/Shopee/TikTok): id EXATO (ASIN/item_id/product_id),
 // sem reduzir a dígitos — evita colisão (ex.: dois ASINs com os mesmos dígitos).
 const _ehMagalu=m=>/magazine|magalu/i.test(String(m||''));
+const _ehShopee=m=>/shopee/i.test(String(m||''));
 const _ehML=m=>/mercado livre/i.test(String(m||''));
+// Magalu/Shopee casam por SKU (o Ads traz o SKU do vendedor — no Magalu nativo, na Shopee traduzido do item_id
+// pelo mapa de catálogo). Se o Ads vier sem SKU (sem mapa), o anuncio_id fica o id cru e simplesmente não casa
+// (cai no nível operação, como antes) — sem regressão.
 function _adKeyVenda(mkt,anuncio,sku){
   if(_ehML(mkt)) return _normMLB(anuncio);
-  if(_ehMagalu(mkt)) return String(sku||'').trim().toUpperCase();
+  if(_ehMagalu(mkt)||_ehShopee(mkt)) return String(sku||'').trim().toUpperCase();
   return String(anuncio||'').trim().toUpperCase();
 }
-function _adKeyAds(mkt,anuncio){ // no Ads do Magalu o anuncio_id JÁ é o SKU
+function _adKeyAds(mkt,anuncio){ // no Ads do Magalu/Shopee o anuncio_id já vem como SKU do vendedor
   if(_ehML(mkt)) return _normMLB(anuncio);
   return String(anuncio||'').trim().toUpperCase();
 }
