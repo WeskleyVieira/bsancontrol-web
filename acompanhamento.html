@@ -3119,7 +3119,7 @@ function ac2BuildDemandas(){
   return out.sort((a,b)=>b.risco-a.risco);
 }
 // ═══════════ ACOMPANHAMENTO v2 — UI (3 níveis · filtros em cascata · fila real · drill) ═══════════
-var ac2 = { pts:new Set(), emp:new Set(), mkt:new Set(), ges:new Set(), nivel:'direcao', gestorSel:null, voltar:'direcao', menu:null, DEM:[] };
+var ac2 = { pts:new Set(), emp:new Set(), mkt:new Set(), ges:new Set(), nivel:'direcao', gestorSel:null, voltar:'direcao', menu:null, DEM:[], modo:'fazer' };
 const AC2_BRL  = v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
 const AC2_BRLk = v=>Math.abs(v)>=1000?'R$ '+(v/1000).toFixed(1).replace('.',',')+'k':'R$ '+Math.round(v);
 const AC2_GES  = (()=>{const s=[];Object.values(AC2_GESTOR).forEach(g=>{if(!s.includes(g))s.push(g);});return s;})();
@@ -3130,6 +3130,7 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-lvb{background:none;border:none;color:var(--c-mut);font-weight:700;font-size:13.5px;padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent}
 #ac2-root .a2-lvb small{font-weight:500;font-size:11px;color:var(--c-mut);margin-left:4px}
 #ac2-root .a2-lvb.on{color:var(--c-ink);border-bottom-color:var(--c-acc)}
+#ac2-root .a2-lvsep{flex:0 0 auto;align-self:center;width:1px;height:20px;background:var(--c-ln);margin:0 10px}
 #ac2-root .a2-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
 #ac2-root .a2-dd{position:relative}
 #ac2-root .a2-db{display:inline-flex;align-items:center;gap:6px;background:var(--c-s2);border:1px solid var(--c-ln);border-radius:9px;padding:6px 11px;font-size:12.5px;font-weight:600;color:var(--c-ink);cursor:pointer}
@@ -3165,6 +3166,7 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-ib{padding:11px 13px;min-width:0}
 #ac2-root .a2-ic{font-weight:700;font-size:13px} #ac2-root .a2-it .tt{font-size:12px;color:var(--c-ink);opacity:.8;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:48ch}
 #ac2-root .a2-mt{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px;align-items:center}
+#ac2-root .a2-acao{margin-top:8px;font-size:12px;color:var(--c-ink);background:var(--c-accb);border:1px solid var(--c-acc);border-left-width:3px;border-radius:7px;padding:7px 11px;line-height:1.45}
 #ac2-root .a2-tag{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--c-s2);color:var(--c-mut)}
 #ac2-root .a2-tag.tp{background:var(--c-accb);color:var(--c-acc)} #ac2-root .a2-tag.pz{background:var(--c-negb);color:var(--c-neg)}
 #ac2-root .a2-tag.est{background:var(--c-s2);color:var(--c-mut);border:1px dashed var(--c-mut)}
@@ -3196,13 +3198,16 @@ ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risc
 ac2.go=function(n){ ac2.nivel=n; if(n!=='gestor')ac2.gestorSel=null; ac2.render(); };
 ac2.goGes=function(g,from){ ac2.gestorSel=g; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
 ac2.render=function(){
-  const lv=document.getElementById('a2-lv'); lv.innerHTML=[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor','a lista dele']].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('');
+  const lv=document.getElementById('a2-lv'), kpi=document.getElementById('a2-kpi'), body=document.getElementById('a2-body'), bar=document.getElementById('a2-bar');
+  const modo=[['fazer','📋 A fazer','o que corrigir agora'],['result','✅ Resultados','o que já foi tratado']].map(x=>`<button class="a2-lvb ${ac2.modo===x[0]?'on':''}" onclick="ac2.setModo('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('');
+  if(ac2.modo==='result'){ lv.innerHTML=modo; if(bar)bar.innerHTML=''; kpi.innerHTML=ac2ResultKPI(); body.innerHTML=ac2Resultados(); return; }
+  lv.innerHTML=modo+'<span class="a2-lvsep"></span>'+[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor','a lista dele']].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('');
   ac2RenderFiltros();
-  const kpi=document.getElementById('a2-kpi'), body=document.getElementById('a2-body');
   if(ac2.nivel==='direcao'){ kpi.innerHTML=ac2TopoKPI(); body.innerHTML=ac2Direcao(); }
   else if(ac2.nivel==='coord'){ kpi.innerHTML=ac2TopoKPI(); body.innerHTML=ac2Coord(); }
   else { kpi.innerHTML=ac2TopoKPI(true); body.innerHTML=ac2Gestor(); }
 };
+ac2.setModo=function(m){ ac2.modo=m; ac2.render(); };
 function ac2TopoKPI(pers){ const g=pers?ac2.gestorSel:null; const l=ac2.filt(); const m=ac2.met(l);
   const k=(c,lb,v,s,d)=>`<div class="a2-k ${c}" ${d?`data-d="${d}" onclick="ac2.drill('${d}')"`:''}><div class="st"></div><div class="kl">${lb}</div><div class="kv">${v}</div><div class="ks">${s}</div></div>`;
   return `<div class="a2-sh">${pers?('Minhas demandas — '+g):(ac2.nivel==='coord'?'Operação — Coordenação':'Visão geral — Direção')}<small>fila de diagnóstico · dados: <b style="color:var(--a2)">${ac2._fonte||'—'}</b> · tratativa/resultado chegam com o preenchimento</small></div>
@@ -3228,7 +3233,17 @@ function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(ful
   const estTag=tratada?`<span class="a2-tag est" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">✓ tratada${i.trat?' · '+i.trat:''}</span>`:`<span class="a2-tag est">a diagnosticar</span>`;
   const online=(ac2._fonte||'').indexOf('API')>=0;
   const btn=(online&&i.id&&!tratada)?`<button class="a2-trbtn" onclick="event.stopPropagation();ac2.tratar(this.dataset.id)" data-id="${encodeURIComponent(i.id)}">registrar</button>`:'';
-  return `<div class="a2-it ${sev}"><div class="str"></div><div class="a2-ib"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${conta}${estTag}${dono}</div><div class="tt" title="${(i.titulo||'').replace(/"/g,'')}">${i.sku} — ${i.titulo||''}</div><div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span><span class="a2-tag">margem ${i.mcPct}% <span style="opacity:.6">(meta ${i.meta}%)</span></span><span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span></div></div><div class="a2-ir"><div class="rr"><small>em risco</small>${AC2_BRLk(i.risco)}</div>${btn}</div></div>`;
+  const anuncio=i.anuncio?`<span class="a2-tag" style="font-family:ui-monospace,monospace;letter-spacing:.2px">${i.anuncio}</span>`:'';
+  const vendas=(i.qtd!=null&&i.qtd!=='')?`<span class="a2-tag">${Math.round(i.qtd)} un${i.pedidos?(' · '+i.pedidos+' vendas'):''}</span>`:'';
+  const acao=i.mcPct<0
+    ? '🚨 <b>Margem negativa</b> — estanque já: corrija preço/custo ou pause o anúncio (está vendendo no prejuízo).'
+    : '📈 <b>Suba a margem até a meta</b> — revise o preço, o custo da ficha ou o gasto de Ads deste anúncio.';
+  return `<div class="a2-it ${sev}"><div class="str"></div><div class="a2-ib">`
+    +`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${conta}${estTag}${dono}</div>`
+    +`<div class="tt" title="${(i.titulo||'').replace(/"/g,'')}">${i.sku} — ${i.titulo||''}</div>`
+    +`<div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span><span class="a2-tag">margem ${i.mcPct}% <span style="opacity:.6">(meta ${i.meta}%)</span></span><span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span>${vendas}${anuncio}</div>`
+    +(tratada?'':`<div class="a2-acao">${acao}</div>`)
+    +`</div><div class="a2-ir"><div class="rr"><small>em risco</small>${AC2_BRLk(i.risco)}</div>${btn}</div></div>`;
 }
 function ac2Coord(){ const l=ac2.filt().slice().sort((a,b)=>b.risco-a.risco);
   const glist=(ac2.ges.size?[...ac2.ges]:AC2_GES).filter(g=>l.some(i=>i.gestor===g));
@@ -3254,6 +3269,50 @@ ac2.drill=function(key){ const cfg=AC2_DRILL[key]; if(!cfg)return; const l=ac2.f
   document.getElementById('a2-ov').classList.add('on');
 };
 ac2.closeDrill=function(){ document.getElementById('a2-ov').classList.remove('on'); };
+
+/* ===== Resultados — cruza o que já foi tratado (ACOMP/ACOMP_ITENS) na metodologia nova ===== */
+ac2.resultAgg=function(){
+  const A=(typeof ACOMP!=='undefined'&&Array.isArray(ACOMP))?ACOMP:[];
+  const map={};
+  A.forEach(r=>{ const p=String(r.operacao||'').split(' · '); const g=AC2_GESTOR[(p[0]||'').trim()+'|'+(p[1]||'').trim()]; if(!g)return;
+    const o=map[g]||(map[g]={gestor:g,total:0,resolvido:0,justificado:0,progrediu:0,em_aberto:0,sem_venda:0});
+    o.total+=+r.total||0; o.resolvido+=+r.resolvido||0; o.justificado+=+r.justificado||0; o.progrediu+=+r.progrediu||0; o.em_aberto+=+r.em_aberto||0; o.sem_venda+=+r.sem_venda||0; });
+  return Object.values(map);
+};
+function ac2ResultKPI(){ const rows=ac2.resultAgg(); const T={total:0,resolvido:0,justificado:0,progrediu:0,em_aberto:0};
+  rows.forEach(o=>{T.total+=o.total;T.resolvido+=o.resolvido;T.justificado+=o.justificado;T.progrediu+=o.progrediu;T.em_aberto+=o.em_aberto;});
+  const taxa=T.total?Math.round(100*(T.resolvido+T.justificado)/T.total):0;
+  const k=(c,lb,v,s)=>`<div class="a2-k ${c}"><div class="st"></div><div class="kl">${lb}</div><div class="kv">${v}</div><div class="ks">${s}</div></div>`;
+  return `<div class="a2-sh">Resultados — o que já foi tratado<small>histórico das tratativas verificadas por resultado · ✅ voltou à meta · 🟡 justificado · ↗️ melhorou · 🔴 ainda em aberto</small></div>
+   <div class="a2-kpis">${k('pos','Taxa de acerto',taxa+'%','resolvido + justificado ÷ total')}
+    ${k('pos','Resolvido',T.resolvido,'voltaram pra meta')}
+    ${k('warn','Melhorou',T.progrediu,'subiram, mas não bateram a meta')}
+    ${k('neg','Em aberto',T.em_aberto,'ainda não resolvidos')}</div>`;
+}
+function ac2Resultados(){ const rows=ac2.resultAgg();
+  if(!rows.length) return `<div class="a2-card"><div style="padding:30px 20px;text-align:center;color:var(--c-mut)">Ainda não há histórico de acompanhamento processado.<br><small>Os itens tratados aparecem aqui assim que o pipeline lê as respostas da aba <b>Acompanhamento</b> do GERAL.</small></div></div>`;
+  const rk=rows.map(o=>{const taxa=o.total?Math.round(100*(o.resolvido+o.justificado)/o.total):0;return Object.assign(o,{taxa});}).sort((a,b)=>a.taxa-b.taxa||b.em_aberto-a.em_aberto);
+  const cor=t=>t>=60?'#22c55e':t>=30?'#f59e0b':'#f87171';
+  const rowsH=rk.map((r,i)=>`<div class="a2-rk" onclick="ac2.resultDrill('${String(r.gestor).replace(/'/g,'')}')"><div style="width:26px;text-align:center;font-weight:800">${i+1}º</div><div class="a2-ava" style="background:${AC2_GCOR[r.gestor]||'#777'}">${String(r.gestor)[0]}</div><div class="nm">${r.gestor}</div><div class="sp"></div><div class="mi">✅ ${r.resolvido} · ↗️ ${r.progrediu} · 🔴 ${r.em_aberto} · de ${r.total}</div><div class="rv" style="color:${cor(r.taxa)}">${r.taxa}%</div><div class="a2-bar2"><span style="width:${r.taxa}%;background:${cor(r.taxa)}"></span></div></div>`).join('');
+  return `<div class="a2-sh">Acerto por gestor<small>do pior ao melhor · clique p/ ver item a item</small></div><div class="a2-card">${rowsH}</div>`;
+}
+ac2.resultDrill=function(gestor){
+  const A=(typeof ACOMP_ITENS!=='undefined'&&Array.isArray(ACOMP_ITENS))?ACOMP_ITENS:[];
+  const its=A.filter(r=>{const p=String(r.operacao||'').split(' · ');return AC2_GESTOR[(p[0]||'').trim()+'|'+(p[1]||'').trim()]===gestor;});
+  const pal={Resolvido:['✅','#22c55e'],Justificado:['🟡','#f59e0b'],Progrediu:['↗️','#4f8ef7'],'Em aberto':['🔴','#f87171'],'Sem venda':['⚪','#8891a8']};
+  const rkd={'Em aberto':0,'Sem venda':1,'Progrediu':2,'Justificado':3,'Resolvido':4};
+  its.sort((a,b)=>(rkd[a.desfecho]==null?9:rkd[a.desfecho])-(rkd[b.desfecho]==null?9:rkd[b.desfecho]));
+  const pct=v=>(v===''||v==null)?'—':v+'%';
+  const linhas=its.slice(0,250).map(r=>{const p=pal[r.desfecho]||['•','#888'];
+    return `<div class="a2-it"><div class="str" style="background:${p[1]}"></div><div class="a2-ib">`
+      +`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="color:${p[1]};font-weight:700">${p[0]} ${r.desfecho||'—'}</span><span class="a2-ic">${r.operacao||''}</span>${r.tipo_acao?('<span class="a2-tag">'+r.tipo_acao+'</span>'):''}</div>`
+      +`<div class="tt">${r.item||''}${r.produto?(' — '+r.produto):''}</div>`
+      +`<div class="a2-mt"><span class="a2-tag">${r.metrica||'MC%'}: ${pct(r.base_pct)} → ${pct(r.agora_pct)}</span>${r.justificativa?('<span class="a2-tag">'+r.justificativa+'</span>'):''}${r.divergencia?('<span class="a2-tag" style="color:#f87171">⚠️ '+r.divergencia+'</span>'):''}</div>`
+      +`</div></div>`;}).join('');
+  document.getElementById('a2-mh').innerHTML=`<div><h3>✅ Itens tratados — ${gestor}</h3><div style="font-size:12px;color:var(--c-mut);margin-top:3px">${its.length} itens verificados por resultado</div></div><button class="a2-mx" onclick="ac2.closeDrill()">✕</button>`;
+  document.getElementById('a2-mb').innerHTML=linhas||'<div style="padding:20px;color:var(--c-mut)">sem itens registrados</div>';
+  document.getElementById('a2-ov').classList.add('on');
+};
 // filtros dropdown com cascata
 function ac2opcoes(dim){ const its=ac2.DEM.filter(i=>AC2_DIMS.every(d=>d.k===dim.k||!ac2[d.k].size||ac2[d.k].has(d.g(i)))); const u=[];its.forEach(i=>{const v=dim.g(i);if(!u.includes(v))u.push(v);});return u; }
 function ac2RenderFiltros(){ const bar=document.getElementById('a2-bar');
