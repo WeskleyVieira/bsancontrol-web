@@ -4,7 +4,10 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
+const crypto = require("crypto");
 const dbx = require("./dbx");
+// token do cache-bust: hash do DATABASE_URL (quem tem a conexão pode limpar — zero config novo)
+const BUST_TOKEN = crypto.createHash("sha256").update(process.env.DATABASE_URL || "sem-db").digest("hex");
 const { hashSenha, verificaSenha, assinaToken, verificaToken } = require("./auth");
 
 const PORT = process.env.PORT || 8787;
@@ -48,7 +51,8 @@ async function rotaGET(u, user) {
   if (u.pathname === "/api/health") {
     const v = await dbx.get("SELECT COUNT(*) n FROM vendas");
     const d = await dbx.get("SELECT COUNT(*) n FROM demandas");
-    return { ok: true, banco: dbx.IS_PG ? "Postgres" : "SQLite", vendas: v.n, demandas: d.n };
+    const s = await dbx.get("SELECT MAX(atualizado) m FROM datasets");   // carimbo do último db-sync (p/ o auto-refresh detectar dado novo)
+    return { ok: true, banco: dbx.IS_PG ? "Postgres" : "SQLite", vendas: v.n, demandas: d.n, _sync: (s && s.m) ? s.m : null };
   }
   if (u.pathname === "/api/demandas") {
     // ESCOPO POR PERFIL: gestor só vê as contas dele; direção/coordenação veem tudo
@@ -156,6 +160,12 @@ async function rotaGET(u, user) {
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   try {
+    // ── cache-bust: o db-sync chama isto no fim de cada atualização (dado novo → limpa o cache na hora) ──
+    if (req.method === "POST" && u.pathname === "/api/cache/clear") {
+      if (String(req.headers["x-bust-token"] || "") !== BUST_TOKEN) return J(res, { ok: false, erro: "token inválido" }, 403);
+      const n = _gzCache.size; _gzCache.clear();
+      return J(res, { ok: true, limpas: n });
+    }
     // ── LOGIN ──
     if (req.method === "POST" && u.pathname === "/api/login") {
       const b = await body(req);

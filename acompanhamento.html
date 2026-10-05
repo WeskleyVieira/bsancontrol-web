@@ -8409,10 +8409,10 @@ renderAll();
     if(u && u.perfil==='gestor'){ hide('nav-dre'); hide('env-upload-box'); }   // gestor: só DRE oculto; comissão fica (filtrada pra dele); upload só coord/direção
     if(u && u.perfil==='direcao'){ var ab=document.getElementById('btn-admin'); if(ab)ab.style.display='inline-block'; }   // admin de usuários só p/ Direção
   }
-  async function bcCarrega(){
+  async function bcCarrega(silencioso){
     var el=document.getElementById('bc-dataload');
     try{
-      if(el) el.style.display='flex';
+      if(el && !silencioso) el.style.display='flex';
       var r=await authFetch('/api/dataset?meses=24',{cache:'no-store'});
       if(!r.ok) throw new Error('HTTP '+r.status);
       var d=await r.json();
@@ -8423,6 +8423,7 @@ renderAll();
       bcCarregaExtras();    // puxa Ads/Estoque/Comissão/Produtos em 2º plano
     }catch(e){
       console.error('dataset',e);
+      if(silencioso) return;   // refresh em 2º plano falhou → mantém o dado atual, sem assustar
       var t=document.getElementById('bc-dataload-txt');
       if(t){ t.innerHTML='Erro ao carregar dados.<br><small>'+String(e.message||e)+'</small><br><button onclick="window.bcCarregaDataset()" style="margin-top:10px;padding:7px 14px;border-radius:8px;border:1px solid #4f8ef7;background:none;color:#4f8ef7;cursor:pointer">tentar de novo</button>'; }
     }
@@ -8440,6 +8441,7 @@ renderAll();
   }
   window.bcCarregaDetalhe = bcCarregaDetalhe;
   var _extLoaded=false;
+  var _syncAtual=null;   // carimbo do último db-sync que o painel já aplicou (p/ o auto-refresh)
   async function bcCarregaExtras(){
     if(_extLoaded) return;
     try{
@@ -8453,12 +8455,26 @@ renderAll();
       if(d.comissao) COMISSAO=d.comissao; if(d.comissaoDet) COMISSAO_DET=d.comissaoDet;
       if(d.envios && typeof ENVIOS!=='undefined') ENVIOS=d.envios;
       if(d.custos && typeof CUSTOS!=='undefined' && d.custos.custos){ CUSTOS=d.custos; }   // custos op + afi/lives (Ads vem do dataset)
-      if(d._sync){ try{ var el=document.getElementById('hdr-src'); if(el){ var mins=Math.round((Date.now()-new Date(d._sync).getTime())/60000); var rel=mins<1?'agora':(mins<60?('há '+mins+' min'):(mins<1440?('há '+Math.round(mins/60)+'h'):('há '+Math.round(mins/1440)+'d'))); el.textContent='🔄 Atualizado '+rel; el.title='última sincronização: '+new Date(d._sync).toLocaleString('pt-BR'); } }catch(e){} }
+      if(d._sync){ _syncAtual=d._sync; try{ var el=document.getElementById('hdr-src'); if(el){ var mins=Math.round((Date.now()-new Date(d._sync).getTime())/60000); var rel=mins<1?'agora':(mins<60?('há '+mins+' min'):(mins<1440?('há '+Math.round(mins/60)+'h'):('há '+Math.round(mins/1440)+'d'))); el.textContent='🔄 Atualizado '+rel; el.title='última sincronização: '+new Date(d._sync).toLocaleString('pt-BR'); } }catch(e){} }
       _extLoaded=true;
       try{ renderPageOnly(activePage); }catch(e){}
     }catch(e){ console.error('extras',e); }
   }
   window.bcCarregaExtras = bcCarregaExtras;
+  // AUTO-REFRESH: detecta dado novo (db-sync) e recarrega sozinho — ao voltar pra aba e a cada 3min
+  async function bcChecaSync(){
+    try{
+      var r=await authFetch('/api/health',{cache:'no-store'});   // health não é cacheado → carimbo real do banco
+      var d=await r.json();
+      if(d && d._sync){
+        if(_syncAtual && d._sync!==_syncAtual){ _detLoaded=false; _extLoaded=false; bcCarrega(true); }   // dado novo → recarrega silencioso
+        else if(!_syncAtual){ _syncAtual=d._sync; }
+      }
+    }catch(e){}
+  }
+  window.bcChecaSync = bcChecaSync;
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) bcChecaSync(); });
+  setInterval(function(){ if(!document.hidden) bcChecaSync(); }, 180000);   // a cada 3min, só com a aba visível
   // coord/direção sobem a planilha de Envios na própria plataforma → salva na nuvem pra todos
   window.bcSalvaEnvios = async function(rows){
     var r=await authFetch('/api/envios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:rows})});
