@@ -3153,6 +3153,7 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-k .ks{font-size:11px;color:var(--c-mut);margin-top:5px}
 #ac2-root .a2-sh{font-size:13px;font-weight:800;color:var(--c-ink);margin:16px 2px 9px;text-transform:uppercase;letter-spacing:.08em}
 #ac2-root .a2-sh small{font-weight:500;font-size:12px;color:var(--c-mut);text-transform:none;letter-spacing:0;margin-left:8px}
+#ac2-root .a2-shh{font-size:11px;font-weight:700;color:var(--c-mut);margin:14px 2px 7px;text-transform:uppercase;letter-spacing:.06em}
 #ac2-root .a2-card{background:var(--c-s);border:1px solid var(--c-ln);border-radius:13px;overflow:hidden}
 #ac2-root .a2-rk{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--c-ln);cursor:pointer;flex-wrap:wrap}
 #ac2-root .a2-rk:last-child{border-bottom:none} #ac2-root .a2-rk:hover{background:var(--c-s2)}
@@ -3189,11 +3190,26 @@ async function ac2Open(){ ac2injectCSS(); bcAuthInjectCSS(); const root=document
    <div class="a2-ov" id="a2-ov" onclick="if(event.target===this)ac2.closeDrill()"><div class="a2-mo"><div class="a2-mh" id="a2-mh"></div><div class="a2-mb" id="a2-mb"></div></div></div>`;
   bcRenderAuthBar();
   const b=document.getElementById('a2-body'); if(b) b.innerHTML='<div style="padding:34px;text-align:center;color:var(--t3)">⏳ carregando do banco…</div>';
-  try{ const r=await authFetch('/api/demandas',{cache:'no-store'}); if(!r.ok) throw 0; ac2.DEM=await r.json(); ac2._fonte='banco (API)'; }
-  catch(e){ ac2.DEM=ac2BuildDemandas(); ac2._fonte='embed (offline)'; }   // fallback: abriu o arquivo direto, sem servidor
+  if(Array.isArray(ac2.DEM) && ac2.DEM.length && ac2._fonte){ /* já carregado: trocar período só re-filtra no cliente, sem refetch */ }
+  else { try{ const r=await authFetch('/api/demandas',{cache:'no-store'}); if(!r.ok) throw 0; ac2.DEM=await r.json(); ac2._fonte='banco (API)'; }
+  catch(e){ ac2.DEM=ac2BuildDemandas(); ac2._fonte='embed (offline)'; } }   // fallback: abriu o arquivo direto, sem servidor
   const _u=BCAUTH.user; if(_u&&_u.perfil==='gestor'){ ac2.gestorSel=_u.gestor_ref; ac2.nivel='gestor'; }   // gestor logado abre direto na própria lista
   bcRenderAuthBar(); ac2.render(); }
-ac2.filt=function(){ return ac2.DEM.filter(i=>AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)); };
+/* ── período: o Acompanhamento segue o filtro do topo (getR → [ps,pe]) ── */
+ac2.per=function(){ try{ const r=getR(); return (r&&r[0]&&r[1])?[r[0],r[1]]:null; }catch(e){ return null; } };
+ac2.mesesSel=function(){ const r=ac2.per(); if(!r) return null;   // meses pelas strings YYYY-MM (sem new Date → imune a fuso)
+  const set=new Set(); let y=+r[0].slice(0,4), m=+r[0].slice(5,7); const ey=+r[1].slice(0,4), em=+r[1].slice(5,7); let guard=0;
+  while((y<ey||(y===ey&&m<=em)) && guard++<600){ set.add(y+'-'+String(m).padStart(2,'0')); m++; if(m>12){m=1;y++;} } return set; };
+ac2.compDe=function(i){ return i.competencia || String(i.id||'').split('|').pop(); };
+ac2._semOverlap=function(semana,ps,pe){ const m=String(semana).match(/(\d{4}-\d{2}-\d{2})\D+(\d{4}-\d{2}-\d{2})/); if(!m) return true; return m[2]>=ps && m[1]<=pe; };
+ac2._MESNOME=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+ac2.mesAnterior=function(mes){ const p=String(mes).split('-').map(Number); const d=new Date(p[0], p[1]-2, 1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
+ac2.rangeDoMes=function(mes){ const p=String(mes).split('-').map(Number); const last=new Date(p[0], p[1], 0).getDate(); return [mes+'-01', mes+'-'+String(last).padStart(2,'0')]; };
+ac2.mesUnico=function(){ const ms=ac2.mesesSel(); return (ms&&ms.size===1)?[...ms][0]:null; };
+ac2.perLabel=function(){ const ms=ac2.mesesSel(); if(!ms||!ms.size) return 'todo o histórico'; const arr=[...ms].sort(); const f=m=>{const p=m.split('-');return ac2._MESNOME[+p[1]-1]+'/'+p[0].slice(2);}; return arr.length===1?f(arr[0]):(f(arr[0])+'–'+f(arr[arr.length-1])); };
+ac2.perfRange=function(ps,pe){ const A=(typeof ACOMP!=='undefined'&&Array.isArray(ACOMP))?ACOMP:[]; const o={total:0,resolvido:0,justificado:0,progrediu:0,em_aberto:0}; A.forEach(r=>{ if(!ac2._semOverlap(r.semana,ps,pe))return; o.total+=+r.total||0;o.resolvido+=+r.resolvido||0;o.justificado+=+r.justificado||0;o.progrediu+=+r.progrediu||0;o.em_aberto+=+r.em_aberto||0; }); o.taxa=o.total?Math.round(100*(o.resolvido+o.justificado)/o.total):0; return o; };
+ac2.setaDelta=function(now,prev,lowerBetter,isMoney){ if(prev==null) return ''; const d=now-prev; if(d===0) return ' <span style="color:var(--c-mut);font-weight:600">=</span>'; const good=lowerBetter?d<0:d>0; const cor=good?'#22c55e':'#f87171'; const seta=d>0?'▲':'▼'; const val=isMoney?AC2_BRLk(Math.abs(d)):Math.abs(d); return ` <span style="color:${cor};font-weight:700;font-size:13px">${seta} ${val}</span>`; };
+ac2.filt=function(){ const ms=ac2.mesesSel(); return ac2.DEM.filter(i=>(!ms||ms.has(ac2.compDe(i)))&&AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)); };
 ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risco:l.reduce((s,i)=>s+i.risco,0), prej:prej.length, riscoPrej:prej.reduce((s,i)=>s+i.risco,0), corr:l.length-prej.length}; };
 ac2.go=function(n){ ac2.nivel=n; if(n!=='gestor')ac2.gestorSel=null; ac2.render(); };
 ac2.goGes=function(g,from){ ac2.gestorSel=g; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
@@ -3203,14 +3219,38 @@ ac2.render=function(){
   if(ac2.modo==='result'){ lv.innerHTML=modo; if(bar)bar.innerHTML=''; kpi.innerHTML=ac2ResultKPI(); body.innerHTML=ac2Resultados(); return; }
   lv.innerHTML=modo+'<span class="a2-lvsep"></span>'+[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor','a lista dele']].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('');
   ac2RenderFiltros();
-  if(ac2.nivel==='direcao'){ kpi.innerHTML=ac2TopoKPI(); body.innerHTML=ac2Direcao(); }
+  if(ac2.nivel==='direcao'){ kpi.innerHTML=ac2DirKPI(); body.innerHTML=ac2Direcao(); }
   else if(ac2.nivel==='coord'){ kpi.innerHTML=ac2TopoKPI(); body.innerHTML=ac2Coord(); }
   else { kpi.innerHTML=ac2TopoKPI(true); body.innerHTML=ac2Gestor(); }
 };
 ac2.setModo=function(m){ ac2.modo=m; ac2.render(); };
+function ac2DirKPI(){
+  const l=ac2.filt(); const m=ac2.met(l);
+  const mu=ac2.mesUnico(); let dm=null, perfPrev=null, cmpLbl='';
+  if(mu){ const pm=ac2.mesAnterior(mu);
+    const lp=ac2.DEM.filter(i=>ac2.compDe(i)===pm && AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i))) && (!ac2.gestorSel||i.gestor===ac2.gestorSel));
+    if(lp.length) dm=ac2.met(lp);
+    const pr=ac2.rangeDoMes(pm); perfPrev=ac2.perfRange(pr[0],pr[1]);
+    cmpLbl='vs '+ac2._MESNOME[+pm.split('-')[1]-1];
+  }
+  const r=ac2.per(); const perfNow=r?ac2.perfRange(r[0],r[1]):ac2.perfRange('0000-00','9999-99');
+  const kd=(c,lb,v,delta,s,d)=>`<div class="a2-k ${c}" ${d?`data-d="${d}" onclick="ac2.drill('${d}')"`:''}><div class="st"></div><div class="kl">${lb}</div><div class="kv">${v}${delta||''}</div><div class="ks">${s}</div></div>`;
+  const kp=(c,lb,v,delta,s)=>`<div class="a2-k ${c}" style="cursor:pointer" onclick="ac2.setModo('result')"><div class="st"></div><div class="kl">${lb}</div><div class="kv">${v}${delta||''}</div><div class="ks">${s} →</div></div>`;
+  return `<div class="a2-sh">Visão geral — Direção<small>período: <b style="color:var(--a2)">${ac2.perLabel()}</b> · dados: <b style="color:var(--a2)">${ac2._fonte||'—'}</b>${cmpLbl?(' · comparando '+cmpLbl):' · selecione um mês p/ comparar'}</small></div>
+   <div class="a2-shh">✅ Desempenho${cmpLbl?(' ('+cmpLbl+')'):''}</div>
+   <div class="a2-kpis">
+    ${kp('pos','Taxa de acerto',perfNow.taxa+'%',ac2.setaDelta(perfNow.taxa, perfPrev?perfPrev.taxa:null,false),'resolvido+justificado ÷ total')}
+    ${kp('pos','Resolvidos',perfNow.resolvido,ac2.setaDelta(perfNow.resolvido, perfPrev?perfPrev.resolvido:null,false),'voltaram pra meta no período')}</div>
+   <div class="a2-shh">🩺 Diagnóstico${cmpLbl?(' ('+cmpLbl+')'):''}</div>
+   <div class="a2-kpis">
+    ${kd('neg','Demandas a resolver',m.n,ac2.setaDelta(m.n, dm?dm.n:null,true),'anúncios fora da meta','tinha')}
+    ${kd('neg','R$ em risco',AC2_BRLk(m.risco),ac2.setaDelta(m.risco, dm?dm.risco:null,true,true),'margem abaixo da meta','risco')}
+    ${kd('neg','Em prejuízo',m.prej,ac2.setaDelta(m.prej, dm?dm.prej:null,true),AC2_BRLk(m.riscoPrej)+' · margem negativa','prej')}
+    ${kd('warn','Correção de margem',m.corr,ac2.setaDelta(m.corr, dm?dm.corr:null,false),'abaixo da meta, sem prejuízo','corr')}</div>`;
+}
 function ac2TopoKPI(pers){ const g=pers?ac2.gestorSel:null; const l=ac2.filt(); const m=ac2.met(l);
   const k=(c,lb,v,s,d)=>`<div class="a2-k ${c}" ${d?`data-d="${d}" onclick="ac2.drill('${d}')"`:''}><div class="st"></div><div class="kl">${lb}</div><div class="kv">${v}</div><div class="ks">${s}</div></div>`;
-  return `<div class="a2-sh">${pers?('Minhas demandas — '+g):(ac2.nivel==='coord'?'Operação — Coordenação':'Visão geral — Direção')}<small>fila de diagnóstico · dados: <b style="color:var(--a2)">${ac2._fonte||'—'}</b> · tratativa/resultado chegam com o preenchimento</small></div>
+  return `<div class="a2-sh">${pers?('Minhas demandas — '+g):(ac2.nivel==='coord'?'Operação — Coordenação':'Visão geral — Direção')}<small>período: <b style="color:var(--a2)">${ac2.perLabel()}</b> · fila de diagnóstico · dados: <b style="color:var(--a2)">${ac2._fonte||'—'}</b></small></div>
    <div class="a2-kpis">${k('neg','Demandas a resolver',m.n,(l.filter(aberto=>true).length)+' anúncios fora da meta','tinha')}
     ${k('neg','R$ em risco',AC2_BRLk(m.risco),'margem abaixo da meta','risco')}
     ${k('neg','Em prejuízo',m.prej,AC2_BRLk(m.riscoPrej)+' · margem negativa','prej')}
@@ -3272,9 +3312,9 @@ ac2.closeDrill=function(){ document.getElementById('a2-ov').classList.remove('on
 
 /* ===== Resultados — cruza o que já foi tratado (ACOMP/ACOMP_ITENS) na metodologia nova ===== */
 ac2.resultAgg=function(){
-  const A=(typeof ACOMP!=='undefined'&&Array.isArray(ACOMP))?ACOMP:[];
+  const A=(typeof ACOMP!=='undefined'&&Array.isArray(ACOMP))?ACOMP:[]; const pr=ac2.per();
   const map={};
-  A.forEach(r=>{ const p=String(r.operacao||'').split(' · '); const g=AC2_GESTOR[(p[0]||'').trim()+'|'+(p[1]||'').trim()]; if(!g)return;
+  A.forEach(r=>{ if(pr&&!ac2._semOverlap(r.semana,pr[0],pr[1]))return; const p=String(r.operacao||'').split(' · '); const g=AC2_GESTOR[(p[0]||'').trim()+'|'+(p[1]||'').trim()]; if(!g)return;
     const o=map[g]||(map[g]={gestor:g,total:0,resolvido:0,justificado:0,progrediu:0,em_aberto:0,sem_venda:0});
     o.total+=+r.total||0; o.resolvido+=+r.resolvido||0; o.justificado+=+r.justificado||0; o.progrediu+=+r.progrediu||0; o.em_aberto+=+r.em_aberto||0; o.sem_venda+=+r.sem_venda||0; });
   return Object.values(map);
@@ -3283,7 +3323,7 @@ function ac2ResultKPI(){ const rows=ac2.resultAgg(); const T={total:0,resolvido:
   rows.forEach(o=>{T.total+=o.total;T.resolvido+=o.resolvido;T.justificado+=o.justificado;T.progrediu+=o.progrediu;T.em_aberto+=o.em_aberto;});
   const taxa=T.total?Math.round(100*(T.resolvido+T.justificado)/T.total):0;
   const k=(c,lb,v,s)=>`<div class="a2-k ${c}"><div class="st"></div><div class="kl">${lb}</div><div class="kv">${v}</div><div class="ks">${s}</div></div>`;
-  return `<div class="a2-sh">Resultados — o que já foi tratado<small>histórico das tratativas verificadas por resultado · ✅ voltou à meta · 🟡 justificado · ↗️ melhorou · 🔴 ainda em aberto</small></div>
+  return `<div class="a2-sh">Resultados — o que já foi tratado<small>período: <b style="color:var(--a2)">${ac2.perLabel()}</b> · ✅ voltou à meta · 🟡 justificado · ↗️ melhorou · 🔴 ainda em aberto</small></div>
    <div class="a2-kpis">${k('pos','Taxa de acerto',taxa+'%','resolvido + justificado ÷ total')}
     ${k('pos','Resolvido',T.resolvido,'voltaram pra meta')}
     ${k('warn','Melhorou',T.progrediu,'subiram, mas não bateram a meta')}
@@ -3297,8 +3337,8 @@ function ac2Resultados(){ const rows=ac2.resultAgg();
   return `<div class="a2-sh">Acerto por gestor<small>do pior ao melhor · clique p/ ver item a item</small></div><div class="a2-card">${rowsH}</div>`;
 }
 ac2.resultDrill=function(gestor){
-  const A=(typeof ACOMP_ITENS!=='undefined'&&Array.isArray(ACOMP_ITENS))?ACOMP_ITENS:[];
-  const its=A.filter(r=>{const p=String(r.operacao||'').split(' · ');return AC2_GESTOR[(p[0]||'').trim()+'|'+(p[1]||'').trim()]===gestor;});
+  const A=(typeof ACOMP_ITENS!=='undefined'&&Array.isArray(ACOMP_ITENS))?ACOMP_ITENS:[]; const pr=ac2.per();
+  const its=A.filter(r=>{if(pr&&!ac2._semOverlap(r.semana,pr[0],pr[1]))return false;const p=String(r.operacao||'').split(' · ');return AC2_GESTOR[(p[0]||'').trim()+'|'+(p[1]||'').trim()]===gestor;});
   const pal={Resolvido:['✅','#22c55e'],Justificado:['🟡','#f59e0b'],Progrediu:['↗️','#4f8ef7'],'Em aberto':['🔴','#f87171'],'Sem venda':['⚪','#8891a8']};
   const rkd={'Em aberto':0,'Sem venda':1,'Progrediu':2,'Justificado':3,'Resolvido':4};
   its.sort((a,b)=>(rkd[a.desfecho]==null?9:rkd[a.desfecho])-(rkd[b.desfecho]==null?9:rkd[b.desfecho]));

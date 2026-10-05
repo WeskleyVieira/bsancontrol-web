@@ -41,7 +41,7 @@ const body = req => new Promise(r => { let b = ""; req.on("data", c => b += c); 
 const userDe = req => { const h = req.headers["authorization"] || ""; return verificaToken(h.replace(/^Bearer\s+/i, "")); };
 
 // demanda do banco → modelo que o Acompanhamento (ac2) consome
-const mapDem = r => ({ id: r.id, empresa: r.empresa, mkt: r.canal, ponto: r.ponto, gestor: r.gestor, sku: r.sku, anuncio: r.anuncio_id,
+const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa, mkt: r.canal, ponto: r.ponto, gestor: r.gestor, sku: r.sku, anuncio: r.anuncio_id,
   titulo: r.titulo, tipo: r.tipo, causa: r.causa, mcPct: r.mc_pct, meta: r.meta, fat: r.fat, risco: r.risco, qtd: r.qtd, pedidos: r.pedidos,
   estado: r.estado || "diag", trat: r.acao || null, reacaoH: r.reacao_h, tratD: null, demora: 0,
   recuperado: r.recuperado || 0, funcionou: r.desfecho ? (r.desfecho === "Resolvido" || r.desfecho === "Progrediu") : null });
@@ -60,10 +60,7 @@ async function rotaGET(u, user) {
       LEFT JOIN (SELECT demanda_id, MAX(acao) acao, MAX(reacao_h) reacao_h FROM tratativas GROUP BY demanda_id) t ON t.demanda_id=d.id
       LEFT JOIN (SELECT demanda_id, MAX(desfecho) desfecho, MAX(recuperado) recuperado FROM resultados GROUP BY demanda_id) r ON r.demanda_id=d.id`;
     const args = [], w = [];
-    // sem ?mes → usa a competência mais recente (não mistura meses antigos sem qtd com o mês atual)
-    let mes = q.mes;
-    if (!mes) { const mx = await dbx.get("SELECT MAX(competencia) m FROM demandas"); mes = mx && mx.m ? mx.m : null; }
-    if (mes) { w.push("d.competencia=?"); args.push(mes); }
+    if (q.mes) { w.push("d.competencia=?"); args.push(q.mes); }   // ?mes opcional; sem ele devolve todos os meses — o painel filtra por período no cliente (segue o filtro do topo)
     if (user && user.perfil === "gestor") { w.push("d.gestor=?"); args.push(user.gestor_ref); }
     if (w.length) sql += " WHERE " + w.join(" AND ");
     sql += " ORDER BY d.risco DESC";
