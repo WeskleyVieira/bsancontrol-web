@@ -44,7 +44,8 @@ const userDe = req => { const h = req.headers["authorization"] || ""; return ver
 const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa, mkt: r.canal, ponto: r.ponto, gestor: r.gestor, sku: r.sku, anuncio: r.anuncio_id,
   titulo: r.titulo, tipo: r.tipo, causa: r.causa, mcPct: r.mc_pct, meta: r.meta, fat: r.fat, risco: r.risco, qtd: r.qtd, pedidos: r.pedidos,
   estado: (r.estado && r.estado !== "diag") ? r.estado : (r.acao ? "trat" : "diag"), trat: r.acao || null, reacaoH: r.reacao_h, tratD: null, demora: 0,
-  recuperado: r.recuperado || 0, funcionou: r.desfecho ? (r.desfecho === "Resolvido" || r.desfecho === "Progrediu") : null });
+  recuperado: r.recuperado || 0, mcDepois: (r.mc_depois == null ? null : r.mc_depois), desfecho: r.desfecho || null,
+  funcionou: r.desfecho ? (r.desfecho === "Resolvido" || r.desfecho === "Progrediu") : null });
 
 async function rotaGET(u, user) {
   const q = Object.fromEntries(u.searchParams);
@@ -56,9 +57,9 @@ async function rotaGET(u, user) {
   }
   if (u.pathname === "/api/demandas") {
     // ESCOPO POR PERFIL: gestor só vê as contas dele; direção/coordenação veem tudo
-    let sql = `SELECT d.*, t.acao, t.reacao_h, r.desfecho, r.recuperado FROM demandas d
+    let sql = `SELECT d.*, t.acao, t.reacao_h, r.desfecho, r.recuperado, r.mc_depois FROM demandas d
       LEFT JOIN (SELECT demanda_id, MAX(acao) acao, MAX(reacao_h) reacao_h FROM tratativas GROUP BY demanda_id) t ON t.demanda_id=d.id
-      LEFT JOIN (SELECT demanda_id, MAX(desfecho) desfecho, MAX(recuperado) recuperado FROM resultados GROUP BY demanda_id) r ON r.demanda_id=d.id`;
+      LEFT JOIN (SELECT demanda_id, MAX(desfecho) desfecho, MAX(recuperado) recuperado, MAX(mc_depois) mc_depois FROM resultados GROUP BY demanda_id) r ON r.demanda_id=d.id`;
     const args = [], w = [];
     if (q.mes) { w.push("d.competencia=?"); args.push(q.mes); }   // ?mes opcional; sem ele devolve todos os meses — o painel filtra por período no cliente (segue o filtro do topo)
     if (user && user.perfil === "gestor") { w.push("d.gestor=?"); args.push(user.gestor_ref); }
