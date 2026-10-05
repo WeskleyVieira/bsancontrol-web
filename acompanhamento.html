@@ -2332,6 +2332,21 @@ let GER_AFILT=''; // filtro por veredito na aba Publicidade ('', 'queima', 'semv
 let GER_APUB='campanha'; // visão da aba Publicidade: 'campanha' | 'anuncio'
 let GER_CSORT={col:'inv',dir:-1}, GER_CFILT=''; // ordenação/filtro da tabela de campanhas
 const _normMLB=id=>{const d=String(id||'').replace(/\D/g,'');return d?'MLB'+d:'';};
+// ── chave de cruzamento Ads × venda (por anúncio), CIENTE DO CANAL ──
+// ML: normaliza MLB (o report varia o formato). Magalu: casa por SKU (o Ads do Magalu é por SKU,
+// a venda traz o id do anúncio). Demais (Amazon/Shopee/TikTok): id EXATO (ASIN/item_id/product_id),
+// sem reduzir a dígitos — evita colisão (ex.: dois ASINs com os mesmos dígitos).
+const _ehMagalu=m=>/magazine|magalu/i.test(String(m||''));
+const _ehML=m=>/mercado livre/i.test(String(m||''));
+function _adKeyVenda(mkt,anuncio,sku){
+  if(_ehML(mkt)) return _normMLB(anuncio);
+  if(_ehMagalu(mkt)) return String(sku||'').trim().toUpperCase();
+  return String(anuncio||'').trim().toUpperCase();
+}
+function _adKeyAds(mkt,anuncio){ // no Ads do Magalu o anuncio_id JÁ é o SKU
+  if(_ehML(mkt)) return _normMLB(anuncio);
+  return String(anuncio||'').trim().toUpperCase();
+}
 // conjunto de competências (YYYY-MM) que caem num range de datas
 function _mesesRange(ps,pe){ const meses=new Set(); const d0=new Date(ps),d1=new Date(pe);
   for(let y=d0.getFullYear(),m=d0.getMonth();y<d1.getFullYear()||(y===d1.getFullYear()&&m<=d1.getMonth());m++){ if(m>11){m=-1;y++;continue;} meses.add(y+'-'+String(m+1).padStart(2,'0')); } return meses; }
@@ -2350,7 +2365,7 @@ function _adsFatores(emp,mkt,ps,pe){
 function _adsIndex(emp,mkt,ps,pe){
   const meses=_mesesRange(ps,pe); const F=_adsFatores(emp,mkt,ps,pe); const idx={};
   ADS.forEach(a=>{ if(a.emp!==emp||a.mkt!==mkt)return; const mes=String(a.comp).slice(0,7); if(!meses.has(mes))return;
-    const k=_normMLB(a.mlb); if(!k)return; const fi=F.inv(a.campanha,mes), fr=F.rec(a.campanha,mes);
+    const k=_adKeyAds(a.mkt,a.anuncio); if(!k)return; const fi=F.inv(a.campanha,mes), fr=F.rec(a.campanha,mes);
     const o=idx[k]||(idx[k]={mlb:k,tit:'',campanha:'',inv:0,recAds:0,impr:0,cli:0,vd:0,vi:0,vis:0,conv:0,part:0,fonte:''});
     if(!o.tit&&a.tit)o.tit=a.tit; if(!o.campanha&&a.campanha)o.campanha=a.campanha; if(!o.fonte&&a.fonte)o.fonte=a.fonte;
     o.inv+=a.inv*fi; o.recAds+=a.recAds*fr; o.impr+=a.impr*fi; o.cli+=a.cli*fi; o.vd+=a.vd*fr; o.vi+=a.vi*fr;
@@ -2510,7 +2525,7 @@ function _planoAcoes(emp,mkt,ps,pe){
   });
   const adsIdx=(typeof _adsIndex==='function')?_adsIndex(emp,mkt,ps,pe):{};
   if(Object.keys(adsIdx).length){
-    const vmap={}; (A.linhas||[]).forEach(r=>{const k=_normMLB(r.anuncio);if(!k)return;const v=vmap[k]||(vmap[k]={fat:0,mc:0,liq:0,tit:''});v.fat+=+r.fat||0;v.mc+=+r.mc||0;v.liq+=+r.liq||0;if(!v.tit&&r.tit)v.tit=r.tit;});
+    const vmap={}; (A.linhas||[]).forEach(r=>{const k=_adKeyVenda(mkt,r.anuncio,r.sku);if(!k)return;const v=vmap[k]||(vmap[k]={fat:0,mc:0,liq:0,tit:''});v.fat+=+r.fat||0;v.mc+=+r.mc||0;v.liq+=+r.liq||0;if(!v.tit&&r.tit)v.tit=r.tit;});
     Object.keys(adsIdx).forEach(k=>{const a=adsIdx[k];if(!(a.inv>0))return;const v=vmap[k]||{fat:0,mc:0,liq:0,tit:''};
       const _b=mcBase(mkt,v.fat,v.liq);const mcp=_b?100*v.mc/_b:0;const acos=a.recAds>0?100*a.inv/a.recAds:Infinity;
       const ver=_adsVerAnuncio({inv:a.inv,recAds:a.recAds,impr:a.impr,cli:a.cli,vd:a.vd,vi:a.vi,fat:v.fat,mc:v.mc,mcp,acos});
@@ -2610,7 +2625,7 @@ function _renderGerDiag(A,B,mkt){
   let adsArr=[], adsInvTot=0;
   if(Object.keys(adsIdx).length){
     const vmap={},titmap={};
-    (A.linhas||[]).forEach(r=>{const k=_normMLB(r.anuncio);if(!k)return;const o=vmap[k]||(vmap[k]={fat:0,mc:0,liq:0});o.fat+=+r.fat||0;o.mc+=+r.mc||0;o.liq+=+r.liq||0;if(r.tit&&!titmap[k])titmap[k]=r.tit;});
+    (A.linhas||[]).forEach(r=>{const k=_adKeyVenda(mkt,r.anuncio,r.sku);if(!k)return;const o=vmap[k]||(vmap[k]={fat:0,mc:0,liq:0});o.fat+=+r.fat||0;o.mc+=+r.mc||0;o.liq+=+r.liq||0;if(r.tit&&!titmap[k])titmap[k]=r.tit;});
     adsArr=Object.keys(adsIdx).map(k=>{const a=adsIdx[k],v=vmap[k]||{fat:0,mc:0,liq:0};const _b=mcBase(mkt,v.fat,v.liq);const mcp=_b?100*v.mc/_b:0;const acos=a.recAds>0?100*a.inv/a.recAds:(a.inv>0?Infinity:0);const resultado=a.recAds*(mcp/100)-a.inv;const ver=_adsVerAnuncio({inv:a.inv,recAds:a.recAds,impr:a.impr,cli:a.cli,vd:a.vd,vi:a.vi,fat:v.fat,mc:v.mc,mcp,acos});return {mlb:k,tit:titmap[k]||a.tit||'',inv:a.inv,recAds:a.recAds,mcp,acos,resultado,estado:ver.estado,acao:ver.acao};}).filter(o=>o.inv>0||o.recAds>0);
     adsInvTot=adsArr.reduce((s,o)=>s+o.inv,0);
   }
@@ -2734,7 +2749,7 @@ function _renderGerProdutos(A,B,mkt){
   const QMAP=porAnuncio?_histSaudMap(_emp,mkt,_pr[0]):{}; // margem saudável histórica (p/ sinal Queima de margem)
   const adsIdx=porAnuncio?_adsIndex(_emp,mkt,_pr[0],_pr[1]):{};
   const hasAds=Object.keys(adsIdx).length>0;
-  arr.forEach(o=>{ const ad=adsIdx[_normMLB(o.anuncio)]; o.adsInv=ad?ad.inv:0; o.adsRec=ad?ad.recAds:0;
+  arr.forEach(o=>{ const ad=adsIdx[_adKeyVenda(mkt,o.anuncio,o.sku)]; o.adsInv=ad?ad.inv:0; o.adsRec=ad?ad.recAds:0;
     o.acos=o.adsRec>0?100*o.adsInv/o.adsRec:(o.adsInv>0?Infinity:null);
     o.mcPosAds=o.mc-(o.adsInv||0);
     { const _bf=mcBase(mkt,o.fat,o.liq); o.mcpFinal=_bf?100*o.mcPosAds/_bf:0; }
@@ -2926,7 +2941,7 @@ function _renderGerPublicidade(A,emp,mkt,ps,pe){
   const opMcp=_bOper?100*mcOper/_bOper:0; // MC% da operação — referência de break-even p/ marketplaces sem margem por produto
   // MC% por anúncio (das vendas do período) + título
   const vend={}, titBy={};
-  (A.linhas||[]).forEach(r=>{ const k=_normMLB(r.anuncio); if(!k)return; const o=vend[k]||(vend[k]={fat:0,mc:0,liq:0,qtd:0}); o.fat+=+r.fat||0; o.mc+=+r.mc||0; o.liq+=+r.liq||0; o.qtd+=+r.qtd||0; if(r.tit&&!titBy[k])titBy[k]=r.tit; });
+  (A.linhas||[]).forEach(r=>{ const k=_adKeyVenda(mkt,r.anuncio,r.sku); if(!k)return; const o=vend[k]||(vend[k]={fat:0,mc:0,liq:0,qtd:0}); o.fat+=+r.fat||0; o.mc+=+r.mc||0; o.liq+=+r.liq||0; o.qtd+=+r.qtd||0; if(r.tit&&!titBy[k])titBy[k]=r.tit; });
   // "sem join": Ads que não casa por produto com a venda (Shopee afiliados: relatório tem item_id, a venda tem SKU).
   // Sem margem por produto → usa a MC% da operação como referência (mesmo critério dos só-campanha).
   const semJoin = !soCamp && keys.length>0 && keys.every(k=>!(vend[k]&&vend[k].fat>0));
@@ -5336,10 +5351,10 @@ async function parseXLSX(file){
         const ads=[]; const wsAds=wb.Sheets['Ads'];
         if(wsAds){
           XLSX.utils.sheet_to_json(wsAds,{defval:null}).forEach(r=>{
-            const mlb=String(r.anuncio_id||'').replace(/\D/g,''); if(!mlb) return;
+            const anun=String(r.anuncio_id||'').trim(); if(!anun) return; const mlb=anun.replace(/\D/g,'');
             ads.push({
               comp:String(r.competencia||'').slice(0,7), emp:String(r.empresa||'').trim(), mkt:String(r.canal||'').trim(),
-              mlb:'MLB'+mlb, anuncio:String(r.anuncio_id||'').trim(), tit:String(r.titulo||'').trim(), campanha:String(r.campanha||'').trim(),
+              mlb:mlb?'MLB'+mlb:'', anuncio:anun, tit:String(r.titulo||'').trim(), campanha:String(r.campanha||'').trim(),
               inv:+r.investimento||0, recAds:+r.receita_ads||0, impr:+r.impressoes||0, cli:+r.cliques||0,
               vd:+r.vendas_diretas||0, vi:+r.vendas_indiretas||0, vis:+r.visitas||0,
               conv:+r.conv_visitas||0, part:+r.participacao||0, fonte:String(r.fonte||'').trim()
