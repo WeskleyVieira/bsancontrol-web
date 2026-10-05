@@ -3163,6 +3163,8 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-hc .hv{font-size:28px;font-weight:800;margin-top:9px;line-height:1;color:var(--c-ink)}
 #ac2-root .a2-hc.good .hv{color:var(--c-pos)} #ac2-root .a2-hc.bad .hv{color:var(--c-neg)}
 #ac2-root .a2-hc .hs{font-size:11px;color:var(--c-mut);margin-top:8px}
+#ac2-root .a2-hc[onclick]{transition:border-color .12s,transform .12s} #ac2-root .a2-hc[onclick]:hover,#ac2-root .a2-gc[onclick]:hover,#ac2-root .a2-cc[onclick]:hover{border-color:var(--c-acc);transform:translateY(-2px)}
+#ac2-root .a2-gc[onclick],#ac2-root .a2-cc[onclick]{transition:border-color .12s,transform .12s}
 #ac2-root .a2-score{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin:8px 0}
 #ac2-root .a2-gc{background:var(--c-s);border:1px solid var(--c-ln);border-radius:14px;padding:15px 16px}
 #ac2-root .a2-gch{display:flex;align-items:center;gap:11px;margin-bottom:12px}
@@ -3240,12 +3242,13 @@ ac2.perLabel=function(){ const ms=ac2.mesesSel(); if(!ms||!ms.size) return 'todo
 ac2.perfRange=function(ps,pe){ const A=(typeof ACOMP!=='undefined'&&Array.isArray(ACOMP))?ACOMP:[]; const o={total:0,resolvido:0,justificado:0,progrediu:0,em_aberto:0}; A.forEach(r=>{ if(!ac2._semOverlap(r.semana,ps,pe))return; o.total+=+r.total||0;o.resolvido+=+r.resolvido||0;o.justificado+=+r.justificado||0;o.progrediu+=+r.progrediu||0;o.em_aberto+=+r.em_aberto||0; }); o.taxa=o.total?Math.round(100*(o.resolvido+o.justificado)/o.total):0; return o; };
 ac2.setaDelta=function(now,prev,lowerBetter,isMoney){ if(prev==null) return ''; const d=now-prev; if(d===0) return ' <span style="color:var(--c-mut);font-weight:600">=</span>'; const good=lowerBetter?d<0:d>0; const cor=good?'#22c55e':'#f87171'; const seta=d>0?'▲':'▼'; const val=isMoney?AC2_BRLk(Math.abs(d)):Math.abs(d); return ` <span style="color:${cor};font-weight:700;font-size:13px">${seta} ${val}</span>`; };
 /* ── loop tinha→feito→resultado (lê as tabelas reais via join do /api/demandas) ── */
-ac2.loopStats=function(l){ let tratadas=0,resolvidas=0,recuperado=0,riscoAberto=0,rSum=0,rN=0;
+ac2.loopStats=function(l){ let tratadas=0,resolvidas=0,resolvAcao=0,recuperado=0,riscoAberto=0,rSum=0,rN=0;
   l.forEach(i=>{ const temTrat=!!i.trat||i.estado==='trat'; const ok=(i.funcionou===true);
-    if(temTrat){ tratadas++; if(ok){ resolvidas++; recuperado+=(i.recuperado||0);} else riscoAberto+=i.risco; }
+    if(temTrat) tratadas++;
+    if(ok){ resolvidas++; recuperado+=(i.recuperado||0); if(temTrat) resolvAcao++; }
     else riscoAberto+=i.risco;
     if(i.reacaoH!=null){ rSum+=i.reacaoH; rN++; } });
-  return { tinha:l.length, tratadas, resolvidas, recuperado, riscoAberto, abertas:l.length-resolvidas, hitRate:tratadas?Math.round(100*resolvidas/tratadas):0, reacaoMedia:rN?rSum/rN:null }; };
+  return { tinha:l.length, tratadas, resolvidas, resolvAcao, recuperado, riscoAberto, abertas:l.length-resolvidas, hitRate:tratadas?Math.round(100*resolvAcao/tratadas):0, reacaoMedia:rN?rSum/rN:null }; };
 ac2.statusG=function(hit,tratadas,tinha){ const cob=tinha?tratadas/tinha:0; if(cob<0.3) return ['gira','🟡 Girando']; if(hit>=70) return ['ideal','🟢 Ideal']; if(hit<40) return ['crit','🔴 Crítico']; return ['gira','🟡 Girando']; };
 ac2.evolGestor=function(g){ const A=(typeof ACOMP!=='undefined'&&Array.isArray(ACOMP))?ACOMP:[]; const byW={};
   A.forEach(r=>{ const p=String(r.operacao||'').split(' · '); if(AC2_GESTOR[(p[0]||'').trim()+'|'+(p[1]||'').trim()]!==g)return; const o=byW[r.semana]||(byW[r.semana]={t:0,ok:0}); o.t+=+r.total||0; o.ok+=(+r.resolvido||0)+(+r.justificado||0); });
@@ -3313,26 +3316,26 @@ function ac2Direcao(){ const l=ac2.filt();
 }
 /* ── Direção no layout do mockup: hero do loop + indicadores + scorecard / comparar ── */
 function ac2DirHero(){ const l=ac2.filt(); const s=ac2.loopStats(l); const st=ac2.statusG(s.hitRate,s.tratadas,s.tinha); const recup=s.recuperado?AC2_BRLk(s.recuperado):'—';
-  const hc=(c,lb,v,sub)=>`<div class="a2-hc ${c}"><div class="hl">${lb}</div><div class="hv">${v}</div><div class="hs">${sub}</div></div>`;
-  const k=(c,lb,v,s2)=>`<div class="a2-k ${c}"><div class="st"></div><div class="kl">${lb}</div><div class="kv">${v}</div><div class="ks">${s2}</div></div>`;
+  const hc=(c,lb,v,sub,d)=>`<div class="a2-hc ${c}" ${d?`style="cursor:pointer" onclick="ac2.drill('${d}')"`:''}><div class="hl">${lb}</div><div class="hv">${v}</div><div class="hs">${sub}${d?' ›':''}</div></div>`;
+  const k=(c,lb,v,s2,d)=>`<div class="a2-k ${c}" ${d?`data-d="${d}" onclick="ac2.drill('${d}')"`:''}><div class="st"></div><div class="kl">${lb}</div><div class="kv">${v}</div><div class="ks">${s2}${d?' ›':''}</div></div>`;
   return `<div class="a2-sh">Visão geral — Direção<small>o que tinha → o que foi feito → o resultado · período: <b style="color:var(--a2)">${ac2.perLabel()}</b></small></div>
    <div class="a2-hero">
-    ${hc('','O que tinha',s.tinha,'demandas diagnosticadas')}
-    ${hc('','O que foi feito',s.tratadas+'/'+s.tinha,'com tratativa registrada')}
-    ${hc(s.recuperado?'good':'','Resultado · R$ recuperado',recup,AC2_BRLk(s.riscoAberto)+' ainda em risco')}
+    ${hc('','O que tinha',s.tinha,'demandas diagnosticadas','tinha')}
+    ${hc('','O que foi feito',s.resolvidas+'/'+s.tinha,'resolvidas (confirmado pelo dado)','resolvido')}
+    ${hc(s.recuperado?'good':'','Resultado · R$ recuperado',recup,AC2_BRLk(s.riscoAberto)+' ainda em risco','recuperado')}
     ${hc(st[0]==='crit'?'bad':'','Status geral',st[1].replace(/^\S+\s/,''),'agilidade × retorno')}
    </div>
    <div class="a2-kpis">
-    ${k('neg','R$ em risco (aberto)',AC2_BRLk(s.riscoAberto),s.abertas+' demandas abertas')}
-    ${k('pos','R$ recuperado/protegido',recup,'no período')}
+    ${k('neg','R$ em risco (aberto)',AC2_BRLk(s.riscoAberto),s.abertas+' demandas abertas','aberto')}
+    ${k('pos','R$ recuperado/protegido',recup,'no período','recuperado')}
     ${k('warn','R$ perdido por demora','—','aguardando registro de reação')}
-    ${k('acc','Hit-rate das tratativas',s.tratadas?s.hitRate+'%':'—','% que moveu o indicador')}</div>`;
+    ${k('acc','Hit-rate das tratativas',s.tratadas?s.hitRate+'%':'—',s.tratadas?s.resolvAcao+' de '+s.tratadas+' tratadas':'sem tratativa','hit')}</div>`;
 }
 function ac2DirScore(){ const l=ac2.filt(); const glist=(ac2.ges.size?[...ac2.ges]:AC2_GES).filter(g=>l.some(i=>i.gestor===g));
   const cards=glist.map(g=>{ const lg=l.filter(i=>i.gestor===g); const s=ac2.loopStats(lg); const st=ac2.statusG(s.hitRate,s.tratadas,s.tinha); const mkts=new Set(lg.map(i=>i.mkt)).size;
     const ev=ac2.evolGestor(g); const dpp=ev.length>=2?ev[ev.length-1]-ev[0]:null; const reac=ac2.reacLbl(s.reacaoMedia);
     const mm=(lb,v,ag)=>`<div><div class="ml">${lb}</div><div class="mv ${ag?'aguard':''}">${v}</div></div>`;
-    return `<div class="a2-gc"><div class="a2-gch"><span class="a2-ava" style="background:${AC2_GCOR[g]||'#777'}">${g[0]}</span><div><div class="gn">${g}</div><div class="gsub">${s.tinha} demandas · ${s.abertas} abertas · ${mkts} marketplace${mkts!==1?'s':''}</div></div><span class="a2-pill ${st[0]}">${st[1]}</span></div>
+    return `<div class="a2-gc" style="cursor:pointer" onclick="ac2.goGes('${g}','direcao')"><div class="a2-gch"><span class="a2-ava" style="background:${AC2_GCOR[g]||'#777'}">${g[0]}</span><div><div class="gn">${g}</div><div class="gsub">${s.tinha} demandas · ${s.abertas} abertas · ${mkts} marketplace${mkts!==1?'s':''}</div></div><span class="a2-pill ${st[0]}">${st[1]}</span></div>
      <div class="a2-gm">
       ${mm('⚡ Reação',reac||'aguardando',!reac)}
       ${mm('🔧 Tratativa','aguardando',true)}
@@ -3350,7 +3353,7 @@ function ac2Comparar(){ const l=ac2.filt(); const glist=(ac2.ges.size?[...ac2.ge
   const stats=glist.map(g=>({g,s:ac2.loopStats(l.filter(i=>i.gestor===g))})); const maxR=Math.max.apply(null,stats.map(x=>x.s.recuperado).concat([1]));
   const cards=stats.map(function(o){ const g=o.g,s=o.s; const st=ac2.statusG(s.hitRate,s.tratadas,s.tinha); const reac=ac2.reacLbl(s.reacaoMedia)||'—'; const hitCor=s.hitRate>=70?'#22c55e':s.hitRate<40?'#f87171':'#f59e0b';
     const row=(lb,v,cor)=>`<div class="row"><span class="lb">${lb}</span><span class="vl" ${cor?`style="color:${cor}"`:''}>${v}</span></div>`;
-    return `<div class="a2-cc"><div class="a2-gch" style="margin-bottom:6px"><span class="a2-ava" style="background:${AC2_GCOR[g]||'#777'}">${g[0]}</span><div class="gn">${g}</div></div><div><span class="a2-pill ${st[0]}">${st[1]}</span></div>
+    return `<div class="a2-cc" style="cursor:pointer" onclick="ac2.goGes('${g}','direcao')"><div class="a2-gch" style="margin-bottom:6px"><span class="a2-ava" style="background:${AC2_GCOR[g]||'#777'}">${g[0]}</span><div class="gn">${g}</div></div><div><span class="a2-pill ${st[0]}">${st[1]}</span></div>
      ${row('Demandas',s.tinha)}
      ${row('⚡ Reação',reac)}
      ${row('🎯 Acerto',s.tratadas?s.hitRate+'%':'—',s.tratadas?hitCor:'')}
@@ -3394,7 +3397,11 @@ function ac2Gestor(){ const present=[...new Set(ac2.filt().map(i=>i.gestor))]; c
     return `<div class="a2-ch">📦 ${e} · ${mk}<span class="ct">${its.length} demandas · ${AC2_BRLk(r)} em risco</span></div>${its.map(i=>ac2itemRow(i)).join('')}`;}).join('');
   return back+`<div class="a2-card">${grupos||'<div style="padding:24px;text-align:center;color:var(--t3)">sem demandas</div>'}</div>`;
 }
-const AC2_DRILL={tinha:{t:'Demandas a resolver',f:()=>true},risco:{t:'R$ em risco',f:()=>true,v:l=>AC2_BRL(l.reduce((s,i)=>s+i.risco,0))},prej:{t:'Em prejuízo (margem negativa)',f:i=>i.mcPct<0},corr:{t:'Correção de margem',f:i=>i.mcPct>=0}};
+const AC2_DRILL={tinha:{t:'Demandas a resolver',f:()=>true},risco:{t:'R$ em risco',f:()=>true,v:l=>AC2_BRL(l.reduce((s,i)=>s+i.risco,0))},prej:{t:'Em prejuízo (margem negativa)',f:i=>i.mcPct<0},corr:{t:'Correção de margem',f:i=>i.mcPct>=0},
+  resolvido:{t:'Resolvidas (confirmado pelo dado)',f:i=>i.funcionou===true},
+  recuperado:{t:'R$ recuperado / protegido',f:i=>i.funcionou===true,v:l=>AC2_BRL(l.reduce((s,i)=>s+(i.recuperado||0),0))},
+  aberto:{t:'Ainda em risco (não resolvidas)',f:i=>i.funcionou!==true,v:l=>AC2_BRL(l.reduce((s,i)=>s+i.risco,0))},
+  hit:{t:'Tratativas registradas',f:i=>(!!i.trat||i.estado==='trat')}};
 ac2.drill=function(key){ const cfg=AC2_DRILL[key]; if(!cfg)return; const l=ac2.filt().filter(cfg.f).sort((a,b)=>b.risco-a.risco);
   const porG={}; l.forEach(i=>{(porG[i.gestor]=porG[i.gestor]||{n:0,r:0}).n++;porG[i.gestor].r+=i.risco;});
   const gr=Object.entries(porG).sort((a,b)=>b[1].r-a[1].r).map(([g,o])=>`<div class="a2-tg" style="cursor:default"><div style="display:flex;align-items:center;gap:9px"><span class="a2-ava" style="width:24px;height:24px;background:${AC2_GCOR[g]||'#777'}">${g[0]}</span>${g}</div><div class="nums"><span><b>${o.n}</b></span><span><b>${AC2_BRLk(o.r)}</b></span></div></div>`).join('');
