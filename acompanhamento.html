@@ -2544,6 +2544,32 @@ function _isNovo(sku,refISO){
   const dias=d=>d?(new Date(refISO+'T12:00:00')-new Date(d+'T12:00:00'))/86400000:Infinity;
   return dias(CAD_SKU[s])<=NOVO_DIAS || dias(_firstSkuMap()[s])<=NOVO_DIAS;
 }
+// ── QUEIMA DE MARGEM (preventivo) — espelha o bucket do pipeline (db-sync.js + metas.json) ──
+// Produto relevante (curva A/B) e ainda com margem (≥piso), mas cuja margem caiu MAIS que
+// QM_EROSAO_PP pontos abaixo da margem saudável que ele JÁ TEVE (mediana dos meses saudáveis,
+// antes do período atual). Mesma régua do Diagnóstico: pct = mc / mcBase (Temu usa líquido).
+const QM_EROSAO_PP=5, QM_PISO=10, QM_MESES_MIN=2, QM_TETO=40, QM_FAT_MIN=200; // = metas.json (erosao_pp, piso_saudavel, meses_min, teto, faturamento_min)
+// mapa anúncio(ou sku) -> margem saudável histórica (% já clampada ao teto) ou null, p/ emp+mkt antes de refISO
+function _histSaudMap(emp,mkt,refISO){
+  const refMes=String(refISO||'').slice(0,7); if(!refMes) return {};
+  const ser={}; // k -> { 'YYYY-MM': {mc, base, fat} }
+  (typeof DETALHE!=='undefined'?DETALHE:[]).forEach(r=>{
+    if(r.emp!==emp||r.mkt!==mkt||!_gVenda(r.stat)) return;
+    const comp=String(r.date||'').slice(0,7); if(!comp||comp>=refMes) return; // só meses anteriores ao período
+    const k=(r.anuncio||'').trim()||(r.sku||'').trim()||'(sem id)';
+    const s=ser[k]||(ser[k]={}); const m=s[comp]||(s[comp]={mc:0,base:0,fat:0});
+    m.mc+=+r.mc||0; m.base+=mcBase(r.mkt,+r.fat||0,+r.liq||0); m.fat+=+r.fat||0;
+  });
+  const out={};
+  for(const k in ser){
+    const h=Object.values(ser[k]).filter(m=>m.fat>QM_FAT_MIN && m.base>0).map(m=>100*m.mc/m.base).filter(p=>p>=QM_PISO);
+    if(h.length<QM_MESES_MIN){ out[k]=null; continue; }
+    h.sort((a,b)=>a-b); out[k]=Math.min(QM_TETO,h[Math.floor(h.length/2)]); // mediana (%), limitada ao teto
+  }
+  return out;
+}
+// verdadeiro quando a margem atual (mcp, pré-Ads) caiu > erosão vs a saudável histórica (hist em %), p/ produto A/B com margem ≥piso
+function _isQueimaMargem(aF,mcp,hist){ return (aF==='A'||aF==='B') && hist!=null && mcp>=QM_PISO && mcp < hist-QM_EROSAO_PP; }
 function _renderGerDiag(A,B,mkt){
   const resumo=document.getElementById('gd-resumo'), body=document.getElementById('gd-body');
   if(!body) return;
@@ -2557,15 +2583,18 @@ function _renderGerDiag(A,B,mkt){
   atual.forEach(o=>{ const p=antMap[o.k]; o.antFat=p?p.fat:null; const dm=devMap[o.k]||{dev:0,tot:0}; o.devTaxa=dm.tot>0?100*dm.dev/dm.tot:0; o.devN=dm.dev;
     o.saude=o.mcp<0?'prej':(o.mcp<10?'baixa':(o.mcp<20?'media':'saud')); });
   // buckets de AÇÃO (exclusivos, prioridade) — relevância = o.aF (Pareto de faturamento)
-  const BK={estanca:[],corrija:[],proteja:[],escale:[],escondido:[],peso:[],maturacao:[]};
-  const _peDiag=(typeof getR==='function')?(getR()[1]||''):'';
+  const BK={estanca:[],corrija:[],queima:[],proteja:[],escale:[],escondido:[],peso:[],maturacao:[]};
+  const _prDiag=(typeof getR==='function')?getR():['','']; const _psDiag=_prDiag[0]||'', _peDiag=_prDiag[1]||'';
+  const QMAP=_histSaudMap((GER_OP||'').split('||')[0],mkt,_psDiag); // margem saudável histórica por anúncio (emp+mkt, antes do período)
   atual.forEach(o=>{
-    let b;
+    let b; const hs=QMAP[o.k];
     if(o.saude==='prej') b='estanca';
     // relevância C + saúde baixa = candidato a peso morto; mas se o produto é NOVO, vai p/ maturação (trabalhar, não descartar)
     else if(o.saude==='baixa') b=(o.aF==='C')?(_isNovo(o.sku,_peDiag)?'maturacao':'peso'):'corrija';
+    // QUEIMA: ainda com margem (≥10%) e relevante (A/B), mas caindo vs a saudável histórica → agir antes de virar prejuízo
+    else if(_isQueimaMargem(o.aF,o.mcp,hs)){ b='queima'; o.histSaud=hs; }
     else if(o.saude==='saud') b=(o.aF==='A'?'proteja':(o.aF==='B'?'escale':'escondido'));
-    else b=null; // média (10–20): sem ação urgente, aparece só na aba Anúncios
+    else b=null; // média (10–20) sem queima: sem ação urgente, aparece só na aba Anúncios
     if(b){ o.bucket=b; BK[b].push(o); }
   });
   const pot=o=>Math.max(0,o.fat*(0.20-o.mcp/100)); // potencial de MC se chegasse a 20%
@@ -2594,11 +2623,14 @@ function _renderGerDiag(A,B,mkt){
   // ── RESUMO ──
   const totPrej=BK.estanca.reduce((s,o)=>s+o.mc,0);
   const totPot=BK.corrija.reduce((s,o)=>s+pot(o),0);
+  const qmLoss=o=>Math.max(0,o.fat*((o.histSaud-o.mcp)/100)); // R$ de margem perdida vs a saudável histórica
+  const totQueima=BK.queima.reduce((s,o)=>s+qmLoss(o),0);
   const chip=(lbl,val,cor)=>`<div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:10px;padding:9px 13px;min-width:112px;"><div style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin-bottom:4px;">${lbl}</div><div style="font-size:15px;font-weight:800;color:${cor||'var(--t1)'};line-height:1;">${val}</div></div>`;
   if(resumo) resumo.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="font-weight:800;color:var(--t1);font-size:14px;">🔍 Diagnóstico da operação</div><div style="display:flex;gap:8px;"><button onclick="abrirGuiaGer()" style="background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t2);font-size:12px;padding:5px 11px;cursor:pointer;white-space:nowrap;">ⓘ Como ler</button></div></div><div style="display:flex;flex-wrap:wrap;gap:8px;">
     ${chip('Anúncios',atual.length.toLocaleString('pt-BR'))}
     ${chip('🩹 Prejuízo p/ estancar',brlN(totPrej),totPrej<0?'#dc2626':'#22c55e')}
     ${chip('🔴 Lucro escapando (→20%)',brlN(totPot),'#f59e0b')}
+    ${BK.queima.length?chip('🛡️ Queima de margem',brlN(totQueima),'#e879f9'):''}
     ${chip('⭐ Estrelas',BK.proteja.length)}
     ${chip('🚀 P/ escalar',BK.escale.length)}
     ${chip('💡 Nichos ocultos',BK.escondido.length)}
@@ -2631,6 +2663,9 @@ function _renderGerDiag(A,B,mkt){
   h+=lista('🔴','Corrija a margem','#f59e0b',BK.corrija.slice().sort((a,b)=>pot(b)-pot(a)),
      'Vende bem, lucra pouco (&lt;10%). Renegociar custo ou subir preço.',
      o=>`${brlN(o.fat)} · <b style="color:#f59e0b">${o.mcp.toFixed(0)}%</b> · <span style="color:var(--t3)">→20%: +${brlN(pot(o))}</span>`,'Corrigir');
+  h+=lista('🛡️','Queima de margem','#e879f9',BK.queima.slice().sort((a,b)=>qmLoss(b)-qmLoss(a)),
+     `Relevante e ainda com margem, mas caindo &gt;${QM_EROSAO_PP}pp vs a saudável histórica — agir antes de virar prejuízo (preço, custo da ficha ou gasto de Ads).`,
+     o=>`${brlN(o.fat)} · <b style="color:#e879f9">${o.mcp.toFixed(0)}%</b> <span style="color:var(--t3)">↓ de ~${o.histSaud.toFixed(0)}% · perde ${brlN(qmLoss(o))}</span>`,'Queima');
   h+=lista('⭐','Proteja as estrelas','#22c55e',BK.proteja.slice().sort((a,b)=>b.fat-a.fat),
      'Relevante e saudável. Garantir estoque, vigiar concorrência e margem.',
      o=>`${brlN(o.fat)} · <b style="color:#22c55e">${o.mcp.toFixed(0)}%</b> · ${o.qtd}un`,'Estrela');
@@ -2696,6 +2731,7 @@ function _renderGerProdutos(A,B,mkt){
     o.adsPct=o.qtd?100*o.adsU/o.qtd:0; o.devPct=o.qtd?100*o.devU/o.qtd:0; });
   // join com Ads (por anúncio) — investimento e ACOS reais da campanha
   const _emp=(GER_OP||'').split('||')[0]; const _pr=(typeof getR==='function')?getR():['',''];
+  const QMAP=porAnuncio?_histSaudMap(_emp,mkt,_pr[0]):{}; // margem saudável histórica (p/ sinal Queima de margem)
   const adsIdx=porAnuncio?_adsIndex(_emp,mkt,_pr[0],_pr[1]):{};
   const hasAds=Object.keys(adsIdx).length>0;
   arr.forEach(o=>{ const ad=adsIdx[_normMLB(o.anuncio)]; o.adsInv=ad?ad.inv:0; o.adsRec=ad?ad.recAds:0;
@@ -2716,7 +2752,7 @@ function _renderGerProdutos(A,B,mkt){
   const situ=o=>{ const mf=(o.mcpFinal!=null?o.mcpFinal:o.mcp); return mf<0?['Prejuízo','#dc2626'] : mf<10?(o.aF==='C'?['Peso morto','#8891a8']:['Corrigir','#f59e0b']) : mf<20?['Estável','#4f8ef7'] : (o.aF==='A'?['Estrela','#22c55e']:(o.aF==='B'?['Escalar','#4f8ef7']:['Nicho','#c77dff'])); };
   const linkAnun=o=>{ const id=(o.anuncio||''); if(!id)return''; if(/mercado livre/i.test(mkt)&&/^MLB\d+/i.test(id)) return 'https://produto.mercadolivre.com.br/MLB-'+id.replace(/^MLB/i,''); if(/amazon/i.test(mkt)&&/^[A-Z0-9]{10}$/.test(id)) return 'https://www.amazon.com.br/dp/'+id; return ''; };
   // situação + sinais por linha (mesma lógica do Diagnóstico) — p/ o filtro
-  arr.forEach(o=>{ o._sit=situ(o)[0]; o.antFatVal=antM[o.k]!=null?antM[o.k]:0; o.sPerd=o.antFatVal>200&&o.fat<o.antFatVal*0.7; o.sGanh=o.antFatVal>0&&o.fat>200&&o.fat>o.antFatVal*1.4; o.sDev=o.devU>=2&&o.devPct>5; });
+  arr.forEach(o=>{ o._sit=situ(o)[0]; o.antFatVal=antM[o.k]!=null?antM[o.k]:0; o.sPerd=o.antFatVal>200&&o.fat<o.antFatVal*0.7; o.sGanh=o.antFatVal>0&&o.fat>200&&o.fat>o.antFatVal*1.4; o.sDev=o.devU>=2&&o.devPct>5; o.histSaud=QMAP[o.k]; o.sQueima=_isQueimaMargem(o.aF,o.mcp,o.histSaud); });
 
   // ── resumo Pareto / relevância (gp-kpis) ──
   const relF=r=>{const l=arr.filter(o=>o.aF===r);return{n:l.length,fat:l.reduce((s,o)=>s+o.fat,0)};};
@@ -2728,12 +2764,12 @@ function _renderGerProdutos(A,B,mkt){
   // ── controles (gp-alerts) ──
   const tgBtn=(v,l)=>`<button onclick="gerPView('${v}')" style="background:${(GER_PVIEW===v)?'var(--a3)':'transparent'};border:none;color:${(GER_PVIEW===v)?'var(--a)':'var(--t2)'};font-size:12px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;">${l}</button>`;
   const SIT_COR={'Estrela':'#22c55e','Escalar':'#4f8ef7','Nicho':'#c77dff','Estável':'#4f8ef7','Corrigir':'#f59e0b','Prejuízo':'#dc2626','Peso morto':'#8891a8'};
-  const SIG_COR={'Perdendo':'#f87171','Ganhando':'#22c55e','Devolução':'#f59e0b'};
+  const SIG_COR={'Queima':'#e879f9','Perdendo':'#f87171','Ganhando':'#22c55e','Devolução':'#f59e0b'};
   const cnt={}; arr.forEach(o=>{cnt[o._sit]=(cnt[o._sit]||0)+1;});
-  const sigCnt={Perdendo:arr.filter(o=>o.sPerd).length,Ganhando:arr.filter(o=>o.sGanh).length,'Devolução':arr.filter(o=>o.sDev).length};
+  const sigCnt={Queima:arr.filter(o=>o.sQueima).length,Perdendo:arr.filter(o=>o.sPerd).length,Ganhando:arr.filter(o=>o.sGanh).length,'Devolução':arr.filter(o=>o.sDev).length};
   const chipF=(name,cor,n)=>{ if(!n)return''; const on=GER_PFILT===name; return `<span onclick="gerPFilt('${name}')" style="cursor:pointer;font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;border:1px solid ${on?cor:'var(--bdr2)'};background:${on?cor+'22':'transparent'};color:${on?cor:'var(--t2)'};white-space:nowrap;">${name} ${n}</span>`; };
   const todosChip=`<span onclick="gerPFilt('')" style="cursor:pointer;font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;border:1px solid ${GER_PFILT===''?'var(--a)':'var(--bdr2)'};background:${GER_PFILT===''?'var(--a3)':'transparent'};color:${GER_PFILT===''?'var(--a)':'var(--t2)'};">Todos ${arr.length}</span>`;
-  const chips=todosChip+['Estrela','Escalar','Nicho','Estável','Corrigir','Prejuízo','Peso morto'].map(s=>chipF(s,SIT_COR[s],cnt[s]||0)).join('')+['Perdendo','Ganhando','Devolução'].map(s=>chipF(s,SIG_COR[s],sigCnt[s]||0)).join('');
+  const chips=todosChip+['Estrela','Escalar','Nicho','Estável','Corrigir','Prejuízo','Peso morto'].map(s=>chipF(s,SIT_COR[s],cnt[s]||0)).join('')+['Queima','Perdendo','Ganhando','Devolução'].map(s=>chipF(s,SIG_COR[s],sigCnt[s]||0)).join('');
   al.innerHTML=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
     <div style="display:flex;gap:3px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;padding:3px;">${tgBtn('anuncio','Por anúncio')}${tgBtn('sku','Por SKU')}</div>
     <input id="gp-search" type="text" placeholder="Buscar título, SKU ou ID…" oninput="_gpSearch(this.value)" value="${esc(_gpQuery)}" style="flex:1;min-width:200px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);font-family:'Inter',sans-serif;font-size:12px;padding:7px 12px;outline:none;">
@@ -2742,7 +2778,7 @@ function _renderGerProdutos(A,B,mkt){
   <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;">${chips}</div>`;
 
   let view=arr;
-  if(GER_PFILT){ view=view.filter(o=> GER_PFILT==='Perdendo'?o.sPerd : (GER_PFILT==='Ganhando'?o.sGanh : (GER_PFILT==='Devolução'?o.sDev : o._sit===GER_PFILT)) ); }
+  if(GER_PFILT){ view=view.filter(o=> GER_PFILT==='Queima'?o.sQueima : (GER_PFILT==='Perdendo'?o.sPerd : (GER_PFILT==='Ganhando'?o.sGanh : (GER_PFILT==='Devolução'?o.sDev : o._sit===GER_PFILT))) ); }
   if(_gpQuery){ const q=_gpQuery.toLowerCase(); view=view.filter(o=>((o.tit||'')+' '+(o.sku||'')+' '+(o.anuncio||'')).toLowerCase().includes(q)); }
 
   // ── tabela = SCORECARD DE PRODUTO (P&L por unidade). Ads entra só como impacto (− Ads → margem final).
