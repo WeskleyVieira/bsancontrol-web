@@ -3286,7 +3286,11 @@ ac2.nota=function(m){ const disc=(m.disciplina!=null?m.disciplina:(m.total?m.tra
   acerto=m.hit!=null?m.hit*100:40, rapidez=m.mediaReacaoH==null?50:m.mediaReacaoH<=24?100:m.mediaReacaoH<=48?70:m.mediaReacaoH<=72?50:30,
   semDemora=m.demora===0?100:Math.max(30,100-m.demora/50);
   return Math.round(0.40*disc+0.25*rapidez+0.20*acerto+0.15*semDemora); };
-ac2.statusGer=function(m){ const k=(m.demora>0&&m.hit!=null&&m.hit<.7)?'bad':((m.demora>0||(m.hit!=null&&m.hit<.7)||(m.noPrazo!=null&&m.noPrazo<.8))?'warn':'good'); return {k,t:k==='good'?'BOM':k==='warn'?'ATENÇÃO':'CRÍTICO'}; };
+ac2.statusGer=function(m){ const disc=m.disciplina!=null?m.disciplina:(m.total?m.tratadas/m.total:0);
+  let k='good';
+  if(disc<0.3 || (m.demora>0&&m.hit!=null&&m.hit<.7)) k='bad';                                   // quase ninguém registrou → crítico
+  else if(disc<0.6 || m.demora>0 || (m.hit!=null&&m.hit<.7) || (m.noPrazo!=null&&m.noPrazo<.8)) k='warn';
+  return {k,t:k==='good'?'BOM':k==='warn'?'ATENÇÃO':'CRÍTICO'}; };
 ac2.evolRec=function(g){ const A=(typeof ACOMP!=='undefined'&&Array.isArray(ACOMP))?ACOMP:[]; const byW={};
   A.forEach(r=>{ const p=String(r.operacao||'').split(' · '); if(AC2_GESTOR[(p[0]||'').trim()+'|'+(p[1]||'').trim()]!==g)return; byW[r.semana]=(byW[r.semana]||0)+(+r.resolvido||0); });
   return Object.keys(byW).sort().slice(-6).map(w=>byW[w]); };
