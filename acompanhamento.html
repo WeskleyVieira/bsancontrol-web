@@ -100,6 +100,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);min-hei
 .ntab{padding:12px 15px;font-family:inherit;font-size:13px;font-weight:600;color:var(--t3);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .16s,border-color .16s;white-space:nowrap;}
 .ntab:hover{color:var(--t2);}
 .ntab.on{color:var(--a2);border-bottom-color:var(--a);}
+/* Gerencial · nível 1 (modo). Reusa .ntab da navegação principal para ler como "um degrau acima"
+   das pílulas .dshort, que ficam sendo o nível 2. */
+.ger-modos{display:flex;align-items:center;gap:2px;padding:0 28px;background:var(--bg2);border-bottom:1px solid var(--bdr);}
+.ger-modos .ntab{padding:10px 16px;font-size:13px;}
+.ger-modo-dica{margin-left:14px;font-size:11px;color:var(--t3);font-family:'Inter',sans-serif;}
 .dbar{background:var(--surf);border-bottom:1px solid var(--bdr);padding:8px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:106px;z-index:480;}
 .dbar-lbl{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--t3);}
 .drange{display:flex;align-items:center;gap:7px;}
@@ -943,21 +948,34 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
 
 <!-- ═══════════ GERENCIAL — a lente da conta ═══════════ -->
 <div id="page-gerencial" class="page">
+  <!-- NÍVEL 1 · MODO DE TRABALHO. Gestão = uma operação por vez (precisa do seletor);
+       Acompanhamento = coordenador olhando TODAS as operações (seletor não se aplica). -->
+  <div class="ger-modos">
+    <button class="ntab on" id="btn-ger-modo-gestao" onclick="gerModo('gestao')"
+      title="Mergulho em uma operação: panorama, vendas, diagnóstico, anúncios e publicidade">Gestão</button>
+    <button class="ntab" id="btn-ger-modo-acomp" onclick="gerModo('acomp')"
+      title="Visão do coordenador sobre todas as operações: acompanhamento das tratativas e comissão">Acompanhamento</button>
+    <span id="ger-modo-dica" class="ger-modo-dica"></span>
+  </div>
+
+  <!-- NÍVEL 2 · barra contextual: muda conforme o modo -->
   <div class="perf-fbar" style="flex-wrap:wrap;gap:12px;">
-    <div style="display:flex;align-items:center;gap:8px;">
+    <div id="ger-seletor" style="display:flex;align-items:center;gap:8px;">
       <span class="pf-lbl">Empresa</span>
       <select id="ger-sel-emp" class="abc-select" style="min-width:170px;" onchange="onGerEmp()"><option value="">— empresa —</option></select>
       <span class="pf-lbl" style="margin-left:6px;">Marketplace</span>
       <select id="ger-sel-mkt" class="abc-select" style="min-width:170px;" onchange="onGerMkt()"><option value="">— marketplace —</option></select>
     </div>
-    <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;">
+    <div id="ger-subs-gestao" style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;">
       <button class="dshort" id="btn-ger-panorama" onclick="gerSub('panorama')">Panorama</button>
       <button class="dshort" id="btn-ger-vendas" onclick="gerSub('vendas')">Vendas</button>
       <button class="dshort" id="btn-ger-diag" onclick="gerSub('diag')">Diagnóstico</button>
       <button class="dshort" id="btn-ger-produtos" onclick="gerSub('produtos')">Anúncios</button>
       <button class="dshort" style="opacity:.42;cursor:not-allowed;" disabled title="Depois de Produtos">Full</button>
       <button class="dshort" id="btn-ger-ads" onclick="gerSub('ads')">Publicidade</button>
-      <button class="dshort" id="btn-ger-acomp" onclick="gerSub('acomp')" title="Verificação por resultado dos planos passados (visão do coordenador)" style="margin-left:8px;border-left:2px solid var(--bdr2);padding-left:14px;">📋 Acompanhamento</button>
+    </div>
+    <div id="ger-subs-acomp" style="display:none;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;">
+      <button class="dshort" id="btn-ger-acomp" onclick="gerSub('acomp')" title="Verificação por resultado dos planos passados">📋 Tratativas</button>
       <button class="dshort" id="btn-ger-comissao" onclick="gerSub('comissao')" title="Comissão dos gestores (metas ponderadas → bônus)">💰 Comissão</button>
     </div>
   </div>
@@ -2313,6 +2331,16 @@ function renderEnvios(){
 // Troca de gestor não exige editar nada aqui.
 let GER_OP=''; // "empresa||marketplace"
 let GER_SUB='panorama';
+// ── GERENCIAL em DOIS NÍVEIS ──────────────────────────────────────────────────────────────
+// A aba misturava dois modos de trabalho numa fileira só de botões:
+//   GESTÃO        — mergulho em UMA operação; depende de escolher empresa + marketplace.
+//   ACOMPANHAMENTO— visão de coordenador sobre TODAS as operações; o seletor não faz nada ali
+//                   (o render de acomp/comissão já ignorava GER_OP), mas ficava na tela mesmo assim.
+// Agora o modo é o nível de cima e decide o que a barra mostra, inclusive esconder o seletor.
+let GER_MODO='gestao';
+const GER_GRUPO={panorama:'gestao',vendas:'gestao',diag:'gestao',produtos:'gestao',ads:'gestao',acomp:'acomp',comissao:'acomp'};
+// lembra a última sub-aba de cada modo: alternar Gestão↔Acompanhamento não perde onde você estava
+const GER_ULTIMO={gestao:'panorama',acomp:'acomp'};
 let ESTOQUE=[]; // aba "Estoque" (Tiny): saldo por SKU (snapshot) — Geral/Full/disponível + cobertura
 let PRODUTOS=[]; // aba "Produtos" (Tiny): cadastro-mãe (sku, gtin, tipo, situação)
 let ACOMP=[];       // aba "Acompanhamento": placar da verificação por resultado (semana × operação)
@@ -2333,15 +2361,15 @@ let GER_APUB='campanha'; // visão da aba Publicidade: 'campanha' | 'anuncio'
 let GER_CSORT={col:'inv',dir:-1}, GER_CFILT=''; // ordenação/filtro da tabela de campanhas
 const _normMLB=id=>{const d=String(id||'').replace(/\D/g,'');return d?'MLB'+d:'';};
 // ── chave de cruzamento Ads × venda (por anúncio), CIENTE DO CANAL ──
-// ML: normaliza MLB (o report varia o formato). Magalu: casa por SKU (o Ads do Magalu é por SKU,
-// a venda traz o id do anúncio). Demais (Amazon/Shopee/TikTok): id EXATO (ASIN/item_id/product_id),
-// sem reduzir a dígitos — evita colisão (ex.: dois ASINs com os mesmos dígitos).
+// ML: normaliza MLB (o report varia o formato). Magalu/Shopee: casam por SKU (o Ads traz o SKU do
+// vendedor — no Magalu nativo, na Shopee traduzido do item_id pelo mapa de catálogo do pipeline).
+// Demais (Amazon/TikTok): id EXATO (ASIN/product_id), sem reduzir a dígitos — evita colisão
+// (ex.: dois ASINs com os mesmos dígitos).
+// Se o Ads da Shopee vier sem SKU (sem mapa), o anuncio_id fica o id cru e simplesmente não casa:
+// cai no nível operação, como antes — sem regressão.
 const _ehMagalu=m=>/magazine|magalu/i.test(String(m||''));
 const _ehShopee=m=>/shopee/i.test(String(m||''));
 const _ehML=m=>/mercado livre/i.test(String(m||''));
-// Magalu/Shopee casam por SKU (o Ads traz o SKU do vendedor — no Magalu nativo, na Shopee traduzido do item_id
-// pelo mapa de catálogo). Se o Ads vier sem SKU (sem mapa), o anuncio_id fica o id cru e simplesmente não casa
-// (cai no nível operação, como antes) — sem regressão.
 function _adKeyVenda(mkt,anuncio,sku){
   if(_ehML(mkt)) return _normMLB(anuncio);
   if(_ehMagalu(mkt)||_ehShopee(mkt)) return String(sku||'').trim().toUpperCase();
@@ -2401,7 +2429,10 @@ function _adsInvOper(emp,mkt,ps,pe){
   if(perAd>0) return perAd;
   return Object.values(_adsCampList(emp,mkt,ps,pe)).reduce((s,c)=>s+(c.inv||0),0);
 }
-function gerSub(id){ GER_SUB=id; renderGerencial(); }
+// gerSub deriva o MODO da sub-aba pedida — assim os atalhos antigos espalhados pelo painel
+// (ex.: gerSub('ads') nos cards de Publicidade) continuam funcionando e já trocam de modo sozinhos.
+function gerSub(id){ GER_SUB=id; GER_MODO=GER_GRUPO[id]||'gestao'; GER_ULTIMO[GER_MODO]=id; renderGerencial(); }
+function gerModo(m){ GER_MODO=m; GER_SUB=GER_ULTIMO[m]||(m==='acomp'?'acomp':'panorama'); renderGerencial(); }
 function abrirGuiaGer(){ const m=document.getElementById('ger-guia-modal'); if(m) m.style.display='block'; }
 function fecharGuiaGer(){ const m=document.getElementById('ger-guia-modal'); if(m) m.style.display='none'; }
 function onGerEmp(){ // troca de empresa: repovoa marketplaces daquela empresa (cascata) e zera a operação
@@ -3134,11 +3165,38 @@ function _renderGerPubAnuncio(arr,ch,tb,sub,ttl,afil,opMcp){
   h+='</tbody>'; tb.innerHTML=h;
 }
 
+// ÚNICA fonte de verdade da visibilidade dos painéis da Gerencial.
+// Antes isso estava espalhado em 3 lugares e INCOMPLETO: o ramo de 'comissao' não escondia o
+// painel de tratativas, e o ramo "sem operação escolhida" não escondia nenhum dos dois — então o
+// placar de tratativas ficava aparecendo colado embaixo da Gestão e junto com a Comissão.
+// Os painéis de panorama/vendas/diag/produtos/ads vivem DENTRO de #ger-body; acomp e comissao são
+// irmãos, fora dele — por isso #ger-body também entra na conta.
+function _gerPainel(){
+  const subs=['panorama','vendas','diag','produtos','ads','acomp','comissao'];
+  subs.forEach(s=>{ const el=document.getElementById('ger-sub-'+s); if(el) el.style.display = (s===GER_SUB)?'block':'none'; });
+  const corpo=document.getElementById('ger-body');
+  if(corpo) corpo.style.display = (GER_GRUPO[GER_SUB]==='acomp') ? 'none' : corpo.style.display;
+}
 function _gerSubHighlight(){
   [['btn-ger-panorama','panorama'],['btn-ger-vendas','vendas'],['btn-ger-diag','diag'],['btn-ger-acomp','acomp'],['btn-ger-comissao','comissao'],['btn-ger-produtos','produtos'],['btn-ger-ads','ads']].forEach(([bid,sid])=>{
     const b=document.getElementById(bid); if(!b)return; const on=GER_SUB===sid;
     b.style.borderColor=on?'var(--a)':'var(--bdr2)'; b.style.color=on?'var(--a)':'var(--t2)'; b.style.background=on?'var(--a3)':'transparent';
   });
+  // nível 1: modo ativo, qual fileira de pílulas aparece e se o seletor de operação faz sentido
+  const ehAcomp = GER_MODO==='acomp';
+  const mg=document.getElementById('btn-ger-modo-gestao'), ma=document.getElementById('btn-ger-modo-acomp');
+  if(mg) mg.classList.toggle('on',!ehAcomp);
+  if(ma) ma.classList.toggle('on',ehAcomp);
+  const sg=document.getElementById('ger-subs-gestao'), sa=document.getElementById('ger-subs-acomp');
+  if(sg) sg.style.display=ehAcomp?'none':'flex';
+  if(sa) sa.style.display=ehAcomp?'flex':'none';
+  // o seletor empresa+marketplace só existe para o modo Gestão — em Acompanhamento ele não filtrava
+  // nada e só confundia (o render dessas sub-abas sempre ignorou GER_OP).
+  const sel=document.getElementById('ger-seletor'); if(sel) sel.style.display=ehAcomp?'none':'flex';
+  const dica=document.getElementById('ger-modo-dica');
+  if(dica) dica.textContent = ehAcomp
+    ? 'todas as operações · visão do coordenador'
+    : (GER_OP ? GER_OP.replace('||',' · ') : 'escolha empresa e marketplace');
 }
 // ═══════════ ACOMPANHAMENTO v2 — base de dados (demandas do diagnóstico + dono + ponto) ═══════════
 // Mapa gestor→conta (empresa|marketplace). Mantível; na versão final vem de planilha.
@@ -3157,6 +3215,16 @@ function ac2Ponto(emp,mkt){ return AC2_PONTO_OVER[emp+"|"+mkt] || (/powerfull/i.
 const AC2_META = 0.15; // meta de margem padrão (fallback); risco = fat × (meta − mc%)
 // Gera as DEMANDAS do diagnóstico a partir do DETALHE (anúncios com margem abaixo da meta / em prejuízo).
 function ac2BuildDemandas(){
+  // COMPETÊNCIA — obrigatória. O filtro de mês usa `ac2.compDe(i)`, que é
+  //   i.competencia || String(i.id).split('|').pop()
+  // O fallback do id só serve para demanda vinda do BANCO, cujo id termina no mês. A demanda
+  // calculada aqui tem id "Empresa|Marketplace|MLB123", então o fallback devolvia **MLB123** como
+  // se fosse competência — nunca casava com "2026-07" e as 378 demandas eram TODAS descartadas.
+  // Era a causa real de "não carrega as tarefas": o dado existia e o filtro de mês comia tudo.
+  // Carimbamos o mês FINAL do período selecionado, que é o rótulo que o painel já exibe.
+  const _per = (typeof getR==='function') ? getR() : null;
+  const _comp = (_per && _per[1]) ? String(_per[1]).slice(0,7)
+              : new Date().toISOString().slice(0,7);
   const vnd = (typeof DETALHE!=='undefined'?DETALHE:[]).filter(r=>/venda/i.test(r.stat||'venda'));
   const agg = {};
   vnd.forEach(r=>{ const k=r.emp+'|'+r.mkt+'|'+(r.anuncio||r.sku);
@@ -3168,7 +3236,7 @@ function ac2BuildDemandas(){
     if(mcPct>=AC2_META) return;                                          // saudável, não é demanda
     const tipo = mcPct<0 ? 'Estancamento de Prejuízo' : 'Correção de Margem';
     const risco = Math.round(o.fat*(AC2_META-mcPct));
-    out.push({ id:o.emp+'|'+o.mkt+'|'+(o.anuncio||o.sku), empresa:o.emp, mkt:o.mkt, ponto:ac2Ponto(o.emp,o.mkt), gestor:dono, sku:o.sku, anuncio:o.anuncio,
+    out.push({ competencia:_comp, id:o.emp+'|'+o.mkt+'|'+(o.anuncio||o.sku), empresa:o.emp, mkt:o.mkt, ponto:ac2Ponto(o.emp,o.mkt), gestor:dono, sku:o.sku, anuncio:o.anuncio,
       titulo:o.tit, tipo, mcPct:+(mcPct*100).toFixed(1), meta:AC2_META*100, fat:Math.round(o.fat), risco,
       estado:'diag', trat:null, reacaoH:null, tratD:null, demora:0, causa:'—', recuperado:0, funcionou:null }); });
   return out.sort((a,b)=>b.risco-a.risco);
@@ -3280,8 +3348,14 @@ async function ac2Open(){ ac2injectCSS(); bcAuthInjectCSS(); const root=document
   bcRenderAuthBar();
   const b=document.getElementById('a2-body'); if(b) b.innerHTML='<div style="padding:34px;text-align:center;color:var(--t3)">⏳ carregando do banco…</div>';
   if(Array.isArray(ac2.DEM) && ac2.DEM.length && ac2._fonte){ /* já carregado: trocar período só re-filtra no cliente, sem refetch */ }
-  else { try{ const r=await authFetch('/api/demandas',{cache:'no-store'}); if(!r.ok) throw 0; ac2.DEM=await r.json(); ac2._fonte='banco (API)'; }
-  catch(e){ ac2.DEM=ac2BuildDemandas(); ac2._fonte='embed (offline)'; } }   // fallback: abriu o arquivo direto, sem servidor
+  else { try{ const r=await authFetch('/api/demandas',{cache:'no-store'}); if(!r.ok) throw 0;
+    const j=await r.json();
+    // banco VAZIO nao e verdade: 200 com [] fazia o painel mostrar "0 demandas" e parar por ai,
+    // em vez de cair no calculo local, que deriva a fila do proprio DETALHE (378 demandas).
+    // Era a causa de "nao carrega as tarefas".
+    if(!Array.isArray(j) || !j.length) throw new Error('banco sem demandas');
+    ac2.DEM=j; ac2._fonte='banco (API)'; }
+  catch(e){ ac2.DEM=ac2BuildDemandas(); ac2._fonte='calculado aqui'+(/banco sem/.test(e&&e.message||'')?' (banco vazio)':' (sem servidor)'); } }   // fallback: abriu o arquivo direto, sem servidor
   const _u=BCAUTH.user; if(_u&&_u.perfil==='gestor'){ ac2.gestorSel=_u.gestor_ref; ac2.nivel='gestor'; }   // gestor logado abre direto na própria lista
   bcRenderAuthBar(); ac2.render(); }
 /* ── período: o Acompanhamento segue o filtro do topo (getR → [ps,pe]) ── */
@@ -3337,10 +3411,20 @@ ac2.desemp=function(m){ // REGISTRO é pré-requisito: quem não preenche não p
   const agil=(m.mediaReacaoH<=24)&&(m.mediaTratD==null||m.mediaTratD<=2), eficaz=(m.hit!=null&&m.hit>=0.7);
   if(agil&&eficaz&&disc>=0.6) return {k:'ideal',t:'Ideal'}; if(!agil&&eficaz) return {k:'gira',t:'Eficaz, lento'}; if(agil&&!eficaz) return {k:'gira',t:'Ágil, girando'}; return {k:'crit',t:'Crítico'}; };
 // nota 0–100: DISCIPLINA (registro) e RAPIDEZ dominam; progressão/acerto em 2º; não deixar sangrar no fim.
-ac2.nota=function(m){ const disc=(m.disciplina!=null?m.disciplina:(m.total?m.tratadas/m.total:0))*100,
-  acerto=m.hit!=null?m.hit*100:40, rapidez=m.mediaReacaoH==null?50:m.mediaReacaoH<=24?100:m.mediaReacaoH<=48?70:m.mediaReacaoH<=72?50:30,
-  semDemora=m.demora===0?100:Math.max(30,100-m.demora/50);
-  return Math.round(0.40*disc+0.25*rapidez+0.20*acerto+0.15*semDemora); };
+// NOTA = REGISTRAR + SER RÁPIDO. Só isso. (definição do Weskley, 06/10/2026)
+// O objetivo do ranking é estimular duas coisas: o gestor REGISTRAR a tratativa do problema e fazer
+// isso RÁPIDO. Desfecho (acerto/resolvido/recuperado) saiu da nota: depende do mercado e de prazo,
+// não do esforço do gestor, e antes dava pontos a quem nunca preencheu nada.
+//   50% volume   = quantas das demandas do período ele registrou
+//   50% rapidez  = quão rápido registrou (horas entre a demanda surgir e o registro)
+// Sem nenhum registro → 0. Rapidez só pontua sobre o que foi efetivamente registrado.
+ac2.nota=function(m){
+  if(!m.total || !(m.tratadas>0)) return 0;                 // sem demanda ou sem registro → 0
+  const volume=(m.tratadas/m.total)*100;
+  const h=m.mediaReacaoH;
+  const rapidez=h==null?0:h<=6?100:h<=24?85:h<=48?65:h<=72?45:h<=120?25:10;
+  return Math.round(0.50*volume + 0.50*(m.tratadas/m.total)*rapidez); };
+ac2.velF=function(h){ return h==null?'sem registro':h<1?'<1h':h<24?Math.round(h)+'h':(h/24).toFixed(1).replace('.0','')+'d'; };
 ac2.statusGer=function(m){ const disc=m.disciplina!=null?m.disciplina:(m.total?m.tratadas/m.total:0);
   let k='good';
   if(disc<0.3 || (m.demora>0&&m.hit!=null&&m.hit<.7)) k='bad';                                   // quase ninguém registrou → crítico
@@ -3350,11 +3434,16 @@ ac2.evolRec=function(g){ const A=(typeof ACOMP!=='undefined'&&Array.isArray(ACOM
   A.forEach(r=>{ const p=String(r.operacao||'').split(' · '); if(AC2_GESTOR[(p[0]||'').trim()+'|'+(p[1]||'').trim()]!==g)return; byW[r.semana]=(byW[r.semana]||0)+(+r.resolvido||0); });
   return Object.keys(byW).sort().slice(-6).map(w=>byW[w]); };
 function ac2Ranking(l,glist){
-  const ranked=glist.map(g=>{const m=ac2.metricsDe(l.filter(i=>i.gestor===g));return {g,m,nota:ac2.nota(m)};}).sort((a,b)=>b.nota-a.nota);
+  // resumo dos TIPOS de demanda do gestor (responde "de que tipo eram as tarefas")
+  const tiposDe=li=>{const c={};li.forEach(i=>{const t=String(i.tipo||'');
+      const k=/Prejuízo|Prejuizo/.test(t)?'🩹 prejuízo':/Queima/.test(t)?'🔥 queima':/Maturação|Maturacao/.test(t)?'🌱 maturação':'🔴 margem';
+      c[k]=(c[k]||0)+1;});
+    return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>v+' '+k).join(' · ')||'—';};
+  const ranked=glist.map(g=>{const li=l.filter(i=>i.gestor===g);const m=ac2.metricsDe(li);return {g,m,li,tipos:tiposDe(li),nota:ac2.nota(m)};}).sort((a,b)=>b.nota-a.nota);
   const medal=i=>i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'º';
   const rows=ranked.map((r,i)=>{const cor=AC2_GCOR[r.g]||'#777';const nc=r.nota>=70?'#22c55e':r.nota>=50?'#f59e0b':'#f87171';
-    return `<div class="a2-rk" onclick="ac2.goGes('${r.g}','direcao')"><div style="width:30px;text-align:center;font-weight:800;font-size:16px">${medal(i)}</div><div class="a2-ava" style="width:28px;height:28px;background:${cor}">${r.g[0]}</div><div class="nm">${r.g}</div><div class="sp"></div><div class="mi">📝 ${Math.round(r.m.disciplina*100)}% registrado · 🎯 ${r.m.hit!=null?Math.round(r.m.hit*100)+'%':'—'} acerto · ⚡ ${ac2.reacF(r.m.mediaReacaoH)}</div><div class="rv" style="color:${nc}">${r.nota}<small style="font-size:10px;color:var(--c-mut);font-weight:600">/100</small></div><div class="a2-bar2"><span style="width:${r.nota}%;background:${nc}"></span></div></div>`;}).join('');
-  return `<div class="a2-sh">Ranking da equipe<small>nota = <b>registra</b> + <b>rápido</b> + resolve + não deixa sangrar · quem não registra não sobe (0–100)</small></div><div class="a2-card">${rows}</div>`;
+    return `<div class="a2-rk" onclick="ac2.goGes('${r.g}','direcao')"><div style="width:30px;text-align:center;font-weight:800;font-size:16px">${medal(i)}</div><div class="a2-ava" style="width:28px;height:28px;background:${cor}">${r.g[0]}</div><div class="nm">${r.g}</div><div class="sp"></div><div class="mi">📝 <b>${r.m.tratadas}/${r.m.total}</b> registrado (${Math.round(r.m.disciplina*100)}%) · ⚡ ${ac2.velF(r.m.mediaReacaoH)} para registrar<br><span style="color:var(--c-mut)">${r.tipos}</span></div><div class="rv" style="color:${nc}">${r.nota}<small style="font-size:10px;color:var(--c-mut);font-weight:600">/100</small></div><div class="a2-bar2"><span style="width:${r.nota}%;background:${nc}"></span></div></div>`;}).join('');
+  return `<div class="a2-sh">Ranking da equipe<small>nota = <b>registrar</b> (50%) + <b>rapidez em registrar</b> (50%) · quem não registra fica em zero (0–100)</small></div><div class="a2-card">${rows}</div>`;
 }
 ac2.filt=function(){ const ms=ac2.mesesSel(); return ac2.DEM.filter(i=>(!ms||ms.has(ac2.compDe(i)))&&AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)); };
 ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risco:l.reduce((s,i)=>s+i.risco,0), prej:prej.length, riscoPrej:prej.reduce((s,i)=>s+i.risco,0), corr:l.length-prej.length}; };
@@ -3927,6 +4016,11 @@ function renderGerencial(){
   const kp=document.getElementById('ger-kpis'), al=document.getElementById('ger-alerts');
   const corpo=document.getElementById('ger-body');
   if(!empSel) return;
+  // O MODO é derivado da sub-aba a cada render. Há código que muda GER_SUB direto, sem passar pelo
+  // gerSub() (ex.: gerPFilt força 'produtos' ao filtrar anúncios) — sem isto o painel ficava num
+  // estado impossível: sub de Gestão com a barra de Acompanhamento e o seletor escondido.
+  GER_MODO = GER_GRUPO[GER_SUB] || 'gestao';
+  GER_ULTIMO[GER_MODO] = GER_SUB;
   const base=(typeof DETALHE!=='undefined'&&Array.isArray(DETALHE))?DETALHE.filter(noPonto):[];
   // popular o seletor de EMPRESA uma vez; o de marketplace é preenchido em cascata por onGerEmp()
   if(empSel.dataset.n!==String(base.length)){
@@ -3940,20 +4034,20 @@ function renderGerencial(){
   // Acompanhamento é visão de COORDENADOR (todas as operações) — não depende de escolher operação
   if(GER_SUB==='acomp'){
     vazio.style.display='none'; corpo.style.display='none';
-    const ac=document.getElementById('ger-sub-acomp'); if(ac) ac.style.display='block';
-    _gerSubHighlight();
+    _gerPainel(); _gerSubHighlight();
     ac2Open();
     return;
   }
   // Comissão — também visão de coordenador (todas as operações × mês)
   if(GER_SUB==='comissao'){
     vazio.style.display='none'; corpo.style.display='none';
-    const cc=document.getElementById('ger-sub-comissao'); if(cc) cc.style.display='block';
-    _gerSubHighlight();
+    _gerPainel(); _gerSubHighlight();
     _renderGerComissao();
     return;
   }
-  if(!GER_OP){ vazio.style.display='block'; vazio.innerHTML='Escolha <b>empresa</b> e <b>marketplace</b> acima para ver a operação.'; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); return; }
+  // sem operação escolhida o render para aqui — mas a barra do modo PRECISA ser pintada mesmo assim,
+  // senão os botões Gestão/Acompanhamento ficam congelados no estado anterior.
+  if(!GER_OP){ vazio.style.display='block'; vazio.innerHTML='Escolha <b>empresa</b> e <b>marketplace</b> acima para ver a operação.<div style="margin-top:10px;font-size:12px;color:var(--t3)">Procurando o placar de tratativas ou a comissão dos gestores? Estão em <b>Acompanhamento</b>, acima — não dependem de escolher operação.</div>'; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); _gerPainel(); _gerSubHighlight(); return; }
   vazio.style.display='none'; corpo.style.display='block';
   const [emp,mkt]=GER_OP.split('||');
   const [ps,pe]=getR();
@@ -3967,15 +4061,7 @@ function renderGerencial(){
   const A=_gerAgrega(atual), B=_gerAgrega(antes);
 
   // alterna entre as sub-abas
-  const pnl=document.getElementById('ger-sub-panorama'), pro=document.getElementById('ger-sub-produtos'), ven=document.getElementById('ger-sub-vendas'), dia=document.getElementById('ger-sub-diag'), adsB=document.getElementById('ger-sub-ads');
-  if(pnl) pnl.style.display = GER_SUB==='panorama'?'block':'none';
-  if(ven) ven.style.display = GER_SUB==='vendas'?'block':'none';
-  if(dia) dia.style.display = GER_SUB==='diag'?'block':'none';
-  if(pro) pro.style.display = GER_SUB==='produtos'?'block':'none';
-  if(adsB) adsB.style.display = GER_SUB==='ads'?'block':'none';
-  const acD=document.getElementById('ger-sub-acomp'); if(acD) acD.style.display='none';
-  const coD=document.getElementById('ger-sub-comissao'); if(coD) coD.style.display='none';
-  _gerSubHighlight();
+  _gerPainel(); _gerSubHighlight();
   if(GER_SUB==='vendas'){ _renderGerVendas(atual, mkt); return; }
   if(GER_SUB==='diag'){ _renderGerDiag(A,B,mkt); return; }
   if(GER_SUB==='produtos'){ _renderGerProdutos(A,B,mkt); return; }
@@ -5384,12 +5470,22 @@ async function parseXLSX(file){
           });
         }
         // ── ESTOQUE + PRODUTOS (Tiny/Olist) — abas opcionais ──
-        const estoque=[]; const wsEst=wb.Sheets['Estoque'];
+        // Prefere Por_Produto (variações somadas no produto-pai). A aba Estoque é linha-por-variação
+        // e o cadastro PAI entra nela como falso negativo: não carrega saldo (mora na variação) mas
+        // carrega RESERVA, virando dispGeral = 0 − 8. Por_Produto é superset (SKU sem variação forma
+        // grupo de um). Fallback na aba antiga enquanto o mapa de variações não existir.
+        const estoque=[]; const wsEst=wb.Sheets['Por_Produto']||wb.Sheets['Estoque'];
+        const estAba=wb.Sheets['Por_Produto']?'Por_Produto':'Estoque';
         if(wsEst){
           XLSX.utils.sheet_to_json(wsEst,{defval:null}).forEach(r=>{ if(!r.sku)return;
             estoque.push({ conta:String(r.conta||'').trim(), ponto:String(r.ponto||'').trim(), sku:String(r.sku).trim().toUpperCase(),
               produto:String(r.produto||'').trim(), un90d:+r.un90d||0, vendaDia:+r.vendaDia||0, saldoGeral:+r.saldoGeral||0,
-              dispGeral:+r.dispGeral||0, saldoFull:+r.saldoFull||0, reservado:+r.reservado||0, coberturaDias:+r.coberturaDias||0, veredito:String(r.veredito||'') }); });
+              dispGeral:+r.dispGeral||0, saldoFull:+r.saldoFull||0, reservado:+r.reservado||0, coberturaDias:+r.coberturaDias||0, veredito:String(r.veredito||''),
+              // canal: Full (ML) e CD (nosso) são bolsos distintos — CD zerado rompe os outros
+              // marketplaces mesmo com Full cheio. Vazio quando não há Full_ML_vs_Olist.
+              fullML:(r.fullML===''||r.fullML==null)?null:+r.fullML||0, un90dFull:+r.un90dFull||0, un90dCD:+r.un90dCD||0,
+              cobFull:(r.cobFull===''||r.cobFull==null)?null:+r.cobFull||0, cobCD:(r.cobCD===''||r.cobCD==null)?null:+r.cobCD||0,
+              acaoCanal:String(r.acaoCanal||''), variacoes:+r.variacoes||0, nivel:String(r.nivel||''), aba:estAba }); });
         }
         const produtos=[]; const wsPr=wb.Sheets['Produtos'];
         if(wsPr){
@@ -7210,7 +7306,11 @@ function renderEstoque(){
     empty.innerHTML='Sem dados de estoque. Rode <code>node tiny-coletar.js</code> + <code>tiny-estoque.js</code> e <code>node runner.js geral</code>, e recarregue o Consolidado.'; return; }
   empty.style.display='none'; body.style.display='block';
   const pontos=[...new Set(arr.map(o=>o.ponto))].filter(Boolean).join(', ');
-  const sub=document.getElementById('est-sub'); if(sub) sub.innerHTML='Cobertura = disponível ÷ venda/dia (90d) · snapshot do saldo Tiny · pontos coletados: <b>'+esc(pontos||'—')+'</b>. Saldo por SKU só confiável nos cadastros únicos (duplicados vão pro Raio-X).';
+  const porProd=arr.length&&arr[0].aba==='Por_Produto';
+  const nVar=arr.reduce((s,o)=>s+(o.variacoes>1?1:0),0);
+  const sub=document.getElementById('est-sub'); if(sub) sub.innerHTML='Cobertura = disponível ÷ venda/dia (90d) · snapshot do saldo Tiny · pontos coletados: <b>'+esc(pontos||'—')+'</b>. Saldo por SKU só confiável nos cadastros únicos (duplicados vão pro Raio-X).'
+    +(porProd?' Visão <b>por produto</b>: as variações estão somadas no produto-pai ('+nVar+' produtos com mais de uma variação) — é a unidade de decisão de compra.'
+            :' ⚠️ Visão <b>por variação</b>: o cadastro-pai aparece como negativo (ele não carrega saldo, só reserva). Rode <code>node tiny-variacoes.js</code> + <code>tiny-estoque.js</code> + <code>runner.js geral</code>.');
   // KPIs por bucket
   const b={neg:[],repor:[],atencao:[],excesso:[],ok:[]}; arr.forEach(o=>b[o._v.k].push(o));
   const kp=document.getElementById('est-kpis');
@@ -7224,10 +7324,16 @@ function renderEstoque(){
     kc('🟢 OK',b.ok.length,'de '+arr.length+' SKUs','#22c55e');
   // agenda (ações por prioridade)
   const linha=(o,extra)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--bdr);font-size:12px;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:62%;" title="${esc(o.produto||o.sku)}">${esc(o.produto||o.sku)}</span><span style="color:var(--t2);white-space:nowrap;font-family:'DM Mono',monospace">${extra}</span></div>`;
-  const card=(icon,tit,cor,itens,subT,fmt,filt)=>{ if(!itens.length)return''; return `<div class="cc" style="border-left:3px solid ${cor}"><div class="cc-hdr"><div><div class="cc-title" style="font-size:14px">${icon} ${tit} <span style="color:${cor}">(${itens.length})</span></div><div class="cc-sub">${subT}</div></div></div><div style="margin-top:4px">${itens.slice(0,6).map(o=>linha(o,fmt(o))).join('')}</div>${itens.length>6?`<div style="margin-top:8px"><span onclick="estFilt('${filt}')" style="cursor:pointer;color:${cor};font-size:12px;font-weight:600">ver os ${itens.length} na tabela →</span></div>`:''}</div>`; };
+  const card=(icon,tit,cor,itens,subT,fmt,filt)=>{ if(!itens.length)return''; return `<div class="cc" style="border-left:3px solid ${cor}"><div class="cc-hdr"><div><div class="cc-title" style="font-size:14px">${icon} ${tit} <span style="color:${cor}">(${itens.length})</span></div><div class="cc-sub">${subT}</div></div></div><div style="margin-top:4px">${itens.slice(0,6).map(o=>linha(o,fmt(o))).join('')}</div>${itens.length>6&&filt?`<div style="margin-top:8px"><span onclick="estFilt('${filt}')" style="cursor:pointer;color:${cor};font-size:12px;font-weight:600">ver os ${itens.length} na tabela →</span></div>`:(itens.length>6?`<div style="margin-top:8px;color:var(--t3);font-size:11px">+ ${itens.length-6} — use a coluna "O que fazer (por canal)" na tabela</div>`:'')}</div>`; };
   const ag=document.getElementById('est-agenda');
+  // Ação que ninguém via antes: o Full pode romper mesmo com o CD cheio (são bolsos separados).
+  // Não é "repor", é TRANSFERIR — mercadoria nossa que precisa sair do CD para o centro do ML.
+  const enviarFull=arr.filter(o=>/ENVIAR AO FULL/.test(o.acaoCanal||'')).sort((a,c)=>(c.un90dFull||0)-(a.un90dFull||0));
+  const reporDois=arr.filter(o=>/REPOR OS DOIS/.test(o.acaoCanal||'')).sort((a,c)=>c.un90d-a.un90d);
   ag.innerHTML=`<div class="cc-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
     ${card('🔴','Repor já','#dc2626',b.repor.slice().sort((a,c)=>c.un90d-a.un90d),'Vendem e estão zerados no CD — reposição urgente.',o=>o.un90d+'un/90d · disp '+o.dispGeral,'repor')}
+    ${card('🔴','Repor os dois canais','#dc2626',reporDois,'Full E CD rompem em menos de 15 dias. Comprar e já separar o envio ao Full.',o=>'Full '+(o.cobFull==null?'—':o.cobFull+'d')+' · CD '+(o.cobCD==null?'—':o.cobCD+'d'),'')}
+    ${card('📦','Enviar ao Full','#4f8ef7',enviarFull,'O Full rompe em menos de 15 dias e o CD tem saldo — é transferência, não compra.',o=>'Full '+(o.cobFull==null?'—':o.cobFull+'d')+' · tem '+(o.dispGeral||0)+' no CD','')}
     ${card('⚠️','Investigar (saldo negativo)','#dc2626',b.neg.slice().sort((a,c)=>a.dispGeral-c.dispGeral),'Saldo abaixo de zero = oversell ou baixa errada. Auditar.',o=>'disp '+o.dispGeral+' · '+o.un90d+'un','neg')}
     ${card('🟠','Excesso (capital parado)','#f59e0b',b.excesso.slice().sort((a,c)=>c.saldoGeral-a.saldoGeral),'>120 dias de cobertura — dinheiro parado no estoque.',o=>o.saldoGeral+' un · '+(o.coberturaDias>999?'>999':o.coberturaDias)+'d','excesso')}
     ${card('🟡','Repor em breve','#f59e0b',b.atencao.slice().sort((a,c)=>a.coberturaDias-c.coberturaDias),'Cobertura abaixo de 15 dias.',o=>o.coberturaDias+'d · disp '+o.dispGeral,'atencao')}
@@ -7239,27 +7345,31 @@ function renderEstoque(){
   // tabela
   let view=arr; if(EST_FILT) view=view.filter(o=>o._v.k===EST_FILT);
   if(EST_QUERY){const q=EST_QUERY.toLowerCase();view=view.filter(o=>((o.produto||'')+' '+(o.sku||'')).toLowerCase().includes(q));}
-  const sv={sku:o=>o.sku,produto:o=>o.produto||o.sku,un90d:o=>o.un90d,vendaDia:o=>o.vendaDia,dispGeral:o=>o.dispGeral,saldoFull:o=>o.saldoFull,coberturaDias:o=>o.coberturaDias}[EST_SORT.col]||(o=>o.un90d);
+  const sv={sku:o=>o.sku,produto:o=>o.produto||o.sku,un90d:o=>o.un90d,vendaDia:o=>o.vendaDia,dispGeral:o=>o.dispGeral,fullML:o=>(o.fullML==null?-1:o.fullML),saldoFull:o=>o.saldoFull,coberturaDias:o=>o.coberturaDias}[EST_SORT.col]||(o=>o.un90d);
   const lin=view.slice().sort((a,c)=>{const x=sv(a),y=sv(c);const r=(typeof x==='string')?String(x).localeCompare(String(y)):(x-y);return (r*EST_SORT.dir)||(c.un90d-a.un90d);});
   const scc=c=>EST_SORT.col===c?(EST_SORT.dir<0?' ▾':' ▴'):'';
   const stk='position:sticky;top:0;background:var(--surf2);z-index:3;';
   const th=(c,l,t)=>`<th onclick="estSort('${c}')" style="cursor:pointer;user-select:none;text-align:right;${stk}"${t?' title="'+t+'"':''}>${l}${scc(c)}</th>`;
   let h=`<thead><tr><th onclick="estSort('produto')" style="cursor:pointer;user-select:none;${stk}">Produto${scc('produto')}</th>`
     +th('un90d','Vendas 90d','Unidades vendidas nos últimos 90 dias')+th('vendaDia','Venda/dia',0)
-    +th('dispGeral','Disp. CD','Disponível no depósito Geral (físico)')+th('saldoFull','Full','Saldo no FULL ML')
+    +th('dispGeral','Disp. CD','Disponível no depósito Geral (físico)')
+    // ANTES esta coluna mostrava o Full do OLIST, que é inválido: a entrada do envio ao Full nunca
+    // é lançada, só a saída desconta — 196 SKUs negativos e ZERO positivos em 947. A verdade é do ML.
+    +th('fullML','Full (ML)','Estoque REAL no Full, lido do Mercado Livre. O saldo Full do Olist é inválido (só desce) e não é mais exibido.')
     +th('coberturaDias','Cobertura','Dias de estoque = disponível ÷ venda/dia')
-    +`<th style="${stk}">Situação</th></tr></thead><tbody>`;
+    +`<th style="${stk}">Situação</th><th style="${stk}" title="Full e CD são bolsos distintos: o Full abastece os anúncios Full do ML, o CD abastece todo o resto (outros marketplaces, Flex, Merchant). CD zerado rompe os outros canais mesmo com Full cheio.">O que fazer (por canal)</th></tr></thead><tbody>`;
   const cobCor=(o)=>o.dispGeral<0?'#dc2626':o.dispGeral===0?'#dc2626':o.coberturaDias<15?'#f59e0b':o.coberturaDias>120?'#f59e0b':'#22c55e';
   lin.forEach(o=>{
     h+=`<tr><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(o.produto||'')}">${esc(o.produto||'—')}<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--t3)">${esc(o.sku)}</div></td>`
       +`<td class="r"><b>${(o.un90d||0).toLocaleString('pt-BR')}</b></td>`
       +`<td class="r" style="color:var(--t2)">${(o.vendaDia||0).toFixed(1)}</td>`
       +`<td class="r" style="color:${o.dispGeral<=0?'#dc2626':'var(--t1)'};font-weight:600">${(o.dispGeral||0).toLocaleString('pt-BR')}</td>`
-      +`<td class="r" style="color:var(--t3)">${(o.saldoFull||0).toLocaleString('pt-BR')}</td>`
+      +`<td class="r" style="color:${o.fullML==null?'var(--t3)':(o.fullML>0?'var(--t1)':'#dc2626')}" title="${o.fullML==null?'sem leitura do Full do ML — rode diag_full_ml_vs_olist.js':'vendeu '+(o.un90dFull||0)+'un pelo Full em 90d'}">${o.fullML==null?'—':o.fullML.toLocaleString('pt-BR')}</td>`
       +`<td class="r" style="color:${cobCor(o)};font-weight:600">${o.dispGeral<=0?'—':(o.coberturaDias>999?'999+':o.coberturaDias+'d')}</td>`
-      +`<td><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:100px;background:${o._v.c}22;color:${o._v.c}">${o._v.t}</span></td></tr>`;
+      +`<td><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:100px;background:${o._v.c}22;color:${o._v.c}">${o._v.t}</span></td>`
+      +`<td style="font-size:11px;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(o.acaoCanal||'')}">${esc(o.acaoCanal||'—')}</td></tr>`;
   });
-  if(!lin.length) h+=`<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:24px">${EST_QUERY?'Nada encontrado.':'Sem itens neste filtro.'}</td></tr>`;
+  if(!lin.length) h+=`<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:24px">${EST_QUERY?'Nada encontrado.':'Sem itens neste filtro.'}</td></tr>`;
   h+='</tbody>'; document.getElementById('est-tbl').innerHTML=h;
 }
 
