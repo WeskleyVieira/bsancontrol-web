@@ -4030,7 +4030,10 @@ function renderGerencial(){
     const mktSel=document.getElementById('ger-sel-mkt'); if(mktSel) mktSel.innerHTML='<option value="">— marketplace —</option>';
     GER_OP='';
   }
-  if(!base.length){ vazio.style.display='block'; vazio.innerHTML='Carregue os dados de vendas para usar o Gerencial.'; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); return; }
+  // mesmo sem dado a barra do MODO precisa ser pintada — senão, antes de carregar/logar, os botões
+  // Gestão/Acompanhamento ficam congelados e o seletor de operação aparece onde não se aplica.
+  // (era o último caminho de saída que ainda não repintava; o de "sem operação" já foi corrigido)
+  if(!base.length){ vazio.style.display='block'; vazio.innerHTML='Carregue os dados de vendas para usar o Gerencial.'; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); _gerPainel(); _gerSubHighlight(); return; }
   // Acompanhamento é visão de COORDENADOR (todas as operações) — não depende de escolher operação
   if(GER_SUB==='acomp'){
     vazio.style.display='none'; corpo.style.display='none';
