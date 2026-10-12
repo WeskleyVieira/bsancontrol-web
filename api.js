@@ -124,10 +124,21 @@ async function rotaGET(u, user) {
     if (user && user.perfil === "gestor") { const pts = await pontosDoGestor(user.gestor_ref); if (pts.length) { w.push("ponto IN (" + pts.map(() => "?").join(",") + ")"); args.push(...pts); } }
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const raw = await dbx.all(`SELECT data, empresa, canal, ponto, sku, anuncio_id, titulo, pedido,
-        qtd, receita, liquido, ctp, imposto, mc_real, mc_comissao, fonte_liquido, status FROM vendas WHERE ${w.join(" AND ")}`, args);
+        qtd, receita, liquido, ctp, imposto, mc_real, mc_comissao, fonte_liquido, status,
+        preco_cheio, desconto, comissao, tarifas, frete, reembolso, afiliados, publicidade,
+        bonus_flex, custo_motoboy, custo_fatura, subsidios, copart_frete, acerto_vapt,
+        forma_entrega, veio_de_ads FROM vendas WHERE ${w.join(" AND ")}`, args);
+    // As chaves curtas (pcheio, comis, tarif, freteC, ent…) são as que a sub-aba Vendas da Gerencial
+    // já lê — são o contrato do loader antigo, de antes do 2.0. Mantê-las iguais faz o painel voltar
+    // a abrir os custos por marketplace sem precisar de nenhuma alteração nele.
     const detalhe = raw.map(v => ({ date: v.data, emp: v.empresa, mkt: v.canal, sku: v.sku, tit: v.titulo, ped: v.pedido,
       anuncio: v.anuncio_id, qtd: r2(v.qtd), fat: r2(v.receita), liq: r2(v.liquido), ctp: r2(v.ctp), imp: r2(v.imposto),
-      mc: r2(v.mc_comissao), mccom: r2(v.mc_comissao), mcReal: r2(v.mc_real), fonte: v.fonte_liquido, stat: v.status, ponto: v.ponto }));
+      mc: r2(v.mc_comissao), mccom: r2(v.mc_comissao), mcReal: r2(v.mc_real), fonte: v.fonte_liquido, stat: v.status, ponto: v.ponto,
+      pcheio: r2(v.preco_cheio), desc: r2(v.desconto), comis: r2(v.comissao), tarif: r2(v.tarifas),
+      freteC: r2(v.frete), reemb: r2(v.reembolso), afil: r2(v.afiliados), pub: r2(v.publicidade),
+      flex: r2(v.bonus_flex), motoboy: r2(v.custo_motoboy), fatura: r2(v.custo_fatura),
+      subs: r2(v.subsidios), copart: r2(v.copart_frete), vapt: r2(v.acerto_vapt),
+      ent: v.forma_entrega || "", ads: v.veio_de_ads || "" }));
     return { periodo: [de, ate], ms: Date.now() - t0, n: detalhe.length, detalhe };
   }
   // ── /api/extras — datasets não-vendas (Ads/Estoque/Comissão/Produtos/…) escopados por ponto ──
