@@ -43,6 +43,9 @@ const userDe = req => { const h = req.headers["authorization"] || ""; return ver
 // demanda do banco → modelo que o Acompanhamento (ac2) consome
 const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa, mkt: r.canal, ponto: r.ponto, gestor: r.gestor, sku: r.sku, anuncio: r.anuncio_id,
   titulo: r.titulo, tipo: r.tipo, causa: r.causa, mcPct: r.mc_pct, meta: r.meta, fat: r.fat, risco: r.risco, qtd: r.qtd, pedidos: r.pedidos,
+  // `criado_em` é a idade da demanda: sem ele a Coordenação não calcula "dias parados", e a
+  // urgência (dinheiro × dias) vira só dinheiro — era o que a fila fazia antes.
+  criado_em: r.criado_em || null,
   estado: (r.estado && r.estado !== "diag") ? r.estado : (r.acao ? "trat" : "diag"), trat: r.acao || null, reacaoH: r.reacao_h, tratD: null, demora: 0,
   recuperado: r.recuperado || 0, mcDepois: (r.mc_depois == null ? null : r.mc_depois), desfecho: r.desfecho || null,
   funcionou: r.desfecho ? (r.desfecho === "Resolvido" || r.desfecho === "Progrediu") : null });
