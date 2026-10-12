@@ -3401,6 +3401,7 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .vd-l.tot span{color:var(--c-ink);font-weight:700}
 #ac2-root .vd-alvo{margin:9px 0;padding:9px 11px;background:var(--c-s);border:1px dashed var(--c-ln);border-radius:9px;font-size:11.5px;line-height:1.75}
 #ac2-root .vd-t th,#ac2-root .vd-t td{font-size:10.5px;padding:3px 7px}
+#ac2-root .vd-sup{opacity:.72;margin-top:5px;font-size:10.5px;line-height:1.6}
 @media(max-width:860px){#ac2-root .a2-kpis{grid-template-columns:repeat(2,1fr)}}
 `; document.head.appendChild(s); }
 async function ac2Open(){ ac2injectCSS(); bcAuthInjectCSS(); const root=document.getElementById('ac2-root'); if(!root)return;
@@ -3820,11 +3821,29 @@ ac2.goOp = function(op){ ac2.opSel = op || null; AC2_TIPO_FILTRO=''; ac2.render(
 // Mandar o gestor para o Raio-X repetia o sintoma: lá ele via "MC −15,3%" de novo, que é
 // exatamente o que a tarefa já dizia. O que resolve é abrir a venda: quanto a plataforma levou,
 // quanto foi imposto, quanto foi produto — e qual preço (ou custo) fecharia a meta.
-ac2.abrirVendas = function(k){
+ac2.abrirVendas = async function(k){
   const el = document.getElementById(k); if(!el) return;
   if(el.innerHTML){ el.innerHTML=''; el.classList.remove('on'); return; }   // 2º clique fecha
   const i = (ac2._vdMap||{})[k]; if(!i) return;
-  el.innerHTML = ac2PainelVendas(i); el.classList.add('on');
+  el.classList.add('on');
+  // COMISSÃO e FRETE precisam vir separados: um é % (escala com o preço), o outro é R$ por remessa
+  // (não escala). Tratar os dois como percentual fazia o preço-alvo sair otimista. A abertura vem
+  // do endpoint escopado por operação — a mesma que a Gerencial usa.
+  const opk = (i.empresa||'')+'||'+(i.mkt||'');
+  if(!(ac2._abCache=ac2._abCache||{})[opk] && typeof authFetch==='function'){
+    el.innerHTML = '<div class="vd-x">abrindo a conta…</div>';
+    try{
+      const r = await authFetch('/api/abertura?emp='+encodeURIComponent(i.empresa||'')+'&mkt='+encodeURIComponent(i.mkt||''),{cache:'no-store'});
+      const j = r.ok ? await r.json() : null;
+      const idx = {}; ((j&&j.abertura)||[]).forEach(a=>idx[a.k]=a);
+      ac2._abCache[opk] = idx;
+      if(typeof DETALHE!=='undefined') DETALHE.forEach(x=>{
+        const a = idx[(x.ped||'')+'|'+(x.sku||'')+'|'+x.date+'|'+(x.mkt||'')];
+        if(a) for(const c in a){ if(c!=='k') x[c]=a[c]; }
+      });
+    }catch(e){ ac2._abCache[opk] = {}; }
+  }
+  el.innerHTML = ac2PainelVendas(i);
 };
 function ac2PainelVendas(i){
   const D = (typeof DETALHE!=='undefined' && Array.isArray(DETALHE)) ? DETALHE : [];
@@ -3838,6 +3857,12 @@ function ac2PainelVendas(i){
   const S = (f) => vd.reduce((s,r)=>s+(+r[f]||0),0);
   const fat=S('fat'), liq=S('liq'), imp=S('imp'), ctp=S('ctp'), qtd=S('qtd')||vd.length;
   const plat = fat - liq;                       // o que a plataforma reteve (comissão + frete + taxas)
+  // separa o que ESCALA com o preço do que NÃO escala. Comissão é %; tarifa de envio é R$ por
+  // remessa. Sem a abertura (offline, ou canal não aberto), assumimos tudo proporcional e DIZEMOS isso.
+  const temAb = vd.some(r=>r.comis!=null||r.tarif!=null);
+  const comis = temAb ? Math.abs(S('comis')) : 0;
+  const freteFixo = temAb ? Math.abs(S('tarif')) : 0;
+  const restoPlat = Math.max(0, plat - comis - freteFixo);   // taxas de pagamento e afins: proporcional
   // A MARGEM É A `mcReal`, não `liq − imp − ctp`. A diferença entre as duas é o custo que não cabe
   // em nenhuma das três linhas — motoboy do Flex, principalmente. Fechar a conta sem ele dava um
   // número mais bonito que o da própria tarefa (−10,3% contra os −15,3% reais).
@@ -3848,7 +3873,10 @@ function ac2PainelVendas(i){
   const brl = v => 'R$ '+(Math.round(v*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   // alvo: quanto a receita teria de ser para a margem bater a meta, mantendo as TAXAS proporcionais
   // e o custo do produto fixo.  fat*(1-c-t) - ctp = meta*fat  →  fat = ctp / (1-c-t-meta)
-  const c = fat?plat/fat:0, t = fat?imp/fat:0, m = (+i.meta||0)/100;
+  // taxa PROPORCIONAL = comissão + taxas de pagamento (escalam com o preço).
+  // CUSTO FIXO = frete da remessa + produto + motoboy (não mudam se o preço mudar).
+  const c = fat ? (temAb ? (comis+restoPlat)/fat : plat/fat) : 0;
+  const t = fat?imp/fat:0, m = (+i.meta||0)/100;
   const folga = 1 - c - t - m;
   const linha = (rot,v,cor,neg) => `<div class="vd-l"><span>${rot}</span>
     <b style="color:${cor||'var(--t1)'}">${neg?'−':''}${brl(Math.abs(v))}</b>
@@ -3856,8 +3884,8 @@ function ac2PainelVendas(i){
     <u>${neg?'−':''}${brl(Math.abs(un(v)))}/un</u></div>`;
   // os dois caminhos: subir preço OU baixar custo. `outros` (motoboy) entra como custo fixo —
   // ignorá-lo faria o alvo sair otimista, que é justamente o erro que se quer evitar aqui.
-  const fixo = ctp + outros;
-  const fatAlvo = fixo/folga, custoAlvo = fat*folga - outros;
+  const fixo = ctp + outros + freteFixo;        // o frete da remessa entra aqui: é R$, não %
+  const fatAlvo = fixo/folga, custoAlvo = fat*folga - outros - freteFixo;
   const subir = fat ? (100*(fatAlvo/fat - 1)) : 0;
   const cair  = ctp ? (100*(1 - custoAlvo/ctp)) : 0;
   const alvos = folga > 0.0001
@@ -3866,7 +3894,12 @@ function ac2PainelVendas(i){
           <span style="opacity:.65">(${subir>0?'+':''}${subir.toFixed(0)}%)</span></div>
         <div>• <b>custo</b> de <b>${brl(un(ctp))}</b> para <b style="color:#22c55e">${brl(un(custoAlvo))}</b> por unidade
           <span style="opacity:.65">(${cair>0?'−':'+'}${Math.abs(cair).toFixed(0)}%)</span></div>
-        <div style="opacity:.6;margin-top:4px">Supõe que comissão e imposto continuem proporcionais à venda.</div>
+        <div class="vd-sup">${temAb
+          ? 'Comissão e imposto escalam com o preço; a tarifa de envio e o custo do produto entram como valor fixo.'
+          : '⚠ Sem a abertura deste canal, tratei TODA a retenção da plataforma como percentual — o alvo fica otimista se houver tarifa fixa de envio.'}
+          ${/mercado livre/i.test(i.mkt||'') && un(fat) < 79 && un(fatAlvo) >= 79
+            ? '<br><b style="color:#f59e0b">⚠ O preço-alvo cruza o limiar de frete grátis obrigatório do Mercado Livre.</b> Acima dele o frete passa a ser por sua conta, e esta conta deixa de valer — simule o preço novo antes de aplicar.'
+            : ''}</div>
       </div>`
     : `<div class="vd-alvo"><b style="color:#f59e0b">A meta de ${i.meta}% não fecha só com preço.</b>
         A plataforma (${pct(plat).toFixed(1)}%) e o imposto (${pct(imp).toFixed(1)}%) já consomem
@@ -3882,7 +3915,10 @@ function ac2PainelVendas(i){
   return `<div class="vd-h">Para onde foi o dinheiro · ${vd.length} venda(s) em ${comp||'período'} ${linkRx}</div>
     <div class="vd-g">
       ${linha('Receita', fat)}
-      ${linha('Plataforma (comissão, frete, taxas)', plat, '#f59e0b', true)}
+      ${temAb
+        ? linha('Comissão da plataforma (%)', comis+restoPlat, '#f59e0b', true)
+          + linha('Tarifa de envio (R$ por remessa)', freteFixo, '#f59e0b', true)
+        : linha('Plataforma (comissão, frete, taxas)', plat, '#f59e0b', true)}
       ${linha('Imposto', imp, '#f59e0b', true)}
       ${linha('Custo do produto', ctp, '#f59e0b', true)}
       ${Math.abs(outros)>0.005 ? linha('Entrega própria e outros (motoboy)', outros, '#f59e0b', true) : ''}
