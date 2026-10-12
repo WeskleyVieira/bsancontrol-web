@@ -3336,6 +3336,37 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-tbl td{padding:9px;border-bottom:1px solid var(--bdr);font-size:12.5px;vertical-align:middle}
 #ac2-root .a2-tbl td.r,#ac2-root .a2-tbl th.r{text-align:right}
 #ac2-root .a2-tbl tbody tr:hover{background:var(--surf2)}
+/* linha "de quem estamos falando": o número de um card nao significa nada sem o recorte dele */
+#ac2-root .a2-sel{font-size:12px;color:var(--c-mut);padding:7px 11px;background:var(--c-s2);border:1px solid var(--c-ln);border-radius:9px;margin-top:10px}
+#ac2-root .a2-sel b{color:var(--c-ink);font-weight:700}
+/* CAPSULA por tipo: rotulo, registrado/total, barra e quanto falta — substitui a pilula que so contava */
+#ac2-root .a2-caps{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:9px;margin-top:11px}
+#ac2-root .a2-cap{background:var(--c-s);border:1px solid var(--c-ln);border-left:3px solid var(--cc);border-radius:10px;padding:9px 11px;cursor:pointer;transition:border-color .12s,transform .12s}
+#ac2-root .a2-cap:hover{transform:translateY(-1px);border-color:var(--cc)}
+#ac2-root .a2-cap.on{background:color-mix(in srgb,var(--cc) 12%,transparent);border-color:var(--cc)}
+#ac2-root .a2-cap .cap-r{font-size:11px;font-weight:800;color:var(--cc);text-transform:uppercase;letter-spacing:.4px}
+#ac2-root .a2-cap .cap-v{font-size:21px;font-weight:800;color:var(--c-ink);line-height:1.15}
+#ac2-root .a2-cap .cap-v small{font-size:13px;font-weight:700;color:var(--c-mut)}
+#ac2-root .cap-b{height:5px;background:var(--c-ln);border-radius:999px;overflow:hidden;margin:5px 0 4px}
+#ac2-root .a2-cap .cap-b span{display:block;height:100%;background:var(--cc)}
+#ac2-root .cap-b span{display:block;height:100%}
+#ac2-root .a2-cap .cap-s{font-size:10.5px;color:var(--c-mut);font-weight:600}
+/* CARD de gestor: o "momento" de cada um, no formato que a direcao ja usa */
+#ac2-root .a2-gcs{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px;margin-top:10px}
+#ac2-root .a2-gc{background:var(--c-s);border:1px solid var(--c-ln);border-top:3px solid var(--cc);border-radius:11px;padding:11px 12px;cursor:pointer;transition:transform .12s,border-color .12s}
+#ac2-root .a2-gc:hover{transform:translateY(-2px);border-color:var(--cc)}
+#ac2-root .a2-gc .gc-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+#ac2-root .a2-gc .gc-h b{font-size:13.5px;color:var(--c-ink)}
+#ac2-root .a2-gc .gc-tag{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#fff;background:var(--cc);padding:2px 7px;border-radius:999px;white-space:nowrap}
+#ac2-root .a2-gc .gc-v{font-size:23px;font-weight:800;color:var(--cc);line-height:1.1}
+#ac2-root .a2-gc .gc-v small{font-size:11.5px;font-weight:600;color:var(--c-mut)}
+#ac2-root .a2-gc .gc-s{font-size:11px;color:var(--c-mut);font-weight:600}
+#ac2-root .a2-gc .gc-t{font-size:10.5px;margin-top:6px;line-height:1.5}
+#ac2-root .a2-gc .gc-o{font-size:10px;color:var(--c-mut);margin-top:5px;border-top:1px solid var(--c-ln);padding-top:5px;line-height:1.4}
+#ac2-root .a2-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
+#ac2-root .a2-tot td{border-top:2px solid var(--c-ln);background:var(--c-s2)}
+#ac2-root .a2-k.on{border-color:var(--c-acc);background:var(--c-accb)}
+#ac2-root .a2-k.nc{cursor:default}
 @media(max-width:860px){#ac2-root .a2-kpis{grid-template-columns:repeat(2,1fr)}}
 `; document.head.appendChild(s); }
 async function ac2Open(){ ac2injectCSS(); bcAuthInjectCSS(); const root=document.getElementById('ac2-root'); if(!root)return;
@@ -3482,54 +3513,129 @@ ac2.setModo=function(m){ ac2.modo=m; ac2.render(); };
 // ═══════════ NÍVEL 1 · DIREÇÃO — "quanto tem para fazer e quanto foi feito" ═══════════
 // Espelha o painel consolidado que a equipe já usa: por gestor, quantas demandas, de que tipos,
 // quantas registradas e a taxa. Linguagem direta — quem lê isto não é técnico.
+// ── SEMÁFORO DO GESTOR (régua do Weskley, 12/10/2026) ────────────────────────────────────────
+// Mede a taxa de REGISTRO, não a margem: esta aba cobra prestação de contas, não resultado.
+// <40 crítico · 40–60 atenção · 60–80 bom · 80+ ideal.
+const AC2_SEM = [
+  { max:40,  rot:'Crítico', cor:'#dc2626' },
+  { max:60,  rot:'Atenção', cor:'#f59e0b' },
+  { max:80,  rot:'Bom',     cor:'#60a5fa' },
+  { max:1e9, rot:'Ideal',   cor:'#22c55e' },
+];
+const ac2Sem = pct => AC2_SEM.find(s=>pct<s.max);
+
+// Foco e tipo são filtros DO NÍVEL DIREÇÃO: é o que torna os cards clicáveis de verdade.
+// Antes eles tinham cursor:pointer e nenhum handler — pareciam clicáveis e não abriam nada.
+let AC2_DIR_TIPO='', AC2_DIR_FOCO='';
+ac2.dirTipo=function(k){ AC2_DIR_TIPO = (AC2_DIR_TIPO===k?'':k); ac2.render(); };
+ac2.dirFoco=function(f){ AC2_DIR_FOCO = (AC2_DIR_FOCO===f?'':f); ac2.render(); };
+ac2.dirLimpa=function(){ AC2_DIR_TIPO=''; AC2_DIR_FOCO=''; ac2.render(); };
+function ac2FiltDir(){
+  let l = ac2.filt();
+  if(AC2_DIR_TIPO) l = l.filter(i=>ac2TipoDe(i.tipo).k===AC2_DIR_TIPO);
+  if(AC2_DIR_FOCO==='pend') l = l.filter(i=>!ac2Registrada(i));
+  if(AC2_DIR_FOCO==='reg')  l = l.filter(ac2Registrada);
+  return l;
+}
+// "de quem estamos falando": sem isto o número no card não diz a que recorte pertence.
+function ac2Selecao(){
+  const p = AC2_DIMS.filter(d=>ac2[d.k] && ac2[d.k].size).map(d=>`<b>${d.l}:</b> ${[...ac2[d.k]].join(', ')}`);
+  if(AC2_DIR_TIPO){ const t=AC2_TIPOS.find(x=>x.k===AC2_DIR_TIPO); if(t) p.push(`<b>Tipo:</b> <span style="color:${t.cor}">${t.curto}</span>`); }
+  if(AC2_DIR_FOCO) p.push(`<b>Só:</b> ${AC2_DIR_FOCO==='pend'?'sem registro':'já registradas'}`);
+  const txt = p.length ? p.join(' &nbsp;·&nbsp; ') : 'Grupo inteiro — todas as empresas, canais e gestores';
+  const limpar = (p.length && (AC2_DIR_TIPO||AC2_DIR_FOCO)) ? ` <a href="javascript:void(0)" onclick="ac2.dirLimpa()" style="color:var(--c-acc);font-weight:700;text-decoration:none">limpar</a>` : '';
+  return `<div class="a2-sel">👁 ${txt}${limpar}</div>`;
+}
+
 function ac2DirHero(){
-  const l = ac2.filt();
+  const base = ac2.filt();                 // o universo do recorte, sem os filtros do próprio nível
+  const l = ac2FiltDir();
   const reg = l.filter(ac2Registrada).length;
   const taxa = l.length ? Math.round(100*reg/l.length) : 0;
   const risco = l.filter(i=>!ac2Registrada(i)).reduce((a,i)=>a+(+i.risco||0),0);
   const semReg = l.length - reg;
-  const cor = taxa>=70 ? '#22c55e' : (taxa>=30 ? '#f59e0b' : '#dc2626');
-  const card = (rot,val,sub,c) => `<div class="a2-k"><div class="a2-kr">${rot}</div>
-    <div class="a2-kv" style="color:${c||'var(--t1)'}">${val}</div><div class="a2-ks">${sub}</div></div>`;
-  const porTipo = ac2PorTipo(l);
-  const chips = AC2_TIPOS.filter(t=>porTipo[t.k]>0).map(t=>
-    `<span title="${t.ajuda}" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:${t.cor}22;color:${t.cor}">${t.curto} ${porTipo[t.k]}</span>`).join(' ');
-  return `<div class="a2-kpis">
-    ${card('O que tem para fazer', l.length, 'demandas desde out/26')}
-    ${card('O que foi registrado', reg+'/'+l.length, taxa+'% do total', cor)}
-    ${card('Ainda sem registro', semReg, semReg?'ninguém anotou o que fez':'tudo anotado', semReg?'#dc2626':'#22c55e')}
+  const s = ac2Sem(taxa);
+  // sem `foco` o card NÃO é clicável — e então também não finge ser (classe `nc` tira o cursor).
+  const card = (rot,val,sub,c,foco) => `<div class="a2-k${foco===undefined?' nc':''}${AC2_DIR_FOCO===foco&&foco?' on':''}"${foco!==undefined?` onclick="ac2.dirFoco('${foco}')"`:''}>
+    <div class="a2-kr">${rot}</div><div class="a2-kv" style="color:${c||'var(--t1)'}">${val}</div><div class="a2-ks">${sub}</div></div>`;
+  // CÁPSULA por tipo: tipo · registrado/total · barra · quanto falta registrar.
+  // Antes era uma pílula só com a contagem — não dava para ver a taxa de conclusão de cada tipo.
+  const caps = AC2_TIPOS.map(t=>{
+    const li = base.filter(i=>ac2TipoDe(i.tipo).k===t.k); if(!li.length) return '';
+    const r = li.filter(ac2Registrada).length, pc = Math.round(100*r/li.length);
+    return `<div class="a2-cap${AC2_DIR_TIPO===t.k?' on':''}" onclick="ac2.dirTipo('${t.k}')" title="${t.ajuda}" style="--cc:${t.cor}">
+      <div class="cap-r">${t.curto}</div>
+      <div class="cap-v">${r}<small>/${li.length}</small></div>
+      <div class="cap-b"><span style="width:${pc}%"></span></div>
+      <div class="cap-s">${pc}% concluído${li.length-r?` · faltam ${li.length-r}`:''}</div></div>`;
+  }).join('');
+  return ac2Selecao()+`<div class="a2-kpis">
+    ${card('O que tem para fazer', l.length, 'demandas desde out/26', null, '')}
+    ${card('O que foi registrado', reg+'/'+l.length, taxa+'% · '+s.rot, s.cor, 'reg')}
+    ${card('Ainda sem registro', semReg, semReg?'ninguém anotou o que fez':'tudo anotado', semReg?'#dc2626':'#22c55e', 'pend')}
     ${card('Dinheiro parado nelas', AC2_BRLk(risco), 'margem que dá para recuperar', risco>0?'#f59e0b':'var(--t3)')}
-  </div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">${chips}</div>`;
+  </div><div class="a2-caps">${caps}</div>`;
 }
 
-// tabela por gestor: a pergunta da direção é "quem está fazendo?"
+// A direção pergunta duas coisas: "que tipo de problema temos?" e "quem está devendo?".
+// Por isso a tabela virou: TIPO nas linhas, GESTOR nas colunas, taxa de conclusão no fim da linha.
+// Antes era gestor por linha, e não dava para ler quanto de cada tipo existia no grupo todo.
 function ac2DirScore(){
-  const l = ac2.filt();
-  const gestores = [...new Set(l.map(i=>i.gestor))].filter(Boolean);
+  const l = ac2FiltDir();
+  const gestores = [...new Set(l.map(i=>i.gestor))].filter(Boolean).sort();
   if(!gestores.length) return `<div class="a2-vazio">Nenhuma demanda desde out/26 com os filtros atuais.</div>`;
-  const linhas = gestores.map(g=>{
+  const esc = g => String(g).replace(/'/g,"\\'");
+  const barra = (pc,c) => `<div style="display:flex;align-items:center;gap:7px;justify-content:flex-end">
+    <div style="width:54px;height:6px;background:var(--bdr2);border-radius:999px;overflow:hidden"><div style="width:${pc}%;height:100%;background:${c}"></div></div><b style="color:${c};font-size:12px;min-width:30px;text-align:right">${pc}%</b></div>`;
+
+  const tipos = AC2_TIPOS.filter(t=>l.some(i=>ac2TipoDe(i.tipo).k===t.k));
+  const linhas = tipos.map(t=>{
+    const lt = l.filter(i=>ac2TipoDe(i.tipo).k===t.k);
+    const reg = lt.filter(ac2Registrada).length, pc = Math.round(100*reg/lt.length);
+    const cels = gestores.map(g=>{ const n = lt.filter(i=>i.gestor===g).length;
+      return `<td class="r"${n?` style="cursor:pointer" onclick="ac2.goGes('${esc(g)}','direcao')"`:''}>
+        ${n?`<b style="color:${t.cor}">${n}</b>`:'<span style="color:var(--t3)">–</span>'}</td>`; }).join('');
+    return `<tr><td><span class="a2-dot" style="background:${t.cor}"></span><b>${t.curto}</b>
+        <small style="color:var(--c-mut);display:block;font-weight:500">${t.ajuda}</small></td>
+      ${cels}<td class="r"><b>${lt.length}</b></td><td class="r">${reg}</td>
+      <td style="min-width:110px">${barra(pc, ac2Sem(pc).cor)}</td></tr>`;
+  }).join('');
+
+  // rodapé: o total do grupo por gestor — é a leitura de "quem está carregando mais"
+  const tot = gestores.map(g=>{ const n=l.filter(i=>i.gestor===g).length;
+    return `<td class="r"><b>${n}</b></td>`; }).join('');
+  const regT = l.filter(ac2Registrada).length, pcT = l.length?Math.round(100*regT/l.length):0;
+
+  // ── cards por gestor, com o semáforo: onde a direção vê o momento de cada um ──
+  const cards = gestores.map(g=>{
     const li = l.filter(i=>i.gestor===g);
-    const reg = li.filter(ac2Registrada).length;
-    const t = ac2PorTipo(li);
-    return { g, n:li.length, reg, taxa: li.length?reg/li.length:0, t,
-             risco: li.filter(i=>!ac2Registrada(i)).reduce((a,i)=>a+(+i.risco||0),0) };
-  }).sort((a,b)=> a.taxa-b.taxa || b.risco-a.risco);   // pior taxa primeiro; empate, mais dinheiro parado
-  const th = AC2_TIPOS.map(t=>`<th title="${t.ajuda}" style="text-align:right;color:${t.cor}">${t.curto}</th>`).join('');
-  const tds = o => AC2_TIPOS.map(t=>`<td class="r" style="color:${o.t[t.k]?t.cor:'var(--t3)'}">${o.t[t.k]||'–'}</td>`).join('');
-  const barra = p => { const pc=Math.round(p*100); const c=pc>=70?'#22c55e':(pc>=30?'#f59e0b':'#dc2626');
-    return `<div style="display:flex;align-items:center;gap:7px"><div style="flex:1;height:6px;background:var(--bdr2);border-radius:999px;overflow:hidden;min-width:52px"><div style="width:${pc}%;height:100%;background:${c}"></div></div><b style="color:${c};font-size:12px">${pc}%</b></div>`; };
-  const body = linhas.map(o=>`<tr style="cursor:pointer" onclick="ac2.goGes('${String(o.g).replace(/'/g,"\'")}','direcao')">
-      <td><b>${o.g}</b></td>
-      <td class="r">${o.n}</td>
-      <td class="r">${o.reg}</td>
-      <td style="min-width:120px">${barra(o.taxa)}</td>
-      ${tds(o)}
-      <td class="r" style="color:${o.risco>0?'#f59e0b':'var(--t3)'}">${o.risco>0?AC2_BRLk(o.risco):'–'}</td>
-    </tr>`).join('');
-  return `<div class="a2-sh">Por gestor<small>clique num gestor para ver a lista dele · ordenado por quem menos registrou</small></div>
+    const reg = li.filter(ac2Registrada).length, pc = li.length?Math.round(100*reg/li.length):0;
+    const s = ac2Sem(pc);
+    const risco = li.filter(i=>!ac2Registrada(i)).reduce((a,i)=>a+(+i.risco||0),0);
+    const ops = [...new Set(li.map(i=>`${i.empresa} · ${i.mkt}`))];
+    const pt = AC2_TIPOS.filter(t=>li.some(i=>ac2TipoDe(i.tipo).k===t.k))
+      .map(t=>{ const n=li.filter(i=>ac2TipoDe(i.tipo).k===t.k).length;
+        return `<span style="color:${t.cor};font-weight:700">${t.curto} ${n}</span>`; }).join(' · ');
+    return `<div class="a2-gc" onclick="ac2.goGes('${esc(g)}','direcao')" style="--cc:${s.cor}">
+      <div class="gc-h"><b>${g}</b><span class="gc-tag">${s.rot}</span></div>
+      <div class="gc-v">${li.length-reg}<small> de ${li.length} sem registro</small></div>
+      <div class="cap-b"><span style="width:${pc}%;background:${s.cor}"></span></div>
+      <div class="gc-s">${pc}% registrado${risco>0?` · ${AC2_BRLk(risco)} parado`:''}</div>
+      <div class="gc-t">${pt}</div>
+      <div class="gc-o">${ops.slice(0,3).join(' • ')}${ops.length>3?` • +${ops.length-3}`:''}</div></div>`;
+  }).sort().join('');
+
+  return `<div class="a2-sh">Demandas por tipo e por gestor<small>clique num número para abrir a lista daquele gestor · a taxa é de registro, não de resultado</small></div>
     <div class="tbl-wrap"><table class="tbl a2-tbl"><thead><tr>
-      <th>Gestor</th><th class="r">Demandas</th><th class="r">Registradas</th><th>Taxa</th>${th}<th class="r">Parado</th>
-    </tr></thead><tbody>${body}</tbody></table></div>
+      <th style="min-width:200px">Tipo de demanda</th>
+      ${gestores.map(g=>`<th class="r" style="cursor:pointer" onclick="ac2.goGes('${esc(g)}','direcao')">${g}</th>`).join('')}
+      <th class="r">Total</th><th class="r">Registr.</th><th class="r">Conclusão</th>
+    </tr></thead><tbody>${linhas}
+      <tr class="a2-tot"><td><b>Total</b></td>${tot}<td class="r"><b>${l.length}</b></td><td class="r"><b>${regT}</b></td>
+        <td>${barra(pcT, ac2Sem(pcT).cor)}</td></tr>
+    </tbody></table></div>
+    <div class="a2-sh" style="margin-top:18px">Momento de cada gestor<small>clique para abrir a lista dele · ${AC2_SEM.map(x=>x.rot).join(' → ')} pela taxa de registro</small></div>
+    <div class="a2-gcs">${cards}</div>
     <div class="a2-nota">“Registrada” quer dizer que o gestor anotou o que fez naquela demanda. Enquanto ninguém anota, não dá para saber se foi tratada — e o dinheiro segue parado.</div>`;
 }
 
