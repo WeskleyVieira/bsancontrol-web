@@ -123,12 +123,50 @@ async function rotaGET(u, user) {
     const w = ["data>=?", "data<=?"]; const args = [de, ate];
     if (user && user.perfil === "gestor") { const pts = await pontosDoGestor(user.gestor_ref); if (pts.length) { w.push("ponto IN (" + pts.map(() => "?").join(",") + ")"); args.push(...pts); } }
     const r2 = n => Math.round((+n || 0) * 100) / 100;
+    // ⚠ NÃO acrescentar colunas aqui. Este endpoint devolve a base INTEIRA (148k linhas em out/2026);
+    // cada campo a mais é multiplicado por isso. Medido: 16 campos de abertura levavam o pico de
+    // 137 MB para 249 MB e estouravam os 512 MB do plano free (exit 134, OOM, 502 no ar).
+    // A abertura de custos mora em /api/abertura, que é escopado a UMA operação.
     const raw = await dbx.all(`SELECT data, empresa, canal, ponto, sku, anuncio_id, titulo, pedido,
         qtd, receita, liquido, ctp, imposto, mc_real, mc_comissao, fonte_liquido, status FROM vendas WHERE ${w.join(" AND ")}`, args);
     const detalhe = raw.map(v => ({ date: v.data, emp: v.empresa, mkt: v.canal, sku: v.sku, tit: v.titulo, ped: v.pedido,
       anuncio: v.anuncio_id, qtd: r2(v.qtd), fat: r2(v.receita), liq: r2(v.liquido), ctp: r2(v.ctp), imp: r2(v.imposto),
       mc: r2(v.mc_comissao), mccom: r2(v.mc_comissao), mcReal: r2(v.mc_real), fonte: v.fonte_liquido, stat: v.status, ponto: v.ponto }));
     return { periodo: [de, ate], ms: Date.now() - t0, n: detalhe.length, detalhe };
+  }
+  // ── /api/abertura — custos por venda de UMA operação (sub-aba Vendas da Gerencial) ────────────
+  // Escopado de propósito: a abertura só é olhada uma operação por vez, então mandar as 16 colunas
+  // de toda a base era desperdício que custou um OOM. Aqui vão só a chave e os campos de custo —
+  // o painel casa com o DETALHE que já tem. Campo zerado é OMITIDO (chave ausente = 0 no painel),
+  // o que corta a maior parte do peso: fora Amazon, `pcheio` é zero em quase tudo.
+  if (u.pathname === "/api/abertura") {
+    const t0 = Date.now();
+    const emp = q.emp || "", mkt = q.mkt || "";
+    if (!emp || !mkt) return { erro: "informe emp e mkt" };
+    const w = ["empresa=?", "canal=?"], args = [emp, mkt];
+    if (q.de) { w.push("data>=?"); args.push(q.de); }
+    if (q.ate) { w.push("data<=?"); args.push(q.ate); }
+    if (user && user.perfil === "gestor") { const pts = await pontosDoGestor(user.gestor_ref);
+      if (pts.length) { w.push("ponto IN (" + pts.map(() => "?").join(",") + ")"); args.push(...pts); }
+      else return { periodo: [q.de || null, q.ate || null], n: 0, abertura: [] }; }
+    const r2 = n => Math.round((+n || 0) * 100) / 100;
+    const raw = await dbx.all(`SELECT data, canal, sku, pedido, preco_cheio, desconto, comissao, tarifas,
+        frete, reembolso, afiliados, publicidade, bonus_flex, custo_motoboy, custo_fatura,
+        subsidios, copart_frete, acerto_vapt, forma_entrega, veio_de_ads
+      FROM vendas WHERE ${w.join(" AND ")}`, args);
+    const PAR = [["pcheio", "preco_cheio"], ["desc", "desconto"], ["comis", "comissao"], ["tarif", "tarifas"],
+      ["freteC", "frete"], ["reemb", "reembolso"], ["afil", "afiliados"], ["pub", "publicidade"],
+      ["flex", "bonus_flex"], ["motoboy", "custo_motoboy"], ["fatura", "custo_fatura"],
+      ["subs", "subsidios"], ["copart", "copart_frete"], ["vapt", "acerto_vapt"]];
+    const abertura = raw.map(v => {
+      // mesma chave que o painel monta do DETALHE: pedido|sku|data|canal
+      const o = { k: (v.pedido || "") + "|" + (v.sku || "") + "|" + v.data + "|" + (v.canal || "") };
+      for (const [curta, col] of PAR) { const x = r2(v[col]); if (x) o[curta] = x; }
+      if (v.forma_entrega) o.ent = v.forma_entrega;
+      if (v.veio_de_ads) o.ads = v.veio_de_ads;
+      return o;
+    });
+    return { periodo: [q.de || null, q.ate || null], ms: Date.now() - t0, n: abertura.length, abertura };
   }
   // ── /api/extras — datasets não-vendas (Ads/Estoque/Comissão/Produtos/…) escopados por ponto ──
   if (u.pathname === "/api/extras") {

@@ -9046,6 +9046,39 @@ renderAll();
     }catch(e){ console.error('detalhe',e); }
   }
   window.bcCarregaDetalhe = bcCarregaDetalhe;
+
+  // ── abertura de custos por venda: SOB DEMANDA, uma operação por vez ──────────────────────────
+  // Não vem no /api/detalhe de propósito. Lá são 148k linhas, e levar 16 campos a mais em cada uma
+  // subiu o pico de 137 MB para 249 MB e matou o serviço por falta de memória (exit 134 / 502).
+  // Aqui é só a operação aberta (pior caso ~45k linhas = 5,3 MB) e só quando o usuário abre a aba.
+  var _abCache={};
+  var _origGV = window._renderGerVendas;
+  if (typeof _origGV === 'function') {
+    window._renderGerVendas = function(rows, mkt){
+      try{
+        if(rows && rows.length){
+          var emp = rows[0].emp, key = emp+'||'+mkt;
+          if(!_abCache[key]){
+            _abCache[key] = 1;   // marca ANTES do fetch: a aba re-renderiza várias vezes
+            authFetch('/api/abertura?emp='+encodeURIComponent(emp)+'&mkt='+encodeURIComponent(mkt),{cache:'no-store'})
+              .then(function(r){ return r.ok ? r.json() : null; })
+              .then(function(d){
+                if(!d || !d.abertura) return;
+                var idx={}; d.abertura.forEach(function(a){ idx[a.k]=a; });
+                // casa pela mesma chave do banco: pedido|sku|data|canal
+                DETALHE.forEach(function(r){
+                  var a = idx[(r.ped||'')+'|'+(r.sku||'')+'|'+r.date+'|'+(r.mkt||'')];
+                  if(a) for(var c in a){ if(c!=='k') r[c]=a[c]; }
+                });
+                if(typeof activePage!=='undefined' && activePage==='gerencial'){ try{ renderPageOnly('gerencial'); }catch(e){} }
+              })
+              .catch(function(e){ _abCache[key]=0; console.error('abertura',e); });
+          }
+        }
+      }catch(e){}
+      return _origGV.apply(this, arguments);
+    };
+  }
   var _extLoaded=false;
   var _syncAtual=null;   // carimbo do último db-sync que o painel já aplicou (p/ o auto-refresh)
   async function bcCarregaExtras(){
