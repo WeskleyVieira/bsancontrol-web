@@ -80,13 +80,19 @@ body.light .ckpi{background:#fff;border-color:#e2e6ec;}
 *,::before,::after{margin:0;padding:0;box-sizing:border-box;}
 html{font-size:14px;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;color-scheme:dark;}
-.hdr{height:58px;background:var(--bg2);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:500;-webkit-backdrop-filter:none;}
+.hdr{height:58px;background:var(--bg2);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:500;-webkit-backdrop-filter:none;
+  /* altura FIXA + sticky: se o conteudo quebrar linha ele transborda por cima do menu, que esta
+     ancorado em top:58px. Entao o cabecalho NAO quebra linha — ele encolhe e corta. */
+  flex-wrap:nowrap;overflow:hidden;gap:10px;}
+.hdr>*{min-width:0;}                       /* deixa os filhos encolherem dentro do flex */
+.hdr .brand{flex:0 0 auto;}                /* a marca nunca encolhe */
+.hdr-right>*{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .brand{display:flex;align-items:center;gap:10px;}
 .brand-logo{width:30px;height:30px;background:linear-gradient(135deg,var(--a),#4f8ef7);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;}
 .brand-name{font-size:17px;font-weight:700;color:var(--t1);letter-spacing:-.3px;}
 .brand-sep{color:var(--t3);margin:0 4px;}
 .brand-group{font-size:12px;color:var(--t2);}
-.hdr-right{display:flex;gap:8px;align-items:center;}
+.hdr-right{display:flex;gap:8px;align-items:center;flex-wrap:nowrap;min-width:0;overflow:hidden;}
 .chip{font-size:11px;font-weight:600;padding:4px 11px;border-radius:100px;}
 .chip-a{background:var(--a3);color:var(--a2);border:1px solid rgba(0,194,168,.2);}
 .chip-d{background:var(--surf2);color:var(--t2);border:1px solid var(--bdr);}
@@ -3784,8 +3790,18 @@ function bcHideLogin(){ const ov=document.getElementById('bc-login'); if(ov)ov.c
 async function bcDoLogin(ev){ ev.preventDefault(); const btn=document.getElementById('bcl-sub'), err=document.getElementById('bcl-err');
   const email=document.getElementById('bcl-email').value.trim(), senha=document.getElementById('bcl-senha').value;
   err.textContent=''; btn.disabled=true; btn.textContent='Entrando…';
-  try{ await BCAUTH.login(email,senha); bcHideLogin(); bcRenderAuthBar(); if(BCAUTH.user&&BCAUTH.user.trocar){ bcTrocarSenha(true); } else { bcPosLogin(); } }
-  catch(e){ err.textContent='⚠️ '+(/inválid|401/i.test(e.message)?'Usuário ou senha incorretos.':e.message); }
+  // ⚠ O try do LOGIN cobre SÓ o login. Antes ele envolvia também bcHideLogin/bcRenderAuthBar/
+  // bcPosLogin — tudo que roda DEPOIS do token já estar gravado. Qualquer falha no carregamento
+  // de dados aparecia como "erro de login", e o usuário tinha de dar F5 (que funcionava, porque o
+  // token estava no localStorage). Erro de dados tem de se apresentar como erro de dados.
+  try{ await BCAUTH.login(email,senha); }
+  catch(e){ err.textContent='⚠️ '+(/inválid|401/i.test(e.message)?'Usuário ou senha incorretos.':e.message);
+            btn.disabled=false; btn.textContent='Entrar'; return false; }
+  // daqui para baixo o usuário JÁ ESTÁ AUTENTICADO — nada aqui pode dizer que o login falhou
+  btn.textContent='Carregando…';
+  try{ bcHideLogin(); bcRenderAuthBar(); if(BCAUTH.user&&BCAUTH.user.trocar){ bcTrocarSenha(true); } else { bcPosLogin(); } }
+  catch(e){ console.error('pós-login',e); try{ bcHideLogin(); }catch(_){}
+            alert('Você entrou, mas algo falhou ao montar a tela: '+(e.message||e)+'\nRecarregue a página.'); }
   finally{ btn.disabled=false; btn.textContent='Entrar'; }
   return false;
 }
@@ -8881,8 +8897,23 @@ renderAll();
     var el=document.getElementById('bc-dataload');
     try{
       if(el && !silencioso) el.style.display='flex';
-      var r=await authFetch('/api/dataset?meses=24',{cache:'no-store'});
-      if(!r.ok) throw new Error('HTTP '+r.status);
+      // RETRY com espera: o Render free HIBERNA e leva 30-60s para acordar, e o cache gzip do
+      // servidor e em memoria com TTL de 15min (nasce vazio a cada despertar). A PRIMEIRA
+      // requisicao depois do login e justamente a mais pesada (24 meses sobre 148k vendas), entao
+      // ela pegava o pior cenario e falhava — dai o "erro, mas o F5 funciona": no refresh o
+      // servidor ja estava quente. Agora insiste antes de desistir.
+      var r=null, ultimoErro=null;
+      for(var tent=1; tent<=3; tent++){
+        try{
+          var txt=document.getElementById('bc-dataload-txt');
+          if(txt && tent>1) txt.textContent='Servidor acordando… tentativa '+tent+' de 3';
+          r=await authFetch('/api/dataset?meses=24',{cache:'no-store'});
+          if(r.ok) break;
+          ultimoErro=new Error('HTTP '+r.status); r=null;
+        }catch(err){ ultimoErro=err; r=null; }
+        if(tent<3) await new Promise(function(res){ setTimeout(res, tent*4000); });   // 4s, depois 8s
+      }
+      if(!r) throw (ultimoErro||new Error('sem resposta'));
       var d=await r.json();
       bcAplicaDataset(d);
       bcVisibilidade();
