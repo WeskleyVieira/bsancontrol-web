@@ -773,6 +773,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
     <button class="ntab" id="nav-diario" onclick="goPage('diario',this)">Diário</button>
     <button class="ntab" id="nav-envios" onclick="goPage('envios',this)">Envios</button>
     <button class="ntab" id="nav-gerencial" onclick="goPage('gerencial',this)">Gerencial</button>
+    <button class="ntab" id="nav-acompanhamento" onclick="goPage('acompanhamento',this)" title="Demandas, registro da ação e acompanhamento por gestor">Acompanhamento</button>
     <button class="ntab" id="nav-estoque" onclick="goPage('estoque',this)">Estoque</button>
     <button class="ntab" id="nav-marketplaces" onclick="goPage('marketplaces',this)">Marketplaces</button>
     <button class="ntab" id="nav-abc" onclick="goPage('abc',this)">Curva ABC</button>
@@ -954,17 +955,8 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
 
 <!-- ═══════════ GERENCIAL — a lente da conta ═══════════ -->
 <div id="page-gerencial" class="page">
-  <!-- NÍVEL 1 · MODO DE TRABALHO. Gestão = uma operação por vez (precisa do seletor);
-       Acompanhamento = coordenador olhando TODAS as operações (seletor não se aplica). -->
-  <div class="ger-modos">
-    <button class="ntab on" id="btn-ger-modo-gestao" onclick="gerModo('gestao')"
-      title="Mergulho em uma operação: panorama, vendas, diagnóstico, anúncios e publicidade">Gestão</button>
-    <button class="ntab" id="btn-ger-modo-acomp" onclick="gerModo('acomp')"
-      title="Visão do coordenador sobre todas as operações: acompanhamento das tratativas e comissão">Acompanhamento</button>
-    <span id="ger-modo-dica" class="ger-modo-dica"></span>
-  </div>
-
-  <!-- NÍVEL 2 · barra contextual: muda conforme o modo -->
+  <!-- O Acompanhamento virou ABA PRÓPRIA (12/10/2026). Aqui ficam as visões da OPERAÇÃO
+       escolhida, mais a Comissão — que interessa a quem olha a própria operação. -->
   <div class="perf-fbar" style="flex-wrap:wrap;gap:12px;">
     <div id="ger-seletor" style="display:flex;align-items:center;gap:8px;">
       <span class="pf-lbl">Empresa</span>
@@ -979,10 +971,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
       <button class="dshort" id="btn-ger-produtos" onclick="gerSub('produtos')">Anúncios</button>
       <button class="dshort" style="opacity:.42;cursor:not-allowed;" disabled title="Depois de Produtos">Full</button>
       <button class="dshort" id="btn-ger-ads" onclick="gerSub('ads')">Publicidade</button>
-    </div>
-    <div id="ger-subs-acomp" style="display:none;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;">
-      <button class="dshort" id="btn-ger-acomp" onclick="gerSub('acomp')" title="Verificação por resultado dos planos passados">📋 Tratativas</button>
-      <button class="dshort" id="btn-ger-comissao" onclick="gerSub('comissao')" title="Comissão dos gestores (metas ponderadas → bônus)">💰 Comissão</button>
+      <button class="dshort" id="btn-ger-comissao" onclick="gerSub('comissao')" title="Comissão dos gestores (metas ponderadas → bônus)" style="margin-left:8px;border-left:2px solid var(--bdr2);padding-left:14px;">💰 Comissão</button>
     </div>
   </div>
 
@@ -1087,11 +1076,6 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
    </div>
   </div>
 
-  <!-- Sub-aba ACOMPANHAMENTO — visão de coordenador (todas as operações, independe da seleção) -->
-  <div id="ger-sub-acomp" style="display:none;">
-    <div id="ac2-root"></div>
-  </div>
-
   <!-- Sub-aba COMISSÃO — bônus dos gestores por operação × mês (visão de coordenador) -->
   <div id="ger-sub-comissao" style="display:none;">
     <div id="com-ctrl" style="margin-top:14px;"></div>
@@ -1170,6 +1154,14 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
   </div>
   <div style="font-size:11px;color:var(--t3);margin-top:14px;line-height:1.5;">O <b>potencial (→20%)</b> no Diagnóstico usa a linha Saudável (20%) como referência — é o teto do que o produto renderia se chegasse lá. Margem é a régua mais perigosa de ignorar: escalar sem margem amplifica o prejuízo.</div>
  </div>
+</div>
+
+<!-- ═══════════ ACOMPANHAMENTO — aba própria (demandas, registro da ação, placar por gestor) ═══════════
+     Separada do Gerencial a pedido do Weskley (12/10/2026): aqui mora o LOOP OPERACIONAL — apontar a
+     demanda, o gestor analisar, registrar a ação. A Comissão NÃO vive aqui: ela interessa a quem olha
+     a própria operação, e por isso segue dentro do Gerencial. -->
+<div id="page-acompanhamento" class="page">
+  <div id="ac2-root"></div>
 </div>
 
 <div id="page-estoque" class="page">
@@ -2337,16 +2329,13 @@ function renderEnvios(){
 // Troca de gestor não exige editar nada aqui.
 let GER_OP=''; // "empresa||marketplace"
 let GER_SUB='panorama';
-// ── GERENCIAL em DOIS NÍVEIS ──────────────────────────────────────────────────────────────
-// A aba misturava dois modos de trabalho numa fileira só de botões:
-//   GESTÃO        — mergulho em UMA operação; depende de escolher empresa + marketplace.
-//   ACOMPANHAMENTO— visão de coordenador sobre TODAS as operações; o seletor não faz nada ali
-//                   (o render de acomp/comissão já ignorava GER_OP), mas ficava na tela mesmo assim.
-// Agora o modo é o nível de cima e decide o que a barra mostra, inclusive esconder o seletor.
-let GER_MODO='gestao';
-const GER_GRUPO={panorama:'gestao',vendas:'gestao',diag:'gestao',produtos:'gestao',ads:'gestao',acomp:'acomp',comissao:'acomp'};
-// lembra a última sub-aba de cada modo: alternar Gestão↔Acompanhamento não perde onde você estava
-const GER_ULTIMO={gestao:'panorama',acomp:'acomp'};
+// ── GERENCIAL ─────────────────────────────────────────────────────────────────────────────
+// O ACOMPANHAMENTO saiu daqui e virou aba própria (12/10/2026): ele é o loop operacional
+// (apontar demanda → gestor analisa → registra a ação) e vale para TODAS as operações.
+// A COMISSÃO fica: ela interessa a quem está olhando a própria operação.
+// `GER_GRUPO` decide quais sub-abas precisam de uma operação escolhida ('op') e quais são
+// visão de coordenador ('todas') — a comissão é das segundas, e por isso dispensa o seletor.
+const GER_GRUPO={panorama:'op',vendas:'op',diag:'op',produtos:'op',ads:'op',comissao:'todas'};
 let ESTOQUE=[]; // aba "Estoque" (Tiny): saldo por SKU (snapshot) — Geral/Full/disponível + cobertura
 let PRODUTOS=[]; // aba "Produtos" (Tiny): cadastro-mãe (sku, gtin, tipo, situação)
 let ACOMP=[];       // aba "Acompanhamento": placar da verificação por resultado (semana × operação)
@@ -2435,10 +2424,7 @@ function _adsInvOper(emp,mkt,ps,pe){
   if(perAd>0) return perAd;
   return Object.values(_adsCampList(emp,mkt,ps,pe)).reduce((s,c)=>s+(c.inv||0),0);
 }
-// gerSub deriva o MODO da sub-aba pedida — assim os atalhos antigos espalhados pelo painel
-// (ex.: gerSub('ads') nos cards de Publicidade) continuam funcionando e já trocam de modo sozinhos.
-function gerSub(id){ GER_SUB=id; GER_MODO=GER_GRUPO[id]||'gestao'; GER_ULTIMO[GER_MODO]=id; renderGerencial(); }
-function gerModo(m){ GER_MODO=m; GER_SUB=GER_ULTIMO[m]||(m==='acomp'?'acomp':'panorama'); renderGerencial(); }
+function gerSub(id){ GER_SUB=id; renderGerencial(); }
 function abrirGuiaGer(){ const m=document.getElementById('ger-guia-modal'); if(m) m.style.display='block'; }
 function fecharGuiaGer(){ const m=document.getElementById('ger-guia-modal'); if(m) m.style.display='none'; }
 function onGerEmp(){ // troca de empresa: repovoa marketplaces daquela empresa (cascata) e zera a operação
@@ -3178,31 +3164,20 @@ function _renderGerPubAnuncio(arr,ch,tb,sub,ttl,afil,opMcp){
 // Os painéis de panorama/vendas/diag/produtos/ads vivem DENTRO de #ger-body; acomp e comissao são
 // irmãos, fora dele — por isso #ger-body também entra na conta.
 function _gerPainel(){
-  const subs=['panorama','vendas','diag','produtos','ads','acomp','comissao'];
+  const subs=['panorama','vendas','diag','produtos','ads','comissao'];
   subs.forEach(s=>{ const el=document.getElementById('ger-sub-'+s); if(el) el.style.display = (s===GER_SUB)?'block':'none'; });
   const corpo=document.getElementById('ger-body');
-  if(corpo) corpo.style.display = (GER_GRUPO[GER_SUB]==='acomp') ? 'none' : corpo.style.display;
+  if(corpo) corpo.style.display = (GER_GRUPO[GER_SUB]==='todas') ? 'none' : corpo.style.display;
 }
 function _gerSubHighlight(){
-  [['btn-ger-panorama','panorama'],['btn-ger-vendas','vendas'],['btn-ger-diag','diag'],['btn-ger-acomp','acomp'],['btn-ger-comissao','comissao'],['btn-ger-produtos','produtos'],['btn-ger-ads','ads']].forEach(([bid,sid])=>{
+  [['btn-ger-panorama','panorama'],['btn-ger-vendas','vendas'],['btn-ger-diag','diag'],['btn-ger-comissao','comissao'],['btn-ger-produtos','produtos'],['btn-ger-ads','ads']].forEach(([bid,sid])=>{
     const b=document.getElementById(bid); if(!b)return; const on=GER_SUB===sid;
     b.style.borderColor=on?'var(--a)':'var(--bdr2)'; b.style.color=on?'var(--a)':'var(--t2)'; b.style.background=on?'var(--a3)':'transparent';
   });
-  // nível 1: modo ativo, qual fileira de pílulas aparece e se o seletor de operação faz sentido
-  const ehAcomp = GER_MODO==='acomp';
-  const mg=document.getElementById('btn-ger-modo-gestao'), ma=document.getElementById('btn-ger-modo-acomp');
-  if(mg) mg.classList.toggle('on',!ehAcomp);
-  if(ma) ma.classList.toggle('on',ehAcomp);
-  const sg=document.getElementById('ger-subs-gestao'), sa=document.getElementById('ger-subs-acomp');
-  if(sg) sg.style.display=ehAcomp?'none':'flex';
-  if(sa) sa.style.display=ehAcomp?'flex':'none';
-  // o seletor empresa+marketplace só existe para o modo Gestão — em Acompanhamento ele não filtrava
-  // nada e só confundia (o render dessas sub-abas sempre ignorou GER_OP).
-  const sel=document.getElementById('ger-seletor'); if(sel) sel.style.display=ehAcomp?'none':'flex';
-  const dica=document.getElementById('ger-modo-dica');
-  if(dica) dica.textContent = ehAcomp
-    ? 'todas as operações · visão do coordenador'
-    : (GER_OP ? GER_OP.replace('||',' · ') : 'escolha empresa e marketplace');
+  // a COMISSÃO é visão de coordenador (todas as operações × mês): o seletor empresa+marketplace
+  // não filtra nada ali e só confunde — o render dela sempre ignorou GER_OP.
+  const semOperacao = GER_GRUPO[GER_SUB]==='todas';
+  const sel=document.getElementById('ger-seletor'); if(sel) sel.style.display=semOperacao?'none':'flex';
 }
 // ═══════════ ACOMPANHAMENTO v2 — base de dados (demandas do diagnóstico + dono + ponto) ═══════════
 // Mapa gestor→conta (empresa|marketplace). Mantível; na versão final vem de planilha.
@@ -4035,8 +4010,7 @@ function renderGerencial(){
   // O MODO é derivado da sub-aba a cada render. Há código que muda GER_SUB direto, sem passar pelo
   // gerSub() (ex.: gerPFilt força 'produtos' ao filtrar anúncios) — sem isto o painel ficava num
   // estado impossível: sub de Gestão com a barra de Acompanhamento e o seletor escondido.
-  GER_MODO = GER_GRUPO[GER_SUB] || 'gestao';
-  GER_ULTIMO[GER_MODO] = GER_SUB;
+  if(!GER_GRUPO[GER_SUB]) GER_SUB='panorama';   // sub-aba inexistente (ex.: 'acomp', que virou aba própria)
   const base=(typeof DETALHE!=='undefined'&&Array.isArray(DETALHE))?DETALHE.filter(noPonto):[];
   // popular o seletor de EMPRESA uma vez; o de marketplace é preenchido em cascata por onGerEmp()
   if(empSel.dataset.n!==String(base.length)){
@@ -6162,6 +6136,7 @@ const NAV_PAGES = [
   {id:'diario',      label:'Diário'},
   {id:'envios',      label:'Envios'},
   {id:'gerencial',   label:'Gerencial'},
+  {id:'acompanhamento',label:'Acompanhamento'},
   {id:'estoque',     label:'Estoque'},
   {id:'marketplaces',label:'Marketplaces'},
   {id:'abc',         label:'Curva ABC'},
@@ -7415,6 +7390,8 @@ function renderPageOnly(id){
   if(id==='diario')renderDiario();
   if(id==='envios')renderEnvios();
   if(id==='gerencial')renderGerencial();
+  // aba própria desde 12/10/2026 — ac2Open é async (busca /api/demandas e cai no cálculo local)
+  if(id==='acompanhamento'){ try{ ac2Open(); }catch(e){ console.error('acompanhamento',e); } }
   if(id==='estoque'){renderCompartilhados();renderEstoque();}
   if(id==='vendas')renderVendas();
   if(id==='raiox')renderRaioX();
