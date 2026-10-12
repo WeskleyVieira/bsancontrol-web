@@ -3493,7 +3493,10 @@ function ac2PorTipo(l){ const o={}; AC2_TIPOS.forEach(t=>o[t.k]=0); o.outro=0;
 // "registrada" = o gestor anotou o que fez. É o pré-requisito de tudo: sem registro não há o que medir.
 const ac2Registrada = i => !!i.trat || i.estado==='trat';
 
-ac2.filt=function(){ const ms=ac2.mesesSel(); return ac2.DEM.filter(i=>ac2.compDe(i)>=AC2_DESDE&&(!ms||ms.has(ac2.compDe(i)))&&AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)); };
+// A LENTE GLOBAL (Grupo/Bsan/Powerfull, no topo) TAMBÉM VALE AQUI. Ela ficou de fora quando o
+// Acompanhamento virou aba própria: dava para estar em "Powerfull" e ver os 6 gestores do grupo,
+// com operações da Bsan Shop e da Jowcase na tela. Uma lente que não cascateia mente sobre o recorte.
+ac2.filt=function(){ const ms=ac2.mesesSel(); return ac2.DEM.filter(i=>ac2.compDe(i)>=AC2_DESDE&&(!ms||ms.has(ac2.compDe(i)))&&(typeof PONTO_SEL==='undefined'||!PONTO_SEL||i.ponto===PONTO_SEL)&&AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)); };
 ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risco:l.reduce((s,i)=>s+i.risco,0), prej:prej.length, riscoPrej:prej.reduce((s,i)=>s+i.risco,0), corr:l.length-prej.length}; };
 ac2.go=function(n){ ac2.nivel=n; if(n!=='gestor')ac2.gestorSel=null; ac2.render(); };
 ac2.goGes=function(g,from){ ac2.gestorSel=g||null; AC2_TIPO_FILTRO=''; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
@@ -3539,7 +3542,11 @@ function ac2FiltDir(){
 }
 // "de quem estamos falando": sem isto o número no card não diz a que recorte pertence.
 function ac2Selecao(){
-  const p = AC2_DIMS.filter(d=>ac2[d.k] && ac2[d.k].size).map(d=>`<b>${d.l}:</b> ${[...ac2[d.k]].join(', ')}`);
+  const p = [];
+  // a lente entra primeiro e marcada como global: é ela que manda, e o usuário precisa saber disso
+  if(typeof PONTO_SEL!=='undefined' && PONTO_SEL) p.push(`<b>Lente:</b> ${PONTO_SEL} <span style="opacity:.6">(topo)</span>`);
+  AC2_DIMS.filter(d=>ac2[d.k] && ac2[d.k].size && !(typeof PONTO_SEL!=='undefined' && PONTO_SEL && d.k==='pts'))
+    .forEach(d=>p.push(`<b>${d.l}:</b> ${[...ac2[d.k]].join(', ')}`));
   if(AC2_DIR_TIPO){ const t=AC2_TIPOS.find(x=>x.k===AC2_DIR_TIPO); if(t) p.push(`<b>Tipo:</b> <span style="color:${t.cor}">${t.curto}</span>`); }
   if(AC2_DIR_FOCO) p.push(`<b>Só:</b> ${AC2_DIR_FOCO==='pend'?'sem registro':'já registradas'}`);
   const txt = p.length ? p.join(' &nbsp;·&nbsp; ') : 'Grupo inteiro — todas as empresas, canais e gestores';
@@ -3920,10 +3927,16 @@ ac2.resultDrill=function(gestor){
   document.getElementById('a2-ov').classList.add('on');
 };
 // filtros dropdown com cascata
-function ac2opcoes(dim){ const its=ac2.DEM.filter(i=>AC2_DIMS.every(d=>d.k===dim.k||!ac2[d.k].size||ac2[d.k].has(d.g(i)))); const u=[];its.forEach(i=>{const v=dim.g(i);if(!u.includes(v))u.push(v);});return u; }
+// as opções dos dropdowns também vivem sob a lente: estando em "Powerfull", o menu de Empresa não
+// pode oferecer "Bsan Shop" — seria uma opção que, escolhida, devolve tela vazia.
+function ac2opcoes(dim){ const its=ac2.DEM.filter(i=>(typeof PONTO_SEL==='undefined'||!PONTO_SEL||i.ponto===PONTO_SEL)&&AC2_DIMS.every(d=>d.k===dim.k||!ac2[d.k].size||ac2[d.k].has(d.g(i)))); const u=[];its.forEach(i=>{const v=dim.g(i);if(!u.includes(v))u.push(v);});return u; }
 function ac2RenderFiltros(){ const bar=document.getElementById('a2-bar');
-  bar.innerHTML=AC2_DIMS.map(d=>{const n=ac2[d.k].size;return `<div class="a2-dd"><button class="a2-db ${n?'on':''}" onclick="event.stopPropagation();ac2.menuTog('${d.k}')">${d.l}${n?` <span class="cnt">${n}</span>`:''} ▾</button><div class="a2-dm" data-m="${d.k}"></div></div>`;}).join('')
-   + (AC2_DIMS.some(d=>ac2[d.k].size)?`<button class="a2-bk" style="background:none;border:none;color:var(--c-acc)" onclick="ac2.limpar()">limpar</button>`:'');
+  // com a lente ativa, o chip "Ponto" sai: a escolha já foi feita no topo, e mantê-lo aqui ofereceria
+  // um ponto que a lente exclui — clicar devolveria tela vazia sem dizer por quê.
+  const lente = (typeof PONTO_SEL!=='undefined' && PONTO_SEL);
+  const dims = AC2_DIMS.filter(d=>!(lente && d.k==='pts'));
+  bar.innerHTML=dims.map(d=>{const n=ac2[d.k].size;return `<div class="a2-dd"><button class="a2-db ${n?'on':''}" onclick="event.stopPropagation();ac2.menuTog('${d.k}')">${d.l}${n?` <span class="cnt">${n}</span>`:''} ▾</button><div class="a2-dm" data-m="${d.k}"></div></div>`;}).join('')
+   + (dims.some(d=>ac2[d.k].size)?`<button class="a2-bk" style="background:none;border:none;color:var(--c-acc)" onclick="ac2.limpar()">limpar</button>`:'');
   if(ac2.menu) ac2.menuOpen(ac2.menu,true);
 }
 ac2.menuTog=function(k){ ac2.menuOpen(k); };
