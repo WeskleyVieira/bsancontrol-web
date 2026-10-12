@@ -3386,6 +3386,21 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-btn-lin:hover{color:var(--c-ink);border-color:var(--c-acc)}
 #ac2-root .a2-verv{cursor:pointer;border:1px solid var(--c-ln);background:var(--c-s2);font-family:inherit}
 #ac2-root .a2-verv:hover{border-color:var(--c-acc);color:var(--c-acc)}
+/* a quebra do dinheiro, aberta dentro da propria tarefa */
+#ac2-root .a2-vd{display:none}
+#ac2-root .a2-vd.on{display:block;margin-top:9px;background:var(--c-s2);border:1px solid var(--c-ln);border-radius:10px;padding:11px 13px}
+#ac2-root .vd-h{font-size:11.5px;font-weight:700;color:var(--c-ink);margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#ac2-root .vd-x{font-size:11.5px;color:var(--c-mut);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#ac2-root .vd-g{border-top:1px solid var(--c-ln)}
+#ac2-root .vd-l{display:grid;grid-template-columns:1fr auto 62px 88px;gap:10px;align-items:center;padding:4px 0;border-bottom:1px solid var(--c-ln);font-size:11.5px}
+#ac2-root .vd-l span{color:var(--c-mut)}
+#ac2-root .vd-l b{font-weight:700;text-align:right}
+#ac2-root .vd-l i{font-style:normal;text-align:right;color:var(--c-mut);font-size:10.5px}
+#ac2-root .vd-l u{text-decoration:none;text-align:right;color:var(--c-mut);font-size:10.5px}
+#ac2-root .vd-l.tot{border-bottom:none;border-top:2px solid var(--c-ln);margin-top:2px;padding-top:6px}
+#ac2-root .vd-l.tot span{color:var(--c-ink);font-weight:700}
+#ac2-root .vd-alvo{margin:9px 0;padding:9px 11px;background:var(--c-s);border:1px dashed var(--c-ln);border-radius:9px;font-size:11.5px;line-height:1.75}
+#ac2-root .vd-t th,#ac2-root .vd-t td{font-size:10.5px;padding:3px 7px}
 @media(max-width:860px){#ac2-root .a2-kpis{grid-template-columns:repeat(2,1fr)}}
 `; document.head.appendChild(s); }
 async function ac2Open(){ ac2injectCSS(); bcAuthInjectCSS(); const root=document.getElementById('ac2-root'); if(!root)return;
@@ -3521,6 +3536,7 @@ ac2.go=function(n){ ac2.nivel=n; if(n!=='gestor'){ac2.gestorSel=null;ac2.opSel=n
 // trocar de gestor zera a operação: a do gestor anterior não existe no novo
 ac2.goGes=function(g,from){ ac2.gestorSel=g||null; ac2.opSel=null; AC2_TIPO_FILTRO=''; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
 ac2.render=function(){
+  ac2._vdMap={}; ac2._vdSeq=0;   // o mapa das quebras é por render: senão cresce a cada repintura
   const lv=document.getElementById('a2-lv'), kpi=document.getElementById('a2-kpi'), body=document.getElementById('a2-body'), bar=document.getElementById('a2-bar');
   lv.innerHTML=[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor','a lista dele']].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('')
     +'<span class="a2-lvsep"></span>'
@@ -3800,8 +3816,88 @@ ac2.filtroTipo = function(k){ AC2_TIPO_FILTRO = (AC2_TIPO_FILTRO===k ? '' : k); 
 ac2.opSel = null;
 ac2.goOp = function(op){ ac2.opSel = op || null; AC2_TIPO_FILTRO=''; ac2.render(); };
 
-// "ver as vendas que geraram isto": leva ao Raio-X do SKU, já escopado na empresa e no canal.
-// Sem isto a demanda é uma afirmação sem prova — o gestor não consegue conferir de onde veio a margem.
+// ── "PARA ONDE FOI O DINHEIRO" — a análise dentro da própria tarefa ──────────────────────────
+// Mandar o gestor para o Raio-X repetia o sintoma: lá ele via "MC −15,3%" de novo, que é
+// exatamente o que a tarefa já dizia. O que resolve é abrir a venda: quanto a plataforma levou,
+// quanto foi imposto, quanto foi produto — e qual preço (ou custo) fecharia a meta.
+ac2.abrirVendas = function(k){
+  const el = document.getElementById(k); if(!el) return;
+  if(el.innerHTML){ el.innerHTML=''; el.classList.remove('on'); return; }   // 2º clique fecha
+  const i = (ac2._vdMap||{})[k]; if(!i) return;
+  el.innerHTML = ac2PainelVendas(i); el.classList.add('on');
+};
+function ac2PainelVendas(i){
+  const D = (typeof DETALHE!=='undefined' && Array.isArray(DETALHE)) ? DETALHE : [];
+  const comp = i.competencia || '';
+  const vd = D.filter(r => r.emp===i.empresa && r.mkt===i.mkt
+    && (i.anuncio ? r.anuncio===i.anuncio : r.sku===i.sku)
+    && (!comp || String(r.date||'').slice(0,7)===comp)
+    && /venda/i.test(r.stat||'venda'));
+  const linkRx = `<button class="a2-btn-lin" onclick="event.stopPropagation();ac2.verVendas('${encodeURIComponent(i.sku||'')}','${encodeURIComponent(i.empresa||'')}','${encodeURIComponent(i.mkt||'')}')">ver o histórico no Raio-X →</button>`;
+  if(!vd.length) return `<div class="vd-x">Não achei as vendas desta demanda no período carregado. ${linkRx}</div>`;
+  const S = (f) => vd.reduce((s,r)=>s+(+r[f]||0),0);
+  const fat=S('fat'), liq=S('liq'), imp=S('imp'), ctp=S('ctp'), qtd=S('qtd')||vd.length;
+  const plat = fat - liq;                       // o que a plataforma reteve (comissão + frete + taxas)
+  // A MARGEM É A `mcReal`, não `liq − imp − ctp`. A diferença entre as duas é o custo que não cabe
+  // em nenhuma das três linhas — motoboy do Flex, principalmente. Fechar a conta sem ele dava um
+  // número mais bonito que o da própria tarefa (−10,3% contra os −15,3% reais).
+  const mc = S('mcReal');
+  const outros = (liq - imp - ctp) - mc;
+  const pct = v => fat ? (100*v/fat) : 0;
+  const un = v => qtd ? v/qtd : 0;
+  const brl = v => 'R$ '+(Math.round(v*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  // alvo: quanto a receita teria de ser para a margem bater a meta, mantendo as TAXAS proporcionais
+  // e o custo do produto fixo.  fat*(1-c-t) - ctp = meta*fat  →  fat = ctp / (1-c-t-meta)
+  const c = fat?plat/fat:0, t = fat?imp/fat:0, m = (+i.meta||0)/100;
+  const folga = 1 - c - t - m;
+  const linha = (rot,v,cor,neg) => `<div class="vd-l"><span>${rot}</span>
+    <b style="color:${cor||'var(--t1)'}">${neg?'−':''}${brl(Math.abs(v))}</b>
+    <i>${neg?'−':''}${Math.abs(pct(v)).toFixed(1)}%</i>
+    <u>${neg?'−':''}${brl(Math.abs(un(v)))}/un</u></div>`;
+  // os dois caminhos: subir preço OU baixar custo. `outros` (motoboy) entra como custo fixo —
+  // ignorá-lo faria o alvo sair otimista, que é justamente o erro que se quer evitar aqui.
+  const fixo = ctp + outros;
+  const fatAlvo = fixo/folga, custoAlvo = fat*folga - outros;
+  const subir = fat ? (100*(fatAlvo/fat - 1)) : 0;
+  const cair  = ctp ? (100*(1 - custoAlvo/ctp)) : 0;
+  const alvos = folga > 0.0001
+    ? `<div class="vd-alvo"><b>Para chegar na meta de ${i.meta}%, um dos dois:</b>
+        <div>• <b>preço</b> de <b>${brl(un(fat))}</b> para <b style="color:#22c55e">${brl(un(fatAlvo))}</b> por unidade
+          <span style="opacity:.65">(${subir>0?'+':''}${subir.toFixed(0)}%)</span></div>
+        <div>• <b>custo</b> de <b>${brl(un(ctp))}</b> para <b style="color:#22c55e">${brl(un(custoAlvo))}</b> por unidade
+          <span style="opacity:.65">(${cair>0?'−':'+'}${Math.abs(cair).toFixed(0)}%)</span></div>
+        <div style="opacity:.6;margin-top:4px">Supõe que comissão e imposto continuem proporcionais à venda.</div>
+      </div>`
+    : `<div class="vd-alvo"><b style="color:#f59e0b">A meta de ${i.meta}% não fecha só com preço.</b>
+        A plataforma (${pct(plat).toFixed(1)}%) e o imposto (${pct(imp).toFixed(1)}%) já consomem
+        ${(100*(c+t)).toFixed(1)}% da venda. Sobram ${(100*(1-c-t)).toFixed(1)}% para custo + margem —
+        é caso de renegociar custo, mudar o tipo de anúncio/frete, ou pausar.</div>`;
+  const vendas = vd.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r=>{
+    const mcR = (+r.liq||0)-(+r.imp||0)-(+r.ctp||0);
+    return `<tr><td>${String(r.date||'').split('-').reverse().join('/')}</td>
+      <td style="font-family:ui-monospace,monospace;font-size:10px">${r.ped||''}</td>
+      <td class="r">${Math.round(+r.qtd||0)}</td><td class="r">${brl(+r.fat||0)}</td>
+      <td class="r">${brl(+r.liq||0)}</td>
+      <td class="r" style="color:${mcR<0?'#dc2626':'#22c55e'}">${brl(mcR)}</td></tr>`; }).join('');
+  return `<div class="vd-h">Para onde foi o dinheiro · ${vd.length} venda(s) em ${comp||'período'} ${linkRx}</div>
+    <div class="vd-g">
+      ${linha('Receita', fat)}
+      ${linha('Plataforma (comissão, frete, taxas)', plat, '#f59e0b', true)}
+      ${linha('Imposto', imp, '#f59e0b', true)}
+      ${linha('Custo do produto', ctp, '#f59e0b', true)}
+      ${Math.abs(outros)>0.005 ? linha('Entrega própria e outros (motoboy)', outros, '#f59e0b', true) : ''}
+      <div class="vd-l tot"><span>Sobrou (margem)</span>
+        <b style="color:${mc<0?'#dc2626':'#22c55e'}">${brl(mc)}</b>
+        <i style="color:${mc<0?'#dc2626':'#22c55e'}">${pct(mc).toFixed(1)}%</i>
+        <u style="color:${mc<0?'#dc2626':'#22c55e'}">${brl(un(mc))}/un</u></div>
+    </div>
+    ${alvos}
+    <div class="tbl-wrap" style="max-height:200px"><table class="tbl a2-tbl vd-t"><thead><tr>
+      <th>Data</th><th>Nº da venda</th><th class="r">Qtd</th><th class="r">Valor</th><th class="r">Líquido</th><th class="r">Margem</th>
+    </tr></thead><tbody>${vendas}</tbody></table></div>`;
+}
+
+// atalho secundário: o Raio-X do SKU, para ver o histórico do produto (não o desta demanda)
 ac2.verVendas = function(sku, emp, mkt){
   try{
     const inp=document.getElementById('rx-busca'); if(!inp) return;
@@ -3991,10 +4087,14 @@ function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(ful
   const anuncio=i.anuncio?`<span class="a2-tag" style="font-family:ui-monospace,monospace;letter-spacing:.2px">${i.anuncio}</span>`:'';
   // a contagem de vendas vira BOTÃO: leva ao Raio-X do SKU já escopado na empresa e no canal.
   // Sem poder abrir as vendas, a demanda é uma afirmação que o gestor não tem como conferir.
+  // a contagem de vendas abre, ALI MESMO, a quebra do dinheiro desta demanda.
+  // Guardamos o item num mapa por chave curta: o id tem barras e acentos e não serve de id de DOM.
+  const _vk = 'vd'+(ac2._vdSeq=(ac2._vdSeq||0)+1);
+  (ac2._vdMap=ac2._vdMap||{})[_vk]=i;
   const _vd=(i.qtd!=null&&i.qtd!=='')?`${Math.round(i.qtd)} un${i.pedidos?(' · '+i.pedidos+' venda'+(i.pedidos>1?'s':'')):''}`:'';
-  const vendas=_vd ? (i.sku
-    ? `<button class="a2-tag a2-verv" onclick="event.stopPropagation();ac2.verVendas('${encodeURIComponent(i.sku)}','${encodeURIComponent(i.empresa||'')}','${encodeURIComponent(i.mkt||'')}')" title="abrir o Raio-X deste SKU e ver as vendas que geraram esta margem">${_vd} 🔍</button>`
-    : `<span class="a2-tag">${_vd}</span>`) : '';
+  const vendas=_vd
+    ? `<button class="a2-tag a2-verv" onclick="event.stopPropagation();ac2.abrirVendas('${_vk}')" title="abrir a conta desta demanda: para onde foi cada real">${_vd} · para onde foi o dinheiro ▾</button>`
+    : '';
   const acao=i.mcPct<0
     ? '🚨 <b>Margem negativa</b> — estanque já: corrija preço/custo ou pause o anúncio (está vendendo no prejuízo).'
     : /Queima/.test(i.tipo||'')
@@ -4007,6 +4107,7 @@ function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(ful
     +`<div class="tt" title="${(i.titulo||'').replace(/"/g,'')}">${i.sku} — ${i.titulo||''}</div>`
     +`<div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span><span class="a2-tag">margem ${i.mcPct}%${prog} <span style="opacity:.6">(meta ${i.meta}%)</span></span>${causaTag}<span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span>${vendas}${anuncio}</div>`
     +(tratada?'':`<div class="a2-acao">${acao}</div>`)
+    +`<div class="a2-vd" id="${_vk}"></div>`
     +`</div><div class="a2-ir"><div class="rr"><small>em risco</small>${AC2_BRLk(i.risco)}</div>${btn}</div></div>`;
 }
 const AC2_DRILL={tinha:{t:'Demandas a resolver',f:()=>true},risco:{t:'R$ em risco',f:()=>true,v:l=>AC2_BRL(l.reduce((s,i)=>s+i.risco,0))},prej:{t:'Em prejuízo (margem negativa)',f:i=>i.mcPct<0},corr:{t:'Correção de margem',f:i=>i.mcPct>=0},
