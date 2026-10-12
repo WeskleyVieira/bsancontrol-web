@@ -236,9 +236,16 @@ const server = http.createServer(async (req, res) => {
       const o = await body(req);
       const dem = await dbx.get("SELECT criado_em, gestor FROM demandas WHERE id=?", [o.demanda_id]);
       if (user && user.perfil === "gestor" && dem && dem.gestor !== user.gestor_ref) return J(res, { ok: false, erro: "fora do seu escopo" }, 403);
-      const reacaoH = dem && o.registrado_em ? (new Date(o.registrado_em) - new Date(dem.criado_em)) / 36e5 : null;
+      // QUEM CARIMBA A HORA É O SERVIDOR, nunca o cliente. O painel manda `registrado_em` com o
+      // relógio da máquina do gestor; aceitá-lo deixava a data de registro — e a `reacao_h`, que é
+      // a métrica de agilidade — reescrevíveis por quem mudasse a data do próprio computador.
+      // Num sistema de cobrança isso corrói exatamente o número que se quer cobrar. `o.registrado_em`
+      // é ignorado de propósito. (A carga vinda das planilhas é outro caminho: lá a data é a que o
+      // gestor digitou na coluna "Data de conclusão", e entra por plano-sheets.js, não por aqui.)
+      const agora = new Date().toISOString();
+      const reacaoH = dem && dem.criado_em ? (new Date(agora) - new Date(dem.criado_em)) / 36e5 : null;
       await dbx.run("INSERT INTO tratativas(demanda_id,gestor,acao,causa,obs,estado,registrado_em,reacao_h) VALUES(?,?,?,?,?,?,?,?)",
-        [o.demanda_id, (user && user.gestor_ref) || o.gestor || "", o.acao || "", o.causa || "", o.obs || "", o.estado || "trat", o.registrado_em || new Date().toISOString(), reacaoH]);
+        [o.demanda_id, (user && user.gestor_ref) || o.gestor || "", o.acao || "", o.causa || "", o.obs || "", o.estado || "trat", agora, reacaoH]);
       if (o.estado) await dbx.run("UPDATE demandas SET estado=? WHERE id=?", [o.estado, o.demanda_id]);
       return J(res, { ok: true, reacaoH });
     }
