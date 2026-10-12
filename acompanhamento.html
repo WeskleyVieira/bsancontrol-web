@@ -3321,6 +3321,17 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-mh{display:flex;align-items:flex-start;gap:12px;padding:15px 17px;border-bottom:1px solid var(--c-ln)} #ac2-root .a2-mh h3{font-size:15px;font-weight:800;margin:0;color:var(--c-ink)} #ac2-root .a2-mh .mv{margin-left:auto;font-size:22px;font-weight:800;color:var(--c-ink)}
 #ac2-root .a2-mx{background:var(--c-s2);border:1px solid var(--c-ln);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--c-mut)}
 #ac2-root .a2-mb{max-height:68vh;overflow:auto}
+/* ── redesenho dos 3 níveis (12/10/2026): rótulo em cima, número grande, explicação embaixo.
+   Linguagem e hierarquia pensadas para quem não é técnico ler em 3 segundos. ── */
+#ac2-root .a2-kr{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);margin-bottom:5px}
+#ac2-root .a2-kv{font-size:22px;font-weight:800;line-height:1.05}
+#ac2-root .a2-ks{font-size:11.5px;color:var(--t3);margin-top:4px}
+#ac2-root .a2-vazio{padding:28px;text-align:center;color:var(--t3);font-size:13px}
+#ac2-root .a2-nota{font-size:11.5px;color:var(--t3);line-height:1.5;margin-top:10px;padding-left:10px;border-left:2px solid var(--bdr2)}
+#ac2-root .a2-tbl th{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t3);padding:7px 9px;border-bottom:1px solid var(--bdr2);white-space:nowrap}
+#ac2-root .a2-tbl td{padding:9px;border-bottom:1px solid var(--bdr);font-size:12.5px;vertical-align:middle}
+#ac2-root .a2-tbl td.r,#ac2-root .a2-tbl th.r{text-align:right}
+#ac2-root .a2-tbl tbody tr:hover{background:var(--surf2)}
 @media(max-width:860px){#ac2-root .a2-kpis{grid-template-columns:repeat(2,1fr)}}
 `; document.head.appendChild(s); }
 async function ac2Open(){ ac2injectCSS(); bcAuthInjectCSS(); const root=document.getElementById('ac2-root'); if(!root)return;
@@ -3426,10 +3437,31 @@ function ac2Ranking(l,glist){
     return `<div class="a2-rk" onclick="ac2.goGes('${r.g}','direcao')"><div style="width:30px;text-align:center;font-weight:800;font-size:16px">${medal(i)}</div><div class="a2-ava" style="width:28px;height:28px;background:${cor}">${r.g[0]}</div><div class="nm">${r.g}</div><div class="sp"></div><div class="mi">📝 <b>${r.m.tratadas}/${r.m.total}</b> registrado (${Math.round(r.m.disciplina*100)}%) · ⚡ ${ac2.velF(r.m.mediaReacaoH)} para registrar<br><span style="color:var(--c-mut)">${r.tipos}</span></div><div class="rv" style="color:${nc}">${r.nota}<small style="font-size:10px;color:var(--c-mut);font-weight:600">/100</small></div><div class="a2-bar2"><span style="width:${r.nota}%;background:${nc}"></span></div></div>`;}).join('');
   return `<div class="a2-sh">Ranking da equipe<small>nota = <b>registrar</b> (50%) + <b>rapidez em registrar</b> (50%) · quem não registra fica em zero (0–100)</small></div><div class="a2-card">${rows}</div>`;
 }
-ac2.filt=function(){ const ms=ac2.mesesSel(); return ac2.DEM.filter(i=>(!ms||ms.has(ac2.compDe(i)))&&AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)); };
+// ── O SISTEMA NOVO COMEÇA EM OUTUBRO/2026 (definição do Weskley, 12/10) ───────────────────────
+// Demanda de setembro para trás é do modelo antigo (plano de ação do pipeline) e não deve entrar
+// na cobrança do time — senão o gestor começa devendo um passivo que não era desta régua.
+const AC2_DESDE = '2026-10';
+
+// ── TIPOS DE DEMANDA ─────────────────────────────────────────────────────────────────────────
+// O pipeline gera 4. Na tela usamos o nome CURTO: quem acompanha não é técnico, e "Estancamento
+// de Prejuízo" numa coluna de tabela não cabe nem se lê.
+const AC2_TIPOS = [
+  { k:'prejuizo',  curto:'Prejuízo',  cor:'#dc2626', re:/estanca|prejuí|prejui/i, ajuda:'Está vendendo abaixo do custo. É o que sangra agora.' },
+  { k:'margem',    curto:'Margem',    cor:'#f59e0b', re:/correção de margem|correcao de margem/i, ajuda:'Vende bem mas sobra pouco (menos de 10%).' },
+  { k:'queima',    curto:'Queima',    cor:'#e879f9', re:/queima/i, ajuda:'Ainda tem margem, mas está caindo. Agir antes de virar prejuízo.' },
+  { k:'maturacao', curto:'Maturação', cor:'#4f8ef7', re:/matura/i, ajuda:'Produto novo: trabalhar a margem, não descartar.' },
+];
+const ac2TipoDe = t => (AC2_TIPOS.find(x => x.re.test(String(t||''))) || { k:'outro', curto:'Outro', cor:'#8891a8', ajuda:'' });
+// conta quantas de cada tipo há numa lista
+function ac2PorTipo(l){ const o={}; AC2_TIPOS.forEach(t=>o[t.k]=0); o.outro=0;
+  l.forEach(i=>{ o[ac2TipoDe(i.tipo).k]++; }); return o; }
+// "registrada" = o gestor anotou o que fez. É o pré-requisito de tudo: sem registro não há o que medir.
+const ac2Registrada = i => !!i.trat || i.estado==='trat';
+
+ac2.filt=function(){ const ms=ac2.mesesSel(); return ac2.DEM.filter(i=>ac2.compDe(i)>=AC2_DESDE&&(!ms||ms.has(ac2.compDe(i)))&&AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)); };
 ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risco:l.reduce((s,i)=>s+i.risco,0), prej:prej.length, riscoPrej:prej.reduce((s,i)=>s+i.risco,0), corr:l.length-prej.length}; };
 ac2.go=function(n){ ac2.nivel=n; if(n!=='gestor')ac2.gestorSel=null; ac2.render(); };
-ac2.goGes=function(g,from){ ac2.gestorSel=g; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
+ac2.goGes=function(g,from){ ac2.gestorSel=g||null; AC2_TIPO_FILTRO=''; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
 ac2.render=function(){
   const lv=document.getElementById('a2-lv'), kpi=document.getElementById('a2-kpi'), body=document.getElementById('a2-body'), bar=document.getElementById('a2-bar');
   lv.innerHTML=[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor','a lista dele']].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('')
@@ -3442,6 +3474,183 @@ ac2.render=function(){
   else { kpi.innerHTML=ac2TopoGestor(); body.innerHTML=ac2Gestor(); }
 };
 ac2.setModo=function(m){ ac2.modo=m; ac2.render(); };
+
+// ═══════════ NÍVEL 1 · DIREÇÃO — "quanto tem para fazer e quanto foi feito" ═══════════
+// Espelha o painel consolidado que a equipe já usa: por gestor, quantas demandas, de que tipos,
+// quantas registradas e a taxa. Linguagem direta — quem lê isto não é técnico.
+function ac2DirHero(){
+  const l = ac2.filt();
+  const reg = l.filter(ac2Registrada).length;
+  const taxa = l.length ? Math.round(100*reg/l.length) : 0;
+  const risco = l.filter(i=>!ac2Registrada(i)).reduce((a,i)=>a+(+i.risco||0),0);
+  const semReg = l.length - reg;
+  const cor = taxa>=70 ? '#22c55e' : (taxa>=30 ? '#f59e0b' : '#dc2626');
+  const card = (rot,val,sub,c) => `<div class="a2-k"><div class="a2-kr">${rot}</div>
+    <div class="a2-kv" style="color:${c||'var(--t1)'}">${val}</div><div class="a2-ks">${sub}</div></div>`;
+  const porTipo = ac2PorTipo(l);
+  const chips = AC2_TIPOS.filter(t=>porTipo[t.k]>0).map(t=>
+    `<span title="${t.ajuda}" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:${t.cor}22;color:${t.cor}">${t.curto} ${porTipo[t.k]}</span>`).join(' ');
+  return `<div class="a2-kpis">
+    ${card('O que tem para fazer', l.length, 'demandas desde out/26')}
+    ${card('O que foi registrado', reg+'/'+l.length, taxa+'% do total', cor)}
+    ${card('Ainda sem registro', semReg, semReg?'ninguém anotou o que fez':'tudo anotado', semReg?'#dc2626':'#22c55e')}
+    ${card('Dinheiro parado nelas', AC2_BRLk(risco), 'margem que dá para recuperar', risco>0?'#f59e0b':'var(--t3)')}
+  </div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">${chips}</div>`;
+}
+
+// tabela por gestor: a pergunta da direção é "quem está fazendo?"
+function ac2DirScore(){
+  const l = ac2.filt();
+  const gestores = [...new Set(l.map(i=>i.gestor))].filter(Boolean);
+  if(!gestores.length) return `<div class="a2-vazio">Nenhuma demanda desde out/26 com os filtros atuais.</div>`;
+  const linhas = gestores.map(g=>{
+    const li = l.filter(i=>i.gestor===g);
+    const reg = li.filter(ac2Registrada).length;
+    const t = ac2PorTipo(li);
+    return { g, n:li.length, reg, taxa: li.length?reg/li.length:0, t,
+             risco: li.filter(i=>!ac2Registrada(i)).reduce((a,i)=>a+(+i.risco||0),0) };
+  }).sort((a,b)=> a.taxa-b.taxa || b.risco-a.risco);   // pior taxa primeiro; empate, mais dinheiro parado
+  const th = AC2_TIPOS.map(t=>`<th title="${t.ajuda}" style="text-align:right;color:${t.cor}">${t.curto}</th>`).join('');
+  const tds = o => AC2_TIPOS.map(t=>`<td class="r" style="color:${o.t[t.k]?t.cor:'var(--t3)'}">${o.t[t.k]||'–'}</td>`).join('');
+  const barra = p => { const pc=Math.round(p*100); const c=pc>=70?'#22c55e':(pc>=30?'#f59e0b':'#dc2626');
+    return `<div style="display:flex;align-items:center;gap:7px"><div style="flex:1;height:6px;background:var(--bdr2);border-radius:999px;overflow:hidden;min-width:52px"><div style="width:${pc}%;height:100%;background:${c}"></div></div><b style="color:${c};font-size:12px">${pc}%</b></div>`; };
+  const body = linhas.map(o=>`<tr style="cursor:pointer" onclick="ac2.goGes('${String(o.g).replace(/'/g,"\'")}','direcao')">
+      <td><b>${o.g}</b></td>
+      <td class="r">${o.n}</td>
+      <td class="r">${o.reg}</td>
+      <td style="min-width:120px">${barra(o.taxa)}</td>
+      ${tds(o)}
+      <td class="r" style="color:${o.risco>0?'#f59e0b':'var(--t3)'}">${o.risco>0?AC2_BRLk(o.risco):'–'}</td>
+    </tr>`).join('');
+  return `<div class="a2-sh">Por gestor<small>clique num gestor para ver a lista dele · ordenado por quem menos registrou</small></div>
+    <div class="tbl-wrap"><table class="tbl a2-tbl"><thead><tr>
+      <th>Gestor</th><th class="r">Demandas</th><th class="r">Registradas</th><th>Taxa</th>${th}<th class="r">Parado</th>
+    </tr></thead><tbody>${body}</tbody></table></div>
+    <div class="a2-nota">“Registrada” quer dizer que o gestor anotou o que fez naquela demanda. Enquanto ninguém anota, não dá para saber se foi tratada — e o dinheiro segue parado.</div>`;
+}
+
+
+// ═══════════ NÍVEL 2 · COORDENAÇÃO — "quem está devendo e há quanto tempo" ═══════════
+// A pergunta aqui não é quanto tem, é quem está parado. Velocidade = horas entre a demanda
+// aparecer e o gestor registrar o que fez. Demora cara é a que custa dinheiro.
+function ac2TopoCoord(){
+  const l = ac2.filt();
+  const pend = l.filter(i=>!ac2Registrada(i));
+  const reacs = l.filter(i=>i.reacaoH!=null).map(i=>i.reacaoH);
+  const media = reacs.length ? reacs.reduce((a,b)=>a+b,0)/reacs.length : null;
+  const noPrazo = reacs.length ? Math.round(100*reacs.filter(h=>h<=24).length/reacs.length) : null;
+  const riscoPend = pend.reduce((a,i)=>a+(+i.risco||0),0);
+  const gestoresDevendo = new Set(pend.map(i=>i.gestor)).size;
+  const card = (rot,val,sub,c) => `<div class="a2-k"><div class="a2-kr">${rot}</div>
+    <div class="a2-kv" style="color:${c||'var(--t1)'}">${val}</div><div class="a2-ks">${sub}</div></div>`;
+  return `<div class="a2-kpis">
+    ${card('Esperando alguém', pend.length, gestoresDevendo+' gestor(es) com pendência', pend.length?'#dc2626':'#22c55e')}
+    ${card('Parado em R$', AC2_BRLk(riscoPend), 'margem presa nas pendências', riscoPend>0?'#f59e0b':'var(--t3)')}
+    ${card('Tempo até registrar', media==null?'—':ac2.reacLbl(media), media==null?'ninguém registrou ainda':'média da equipe')}
+    ${card('Registrado em 24h', noPrazo==null?'—':noPrazo+'%', noPrazo==null?'sem base':'quanto mais alto, melhor', noPrazo==null?null:(noPrazo>=70?'#22c55e':'#f59e0b'))}
+  </div>`;
+}
+
+function ac2Coord(){
+  const l = ac2.filt();
+  const gestores = [...new Set(l.map(i=>i.gestor))].filter(Boolean);
+  if(!gestores.length) return `<div class="a2-vazio">Nenhuma demanda desde out/26 com os filtros atuais.</div>`;
+  const linhas = gestores.map(g=>{
+    const li = l.filter(i=>i.gestor===g);
+    const pend = li.filter(i=>!ac2Registrada(i));
+    const reacs = li.filter(i=>i.reacaoH!=null).map(i=>i.reacaoH);
+    const media = reacs.length ? reacs.reduce((a,b)=>a+b,0)/reacs.length : null;
+    // a pendência mais cara dele — é por onde deve começar
+    const pior = pend.slice().sort((a,b)=>(+b.risco||0)-(+a.risco||0))[0] || null;
+    return { g, n:li.length, pend:pend.length, media,
+             noPrazo: reacs.length ? reacs.filter(h=>h<=24).length/reacs.length : null,
+             risco: pend.reduce((a,i)=>a+(+i.risco||0),0), pior };
+  }).sort((a,b)=> b.risco-a.risco || b.pend-a.pend);
+  const velLbl = o => o.media==null ? '<span style="color:var(--t3)">sem registro</span>'
+    : `<b style="color:${o.media<=24?'#22c55e':(o.media<=72?'#f59e0b':'#dc2626')}">${ac2.reacLbl(o.media)}</b>`;
+  const body = linhas.map(o=>`<tr style="cursor:pointer" onclick="ac2.goGes('${String(o.g).replace(/'/g,"\'")}','coord')">
+      <td><b>${o.g}</b></td>
+      <td class="r" style="color:${o.pend?'#dc2626':'#22c55e'}"><b>${o.pend}</b><span style="color:var(--t3)"> de ${o.n}</span></td>
+      <td class="r" style="color:${o.risco>0?'#f59e0b':'var(--t3)'}">${o.risco>0?AC2_BRLk(o.risco):'–'}</td>
+      <td class="r">${velLbl(o)}</td>
+      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)" title="${o.pior?String(o.pior.titulo||o.pior.sku).replace(/"/g,'')
+        :''}">${o.pior ? `<span style="color:${ac2TipoDe(o.pior.tipo).cor};font-weight:700">${ac2TipoDe(o.pior.tipo).curto}</span> · ${String(o.pior.titulo||o.pior.sku).slice(0,44)}` : '<span style="color:#22c55e">nada pendente</span>'}</td>
+    </tr>`).join('');
+  return `<div class="a2-sh">A fila do dia<small>ordenado por quanto dinheiro está parado · clique para abrir a lista do gestor</small></div>
+    <div class="tbl-wrap"><table class="tbl a2-tbl"><thead><tr>
+      <th>Gestor</th><th class="r">Pendentes</th><th class="r">Parado</th><th class="r">Tempo até registrar</th><th>Comece por esta</th>
+    </tr></thead><tbody>${body}</tbody></table></div>
+    <div class="a2-nota">“Tempo até registrar” é quanto a demanda esperou até o gestor anotar o que fez. Demora não é só atraso: enquanto ninguém mexe, o produto segue vendendo na margem errada.</div>`;
+}
+
+
+// ═══════════ NÍVEL 3 · GESTOR — "a minha lista, sem bagunça" ═══════════
+// Dois problemas que isto resolve: (1) o nível abria escolhendo o PRIMEIRO gestor da lista
+// sozinho — agora pergunta; (2) a lista vinha inteira de uma vez, sem ordem nem recorte, e o
+// gestor não sabia por onde começar — agora filtra por tipo e ordena por dinheiro parado.
+let AC2_TIPO_FILTRO = '';           // '' = todos
+ac2.filtroTipo = function(k){ AC2_TIPO_FILTRO = (AC2_TIPO_FILTRO===k ? '' : k); ac2.render(); };
+
+function ac2TopoGestor(){
+  const g = ac2.gestorSel;
+  if(!g) return '';                                  // sem gestor escolhido não há o que resumir
+  const li = ac2.filt().filter(i=>i.gestor===g);
+  const reg = li.filter(ac2Registrada).length;
+  const pend = li.length - reg;
+  const risco = li.filter(i=>!ac2Registrada(i)).reduce((a,i)=>a+(+i.risco||0),0);
+  const taxa = li.length ? Math.round(100*reg/li.length) : 0;
+  const card = (rot,val,sub,c) => `<div class="a2-k"><div class="a2-kr">${rot}</div>
+    <div class="a2-kv" style="color:${c||'var(--t1)'}">${val}</div><div class="a2-ks">${sub}</div></div>`;
+  return `<div class="a2-kpis">
+    ${card('Minhas demandas', li.length, 'desde out/26')}
+    ${card('Já registrei', reg+'/'+li.length, taxa+'%', taxa>=70?'#22c55e':(taxa>=30?'#f59e0b':'#dc2626'))}
+    ${card('Faltam', pend, pend?'anotar o que foi feito':'nada pendente', pend?'#dc2626':'#22c55e')}
+    ${card('Parado em R$', AC2_BRLk(risco), 'margem a recuperar', risco>0?'#f59e0b':'var(--t3)')}
+  </div>`;
+}
+
+function ac2Gestor(){
+  const l = ac2.filt();
+  // ── sem gestor escolhido: PERGUNTA, não adivinha ──
+  if(!ac2.gestorSel){
+    const gs = [...new Set(l.map(i=>i.gestor))].filter(Boolean).map(g=>{
+      const li = l.filter(i=>i.gestor===g), pend = li.filter(i=>!ac2Registrada(i)).length;
+      return { g, n:li.length, pend };
+    }).sort((a,b)=>b.pend-a.pend);
+    if(!gs.length) return `<div class="a2-vazio">Nenhuma demanda desde out/26 com os filtros atuais.</div>`;
+    const cards = gs.map(o=>`<button onclick="ac2.goGes('${String(o.g).replace(/'/g,"\'")}','gestor')"
+      style="text-align:left;background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:14px 16px;cursor:pointer;font-family:inherit;min-width:190px">
+      <div style="font-weight:800;font-size:14px;color:var(--t1);margin-bottom:5px">${o.g}</div>
+      <div style="font-size:12px;color:var(--t2)">${o.n} demanda(s)</div>
+      <div style="font-size:12px;font-weight:700;color:${o.pend?'#dc2626':'#22c55e'};margin-top:3px">${o.pend?o.pend+' sem registro':'tudo registrado'}</div>
+    </button>`).join('');
+    return `<div class="a2-sh">De quem é a lista?<small>escolha o gestor para ver as demandas dele</small></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">${cards}</div>`;
+  }
+  // ── lista do gestor escolhido ──
+  const g = ac2.gestorSel;
+  let li = l.filter(i=>i.gestor===g);
+  const porTipo = ac2PorTipo(li);
+  // chips de tipo: é o recorte que transforma "lista sem fim" em "o que eu faço agora"
+  const chip=(k,rot,n,cor)=>{ if(!n) return ''; const on=AC2_TIPO_FILTRO===k;
+    return `<span onclick="ac2.filtroTipo('${k}')" style="cursor:pointer;font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:999px;border:1px solid ${on?cor:'var(--bdr2)'};background:${on?cor+'22':'transparent'};color:${on?cor:'var(--t2)'}">${rot} ${n}</span>`; };
+  const todos = `<span onclick="ac2.filtroTipo('')" style="cursor:pointer;font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:999px;border:1px solid ${AC2_TIPO_FILTRO===''?'var(--a)':'var(--bdr2)'};background:${AC2_TIPO_FILTRO===''?'var(--a3)':'transparent'};color:${AC2_TIPO_FILTRO===''?'var(--a)':'var(--t2)'}">Todas ${li.length}</span>`;
+  const chips = todos + AC2_TIPOS.map(t=>chip(t.k,t.curto,porTipo[t.k],t.cor)).join('');
+  if(AC2_TIPO_FILTRO) li = li.filter(i=>ac2TipoDe(i.tipo).k===AC2_TIPO_FILTRO);
+  // pendentes primeiro, e dentro delas o que tem mais dinheiro parado
+  li = li.slice().sort((a,b)=>{ const pa=ac2Registrada(a)?1:0, pb=ac2Registrada(b)?1:0;
+    return pa-pb || (+b.risco||0)-(+a.risco||0); });
+  const ajuda = AC2_TIPO_FILTRO ? (AC2_TIPOS.find(t=>t.k===AC2_TIPO_FILTRO)||{}).ajuda : '';
+  const linhas = li.length ? li.map(i=>ac2itemRow(i)).join('')
+    : `<div class="a2-vazio">Nada neste filtro.</div>`;
+  const outro = [...new Set(l.map(i=>i.gestor))].filter(x=>x&&x!==g);
+  const trocar = outro.length ? `<button onclick="ac2.goGes(null,'gestor')" style="background:none;border:1px solid var(--bdr2);border-radius:8px;color:var(--t2);font-size:11.5px;padding:4px 10px;cursor:pointer">trocar de gestor</button>` : '';
+  return `<div class="a2-sh">Lista de ${g}<small>pendentes primeiro · dentro delas, maior dinheiro parado no topo</small></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:2px 0 4px">${chips}${trocar?'<span style="flex:1"></span>'+trocar:''}</div>
+    ${ajuda?`<div class="a2-nota" style="margin:0 0 8px">${ajuda}</div>`:''}
+    ${linhas}`;
+}
+
 function ac2DirKPI(){
   const l=ac2.filt(); const m=ac2.met(l);
   const mu=ac2.mesUnico(); let dm=null, perfPrev=null, cmpLbl='';
@@ -3485,40 +3694,6 @@ function ac2Direcao(){ const l=ac2.filt();
    <div class="a2-sh">Por ponto (estoque)<small>Bsan × Powerfull</small></div><div class="a2-card">${prows}</div>`;
 }
 /* ── Direção no layout do mockup: hero do loop + indicadores + scorecard / comparar ── */
-function ac2DirHero(){ const l=ac2.filt(); const m=ac2.metricsDe(l); const s=ac2.statusGer(m);
-  const hc=(c,lb,v,sub,d)=>`<div class="a2-hc ${c}" ${d?`style="cursor:pointer" onclick="ac2.drill('${d}')"`:''}><div class="hl">${lb}</div><div class="hv">${v}</div><div class="hs">${sub}${d?' ›':''}</div></div>`;
-  const k=(c,lb,v,s2,d)=>`<div class="a2-k ${c}" ${d?`data-d="${d}" onclick="ac2.drill('${d}')"`:''}><div class="st"></div><div class="kl">${lb}</div><div class="kv">${v}</div><div class="ks">${s2}${d?' ›':''}</div></div>`;
-  return `<div class="a2-sh">Visão geral — Direção<small>o que tinha pra fazer → o que foi feito → o resultado · período: <b style="color:var(--a2)">${ac2.perLabel()}</b></small></div>
-   <div class="a2-hero">
-    ${hc('','O que tinha',m.total,'demandas diagnosticadas','tinha')}
-    ${hc('','O que foi feito',m.resolvidas+'/'+m.total,'resolvidas (confirmado pelo dado)','resolvido')}
-    ${hc(m.recuperado?'good':'','R$ recuperado',AC2_BRLk(m.recuperado),AC2_BRLk(m.risco)+' ainda em risco','recuperado')}
-    ${hc(s.k==='bad'?'bad':(s.k==='good'?'good':''),'Status geral',s.t,'agilidade × retorno','status')}
-   </div>
-   <div class="a2-kpis">
-    ${k('neg','R$ em risco (aberto)',AC2_BRLk(m.risco),m.abertas+' demandas abertas','aberto')}
-    ${k('pos','R$ recuperado/protegido',AC2_BRLk(m.recuperado),'no período','recuperado')}
-    ${k(m.demora>0?'neg':'pos','R$ perdido por demora',m.demora>0?AC2_BRLk(m.demora):'R$ 0',m.demora>0?'itens parados além do prazo':'nada parado','demora')}
-    ${k(m.hit!=null&&m.hit>=.7?'pos':(m.hit!=null?'warn':'acc'),'Taxa de acerto',m.hit!=null?Math.round(m.hit*100)+'%':'—','das ações feitas, quantas resolveram','hit')}</div>`;
-}
-function ac2DirScore(){ const l=ac2.filt(); const glist=(ac2.ges.size?[...ac2.ges]:AC2_GES).filter(g=>l.some(i=>i.gestor===g));
-  const cards=glist.map(g=>{ const lg=l.filter(i=>i.gestor===g); const m=ac2.metricsDe(lg); const d=ac2.desemp(m); const mkts=new Set(lg.map(i=>i.mkt)).size;
-    const ev=ac2.evolGestor(g); const dpp=ev.length>=2?ev[ev.length-1]-ev[0]:null;
-    const mm=(lb,v,cor)=>`<div><div class="ml">${lb}</div><div class="mv" ${cor?`style="color:${cor}"`:''}>${v}</div></div>`;
-    const pin=d.k==='ideal'?'🟢':d.k==='crit'?'🔴':'🟡';
-    return `<div class="a2-gc" style="cursor:pointer" onclick="ac2.goGes('${g}','direcao')"><div class="a2-gch"><span class="a2-ava" style="background:${AC2_GCOR[g]||'#777'}">${g[0]}</span><div><div class="gn">${g}</div><div class="gsub">${m.total} demandas · ${m.abertas} abertas · ${mkts} marketplace${mkts!==1?'s':''}</div></div><span class="a2-pill ${d.k}">${pin} ${d.t}</span></div>
-     <div class="a2-gm">
-      ${mm('📝 Registrado',Math.round(m.disciplina*100)+'%',m.disciplina>=.6?'#22c55e':m.disciplina<.3?'#f87171':'#f59e0b')}
-      ${mm('⚡ Reação',ac2.reacF(m.mediaReacaoH))}
-      ${mm('🎯 Acerto',m.hit!=null?Math.round(m.hit*100)+'%':'—',m.hit!=null?(m.hit>=.7?'#22c55e':'#f87171'):'')}
-      ${mm('💸 Em risco',AC2_BRLk(m.risco),'#f87171')}
-      ${mm('✅ Recuperado',AC2_BRLk(m.recuperado),'#22c55e')}
-      ${mm('⏱️ Perdido/demora',m.demora>0?AC2_BRLk(m.demora):'R$ 0',m.demora>0?'#f87171':'')}</div>
-     <div class="a2-gf">${ac2.spark(ev,AC2_GCOR[g])}<span>evolução do acerto (6 sem)${dpp!=null?(' · <b style="color:'+(dpp>=0?'#22c55e':'#f87171')+'">'+(dpp>=0?'▲ +':'▼ ')+Math.abs(dpp)+' p.p.</b>'):''}</span><span class="verfila">ver fila ›</span></div></div>`;
-  }).join('');
-  return ac2Ranking(l,glist)+`<div class="a2-sh">Scorecard por gestor<small>clique num gestor p/ ver a lista dele · desempenho = rapidez × retorno</small></div>
-   <div class="a2-score">${cards||'<div style="padding:24px;color:var(--c-mut)">sem demandas no período</div>'}</div>`;
-}
 function ac2Comparar(){ const l=ac2.filt(); const glist=(ac2.ges.size?[...ac2.ges]:AC2_GES).filter(g=>l.some(i=>i.gestor===g));
   const stats=glist.map(g=>({g,m:ac2.metricsDe(l.filter(i=>i.gestor===g))})); const maxR=Math.max.apply(null,stats.map(x=>x.m.recuperado).concat([1]));
   const cards=stats.map(function(o){ const g=o.g,m=o.m; const d=ac2.desemp(m); const pin=d.k==='ideal'?'🟢':d.k==='crit'?'🔴':'🟡'; const hitCor=m.hit!=null?(m.hit>=.7?'#22c55e':m.hit<.4?'#f87171':'#f59e0b'):'';
@@ -3534,33 +3709,6 @@ function ac2Comparar(){ const l=ac2.filt(); const glist=(ac2.ges.size?[...ac2.ge
      ${row('⏱️ Perdido/demora',m.demora>0?AC2_BRLk(m.demora):'R$ 0',m.demora>0?'#f87171':'')}</div>`;
   }).join('');
   return `<div class="a2-sh">Comparar gestores<small>lado a lado · quem recupera mais, mais rápido</small></div><div class="a2-cmp">${cards}</div>`;
-}
-function ac2TopoCoord(){ const m=ac2.metricsDe(ac2.filt());
-  const hc=(c,lb,v,sub,d)=>`<div class="a2-hc ${c}" ${d?`style="cursor:pointer" onclick="ac2.drill('${d}')"`:''}><div class="hl">${lb}</div><div class="hv">${v}</div><div class="hs">${sub}${d?' ›':''}</div></div>`;
-  const k=(c,lb,v,s,d)=>`<div class="a2-k ${c}" ${d?`style="cursor:pointer" onclick="ac2.drill('${d}')"`:''}><div class="st"></div><div class="kl">${lb}</div><div class="kv">${v}</div><div class="ks">${s}${d?' ›':''}</div></div>`;
-  return `<div class="a2-sh">Operação — Coordenação<small>quantidade de tarefas e o ritmo de execução · período: <b style="color:var(--a2)">${ac2.perLabel()}</b></small></div>
-   <div class="a2-hero">
-    ${hc('','Total de tarefas',m.total,'no escopo filtrado','tinha')}
-    ${hc(m.abertas?'':'good','Na fila (abertas)',m.abertas,'aguardando ação','aberto')}
-    ${hc(m.semRegistro?'bad':'good','Sem registro',m.semRegistro,'sem tratativa 🚩','semreg')}
-    ${hc(m.noPrazo!=null&&m.noPrazo>=.8?'good':'','No prazo de reação',m.noPrazo!=null?Math.round(m.noPrazo*100)+'%':'—','assumido em até 24h','noprazo')}
-   </div>
-   <div class="a2-kpis">
-    ${k('acc','Tempo médio de reação',ac2.reacF(m.mediaReacaoH),'detecção → registro','reacao')}
-    ${k('acc','Tempo médio de tratativa',m.mediaTratD!=null?m.mediaTratD.toFixed(1).replace('.',',')+'d':'—','registro → ação','tratativa')}
-    ${k(m.reincidentes?'warn':'pos','Reincidentes',m.reincidentes,'voltaram a sangrar','rein')}
-    ${k(m.demora>0?'neg':'pos','R$ perdido por demora',m.demora>0?AC2_BRLk(m.demora):'R$ 0','custo da lentidão','demora')}</div>`;
-}
-function ac2TopoGestor(){ const g=ac2.gestorSel||(ac2.ges.size?[...ac2.ges][0]:AC2_GES[0]); const m=ac2.metricsDe(ac2.filt().filter(i=>i.gestor===g));
-  const contas=new Set(ac2.filt().filter(i=>i.gestor===g).map(i=>i.empresa+'|'+i.mkt)).size;
-  const hc=(c,lb,v,sub,d)=>`<div class="a2-hc ${c}" ${d?`style="cursor:pointer" onclick="ac2.drill('${d}')"`:''}><div class="hl">${lb}</div><div class="hv">${v}</div><div class="hs">${sub}${d?' ›':''}</div></div>`;
-  return `<div class="a2-sh">Minhas tarefas — ${g}<small>o que eu tenho pra tratar · período: <b style="color:var(--a2)">${ac2.perLabel()}</b></small></div>
-   <div class="a2-hero">
-    ${hc('','Minhas demandas',m.total,contas+' conta'+(contas!==1?'s':''),'tinha')}
-    ${hc(m.abertas?'':'good','Abertas pra tratar',m.abertas,m.semRegistro+' sem registro','aberto')}
-    ${hc(m.hit!=null&&m.hit>=.7?'good':'','Meu acerto',m.hit!=null?Math.round(m.hit*100)+'%':'—','das ações, quantas resolveram','hit')}
-    ${hc('good','Recuperado',AC2_BRLk(m.recuperado),AC2_BRLk(m.risco)+' em risco','recuperado')}
-   </div>`;
 }
 function ac2Hist(g){ const ev=ac2.evolGestor(g), rc=ac2.evolRec(g), cor=AC2_GCOR[g]||'#777', mx=Math.max.apply(null,rc.concat([1])); const sem=['S-5','S-4','S-3','S-2','S-1','Atual'];
   const bars=rc.map((v,i)=>`<div style="flex:1;text-align:center"><div style="height:46px;display:flex;align-items:flex-end;justify-content:center"><div style="width:60%;background:${cor};border-radius:4px 4px 0 0;height:${Math.max(v/mx*100,4)}%"></div></div><div style="font-size:9.5px;color:var(--c-mut);margin-top:3px">${sem[sem.length-rc.length+i]||''}</div><div style="font-size:10px;font-weight:700">${v}</div></div>`).join('');
@@ -3596,24 +3744,6 @@ function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(ful
     +`<div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span><span class="a2-tag">margem ${i.mcPct}%${prog} <span style="opacity:.6">(meta ${i.meta}%)</span></span>${causaTag}<span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span>${vendas}${anuncio}</div>`
     +(tratada?'':`<div class="a2-acao">${acao}</div>`)
     +`</div><div class="a2-ir"><div class="rr"><small>em risco</small>${AC2_BRLk(i.risco)}</div>${btn}</div></div>`;
-}
-function ac2Coord(){ const l=ac2.filt().slice().sort((a,b)=>{const pa=ac2.aberto(a)?1:0,pb=ac2.aberto(b)?1:0;if(pa!==pb)return pb-pa;return b.risco-a.risco;});
-  const glist=(ac2.ges.size?[...ac2.ges]:AC2_GES).filter(g=>l.some(i=>i.gestor===g));
-  const tg=glist.map(g=>{const m=ac2.metricsDe(l.filter(i=>i.gestor===g));return `<div class="a2-tg" onclick="ac2.goGes('${g}','coord')"><div style="display:flex;align-items:center;gap:9px"><span class="a2-ava" style="width:26px;height:26px;background:${AC2_GCOR[g]||'#777'}">${g[0]}</span><b>${g}</b></div><div class="nums"><span><b>${m.total}</b> tarefas</span><span><b>${m.abertas}</b> abertas</span><span ${m.semRegistro?'style="color:var(--c-neg)"':''}><b>${m.semRegistro}</b> sem registro</span><span>reação <b>${ac2.reacF(m.mediaReacaoH)}</b></span><span style="color:var(--c-acc);font-weight:600">ver ›</span></div></div>`;}).join('');
-  const semReg=l.filter(i=>!i.trat&&i.estado!=='trat'&&i.funcionou==null);
-  const alerta=semReg.length?`<div class="a2-card" style="border-color:var(--c-neg);background:rgba(248,113,113,.12);padding:11px 15px;margin-bottom:12px;color:var(--c-neg);font-weight:600;font-size:12.5px">🚩 ${semReg.length} demanda(s) sem tratativa registrada — cobrar: ${[...new Set(semReg.map(i=>i.gestor))].slice(0,3).join(', ')}</div>`:'';
-  const cap=60; const rows=l.slice(0,cap).map(i=>ac2itemRow(i)).join(''); const mais=l.length>cap?`<div style="padding:10px 14px;color:var(--c-mut);font-size:12px">+${l.length-cap} demandas (refine os filtros p/ ver todas)</div>`:'';
-  return `<div class="a2-sh">Tarefas por gestor<small>clique num gestor p/ abrir as tarefas dele</small></div><div class="a2-card">${tg}</div>
-   ${alerta}
-   <div class="a2-sh">Fila do dia<small>${l.length} itens · abertos primeiro, por R$ em risco</small></div><div class="a2-card">${rows}${mais}</div>`;
-}
-function ac2Gestor(){ const present=[...new Set(ac2.filt().map(i=>i.gestor))]; const g=ac2.gestorSel||(ac2.ges.size?[...ac2.ges][0]:(present[0]||AC2_GES[0])); const l=ac2.filt().filter(i=>i.gestor===g);
-  const volta=ac2.voltar==='coord'?'coordenação':'direção'; const d=ac2.desemp(ac2.metricsDe(l)); const pin=d.k==='ideal'?'🟢':d.k==='crit'?'🔴':'🟡';
-  const back=`<div style="margin:10px 0;display:flex;align-items:center;gap:8px"><button class="a2-bk" onclick="ac2.go('${ac2.voltar}')">‹ voltar à ${volta}</button><span class="a2-pill ${d.k}">${pin} ${d.t}</span></div>`+ac2Hist(g);
-  const contas=[...new Set(l.map(i=>i.empresa+'|'+i.mkt))];
-  const grupos=contas.map(ck=>{const[e,mk]=ck.split('|');const its=l.filter(i=>i.empresa+'|'+i.mkt===ck).sort((a,b)=>b.risco-a.risco);const r=its.reduce((s,i)=>s+i.risco,0);
-    return `<div class="a2-ch">📦 ${e} · ${mk}<span class="ct">${its.length} demandas · ${AC2_BRLk(r)} em risco</span></div>${its.map(i=>ac2itemRow(i)).join('')}`;}).join('');
-  return back+`<div class="a2-card">${grupos||'<div style="padding:24px;text-align:center;color:var(--t3)">sem demandas</div>'}</div>`;
 }
 const AC2_DRILL={tinha:{t:'Demandas a resolver',f:()=>true},risco:{t:'R$ em risco',f:()=>true,v:l=>AC2_BRL(l.reduce((s,i)=>s+i.risco,0))},prej:{t:'Em prejuízo (margem negativa)',f:i=>i.mcPct<0},corr:{t:'Correção de margem',f:i=>i.mcPct>=0},
   resolvido:{t:'Resolvidas (confirmado pelo dado)',f:i=>i.funcionou===true},
