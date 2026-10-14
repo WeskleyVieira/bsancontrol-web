@@ -3402,6 +3402,18 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .vd-alvo{margin:9px 0;padding:9px 11px;background:var(--c-s);border:1px dashed var(--c-ln);border-radius:9px;font-size:11.5px;line-height:1.75}
 #ac2-root .vd-t th,#ac2-root .vd-t td{font-size:10.5px;padding:3px 7px}
 #ac2-root .vd-sup{opacity:.72;margin-top:5px;font-size:10.5px;line-height:1.6}
+#ac2-root .vd-hist-ab{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin:4px 0 8px}
+#ac2-root .vd-hist-ab>div:not(.vd-hist-seta){background:var(--c-s);border:1px solid var(--c-ln);border-radius:9px;padding:8px 11px;display:flex;flex-direction:column;gap:2px}
+#ac2-root .vd-hist-ab span{font-size:10.5px;color:var(--c-mut)}
+#ac2-root .vd-hist-ab b{font-size:16px;color:var(--c-ink)}
+#ac2-root .vd-hist-ab em{font-style:normal;font-size:11px;font-weight:700}
+#ac2-root .vd-hist-seta{font-size:18px;color:var(--c-mut)}
+#ac2-root .vd-hist-falta{font-size:11.5px;line-height:1.6;margin:2px 0 4px}
+#ac2-root .vd-hist-chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+#ac2-root .vd-hist-chips button{font-size:10.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--c-ln);background:transparent;color:var(--c-mut);cursor:pointer}
+#ac2-root .vd-hist-chips button.on{border-color:#3b82f6;color:var(--c-ink);background:rgba(59,130,246,.12)}
+#ac2-root .vd-hist-cur td{background:rgba(59,130,246,.10);font-weight:700}
+@media(max-width:600px){#ac2-root .vd-hist-ab{grid-template-columns:1fr}#ac2-root .vd-hist-seta{display:none}}
 @media(max-width:860px){#ac2-root .a2-kpis{grid-template-columns:repeat(2,1fr)}}
 `; document.head.appendChild(s); }
 async function ac2Open(){ ac2injectCSS(); bcAuthInjectCSS(); const root=document.getElementById('ac2-root'); if(!root)return;
@@ -3843,9 +3855,98 @@ ac2.abrirVendas = async function(k){
       });
     }catch(e){ ac2._abCache[opk] = {}; }
   }
-  el.innerHTML = ac2PainelVendas(i);
+  // HISTÓRICO de preço e margem do anúncio (pedido dos gestores, 14/10/2026). Online vem do
+  // /api/historico (13 meses, agregado no banco); offline sai do DETALHE que estiver carregado.
+  const hk = [i.empresa, i.mkt, i.anuncio||'', i.sku||'', i.competencia||''].join('|');
+  if(!(ac2._histCache=ac2._histCache||{})[hk] && typeof authFetch==='function'){
+    try{
+      const qs = 'emp='+encodeURIComponent(i.empresa||'')+'&mkt='+encodeURIComponent(i.mkt||'')
+        +(i.anuncio ? '&anuncio='+encodeURIComponent(i.anuncio) : '&sku='+encodeURIComponent(i.sku||''))
+        +(i.competencia ? '&ate='+i.competencia : '');
+      const r = await authFetch('/api/historico?'+qs,{cache:'no-store'});
+      ac2._histCache[hk] = r.ok ? await r.json() : null;
+    }catch(e){ ac2._histCache[hk] = null; }
+  }
+  (ac2._vdHist=ac2._vdHist||{})[k] = { i, H: ac2._histCache[hk] || null };
+  el.innerHTML = ac2PainelVendas(i, k);
 };
-function ac2PainelVendas(i){
+ac2.histSku = function(k, sku){
+  const s = (ac2._vdHist||{})[k]; const el = document.getElementById(k+'-hist');
+  if(s && el) el.innerHTML = ac2HistHTML(s.i, s.H, decodeURIComponent(sku||''), k);
+};
+// Histórico de preço e margem, mês a mês, + "o que mudou por unidade" entre a média dos meses
+// anteriores e o mês da tarefa. Plataforma vai numa linha só (comissão + frete + taxas = receita −
+// líquido): a divisão comissão×frete mudou de fonte em 2026 (planilha → API) e, separada, mostraria
+// "o frete subiu R$ 5" onde só a classificação mudou. A soma é comparável mês a mês.
+function ac2HistHTML(i, H, skuSel, k){
+  let L = H && Array.isArray(H.linhas) ? H.linhas : null;
+  if(!L){                                            // offline: agrega o DETALHE carregado
+    const D = (typeof DETALHE!=='undefined' && Array.isArray(DETALHE)) ? DETALHE : [];
+    const g = {};
+    D.filter(r => r.emp===i.empresa && r.mkt===i.mkt && (i.anuncio ? r.anuncio===i.anuncio : r.sku===i.sku) && /venda/i.test(r.stat||'venda'))
+     .forEach(r => { const m=String(r.date||'').slice(0,7), key=m+'|'+(r.sku||'');
+       const o = g[key] || (g[key] = {mes:m, sku:r.sku||'', qtd:0, fat:0, liq:0, imp:0, ctp:0, mc:0});
+       o.qtd += +r.qtd||0; o.fat += +r.fat||0; o.liq += +r.liq||0; o.imp += +r.imp||0; o.ctp += +r.ctp||0; o.mc += +(r.mcReal!=null?r.mcReal:r.mc)||0; });
+    L = Object.values(g);
+  }
+  if(!L.length) return '';
+  const skus = [...new Set(L.map(x=>x.sku))].filter(Boolean).sort();
+  const LL = skuSel ? L.filter(x=>x.sku===skuSel) : L;
+  const M = {};
+  LL.forEach(x => { const o = M[x.mes] || (M[x.mes] = {mes:x.mes, qtd:0, fat:0, liq:0, imp:0, ctp:0, mc:0});
+    ['qtd','fat','liq','imp','ctp','mc'].forEach(f => o[f] += +x[f]||0); });
+  const meses = Object.values(M).filter(m=>m.qtd>0).sort((a,b)=>a.mes.localeCompare(b.mes));
+  const comp = i.competencia || (meses.length ? meses[meses.length-1].mes : '');
+  const brl = v => 'R$ '+(Math.round(v*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const MES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const rot = m => MES[+m.slice(5,7)-1]+'/'+m.slice(2,4);
+  const uni = o => { const q = o.qtd||1; return { preco:o.fat/q, plat:(o.fat-o.liq)/q, imp:o.imp/q, ctp:o.ctp/q,
+    outros:(o.liq-o.imp-o.ctp-o.mc)/q, marg:o.mc/q, pct: o.fat ? 100*o.mc/o.fat : 0 }; };
+  const meta = +i.meta||0;
+  const corPct = p => p < 0 ? '#dc2626' : p < 10 ? '#f59e0b' : (meta && p >= meta) ? '#22c55e' : 'var(--t1)';
+  const atual = M[comp], antes = meses.filter(m=>m.mes<comp);
+  // ── antes × agora + o que mudou ──
+  let topo = '';
+  if(atual && antes.length){
+    const ref = antes.reduce((a,m)=>{ ['qtd','fat','liq','imp','ctp','mc'].forEach(f=>a[f]+=m[f]); return a; }, {qtd:0,fat:0,liq:0,imp:0,ctp:0,mc:0});
+    const A = uni(ref), N = uni(atual);
+    const efeitos = [   // efeito NA MARGEM por unidade: preço sobe = bom; custo sobe = ruim
+      ['Preço de venda', N.preco - A.preco], ['Plataforma (comissão, frete, taxas)', -(N.plat - A.plat)],
+      ['Imposto', -(N.imp - A.imp)], ['Custo do produto', -(N.ctp - A.ctp)], ['Entrega própria e outros', -(N.outros - A.outros)] ];
+    const pior = efeitos.slice().sort((a,b)=>a[1]-b[1])[0];
+    const falta = A.marg - N.marg;
+    const ef = efeitos.filter(e=>Math.abs(e[1])>=0.005).map(([r,v]) =>
+      `<div class="vd-l"><span>${r}</span><b style="color:${v<0?'#dc2626':'#22c55e'}">${v<0?'−':'+'}${brl(Math.abs(v))}/un</b>
+        <i></i><u>${v<0?'tirou':'deu'} margem</u></div>`).join('');
+    topo = `<div class="vd-hist-ab">
+        <div><span>Antes · ${rot(antes[0].mes)}–${rot(antes[antes.length-1].mes)} · ${Math.round(ref.qtd).toLocaleString('pt-BR')} un</span>
+          <b>${brl(A.preco)}/un</b><em style="color:${corPct(A.pct)}">margem ${A.pct.toFixed(1)}% · ${brl(A.marg)}/un</em></div>
+        <div class="vd-hist-seta">→</div>
+        <div><span>Agora · ${rot(comp)} · ${Math.round(atual.qtd).toLocaleString('pt-BR')} un</span>
+          <b>${brl(N.preco)}/un</b><em style="color:${corPct(N.pct)}">margem ${N.pct.toFixed(1)}% · ${brl(N.marg)}/un</em></div>
+      </div>
+      ${falta > 0.005
+        ? `<div class="vd-hist-falta">Para voltar à margem de antes faltam <b>${brl(falta)} por unidade</b>
+            — no ritmo de ${rot(comp)}, <b>${brl(falta*atual.qtd)}</b> no mês.
+            ${pior && pior[1] < -0.005 ? `O que mais tirou: <b>${pior[0].toLowerCase()}</b> (${brl(Math.abs(pior[1]))}/un).` : ''}</div>`
+        : `<div class="vd-hist-falta">A margem por unidade está igual ou acima da média dos meses anteriores.</div>`}
+      <div class="vd-g" style="margin-top:6px"><div class="vd-l" style="opacity:.7"><span>O que mudou por unidade (agora × antes)</span><b></b><i></i><u></u></div>${ef}
+        <div class="vd-l tot"><span>Margem por unidade</span><b style="color:${falta>0?'#dc2626':'#22c55e'}">${falta>0?'−':'+'}${brl(Math.abs(falta))}/un</b><i></i><u></u></div></div>`;
+  } else if(atual) topo = `<div class="vd-hist-falta">Sem vendas nos meses anteriores — não há histórico para comparar.</div>`;
+  const chips = skus.length > 1 ? `<div class="vd-hist-chips">${['',...skus].map(sk =>
+      `<button class="${(skuSel||'')===sk?'on':''}" onclick="event.stopPropagation();ac2.histSku('${k}','${encodeURIComponent(sk)}')">${sk||'Todos os SKUs'}</button>`).join('')}</div>` : '';
+  const linhas = meses.slice().reverse().map(m => { const u = uni(m);
+    return `<tr${m.mes===comp?' class="vd-hist-cur"':''}><td>${rot(m.mes)}</td><td class="r">${Math.round(m.qtd)}</td>
+      <td class="r"><b>${brl(u.preco)}</b></td><td class="r">${brl(u.plat)}</td><td class="r">${brl(u.imp)}</td><td class="r">${brl(u.ctp)}</td>
+      <td class="r" style="color:${u.marg<0?'#dc2626':'var(--t1)'}">${brl(u.marg)}</td><td class="r" style="color:${corPct(u.pct)};font-weight:700">${u.pct.toFixed(1)}%</td></tr>`; }).join('');
+  return `<div class="vd-h" style="margin-top:12px">Histórico de preço e margem · ${i.anuncio ? 'anúncio '+i.anuncio : 'SKU '+(i.sku||'')}${skuSel?' · '+skuSel:''}</div>
+    ${chips}${topo}
+    <div class="tbl-wrap" style="max-height:230px;margin-top:8px"><table class="tbl a2-tbl vd-t"><thead><tr>
+      <th>Mês</th><th class="r">Un</th><th class="r">Preço/un</th><th class="r">Plataforma/un</th><th class="r">Imposto/un</th><th class="r">Custo/un</th><th class="r">Margem/un</th><th class="r">Margem %</th>
+    </tr></thead><tbody>${linhas}</tbody></table></div>
+    <div class="vd-sup">Plataforma = tudo o que o marketplace retém (comissão + frete + taxas). Por unidade, para comparar meses com volumes diferentes.${meta?` Verde = na meta de ${meta}%.`:''}</div>`;
+}
+function ac2PainelVendas(i, k){
   const D = (typeof DETALHE!=='undefined' && Array.isArray(DETALHE)) ? DETALHE : [];
   const comp = i.competencia || '';
   const vd = D.filter(r => r.emp===i.empresa && r.mkt===i.mkt
@@ -3906,7 +4007,7 @@ function ac2PainelVendas(i){
         ${(100*(c+t)).toFixed(1)}% da venda. Sobram ${(100*(1-c-t)).toFixed(1)}% para custo + margem —
         é caso de renegociar custo, mudar o tipo de anúncio/frete, ou pausar.</div>`;
   const vendas = vd.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r=>{
-    const mcR = (+r.liq||0)-(+r.imp||0)-(+r.ctp||0);
+    const mcR = r.mcReal!=null ? +r.mcReal : (+r.liq||0)-(+r.imp||0)-(+r.ctp||0);   // mesma margem do topo (com motoboy)
     return `<tr><td>${String(r.date||'').split('-').reverse().join('/')}</td>
       <td style="font-family:ui-monospace,monospace;font-size:10px">${r.ped||''}</td>
       <td class="r">${Math.round(+r.qtd||0)}</td><td class="r">${brl(+r.fat||0)}</td>
@@ -3927,6 +4028,7 @@ function ac2PainelVendas(i){
         <i style="color:${mc<0?'#dc2626':'#22c55e'}">${pct(mc).toFixed(1)}%</i>
         <u style="color:${mc<0?'#dc2626':'#22c55e'}">${brl(un(mc))}/un</u></div>
     </div>
+    <div id="${k}-hist">${ac2HistHTML(i, ((ac2._vdHist||{})[k]||{}).H, '', k)}</div>
     ${alvos}
     <div class="tbl-wrap" style="max-height:200px"><table class="tbl a2-tbl vd-t"><thead><tr>
       <th>Data</th><th>Nº da venda</th><th class="r">Qtd</th><th class="r">Valor</th><th class="r">Líquido</th><th class="r">Margem</th>

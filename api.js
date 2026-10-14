@@ -171,6 +171,30 @@ async function rotaGET(u, user) {
     });
     return { periodo: [q.de || null, q.ate || null], ms: Date.now() - t0, n: abertura.length, abertura };
   }
+  // ── /api/historico — preço e margem MÊS A MÊS de UM anúncio (ou SKU), por SKU ──
+  // Pedido dos gestores (14/10/2026): na tarefa, ver a que preço e com que margem o produto vendia
+  // antes, para saber o que recuperar. O DETALHE só traz ~4 meses e não pode crescer (OOM no plano
+  // free); aqui é um GROUP BY escopado a um anúncio — dezenas de linhas.
+  if (u.pathname === "/api/historico") {
+    const emp = q.emp || "", mkt = q.mkt || "", anuncio = q.anuncio || "", sku = q.sku || "";
+    if (!emp || !mkt || (!anuncio && !sku)) return { erro: "informe emp, mkt e anuncio ou sku" };
+    const meses = Math.max(2, Math.min(24, parseInt(q.meses || "13", 10)));
+    const ref = /^\d{4}-\d{2}$/.test(q.ate || "") ? q.ate : new Date().toISOString().slice(0, 7);
+    const d0 = new Date(ref + "-01T00:00:00Z"); d0.setUTCMonth(d0.getUTCMonth() - (meses - 1));
+    const w = ["empresa=?", "canal=?", anuncio ? "anuncio_id=?" : "sku=?", "status LIKE '%venda%'", "competencia>=?", "competencia<=?"];
+    const args = [emp, mkt, anuncio || sku, d0.toISOString().slice(0, 7), ref];
+    if (user && user.perfil === "gestor") { const pts = await pontosDoGestor(user.gestor_ref);
+      if (!pts.length) return { linhas: [] };
+      w.push("ponto IN (" + pts.map(() => "?").join(",") + ")"); args.push(...pts); }
+    const r2 = n => Math.round((+n || 0) * 100) / 100;
+    const linhas = (await dbx.all(`SELECT competencia AS mes, sku, SUM(qtd) AS qtd, COUNT(*) AS ped,
+        SUM(receita) AS fat, SUM(liquido) AS liq, SUM(imposto) AS imp, SUM(ctp) AS ctp, SUM(mc_real) AS mc,
+        SUM(ABS(COALESCE(comissao,0))) AS comis, SUM(ABS(COALESCE(tarifas,0))) AS tarif
+      FROM vendas WHERE ${w.join(" AND ")} GROUP BY competencia, sku ORDER BY competencia, sku`, args))
+      .map(o => ({ mes: o.mes, sku: o.sku, qtd: +o.qtd || 0, ped: +o.ped || 0, fat: r2(o.fat), liq: r2(o.liq),
+        imp: r2(o.imp), ctp: r2(o.ctp), mc: r2(o.mc), comis: r2(o.comis), tarif: r2(o.tarif) }));
+    return { anuncio, sku, ate: ref, linhas };
+  }
   // ── /api/extras — datasets não-vendas (Ads/Estoque/Comissão/Produtos/…) escopados por ponto ──
   if (u.pathname === "/api/extras") {
     const t0 = Date.now();
@@ -250,6 +274,8 @@ const server = http.createServer(async (req, res) => {
       await dbx.run("INSERT INTO tratativas(demanda_id,gestor,acao,causa,obs,estado,registrado_em,reacao_h) VALUES(?,?,?,?,?,?,?,?)",
         [o.demanda_id, (user && user.gestor_ref) || o.gestor || "", o.acao || "", o.causa || "", o.obs || "", o.estado || "trat", agora, reacaoH]);
       if (o.estado) await dbx.run("UPDATE demandas SET estado=? WHERE id=?", [o.estado, o.demanda_id]);
+      // espelha na planilha Google da operação (o bot lê de lá). Assíncrono: não segura a resposta.
+      try { require("./espelho-planilhas").agendarPorDemanda(dbx, o.demanda_id); } catch (e) { console.error("[planilhas] " + e.message); }
       return J(res, { ok: true, reacaoH });
     }
     // ── POST /api/envios (coord/direção sobe a planilha de envios → salva na nuvem) ──
