@@ -192,6 +192,28 @@ async function rotaGET(u, user) {
     });
     return { periodo: [q.de || null, q.ate || null], ms: Date.now() - t0, n: abertura.length, abertura };
   }
+  // ── /api/equipe — MÉDIA DA EQUIPE, sem nomes (16/10/2026) ──
+  // O card "Como estou indo" do gestor compara com a equipe. O perfil gestor só recebe as próprias
+  // demandas; aqui vai só o agregado — nenhuma linha, nenhum nome. Mesmas regras do painel.
+  if (u.pathname === "/api/equipe") {
+    await garantePrecoNovo();
+    const desde = /^\d{4}-\d{2}$/.test(q.desde || "") ? q.desde : "2026-10";
+    const rs = await dbx.all(`SELECT d.estado, d.criado_em, d.prazo_dias, t.n AS tn, t.reac, r.desfecho FROM demandas d
+      LEFT JOIN (SELECT demanda_id, COUNT(*) n, MIN(reacao_h) reac FROM tratativas GROUP BY demanda_id) t ON t.demanda_id=d.id
+      LEFT JOIN (SELECT r1.demanda_id, r1.desfecho FROM resultados r1 JOIN (SELECT demanda_id, MAX(id) ult FROM resultados GROUP BY demanda_id) rr ON rr.ult=r1.id) r ON r.demanda_id=d.id
+      WHERE d.competencia >= ?`, [desde]);
+    let n = 0, reg = 0, venc = 0, noPrazo = 0, med = 0, ok = 0; const agora = Date.now();
+    for (const x of rs) {
+      n++; const isReg = +x.tn > 0 || x.estado === "trat"; if (isReg) reg++;
+      const p = x.prazo_dias == null ? null : +x.prazo_dias, t0 = Date.parse(x.criado_em || "");
+      // entra quando o desfecho do prazo é conhecido: registrou (no prazo ou não) ou o prazo venceu
+      if (p != null && !isNaN(t0) && (isReg || t0 + p * 864e5 <= agora)) { venc++; if (isReg && x.reac != null && +x.reac / 24 <= p) noPrazo++; }
+      const f = !x.desfecho || /Aguardando|Sem venda|Sem leitura|Pausado|parcial/.test(x.desfecho) ? null : /Resolvido|Progrediu|Justificado/.test(x.desfecho);
+      if (f != null) { med++; if (f) ok++; }
+    }
+    const pc = (v, b) => b ? Math.round(1000 * v / b) / 10 : null;
+    return { n, registro: pc(reg, n), no_prazo: pc(noPrazo, venc), efeito: pc(ok, med), medidas: med };
+  }
   // ── /api/historico — preço e margem MÊS A MÊS de UM anúncio (ou SKU), por SKU ──
   // Pedido dos gestores (14/10/2026): na tarefa, ver a que preço e com que margem o produto vendia
   // antes, para saber o que recuperar. O DETALHE só traz ~4 meses e não pode crescer (OOM no plano

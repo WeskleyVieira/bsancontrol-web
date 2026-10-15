@@ -3361,14 +3361,14 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-gc .gc-v{font-size:23px;font-weight:800;color:var(--cc);line-height:1.1}
 #ac2-root .a2-gc .gc-v small{font-size:11.5px;font-weight:600;color:var(--c-mut)}
 #ac2-root .a2-gc .gc-s{font-size:11px;color:var(--c-mut);font-weight:600}
-#ac2-root .a2-gc .gc-tipos{margin-top:7px;border-top:1px solid var(--c-ln);padding-top:5px}
-#ac2-root .a2-gc .gt-l{display:grid;grid-template-columns:1fr 44px 38px 64px 70px;align-items:center;gap:4px;font-size:11px;line-height:1.9}
-#ac2-root .a2-gc .gt-h{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--c-mut);line-height:1.6}
-#ac2-root .a2-gc .gt-n{font-weight:700}
-#ac2-root .a2-gc .gt-q{color:var(--c-mut);text-align:right}
-#ac2-root .a2-gc .gt-p{font-weight:800;text-align:right}
-#ac2-root .a2-gc .gt-s{font-size:9.5px;font-weight:800;border:1px solid;border-radius:999px;padding:0 6px;text-align:center;line-height:1.6}
-#ac2-root .a2-gc .gt-e{font-size:10px;font-weight:700;text-align:right;color:var(--c-mut)}
+#ac2-root .gc-tipos{margin-top:7px;border-top:1px solid var(--c-ln);padding-top:5px}
+#ac2-root .gc-tipos .gt-l{display:grid;grid-template-columns:1fr 44px 38px 64px 70px;align-items:center;gap:4px;font-size:11px;line-height:1.9}
+#ac2-root .gc-tipos .gt-h{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--c-mut);line-height:1.6}
+#ac2-root .gc-tipos .gt-n{font-weight:700}
+#ac2-root .gc-tipos .gt-q{color:var(--c-mut);text-align:right}
+#ac2-root .gc-tipos .gt-p{font-weight:800;text-align:right}
+#ac2-root .gc-tipos .gt-s{font-size:9.5px;font-weight:800;border:1px solid;border-radius:999px;padding:0 6px;text-align:center;line-height:1.6}
+#ac2-root .gc-tipos .gt-e{font-size:10px;font-weight:700;text-align:right;color:var(--c-mut)}
 #ac2-root .a2-palco{position:fixed;left:-20000px;top:0;width:1100px;pointer-events:none}
 #ac2-root .a2-foto{width:1100px;padding:22px 26px;background:var(--bg)}
 #ac2-root .a2-foto .a2-foto-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--c-ln)}
@@ -3394,6 +3394,41 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-k.nc{cursor:default}
 /* posicao na fila: a coordenacao le de cima para baixo, entao o numero precisa estar visivel */
 #ac2-root .vd-reg-ck{font-size:12px;margin-top:3px}
+#ac2-root .dm-sec{display:flex;align-items:baseline;gap:10px;margin:16px 0 7px;padding-left:10px;border-left:4px solid var(--sc)}
+#ac2-root .dm-sec b{font-size:14.5px;color:var(--t1)}
+#ac2-root .dm-sec span{font-size:12px;color:var(--t2)}
+#ac2-root .a2-dem{display:flex;gap:16px;background:var(--c-s);border:1px solid var(--c-ln);border-left:5px solid var(--tc);border-radius:10px;padding:12px 15px;margin-bottom:8px}
+#ac2-root .a2-dem.feita{padding:9px 15px}
+#ac2-root .a2-dem.recobrar{border-left-color:#a855f7}
+#ac2-root .dm-main{flex:1;min-width:0}
+#ac2-root .dm-top{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+#ac2-root .dm-tipo{font-size:11px;font-weight:800;color:#fff;background:var(--tc);padding:2px 10px;border-radius:999px}
+#ac2-root .dm-prazo{font-size:12.5px;font-weight:800}
+#ac2-root .dm-op{font-size:12.5px;color:var(--t2);font-weight:600}
+#ac2-root .dm-tit{font-size:15px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px}
+#ac2-root .dm-l{font-size:13px;color:var(--t1);line-height:1.55;margin-top:4px}
+#ac2-root .dm-prob{font-size:14px}
+#ac2-root .dm-lk{display:grid;grid-template-columns:128px 1fr;gap:10px;align-items:baseline}
+#ac2-root .dm-k{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--t2)}
+#ac2-root .dm-sug>div{margin-bottom:3px}
+#ac2-root .dm-conf,#ac2-root .dm-chip{font-size:10.5px;font-weight:700;border:1px solid;border-radius:999px;padding:0 7px;margin-left:4px;white-space:nowrap}
+#ac2-root .dm-chip{font-size:11.5px;padding:1px 9px;margin-left:8px}
+#ac2-root .dm-rec{font-size:13px;color:#a855f7;margin:2px 0 3px}
+#ac2-root .dm-mut{color:var(--t2)}
+#ac2-root .dm-meta{font-size:11.5px;color:var(--t2);margin-top:7px}
+#ac2-root .dm-conta{font:inherit;font-weight:700;color:var(--c-acc);background:none;border:0;padding:0;cursor:pointer}
+#ac2-root .dm-side{display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:130px;text-align:right}
+#ac2-root .dm-side small{font-size:10px;text-transform:uppercase;font-weight:700;color:var(--t2);letter-spacing:.4px}
+#ac2-root .dm-side b{font-size:19px;color:var(--t1)}
+#ac2-root .dm-reg{font:inherit;font-size:13px;font-weight:800;color:#fff;background:var(--c-acc);border:0;border-radius:8px;padding:9px 16px;cursor:pointer;white-space:nowrap;margin-top:4px}
+#ac2-root .dm-reg:hover{filter:brightness(1.1)}
+#ac2-root .dm-feitas{margin-top:16px}
+#ac2-root .dm-feitas>summary{cursor:pointer;display:flex;align-items:baseline;gap:10px;padding:8px 10px;border-left:4px solid #16a34a;margin-bottom:7px;list-style:none}
+#ac2-root .dm-feitas>summary b{font-size:14.5px;color:var(--t1)}
+#ac2-root .dm-feitas>summary span{font-size:12px;color:var(--t2)}
+#ac2-root .a2-shh small{font-weight:500;text-transform:none;letter-spacing:0;color:var(--t3);margin-left:8px}
+@media (max-width:700px){ #ac2-root #a2-lv{flex-wrap:wrap;row-gap:4px} #ac2-root .a2-prog>.a2-k:last-child{grid-column:1/-1} #ac2-root .gc-tipos .gt-l{grid-template-columns:1fr 36px 36px 58px 62px} }
+@media (max-width:700px){ #ac2-root .a2-dem{flex-direction:column} #ac2-root .dm-side{flex-direction:row;align-items:center;justify-content:space-between;text-align:left} #ac2-root .dm-lk{grid-template-columns:1fr;gap:0} }
 #ac2-root .a2-cob{font:inherit;font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;border:1px solid var(--c-ln);background:var(--c-s2);color:var(--c-ink);cursor:pointer;white-space:nowrap}
 #ac2-root .a2-cob:hover{border-color:var(--c-acc);color:var(--c-acc)}
 #ac2-root .a2-pos{display:inline-block;min-width:19px;height:19px;line-height:19px;text-align:center;border-radius:5px;background:var(--c-s2);border:1px solid var(--c-ln);font-size:10.5px;font-weight:800;color:var(--c-mut);margin-right:8px}
@@ -3624,7 +3659,7 @@ ac2.render=function(){
   const cmpMode=ac2.cmp && ac2.nivel!=='gestor';
   if(ac2.nivel==='direcao'){ kpi.innerHTML=ac2DirHero(); body.innerHTML=cmpMode?ac2Comparar():ac2DirScore(); }
   else if(ac2.nivel==='coord'){ kpi.innerHTML=ac2TopoCoord(); body.innerHTML=cmpMode?ac2Comparar():ac2Coord(); }
-  else { kpi.innerHTML=ac2TopoGestor(); body.innerHTML=ac2Gestor(); }
+  else { kpi.innerHTML=ac2TopoGestor(); body.innerHTML=ac2Gestor(); ac2CarregaResumos(); }
 };
 ac2.setModo=function(m){ ac2.modo=m; ac2.render(); };
 
@@ -4076,41 +4111,51 @@ ac2.goOp = function(op){ ac2.opSel = op || null; AC2_TIPO_FILTRO=''; ac2.render(
 // Mandar o gestor para o Raio-X repetia o sintoma: lá ele via "MC −15,3%" de novo, que é
 // exatamente o que a tarefa já dizia. O que resolve é abrir a venda: quanto a plataforma levou,
 // quanto foi imposto, quanto foi produto — e qual preço (ou custo) fecharia a meta.
-ac2.abrirVendas = async function(k){
-  const el = document.getElementById(k); if(!el) return;
-  if(el.innerHTML){ el.innerHTML=''; el.classList.remove('on'); return; }   // 2º clique fecha
-  const i = (ac2._vdMap||{})[k]; if(!i) return;
-  el.classList.add('on');
+// garante o que a análise de uma demanda precisa: a ABERTURA da operação (comissão × frete por venda,
+// uma vez por operação) e o HISTÓRICO do anúncio (13 meses). Usado ao abrir o painel E pela linha da
+// demanda, que mostra causa e sugestão sem precisar abrir — mesma fonte, mesmos números.
+async function ac2Garante(i){
   // COMISSÃO e FRETE precisam vir separados: um é % (escala com o preço), o outro é R$ por remessa
   // (não escala). Tratar os dois como percentual fazia o preço-alvo sair otimista. A abertura vem
   // do endpoint escopado por operação — a mesma que a Gerencial usa.
   const opk = (i.empresa||'')+'||'+(i.mkt||'');
-  if(!(ac2._abCache=ac2._abCache||{})[opk] && typeof authFetch==='function'){
-    el.innerHTML = '<div class="vd-x">abrindo a conta…</div>';
-    try{
-      const r = await authFetch('/api/abertura?emp='+encodeURIComponent(i.empresa||'')+'&mkt='+encodeURIComponent(i.mkt||''),{cache:'no-store'});
-      const j = r.ok ? await r.json() : null;
-      const idx = {}; ((j&&j.abertura)||[]).forEach(a=>idx[a.k]=a);
-      ac2._abCache[opk] = idx;
-      if(typeof DETALHE!=='undefined') DETALHE.forEach(x=>{
-        const a = idx[(x.ped||'')+'|'+(x.sku||'')+'|'+x.date+'|'+(x.mkt||'')];
-        if(a) for(const c in a){ if(c!=='k') x[c]=a[c]; }
-      });
-    }catch(e){ ac2._abCache[opk] = {}; }
+  if(!((ac2._abCache=ac2._abCache||{})[opk]) && typeof authFetch==='function'){
+    const p = (ac2._abPend=ac2._abPend||{})[opk] || (ac2._abPend[opk] = (async()=>{
+      try{
+        const r = await authFetch('/api/abertura?emp='+encodeURIComponent(i.empresa||'')+'&mkt='+encodeURIComponent(i.mkt||''),{cache:'no-store'});
+        const j = r.ok ? await r.json() : null;
+        const idx = {}; ((j&&j.abertura)||[]).forEach(a=>idx[a.k]=a);
+        ac2._abCache[opk] = idx;
+        if(typeof DETALHE!=='undefined') DETALHE.forEach(x=>{
+          const a = idx[(x.ped||'')+'|'+(x.sku||'')+'|'+x.date+'|'+(x.mkt||'')];
+          if(a) for(const c in a){ if(c!=='k') x[c]=a[c]; }
+        });
+      }catch(e){ ac2._abCache[opk] = {}; }
+    })());
+    await p;
   }
   // HISTÓRICO de preço e margem do anúncio (pedido dos gestores, 14/10/2026). Online vem do
   // /api/historico (13 meses, agregado no banco); offline sai do DETALHE que estiver carregado.
   const hk = [i.empresa, i.mkt, i.anuncio||'', i.sku||'', i.competencia||''].join('|');
-  if(!(ac2._histCache=ac2._histCache||{})[hk] && typeof authFetch==='function'){
+  const HC = (ac2._histCache=ac2._histCache||{});
+  if(!(hk in HC) && typeof authFetch==='function'){
     try{
       const qs = 'emp='+encodeURIComponent(i.empresa||'')+'&mkt='+encodeURIComponent(i.mkt||'')
         +(i.anuncio ? '&anuncio='+encodeURIComponent(i.anuncio) : '&sku='+encodeURIComponent(i.sku||''))
         +(i.competencia ? '&ate='+i.competencia : '');
       const r = await authFetch('/api/historico?'+qs,{cache:'no-store'});
-      ac2._histCache[hk] = r.ok ? await r.json() : null;
-    }catch(e){ ac2._histCache[hk] = null; }
+      HC[hk] = r.ok ? await r.json() : null;
+    }catch(e){ HC[hk] = null; }
   }
-  (ac2._vdHist=ac2._vdHist||{})[k] = { i, H: ac2._histCache[hk] || null };
+  return HC[hk] || null;
+}
+ac2.abrirVendas = async function(k){
+  const el = document.getElementById(k); if(!el) return;
+  if(el.innerHTML){ el.innerHTML=''; el.classList.remove('on'); return; }   // 2º clique fecha
+  const i = (ac2._vdMap||{})[k]; if(!i) return;
+  el.classList.add('on'); el.innerHTML = '<div class="vd-x">abrindo a conta…</div>';
+  const H = await ac2Garante(i);
+  (ac2._vdHist=ac2._vdHist||{})[k] = { i, H };
   el.innerHTML = ac2PainelVendas(i, k);
 };
 // ── TAREFA: TELA DE DECISÃO (14/10/2026 — auditoria do Weskley "se você fosse o gestor") ──────────
@@ -4261,24 +4306,27 @@ function ac2PainelDevolucao(i){
           : '<div class="vd-x">As devoluções deste mês não estão no período carregado.</div>'}
     <div class="vd-sup">${vd.length} venda(s) concluída(s) do anúncio no mesmo mês, para comparar.</div>`;
 }
-function ac2PainelVendas(i, k){
-  if(ac2TipoDe(i.tipo).k==='devolucao') return ac2PainelDevolucao(i);
+// ── O MOTOR DA DECISÃO (16/10/2026): todas as contas de uma demanda num lugar só. O painel aberto e a
+// linha da demanda (problema · causa · sugestão) usam ESTE resultado — nunca dois cálculos que divergem.
+function ac2Analise(i, H){
+  if(ac2TipoDe(i.tipo).k==='devolucao') return null;
   const D = (typeof DETALHE!=='undefined' && Array.isArray(DETALHE)) ? DETALHE : [];
   const comp = i.competencia || '';
   const doAnuncio = r => r.emp===i.empresa && r.mkt===i.mkt && (i.anuncio ? r.anuncio===i.anuncio : r.sku===i.sku) && /venda/i.test(r.stat||'venda');
   const vd = D.filter(r => doAnuncio(r) && (!comp || String(r.date||'').slice(0,7)===comp));
-  const linkRx = `<button class="a2-btn-lin" onclick="event.stopPropagation();ac2.verVendas('${encodeURIComponent(i.sku||'')}','${encodeURIComponent(i.empresa||'')}','${encodeURIComponent(i.mkt||'')}')">ver o histórico no Raio-X →</button>`;
-  if(!vd.length) return `<div class="vd-x">Não achei as vendas desta demanda no período carregado. ${linkRx}</div>`;
+  const HM = !vd.length && H ? ac2HistMeses(i, H, '').M[comp] : null;
+  if(!vd.length && !HM) return { vazio:true };
   const S = (f) => vd.reduce((s,r)=>s+(+r[f]||0),0);
-  const fat=S('fat'), liq=S('liq'), imp=S('imp'), ctp=S('ctp'), qtd=S('qtd')||vd.length;
+  const fat = HM ? HM.fat : S('fat'), liq = HM ? HM.liq : S('liq'), imp = HM ? HM.imp : S('imp'), ctp = HM ? HM.ctp : S('ctp'),
+        qtd = HM ? HM.qtd : (S('qtd')||vd.length);
   const plat = fat - liq;                       // o que a plataforma reteve (comissão + frete + taxas)
   // separa o que ESCALA com o preço (comissão, taxas: %) do que NÃO escala (frete: R$ por remessa).
-  const temAb = vd.some(r=>r.comis!=null||r.tarif!=null);
-  const comis = temAb ? Math.abs(S('comis')) : 0;
-  const freteFixo = temAb ? Math.abs(S('tarif')) : 0;
+  const temAb = HM ? (HM.comis + HM.tarif) > 0 : vd.some(r=>r.comis!=null||r.tarif!=null);
+  const comis = temAb ? (HM ? HM.comis : Math.abs(S('comis'))) : 0;
+  const freteFixo = temAb ? (HM ? HM.tarif : Math.abs(S('tarif'))) : 0;
   const restoPlat = Math.max(0, plat - comis - freteFixo);
   // A MARGEM É A `mcReal` (com motoboy), a mesma da tarefa.
-  const mc = S('mcReal');
+  const mc = HM ? HM.mc : S('mcReal');
   const outros = (liq - imp - ctp) - mc;
   const pct = v => fat ? (100*v/fat) : 0;
   const un = v => qtd ? v/qtd : 0;
@@ -4289,8 +4337,9 @@ function ac2PainelVendas(i, k){
   const folga = 1 - c - t - m;
   const pMeta = folga > 0.0001 ? fixoUn/folga : null;
   const custoAlvo = fat*folga - outros - freteFixo;
-  // 5 — mês parcial: até a última venda carregada
-  const ultimaData = vd.reduce((a,r)=>String(r.date)>a?String(r.date):a, '');
+  // 5 — mês parcial: até a última venda carregada (pelo histórico: até ontem, se o mês é o corrente)
+  const ultimaData = vd.length ? vd.reduce((a,r)=>String(r.date)>a?String(r.date):a, '')
+    : (comp === new Date().toISOString().slice(0,7) ? new Date(Date.now()-864e5).toISOString().slice(0,10) : comp+'-28');
   const [yy,mm,dd] = ultimaData.slice(0,10).split('-').map(Number);
   const dim = new Date(Date.UTC(yy, mm, 0)).getUTCDate();
   const parcial = comp && ultimaData.slice(0,7)===comp && dd < dim;
@@ -4298,16 +4347,14 @@ function ac2PainelVendas(i, k){
   // preços praticados (por venda) e desde quando o preço de hoje vale
   const pu = r => Math.round(100*(+r.fat||0)/Math.max(1,+r.qtd||1))/100;
   const pts = {}; vd.forEach(r => { const p = pu(r); pts[p] = (pts[p]||0)+1; });
+  if(!vd.length) pts[Math.round(100*fat/Math.max(1,qtd))/100] = 1;          // pelo histórico: só o preço médio
   const ptsOrd = Object.entries(pts).map(([p,n])=>[+p,n]).sort((a,b)=>b[1]-a[1]);
-  const pm = ptsOrd[0][0], pmShare = ptsOrd[0][1]/vd.length;
+  const pm = ptsOrd[0][0], pmShare = vd.length ? ptsOrd[0][1]/vd.length : 1;
   let desde = '';
   { const todas = D.filter(doAnuncio).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
     let ix = -1; todas.forEach((r,j)=>{ if(pu(r) > pm + 0.5) ix = j; });
     if(ix >= 0 && ix < todas.length-1) desde = String(todas[ix+1].date);
     else if(ix < 0 && todas.length) desde = 'antes de '+ac2Dt(todas[0].date); }
-  const H = ((ac2._vdHist||{})[k]||{}).H || null;
-  const ctx = { i, H, comp, parcial, ultimaData };
-  (ac2._vdHist=ac2._vdHist||{})[k] = Object.assign((ac2._vdHist||{})[k]||{}, { i, H, ctx });
   // histórico (para o veredito e para o volume por faixa de preço)
   const { M, meses } = ac2HistMeses(i, H, '');
   const antes = meses.filter(x=>x.mes<comp), A = antes.length ? ac2Uni(ac2Soma(antes)) : null, N = M[comp] ? ac2Uni(M[comp]) : null;
@@ -4316,6 +4363,34 @@ function ac2PainelVendas(i, k){
   const volEm = P => { const ms = antes.slice(-6).filter(x => Math.abs(x.fat/x.qtd - P) <= 0.8);
     return ms.length ? { un: ms.reduce((s,x)=>s+x.qtd,0)/ms.length, meses: ms.map(x=>ac2Rot(x.mes)) } : null; };
   const unMesHoje = qtd*fator;
+  // ── OPÇÕES DE PREÇO EM DEGRAUS ──
+  const r90 = p => Math.ceil(p - 0.9) + 0.9;               // menor preço terminado em ,90 que seja >= p
+  let cands = [[Math.round(un(fat)*100)/100, 'hoje']];   // preço médio real: o lucro desta linha = o do veredito
+  if(A) cands.push([Math.round(A.preco*100)/100, 'preço de antes']);
+  if(pMeta){ cands.push([r90((pm + pMeta)/2), '']); cands.push([r90(pMeta), 'bate a meta']); }
+  cands = cands.filter(([p]) => p > 0).sort((a,b)=>a[0]-b[0])
+    .reduce((acc,cur)=>{ const ult = acc[acc.length-1]; if(ult && Math.abs(ult[0]-cur[0]) < 0.15){ if(cur[1] && !ult[1]) ult[1]=cur[1]; else if(cur[1] && ult[1] && ult[1]!==cur[1]) ult[1]+=' · '+cur[1]; } else acc.push(cur.slice()); return acc; }, []);
+  const linhasD = cands.map(([P, rot]) => {
+    const mu = mUn(P), pc = 100*mu/P, v = rot==='hoje' ? { un: unMesHoje, meses: ['ritmo atual'] } : volEm(P);
+    return { P, rot, mu: rot==='hoje' ? un(mc) : mu, pc: rot==='hoje' ? pct(mc) : pc, v,
+      lucro: rot==='hoje' ? mc*fator : (v ? mu*v.un : null) }; });   // hoje = o real, igual ao veredito
+  const forte = x => x.rot==='hoje' || (x.v && x.v.meses.length >= 2);
+  const melhor = linhasD.filter(x=>x.lucro!=null && forte(x)).sort((a,b)=>b.lucro-a.lucro)[0];
+  return { comp, vd, fat, liq, imp, ctp, qtd, plat, temAb, comis, freteFixo, restoPlat, mc, outros, pct, un, c, t, meta, m,
+    fixoUn, mUn, folga, pMeta, custoAlvo, ultimaData, parcial, fator, ptsOrd, pm, pmShare, desde, M, meses, antes, A, N,
+    volEm, unMesHoje, linhasD, forte, melhor, nVendas: vd.length || (HM ? (+HM.ped||HM.qtd) : 0), peloHist: !!HM };
+}
+
+function ac2PainelVendas(i, k){
+  if(ac2TipoDe(i.tipo).k==='devolucao') return ac2PainelDevolucao(i);
+  const linkRx = `<button class="a2-btn-lin" onclick="event.stopPropagation();ac2.verVendas('${encodeURIComponent(i.sku||'')}','${encodeURIComponent(i.empresa||'')}','${encodeURIComponent(i.mkt||'')}')">ver o histórico no Raio-X →</button>`;
+  const H = ((ac2._vdHist||{})[k]||{}).H || null;
+  const a = ac2Analise(i, H);
+  if(!a || a.vazio) return `<div class="vd-x">Não achei as vendas desta demanda no período carregado. ${linkRx}</div>`;
+  const { comp, vd, fat, imp, ctp, plat, temAb, comis, freteFixo, restoPlat, mc, outros, pct, un, c, t, meta, mUn,
+    pMeta, custoAlvo, ultimaData, parcial, fator, ptsOrd, pm, pmShare, desde, A, N, linhasD, forte, melhor } = a;
+  const ctx = { i, H, comp, parcial, ultimaData };
+  (ac2._vdHist=ac2._vdHist||{})[k] = Object.assign((ac2._vdHist||{})[k]||{}, { i, H, ctx });
 
   // ── 1 — VEREDITO ──
   const ve = [];
@@ -4333,21 +4408,9 @@ function ac2PainelVendas(i, k){
           : ` — chega à meta de ${meta}%.`));
   } else ve.push('Produto sem vendas em meses anteriores: compare só com a meta.');
   ve.push(`Lucro do anúncio em ${ac2Rot(comp)}: <b>${ac2BrlK(mc)}</b>${parcial?` até ${ac2Dt(ultimaData)} (≈ <b>${ac2BrlK(mc*fator)}</b> no mês fechado, no ritmo atual)`:''}.`
-    + ` Distância até a meta no que já vendeu: <b>${ac2BrlK(+i.risco||Math.max(0, fat*m - mc))}</b> — é o "em risco" da tarefa.`);
+    + ` Distância até a meta no que já vendeu: <b>${ac2BrlK(+i.risco||Math.max(0, fat*(meta/100) - mc))}</b> — é o "em risco" da tarefa.`);
 
   // ── 2 — OPÇÕES DE PREÇO EM DEGRAUS ──
-  const r90 = p => Math.ceil(p - 0.9) + 0.9;               // menor preço terminado em ,90 que seja >= p
-  let cands = [[Math.round(un(fat)*100)/100, 'hoje']];   // preço médio real: o lucro desta linha = o do veredito
-  if(A) cands.push([Math.round(A.preco*100)/100, 'preço de antes']);
-  if(pMeta){ cands.push([r90((pm + pMeta)/2), '']); cands.push([r90(pMeta), 'bate a meta']); }
-  cands = cands.filter(([p]) => p > 0).sort((a,b)=>a[0]-b[0])
-    .reduce((acc,cur)=>{ const ult = acc[acc.length-1]; if(ult && Math.abs(ult[0]-cur[0]) < 0.15){ if(cur[1] && !ult[1]) ult[1]=cur[1]; else if(cur[1] && ult[1] && ult[1]!==cur[1]) ult[1]+=' · '+cur[1]; } else acc.push(cur.slice()); return acc; }, []);
-  const linhasD = cands.map(([P, rot]) => {
-    const mu = mUn(P), pc = 100*mu/P, v = rot==='hoje' ? { un: unMesHoje, meses: ['ritmo atual'] } : volEm(P);
-    return { P, rot, mu: rot==='hoje' ? un(mc) : mu, pc: rot==='hoje' ? pct(mc) : pc, v,
-      lucro: rot==='hoje' ? mc*fator : (v ? mu*v.un : null) }; });   // hoje = o real, igual ao veredito
-  const forte = x => x.rot==='hoje' || (x.v && x.v.meses.length >= 2);
-  const melhor = linhasD.filter(x=>x.lucro!=null && forte(x)).sort((a,b)=>b.lucro-a.lucro)[0];
   const corD = p => p < 0 ? '#dc2626' : p < 10 ? '#f59e0b' : (meta && p >= meta) ? '#22c55e' : 'var(--t1)';
   const ml = /mercado livre/i.test(i.mkt||'');
   const degraus = pMeta || A ? `<div class="vd-sub">Opções de preço · margem com a estrutura de custo de hoje</div>
@@ -4367,7 +4430,7 @@ function ac2PainelVendas(i, k){
     <b style="color:${cor||'var(--t1)'}">${neg?'−':''}${ac2Brl(Math.abs(v))}</b>
     <i>${neg?'−':''}${Math.abs(pct(v)).toFixed(1)}%</i>
     <u>${neg?'−':''}${ac2Brl(Math.abs(un(v)))}/un</u></div>`;
-  const conta = `<div class="vd-sub">A conta de ${ac2Rot(comp)}${parcial?' (parcial, até '+ac2Dt(ultimaData)+')':''} · ${vd.length} venda(s)</div>
+  const conta = `<div class="vd-sub">A conta de ${ac2Rot(comp)}${parcial?' (parcial, até '+ac2Dt(ultimaData)+')':''} · ${a.peloHist ? Math.round(a.qtd)+' un (pelo histórico do anúncio — o período do topo não inclui este mês)' : vd.length+' venda(s)'}</div>
     <div class="vd-g">
       ${linha('Receita', fat)}
       ${temAb ? linha('Comissão e taxas (%)', comis+restoPlat, '#f59e0b', true) + linha('Tarifa de envio (R$ por remessa)', freteFixo, '#f59e0b', true)
@@ -4395,11 +4458,153 @@ function ac2PainelVendas(i, k){
     ${degraus}
     ${conta}
     <div id="${k}-hist">${ac2HistHTML(ctx, '', k)}</div>
-    <details class="vd-ev"><summary>As ${vd.length} vendas de ${ac2Rot(comp)} · preços praticados: ${precos}</summary>
+    ${vd.length ? `<details class="vd-ev"><summary>As ${vd.length} vendas de ${ac2Rot(comp)} · preços praticados: ${precos}</summary>
       <div class="tbl-wrap" style="max-height:220px;margin-top:6px"><table class="tbl a2-tbl vd-t"><thead><tr>
         <th>Data</th><th>Nº da venda</th><th class="r">Qtd</th><th class="r">Valor</th><th class="r">Líquido</th><th class="r">Margem</th>
       </tr></thead><tbody>${vendas}</tbody></table></div>
-    </details>`;
+    </details>` : ''}`;
+}
+
+// ── A DEMANDA EM 3 LINHAS (16/10/2026): o que é → o que aconteceu → o que fazer ───────────────────
+// Regras (combinadas com o Weskley): toda frase leva NÚMERO e de onde ele veio; toda sugestão diz quanto
+// se apoia em dado (★ com histórico · 1 mês só · sem histórico); se o dado não aponta causa, a frase diz
+// isso em vez de inventar. Tudo sai do ac2Analise — o mesmo motor do painel aberto.
+function ac2Problema(i, a){
+  const k = ac2TipoDe(i.tipo).k;
+  if(k==='devolucao') return `<b>${ac2Esc(i.causa||'Devolução acima do normal')}</b>`;
+  const ok = a && !a.vazio, pc = ok ? a.pct(a.mc) : +i.mcPct, meta = +i.meta||0;
+  const perdeUn = ok && a.mc < 0 ? a.un(-a.mc) : null;
+  const ini = k==='queima' ? `Margem caiu para <b>${ac2Pc(pc)}</b> · a saudável deste anúncio é ${ac2Pc(meta)}`
+    : `Margem <b style="color:${pc<0?'#dc2626':'inherit'}">${ac2Pc(pc)}</b> · meta ${ac2Pc(meta)}`;
+  return ini + (perdeUn!=null ? ` · <b style="color:#dc2626">cada venda perde ${ac2Brl(perdeUn)}</b>`
+    : (+i.risco>0 ? ` · faltam <b>${ac2BrlK(+i.risco)}</b> neste mês para a meta` : ''));
+}
+function ac2Causa(a){ const d = ac2CausaDados(a); return d ? d.txt : null; }
+// O QUE ACONTECEU: o que mais piorou POR UNIDADE desde "antes" (meses fechados anteriores), medido ao
+// preço de hoje. Taxa que é % do preço (comissão, imposto) é comparada em %: subir o preço sobe a comissão
+// em R$ sem que a regra tenha mudado — isso não é causa. Se a margem JÁ era baixa antes, a frase começa
+// por isso: a maior variação pode ser pequena perto do tamanho do problema.
+function ac2CausaDados(a){
+  if(!a || a.vazio) return null;
+  const { A, N } = a, ls = []; let top = null;
+  if(!A || !N){
+    const P = a.un(a.fat); if(!P) return null;
+    ls.push(`Sem meses anteriores para comparar. Da venda média de ${ac2Brl(P)}: custo do produto ${ac2Pc(100*a.ctp/a.fat)}, plataforma ${ac2Pc(100*a.plat/a.fat)}, imposto ${ac2Pc(100*a.imp/a.fat)}.`);
+  } else {
+    const P = N.preco, temAb = (A.comis + N.comis) > 0, tx = (x,f) => x.preco ? x[f]/x.preco : 0;
+    // taxa negativa = CRÉDITO da plataforma (rebate, subsídio): "caiu o crédito", não "a taxa foi de −2,66"
+    const taxaTxt = (de, para) => de < 0 && para < 0 ? `o crédito da plataforma (rebate/subsídio) caiu de ${ac2Brl(-de)} para ${ac2Brl(-para)} por unidade`
+      : de < 0 ? `a plataforma deixou de dar crédito de ${ac2Brl(-de)} e passou a reter ${ac2Brl(para)} por unidade`
+      : `outras retenções da plataforma (além de comissão e envio) foram de ${ac2Brl(de)} para ${ac2Brl(para)} por unidade`;
+    const cand = [
+      ['preco', (A.preco - N.preco) * (1 - a.c - a.t), `o preço médio caiu de ${ac2Brl(A.preco)} para ${ac2Brl(N.preco)}`],
+      temAb ? ['comis', (tx(N,'comis') - tx(A,'comis')) * P, `a comissão foi de ${ac2Pc(100*tx(A,'comis'))} para ${ac2Pc(100*tx(N,'comis'))} do preço`]
+            : ['plat', (tx(N,'plat') - tx(A,'plat')) * P, `a plataforma foi de ${ac2Pc(100*tx(A,'plat'))} para ${ac2Pc(100*tx(N,'plat'))} do preço`],
+      temAb ? ['frete', N.frete - A.frete, `o frete foi de ${ac2Brl(A.frete)} para ${ac2Brl(N.frete)} por unidade`] : ['', 0, ''],
+      temAb ? ['taxas', N.taxas - A.taxas, taxaTxt(A.taxas, N.taxas)] : ['', 0, ''],
+      ['imposto', (tx(N,'imp') - tx(A,'imp')) * P, `o imposto foi de ${ac2Pc(100*tx(A,'imp'))} para ${ac2Pc(100*tx(N,'imp'))} do preço`],
+      ['custo', N.ctp - A.ctp, `o custo do produto foi de ${ac2Brl(A.ctp)} para ${ac2Brl(N.ctp)} por unidade`],
+      ['entrega', N.outros - A.outros, `a entrega própria (motoboy) foi de ${ac2Brl(A.outros)} para ${ac2Brl(N.outros)} por unidade`],
+    ].filter(x => x[1] > 0.05).sort((x,y) => y[1]-x[1]);
+    const jaBaixa = A.pct < a.meta - 2;   // 2 p.p. de folga: em Queima a meta É a margem histórica — 34,2% × 34,6% é ruído
+    if(cand.length){ top = { k:cand[0][0], v:cand[0][1], A, N }; }
+    const mudou = cand.length ? `${cand[0][2]} — tira <b>${ac2Brl(cand[0][1])}/un</b> da margem`
+      + (cand[1] && cand[1][1] >= 0.5*cand[0][1] ? `; e ${cand[1][2]} (${ac2Brl(cand[1][1])}/un)` : '') : '';
+    if(jaBaixa) ls.push(`A margem já era <b>${ac2Pc(A.pct)}</b> nos meses anteriores (vendendo a ${ac2Brl(A.preco)}) — o anúncio não estava na meta nem antes.`
+      + (mudou ? ` O que mais mudou desde então: ${mudou}.` : ''));
+    else ls.push(mudou ? `Comparado aos meses anteriores (margem ${ac2Pc(A.pct)}), ${mudou}.` : `Nenhum item sozinho explica a queda (pequenas mudanças em vários) — veja a conta completa.`);
+  }
+  // preço espalhado no mês = promoção, cupom ou campanha mexendo no que o comprador paga
+  if(a.pmShare < 0.6 && a.ptsOrd.length > 1){ const ps = a.ptsOrd.map(x=>x[0]);
+    ls.push(`As vendas do mês saíram em ${ps.length} preços diferentes (de ${ac2Brl(Math.min(...ps))} a ${ac2Brl(Math.max(...ps))}) — confira promoções e cupons.`); }
+  return { txt: ls.join(' '), top };
+}
+// O QUE FAZER: primeiro atacar a causa, depois as opções de preço do painel — cada uma com o grau de
+// apoio. Sugestão absurda não entra: preço acima de 1,5× o atual vira "preço não é o caminho"; corte de
+// custo acima de 30% não é sugerido.
+function ac2Sugestoes(i, a){
+  const k = ac2TipoDe(i.tipo).k;
+  if(k==='devolucao') return [{ conf:'', txt:'Preço não resolve devolução: confira se o produto chega como o anúncio promete (fotos, medidas, voltagem), a embalagem, defeito de lote e a transportadora. O motivo de cada devolução está na plataforma.' }];
+  if(!a || a.vazio) return [];
+  const s = [], un = a.un, best = a.melhor, P = un(a.fat), cd = ac2CausaDados(a), top = cd && cd.top;
+  const ev = x => !x.v ? 'sem' : x.v.meses.length >= 2 ? 'forte' : 'fraca';
+  const vol = x => x.v ? ` · vendia ~${Math.round(x.v.un)} un/mês nesse preço (${x.v.meses.join(', ')})` : ' · <b>nunca vendeu nesse preço</b> — risco de perder volume';
+  // 1) atacar a causa que os números apontam
+  if(top && top.v >= 0.3){ const A = top.A, N = top.N, tx = (x,f) => x.preco ? 100*x[f]/x.preco : 0;
+    const porCausa = {
+      frete:   `Rever o frete (de ${ac2Brl(A.frete)} para ${ac2Brl(N.frete)}/un): peso e medidas cadastrados, modalidade de envio, embalagem.`,
+      entrega: `Rever a entrega própria neste anúncio: o motoboy custa ${ac2Brl(N.outros)}/un${P ? ' ('+ac2Pc(100*N.outros/P)+' do preço)' : ''}.`,
+      comis:   `Rever tipo de anúncio e categoria: a comissão foi de ${ac2Pc(tx(A,'comis'))} para ${ac2Pc(tx(N,'comis'))} do preço.`,
+      plat:    `Rever tipo de anúncio e categoria: a plataforma foi de ${ac2Pc(tx(A,'plat'))} para ${ac2Pc(tx(N,'plat'))} do preço.`,
+      custo:   `Rever o custo com o fornecedor ou a ficha: foi de ${ac2Brl(A.ctp)} para ${ac2Brl(N.ctp)}/un.`,
+      imposto: `Conferir a tributação deste produto: o imposto foi de ${ac2Pc(tx(A,'imp'))} para ${ac2Pc(tx(N,'imp'))} do preço.`,
+      taxas:   `Conferir as retenções e créditos da plataforma neste anúncio (campanha, rebate, subsídio que acabou).`,
+      preco:   `Conferir promoção, cupom ou campanha: o preço médio caiu de ${ac2Brl(A.preco)} para ${ac2Brl(N.preco)}.` };
+    if(porCausa[top.k]) s.push({ conf:'', txt:porCausa[top.k] }); }
+  // 2) preço
+  if(best && best.rot==='hoje' && a.linhasD.some(x=>x.rot!=='hoje' && x.lucro!=null && a.forte(x)))
+    s.push({ conf:'forte', txt:`O preço de hoje já dá o <b>maior lucro</b> entre os preços que têm histórico — subir arrisca volume.` });
+  else if(best && best.rot!=='hoje')
+    s.push({ conf:'forte', txt:`Ir para <b>${ac2Brl(best.P)}</b> → margem ${ac2Pc(best.pc)}${vol(best)} · <b>maior lucro estimado</b>` });
+  const pm = a.linhasD.find(x=>/bate a meta/.test(x.rot));
+  if(pm && P && pm.P > 1.5*P) s.push({ conf:'', txt:`Só preço não resolve: a meta exigiria <b>${ac2Brl(pm.P)}</b> (${(pm.P/P).toFixed(1).replace('.',',')}× o preço de hoje). O caminho é custo, envio ou pausar o anúncio.` });
+  else if(pm && pm!==best) s.push({ conf:ev(pm), txt:`<b>${ac2Brl(pm.P)}</b> bate a meta (${ac2Pc(pm.pc)})${vol(pm)}` });
+  if(!a.pMeta) s.push({ conf:'', txt:`A meta não fecha só com preço: plataforma e imposto já levam <b>${ac2Pc(100*(a.c+a.t))}</b> da venda — renegociar custo, mudar tipo de anúncio/frete ou pausar.` });
+  // 3) custo: só quando o corte é plausível (até 30%)
+  if(a.custoAlvo > 0 && a.ctp > 0 && a.pMeta && a.custoAlvo >= 0.7*a.ctp)
+    s.push({ conf:'', txt:`Ou, sem mexer no preço: custo de ${ac2Brl(un(a.ctp))} → <b>${ac2Brl(un(a.custoAlvo))}</b> por unidade (−${Math.round(100*(1-a.custoAlvo/a.ctp))}%) bate a meta.` });
+  return s;
+}
+const AC2_CONF = { forte:['★ com histórico','#16a34a'], fraca:['1 mês de histórico','#d97706'], sem:['sem histórico','#dc2626'] };
+function ac2ResumoHTML(i, a){
+  const causa = ac2Causa(a), sug = ac2Sugestoes(i, a);
+  if(!causa && !sug.length) return `<div class="dm-l dm-mut">Sem vendas deste anúncio no período carregado — abra a conta completa ou o Raio-X.</div>`;
+  return (causa ? `<div class="dm-l dm-lk"><span class="dm-k">O que aconteceu</span><div>${causa}</div></div>` : '')
+    + (sug.length ? `<div class="dm-l dm-lk"><span class="dm-k">O que fazer</span><div class="dm-sug">${sug.map(x=>`<div>${x.txt}${x.conf&&AC2_CONF[x.conf]?` <span class="dm-conf" style="color:${AC2_CONF[x.conf][1]};border-color:${AC2_CONF[x.conf][1]}">${AC2_CONF[x.conf][0]}</span>`:''}</div>`).join('')}</div></div>` : '');
+}
+// a linha da demanda na lista do gestor. modo: 'fazer' (sem registro) · 'recobrar' · 'feita'
+function ac2DemRow(i, modo){
+  const t = ac2TipoDe(i.tipo), pi = ac2PrazoInfo(i);
+  const _vk = 'vd'+(ac2._vdSeq=(ac2._vdSeq||0)+1); (ac2._vdMap=ac2._vdMap||{})[_vk] = i;
+  const online = (ac2._fonte||'').indexOf('API')>=0;
+  const btn = online && i.id && modo!=='feita' ? `<button class="dm-reg" onclick="event.stopPropagation();ac2.tratar(this.dataset.id)" data-id="${encodeURIComponent(i.id)}">${modo==='recobrar'?'Registrar nova ação':'Registrar'}</button>` : '';
+  const meta = [i.sku, i.anuncio, 'fat '+AC2_BRLk(+i.fat||0), i.qtd!=null&&i.qtd!=='' ? Math.round(i.qtd)+' un'+(i.pedidos?' · '+i.pedidos+' venda'+(i.pedidos>1?'s':''):'') : ''].filter(Boolean).map(ac2Esc).join(' · ');
+  const conta = `<button class="dm-conta" onclick="event.stopPropagation();ac2.abrirVendas('${_vk}')">ver a conta completa ▾</button>`;
+  let corpo = '';
+  if(modo==='feita'){
+    const r = i.registro||{}, rs = i.resultado, ck = ac2ChecagemTxt(i);
+    const chip = ck && !ck.ok ? ['preço não está no anúncio','#dc2626']
+      : rs && rs.desfecho ? [rs.desfecho, AC2_COR_DESF[rs.desfecho]||'#94a3b8']
+      : ['aguardando a 1ª venda depois do registro','#94a3b8'];
+    corpo = `<div class="dm-l dm-lk"><span class="dm-k">Você fez</span><div>${ac2Esc(r.acao||i.trat||'')}${r.precoNovo?' · novo preço '+ac2Brl(r.precoNovo):''}${r.em?' · '+ac2Dt(r.em):''}
+      <span class="dm-chip" style="color:${chip[1]};border-color:${chip[1]}">${ac2Esc(chip[0])}</span>${rs&&rs.recuperado>0?` <b style="color:#16a34a">+${ac2Brl(rs.recuperado)}</b>`:''}</div></div>`;
+  } else {
+    if(modo==='recobrar') corpo += `<div class="dm-rec">🔁 <b>Recobrar:</b> ${ac2Esc(ac2Recobrar(i)||'')}${i.registro?` <span class="dm-mut">· você registrou "${ac2Esc(i.registro.acao)}"</span>`:''}</div>`;
+    corpo += `<div class="dm-l dm-prob">${ac2Problema(i, null)}</div><div class="dm-res" data-res="${_vk}"><div class="dm-l dm-mut">analisando o histórico do anúncio…</div></div>`;
+  }
+  return `<div class="a2-dem ${modo}" style="--tc:${t.cor}">
+    <div class="dm-main">
+      <div class="dm-top"><span class="dm-tipo">${t.curto}</span>${modo!=='feita'&&pi.txt?`<span class="dm-prazo" style="color:${pi.cor}">${pi.txt}</span>`:''}<span class="dm-op">${ac2Esc(i.empresa||'')} · ${ac2Esc(i.mkt||'')}</span>${i.estado==='fora'?'<span class="dm-op" title="Depois do recálculo dos dados esta tarefa deixou de ser problema. O registro foi mantido.">· saiu da régua após recálculo</span>':''}</div>
+      <div class="dm-tit" title="${ac2Esc(i.titulo||'')}">${ac2Esc(i.titulo||i.sku||'')}</div>
+      ${corpo}
+      <div class="dm-meta">${meta} · ${conta}</div>
+      <div class="a2-vd" id="${_vk}"></div>
+    </div>
+    <div class="dm-side">${modo==='feita' ? '' : `<small>${ac2TipoDe(i.tipo).k==='devolucao'?'custo das devoluções':'falta p/ meta'}</small><b>${AC2_BRLk(+i.risco||0)}</b>`}${btn}</div>
+  </div>`;
+}
+// preenche causa/sugestão das linhas visíveis: busca o histórico em segundo plano, 4 de cada vez
+async function ac2CarregaResumos(){
+  const els = [...document.querySelectorAll('#ac2-root [data-res]:not([data-ok])')];
+  let ix = 0;
+  const um = async () => { while(ix < els.length){ const el = els[ix++]; el.setAttribute('data-ok','1');
+    const i = (ac2._vdMap||{})[el.getAttribute('data-res')]; if(!i) continue;
+    try{ const H = await ac2Garante(i), a = ac2Analise(i, H);
+      if(!el.isConnected) continue;
+      const prob = el.previousElementSibling; if(prob && prob.classList.contains('dm-prob')) prob.innerHTML = ac2Problema(i, a);
+      el.innerHTML = ac2ResumoHTML(i, a); }
+    catch(e){ el.innerHTML = '<div class="dm-l dm-mut">não consegui analisar agora — abra a conta completa.</div>'; } } };
+  await Promise.all([um(), um(), um(), um()]);
 }
 
 // atalho secundário: o Raio-X do SKU, para ver o histórico do produto (não o desta demanda)
@@ -4415,21 +4620,67 @@ ac2.verVendas = function(sku, emp, mkt){
   }catch(e){ console.error('verVendas',e); }
 };
 
+// ── TOPO DO GESTOR (16/10/2026): "o que faço hoje" + "como estou indo" ─────────────────────────────
+// Os selos são os MESMOS da Direção (Registro = % registrado; Efeito = % das medidas que funcionaram),
+// pelo número pelo qual ele é cobrado. Ao lado: no prazo, evolução semana × semana, quanto falta para o
+// próximo selo e a média da equipe SEM nomes (gestor não vê a lista de outro gestor).
+const ac2NoPrazo = i => ac2Registrada(i) && i.reacaoH!=null && i.reacaoH/24 <= ac2Prazo(i);
+const ac2Vence = i => i.criado_em ? Date.parse(i.criado_em) + ac2Prazo(i)*864e5 : null;
+// quando o desfecho do prazo ficou conhecido: no prazo → a hora do registro; senão → a hora em que venceu
+const ac2EvtPrazo = i => { const v = ac2Vence(i); if(v==null) return null;
+  if(ac2NoPrazo(i)) return Date.parse(i.criado_em) + i.reacaoH*36e5;
+  return v <= Date.now() ? v : null; };
+// das tarefas cujo desfecho de prazo caiu na janela [de, ate), quantas foram registradas dentro do prazo
+function ac2PrazoJanela(li, de, ate){ const v = li.filter(i=>{ const t = ac2EvtPrazo(i); return t!=null && t>=de && t<ate; });
+  return { n:v.length, ok:v.filter(ac2NoPrazo).length }; }
+function ac2Equipe(){
+  // direção/coordenação têm a lista de todos; o perfil gestor recebe só a média (sem nomes) da API
+  const l = ac2.filt(), gs = new Set(l.map(i=>i.gestor));
+  if(gs.size > 1){ const reg = l.filter(ac2Registrada).length, ef = ac2Efeito(l), pj = ac2PrazoJanela(l, 0, Date.now());
+    return { registro: l.length ? 100*reg/l.length : null, efeito: ef.med ? 100*ef.ok/ef.med : null, no_prazo: pj.n ? 100*pj.ok/pj.n : null }; }
+  if(ac2._equipe) return ac2._equipe;
+  if(!ac2._equipePend && typeof authFetch==='function'){
+    ac2._equipePend = authFetch('/api/equipe?desde='+AC2_DESDE,{cache:'no-store'}).then(r=>r.ok?r.json():null)
+      .then(j=>{ ac2._equipe = j || {}; if(ac2.nivel==='gestor') ac2.render(); }).catch(()=>{ ac2._equipe = {}; }); }
+  return {};
+}
 function ac2TopoGestor(){
   const g = ac2.gestorSel;
   if(!g) return '';                                  // sem gestor escolhido não há o que resumir
   const li = ac2.filt().filter(i=>i.gestor===g);
-  const reg = li.filter(ac2Registrada).length;
-  const pend = li.length - reg;
-  const risco = li.filter(i=>!ac2Registrada(i)).reduce((a,i)=>a+(+i.risco||0),0);
-  const taxa = li.length ? Math.round(100*reg/li.length) : 0;
-  const card = (rot,val,sub,c) => `<div class="a2-k"><div class="a2-kr">${rot}</div>
-    <div class="a2-kv" style="color:${c||'var(--t1)'}">${val}</div><div class="a2-ks">${sub}</div></div>`;
-  return `<div class="a2-kpis">
-    ${card('Minhas demandas', li.length, 'desde out/26')}
-    ${card('Já registrei', reg+'/'+li.length, taxa+'%', taxa>=70?'#22c55e':(taxa>=30?'#f59e0b':'#dc2626'))}
-    ${card('Faltam', pend, pend?'anotar o que foi feito':'nada pendente', pend?'#dc2626':'#22c55e')}
-    ${card('Parado em R$', AC2_BRLk(risco), 'margem a recuperar', risco>0?'#f59e0b':'var(--t3)')}
+  if(!li.length) return '';
+  const m = ac2Mesa(li), rec = li.filter(i=>ac2Recobrar(i)), aguard = li.filter(i=>ac2Registrada(i) && !ac2Recobrar(i) && !(i.resultado && i.resultado.desfecho));
+  const reg = li.filter(ac2Registrada).length, sr = ac2SemFr(reg, li.length), pc = ac2Pct(reg, li.length), ef = ac2Efeito(li);
+  const pend = li.length - reg, eq = ac2Equipe(), pf = v => v==null ? '—' : Math.round(v)+'%';
+  // quanto falta para o próximo selo (só dá para subir registrando o que está pendente)
+  const prox = AC2_SEM.find(x=>x.max > 100*reg/li.length && x.max <= 100) ;
+  const alvo = prox ? (prox.max===100 ? li.length : Math.ceil(prox.max/100*li.length - 1e-9)) : null;
+  const falta = alvo!=null ? Math.max(0, alvo - reg) : 0;
+  const nomeProx = prox ? (AC2_SEM[AC2_SEM.indexOf(prox)+1]||{}).rot : null;
+  const subir = !prox ? 'você está no topo da régua' : falta && falta <= pend ? `registre <b>${falta}</b> para chegar a <b>${nomeProx}</b>` : '';
+  const D7 = 7*864e5, agora = Date.now(), sA = ac2PrazoJanela(li, agora-2*D7, agora-D7), sB = ac2PrazoJanela(li, agora-D7, agora+1);
+  const pA = sA.n ? Math.round(100*sA.ok/sA.n) : null, pB = sB.n ? Math.round(100*sB.ok/sB.n) : null;
+  const seta = pA==null||pB==null ? '' : pB>pA ? ' <b style="color:#16a34a">↑</b>' : pB<pA ? ' <b style="color:#dc2626">↓</b>' : ' →';
+  const pjT = ac2PrazoJanela(li, 0, agora+1);
+  const card = (rot,val,sub,c,extra) => `<div class="a2-k"><div class="a2-kr">${rot}</div>
+    <div class="a2-kv" style="color:${c||'var(--t1)'}">${val}</div><div class="a2-ks">${sub}</div>${extra||''}</div>`;
+  const tipos = AC2_TIPOS.filter(t=>li.some(i=>ac2TipoDe(i.tipo).k===t.k)).map(t=>{
+    const lt=li.filter(i=>ac2TipoDe(i.tipo).k===t.k), n=lt.length, r=lt.filter(ac2Registrada).length, s=ac2SemFr(r,n), e=ac2Efeito(lt);
+    return `<div class="gt-l"><span class="gt-n" style="color:${t.cor}">${t.curto}</span><span class="gt-q">${r}/${n}</span>
+      <span class="gt-p" style="color:${s.cor}">${ac2Pct(r,n)}%</span><span class="gt-s" style="color:${s.cor};border-color:${s.cor}">${s.rot}</span>
+      <span class="gt-e"${e.med?` style="color:${e.sem.cor}"`:''}>${e.med?'efeito '+e.pct+'%':''}</span></div>`; }).join('');
+  return `<div class="a2-shh">Para hoje</div><div class="a2-kpis">
+    ${card('Atrasadas', m.atr.length, m.atr.length ? 'registre hoje · maior atraso '+ac2AtrLbl(m.maior) : 'nada atrasado', m.atr.length?'#dc2626':'#22c55e')}
+    ${card('Vencem em 24h', m.v24.length, 'registre antes de atrasar', m.v24.length?'#f59e0b':'var(--t3)')}
+    ${card('Recobrar', rec.length, rec.length ? 'registrou, mas não resolveu — nova ação' : 'nada para refazer', rec.length?'#a855f7':'var(--t3)')}
+    ${card('Feitas, aguardando resultado', aguard.length, 'a medição sai na 1ª venda depois do registro')}
+  </div>
+  <div class="a2-shh">Como estou indo <small>mesma régua da Direção: &lt;70% Crítico · 70–89% Atenção · 90–99% Bom · 100% Ideal</small></div>
+  <div class="a2-kpis a2-prog">
+    ${card('Registro', pc+'%', `${reg} de ${li.length} registradas · equipe ${pf(eq.registro)}`, sr.cor, `<div class="cap-selos">${ac2Selo('Registro', sr, pc+'%')}</div>${subir?`<div class="a2-ks" style="margin-top:4px">${subir}</div>`:''}`)}
+    ${card('Efeito', ef.med ? ef.pct+'%' : '—', ef.med ? `${ef.ok} de ${ef.med} medidas funcionaram · equipe ${pf(eq.efeito)}` : 'o veredito sai com 3 vendas depois do registro', ef.med?ef.sem.cor:'var(--t3)', ef.med?`<div class="cap-selos">${ac2Selo('Efeito', ef.sem, ef.pct+'%')}</div>`:'')}
+    ${card('No prazo', pjT.n ? Math.round(100*pjT.ok/pjT.n)+'%' : '—', `semana passada ${pA==null?'—':pA+'%'} → esta semana ${pB==null?'—':pB+'%'}${seta} · equipe ${pf(eq.no_prazo)}`, pjT.n ? ac2SemFr(pjT.ok,pjT.n).cor : 'var(--t3)')}
+    <div class="a2-k"><div class="a2-kr">Por tipo</div><div class="gc-tipos">${tipos}</div></div>
   </div>`;
 }
 
@@ -4494,19 +4745,28 @@ function ac2Gestor(){
   const todos = `<span onclick="ac2.filtroTipo('')" style="cursor:pointer;font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:999px;border:1px solid ${AC2_TIPO_FILTRO===''?'var(--a)':'var(--bdr2)'};background:${AC2_TIPO_FILTRO===''?'var(--a3)':'transparent'};color:${AC2_TIPO_FILTRO===''?'var(--a)':'var(--t2)'}">Todas ${li.length}</span>`;
   const chips = todos + AC2_TIPOS.map(t=>chip(t.k,t.curto,porTipo[t.k],t.cor)).join('');
   if(AC2_TIPO_FILTRO) li = li.filter(i=>ac2TipoDe(i.tipo).k===AC2_TIPO_FILTRO);
-  // pendentes primeiro, e dentro delas o que tem mais dinheiro parado
-  li = li.slice().sort((a,b)=>{ const pa=ac2Registrada(a)?1:0, pb=ac2Registrada(b)?1:0;
-    return pa-pb || (+b.risco||0)-(+a.risco||0); });
+  // TRÊS SEÇÕES (16/10/2026): A FAZER (sem registro: atrasada primeiro, depois a que vence antes, depois
+  // o dinheiro) · RECOBRAR (registrou e não resolveu) · FEITAS (fechadas por padrão: com 44 feitas e 1 a
+  // fazer, a que importa sumia no meio da lista).
+  const fazer = li.filter(i=>!ac2Registrada(i)).sort((a,b)=>{ const ra=ac2Resta(a), rb=ac2Resta(b);
+    const za = ra!=null && ra<0 ? 0 : 1, zb = rb!=null && rb<0 ? 0 : 1;
+    return za-zb || (za===0 ? ac2UrgItem(b)-ac2UrgItem(a) : 0) || (ra==null?1e9:ra)-(rb==null?1e9:rb) || (+b.risco||0)-(+a.risco||0); });
+  const rec = li.filter(i=>ac2Recobrar(i)).sort((a,b)=>(+b.risco||0)-(+a.risco||0));
+  const feitas = li.filter(i=>ac2Registrada(i) && !ac2Recobrar(i)).sort((a,b)=>String((b.registro||{}).em||'').localeCompare(String((a.registro||{}).em||'')));
   const ajuda = AC2_TIPO_FILTRO ? (AC2_TIPOS.find(t=>t.k===AC2_TIPO_FILTRO)||{}).ajuda : '';
-  const linhas = li.length ? li.map(i=>ac2itemRow(i)).join('')
-    : `<div class="a2-vazio">Nada neste filtro.</div>`;
+  const sec = (tit, sub, cor, arr, modo) => arr.length ? `<div class="dm-sec" style="--sc:${cor}"><b>${tit} · ${arr.length}</b><span>${sub}</span></div>${arr.map(i=>ac2DemRow(i, modo)).join('')}` : '';
+  const vazioFazer = !fazer.length && !rec.length ? `<div class="a2-vazio">✅ Nada a fazer nem a refazer${AC2_TIPO_FILTRO?' neste tipo':''}. As feitas estão abaixo.</div>` : '';
+  const blocoFeitas = feitas.length ? `<details class="dm-feitas"${!fazer.length && !rec.length ? ' open' : ''}><summary><b>Feitas · ${feitas.length}</b><span>o que você registrou e o resultado medido — clique para abrir</span></summary>${feitas.map(i=>ac2DemRow(i,'feita')).join('')}</details>` : '';
   const rotuloOp = ac2.opSel==='__todas__' ? 'todas as operações' : ac2.opSel;
   const voltar = `<button onclick="ac2.goOp(null)" class="a2-btn-lin">← operações de ${g}</button>`;
-  return `<div class="a2-sh">${g} · ${rotuloOp}<small>pendentes primeiro · dentro delas, maior dinheiro parado no topo</small></div>
+  return `<div class="a2-sh">${g} · ${rotuloOp}<small>a fazer primeiro (atrasadas no topo) · depois o que precisa ser refeito · as feitas ficam guardadas abaixo</small></div>
     <div style="margin:2px 0 8px">${voltar}</div>
     <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:2px 0 4px">${chips}</div>
     ${ajuda?`<div class="a2-nota" style="margin:0 0 8px">${ajuda}</div>`:''}
-    ${linhas}`;
+    ${sec('A fazer', 'sem registro · registre o que foi feito dentro do prazo', '#dc2626', fazer, 'fazer')}
+    ${sec('Recobrar', 'você registrou, mas a medição ou a checagem mostram que não resolveu', '#a855f7', rec, 'recobrar')}
+    ${vazioFazer}
+    ${blocoFeitas}`;
 }
 
 function ac2DirKPI(){
