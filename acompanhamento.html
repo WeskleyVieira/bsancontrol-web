@@ -3250,7 +3250,7 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-op:hover{background:var(--c-s2)} #ac2-root .a2-op.on{font-weight:700}
 #ac2-root .a2-op .bx{width:15px;height:15px;border:1.6px solid var(--c-mut);border-radius:4px;display:grid;place-items:center;font-size:10px;color:#fff}
 #ac2-root .a2-op.on .bx{background:var(--c-acc);border-color:var(--c-acc)}
-#ac2-root .a2-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+#ac2-root .a2-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0}
 #ac2-root .a2-k{background:var(--c-s);border:1px solid var(--c-ln);border-radius:12px;padding:12px 13px;position:relative;overflow:hidden;cursor:pointer;transition:border-color .12s,transform .12s}
 #ac2-root .a2-k[data-d]:hover{border-color:var(--c-acc);transform:translateY(-2px)}
 #ac2-root .a2-k .st{position:absolute;left:0;top:0;bottom:0;width:4px}
@@ -3405,6 +3405,10 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .vd-reg{background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.3);border-radius:9px;padding:8px 12px;font-size:11.5px;line-height:1.65;margin:2px 0 8px}
 #ac2-root .vd-reg-no{background:var(--c-s);border-color:var(--c-ln)}
 #ac2-root .vd-reg-h{font-size:10.5px;color:var(--c-mut);margin-bottom:2px}
+#ac2-root .a2-selo{display:inline-block;font-size:10px;font-weight:700;border:1px solid;border-radius:999px;padding:1px 7px;margin:4px 4px 0 0;white-space:nowrap}
+#ac2-root .cap-selos{margin-top:3px}
+#ac2-root .a2-cel-pc{font-size:10px;font-weight:700;line-height:1.2}
+#ac2-root .vd-reg-efeito{margin-top:6px;padding-top:6px;border-top:1px dashed rgba(22,163,74,.3)}
 #ac2-root .vd-reg-obs{font-style:italic;color:var(--c-ink)}
 #ac2-root .vd-ver{background:var(--c-s);border:1px solid var(--c-ln);border-left:3px solid #3b82f6;border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.7;margin:2px 0 10px}
 #ac2-root .vd-ver div+div{margin-top:3px}
@@ -3601,13 +3605,22 @@ ac2.setModo=function(m){ ac2.modo=m; ac2.render(); };
 // ── SEMÁFORO DO GESTOR (régua do Weskley, 12/10/2026) ────────────────────────────────────────
 // Mede a taxa de REGISTRO, não a margem: esta aba cobra prestação de contas, não resultado.
 // <40 crítico · 40–60 atenção · 60–80 bom · 80+ ideal.
+// RÉGUA DE PERFORMANCE (Weskley, 16/10/2026): < 70% Crítico · 70–89,9% Atenção · 90–99,9% Bom · 100% Ideal.
+// Vale para os DOIS números, separados: REGISTRO (% de tarefas que o gestor registrou) e EFEITO
+// (% das tarefas já medidas que funcionaram: Resolvido/Progrediu/Justificado). Geral, por tipo e por gestor.
 const AC2_SEM = [
-  { max:40,  rot:'Crítico', cor:'#dc2626' },
-  { max:60,  rot:'Atenção', cor:'#f59e0b' },
-  { max:80,  rot:'Bom',     cor:'#60a5fa' },
+  { max:70,  rot:'Crítico', cor:'#dc2626' },
+  { max:90,  rot:'Atenção', cor:'#f59e0b' },
+  { max:100, rot:'Bom',     cor:'#60a5fa' },
   { max:1e9, rot:'Ideal',   cor:'#22c55e' },
 ];
 const ac2Sem = pct => AC2_SEM.find(s=>pct<s.max);
+// selo pela conta EXATA (199/200 arredonda para 100% e não pode virar Ideal); o número exibido é arredondado
+const ac2SemFr = (r,n) => ac2Sem(n ? 100*r/n : 0);
+const ac2Pct = (r,n) => n ? (r<n && Math.round(100*r/n)===100 ? 99 : Math.round(100*r/n)) : 0;
+// efeito: entre as tarefas JÁ MEDIDAS (funcionou != null), quantas funcionaram
+const ac2Efeito = l => { const m=l.filter(i=>i.funcionou!=null), ok=m.filter(i=>i.funcionou===true).length; return { med:m.length, ok, pct:ac2Pct(ok,m.length), sem: m.length?ac2SemFr(ok,m.length):null }; };
+const ac2Selo = (rot, sem, txt) => sem ? `<span class="a2-selo" style="color:${sem.cor};border-color:${sem.cor}">${rot} ${txt} · ${sem.rot}</span>` : `<span class="a2-selo" style="color:var(--t3);border-color:var(--bdr2)">${rot} ${txt}</span>`;
 
 // Foco e tipo são filtros DO NÍVEL DIREÇÃO: é o que torna os cards clicáveis de verdade.
 // Antes eles tinham cursor:pointer e nenhum handler — pareciam clicáveis e não abriam nada.
@@ -3651,16 +3664,18 @@ function ac2DirHero(){
   // Antes era uma pílula só com a contagem — não dava para ver a taxa de conclusão de cada tipo.
   const caps = AC2_TIPOS.map(t=>{
     const li = base.filter(i=>ac2TipoDe(i.tipo).k===t.k); if(!li.length) return '';
-    const r = li.filter(ac2Registrada).length, pc = Math.round(100*r/li.length);
+    const r = li.filter(ac2Registrada).length, pc = ac2Pct(r, li.length), ef = ac2Efeito(li);
     return `<div class="a2-cap${AC2_DIR_TIPO===t.k?' on':''}" onclick="ac2.dirTipo('${t.k}')" title="${t.ajuda}" style="--cc:${t.cor}">
       <div class="cap-r">${t.curto}</div>
       <div class="cap-v">${r}<small>/${li.length}</small></div>
       <div class="cap-b"><span style="width:${pc}%"></span></div>
-      <div class="cap-s">${pc}% concluído${li.length-r?` · faltam ${li.length-r}`:''}</div></div>`;
+      <div class="cap-s">${pc}% registrado${li.length-r?` · faltam ${li.length-r}`:''}</div>
+      <div class="cap-selos">${ac2Selo('Registro', ac2SemFr(r, li.length), pc+'%')}${ef.med ? ac2Selo('Efeito', ef.sem, ef.ok+'/'+ef.med+' · '+ef.pct+'%') : ac2Selo('Efeito', null, 'aguardando medição')}</div></div>`;
   }).join('');
   return ac2Selecao()+`<div class="a2-kpis">
     ${card('O que tem para fazer', l.length, 'demandas desde out/26', null, '')}
-    ${card('O que foi registrado', reg+'/'+l.length, taxa+'% · '+s.rot, s.cor, 'reg')}
+    ${card('O que foi registrado', reg+'/'+l.length, ac2Pct(reg,l.length)+'% · '+ac2SemFr(reg,l.length).rot, ac2SemFr(reg,l.length).cor, 'reg')}
+    ${(()=>{ const ef=ac2Efeito(l); return ef.med ? card('O que funcionou', ef.ok+'/'+ef.med, ef.pct+'% das já medidas · '+ef.sem.rot, ef.sem.cor) : card('O que funcionou', '—', 'medição começa 7 dias após o registro', 'var(--t3)'); })()}
     ${card('Ainda sem registro', semReg, semReg?'ninguém anotou o que fez':'tudo anotado', semReg?'#dc2626':'#22c55e', 'pend')}
     ${card('Dinheiro parado nelas', AC2_BRLk(risco), 'margem que dá para recuperar', risco>0?'#f59e0b':'var(--t3)')}
   </div><div class="a2-caps">${caps}</div>`;
@@ -3681,13 +3696,18 @@ function ac2DirScore(){
   const linhas = tipos.map(t=>{
     const lt = l.filter(i=>ac2TipoDe(i.tipo).k===t.k);
     const reg = lt.filter(ac2Registrada).length, pc = Math.round(100*reg/lt.length);
-    const cels = gestores.map(g=>{ const n = lt.filter(i=>i.gestor===g).length;
-      return `<td class="r"${n?` style="cursor:pointer" onclick="ac2.goGes('${esc(g)}','direcao')"`:''}>
-        ${n?`<b style="color:${t.cor}">${n}</b>`:'<span style="color:var(--t3)">–</span>'}</td>`; }).join('');
+    const cels = gestores.map(g=>{ const lg = lt.filter(i=>i.gestor===g), n = lg.length;
+      if(!n) return '<td class="r"><span style="color:var(--t3)">–</span></td>';
+      const rg = lg.filter(ac2Registrada).length, sr = ac2SemFr(rg, n), ef = ac2Efeito(lg);
+      return `<td class="r" style="cursor:pointer" onclick="ac2.goGes('${esc(g)}','direcao')" title="${g} · ${t.curto}: ${rg}/${n} registradas (${sr.rot})${ef.med?' · efeito '+ef.ok+'/'+ef.med+' ('+ef.sem.rot+')':''}">
+        <b style="color:${t.cor}">${n}</b>
+        <div class="a2-cel-pc" style="color:${sr.cor}">${ac2Pct(rg,n)}% reg.</div>
+        ${ef.med?`<div class="a2-cel-pc" style="color:${ef.sem.cor}">${ef.pct}% efeito</div>`:''}</td>`; }).join('');
     return `<tr><td><span class="a2-dot" style="background:${t.cor}"></span><b>${t.curto}</b>
         <small style="color:var(--c-mut);display:block;font-weight:500">${t.ajuda}</small></td>
       ${cels}<td class="r"><b>${lt.length}</b></td><td class="r">${reg}</td>
-      <td style="min-width:110px">${barra(pc, ac2Sem(pc).cor)}</td></tr>`;
+      <td style="min-width:110px">${barra(ac2Pct(reg,lt.length), ac2SemFr(reg,lt.length).cor)}</td>
+      <td style="min-width:110px">${(()=>{ const ef=ac2Efeito(lt); return ef.med ? barra(ef.pct, ef.sem.cor) : '<span style="color:var(--t3);font-size:11px">aguardando</span>'; })()}</td></tr>`;
   }).join('');
 
   // rodapé: o total do grupo por gestor — é a leitura de "quem está carregando mais"
@@ -3698,32 +3718,34 @@ function ac2DirScore(){
   // ── cards por gestor, com o semáforo: onde a direção vê o momento de cada um ──
   const cards = gestores.map(g=>{
     const li = l.filter(i=>i.gestor===g);
-    const reg = li.filter(ac2Registrada).length, pc = li.length?Math.round(100*reg/li.length):0;
-    const s = ac2Sem(pc);
+    const reg = li.filter(ac2Registrada).length, pc = ac2Pct(reg, li.length);
+    const s = ac2SemFr(reg, li.length), efG = ac2Efeito(li);
     const risco = li.filter(i=>!ac2Registrada(i)).reduce((a,i)=>a+(+i.risco||0),0);
     const ops = [...new Set(li.map(i=>`${i.empresa} · ${i.mkt}`))];
     const pt = AC2_TIPOS.filter(t=>li.some(i=>ac2TipoDe(i.tipo).k===t.k))
-      .map(t=>{ const n=li.filter(i=>ac2TipoDe(i.tipo).k===t.k).length;
-        return `<span style="color:${t.cor};font-weight:700">${t.curto} ${n}</span>`; }).join(' · ');
+      .map(t=>{ const lt=li.filter(i=>ac2TipoDe(i.tipo).k===t.k), n=lt.length, r=lt.filter(ac2Registrada).length, sr=ac2SemFr(r,n);
+        return `<span style="color:${t.cor};font-weight:700">${t.curto} ${n}</span> <span style="color:${sr.cor}">(${ac2Pct(r,n)}%)</span>`; }).join(' · ');
     return `<div class="a2-gc" onclick="ac2.goGes('${esc(g)}','direcao')" style="--cc:${s.cor}">
       <div class="gc-h"><b>${g}</b><span class="gc-tag">${s.rot}</span></div>
       <div class="gc-v">${li.length-reg}<small> de ${li.length} sem registro</small></div>
       <div class="cap-b"><span style="width:${pc}%;background:${s.cor}"></span></div>
       <div class="gc-s">${pc}% registrado${risco>0?` · ${AC2_BRLk(risco)} parado`:''}</div>
+      <div class="cap-selos">${ac2Selo('Registro', s, pc+'%')}${efG.med ? ac2Selo('Efeito', efG.sem, efG.ok+'/'+efG.med) : ac2Selo('Efeito', null, 'aguardando')}</div>
       <div class="gc-t">${pt}</div>
       <div class="gc-o">${ops.slice(0,3).join(' • ')}${ops.length>3?` • +${ops.length-3}`:''}</div></div>`;
   }).sort().join('');
 
-  return `<div class="a2-sh">Demandas por tipo e por gestor<small>clique num número para abrir a lista daquele gestor · a taxa é de registro, não de resultado</small></div>
+  return `<div class="a2-sh">Demandas por tipo e por gestor<small>clique num número para abrir a lista daquele gestor · cada célula: quantas tarefas, % registrada e % que funcionou · régua: &lt;70% Crítico · 70–89% Atenção · 90–99% Bom · 100% Ideal</small></div>
     <div class="tbl-wrap"><table class="tbl a2-tbl"><thead><tr>
       <th style="min-width:200px">Tipo de demanda</th>
       ${gestores.map(g=>`<th class="r" style="cursor:pointer" onclick="ac2.goGes('${esc(g)}','direcao')">${g}</th>`).join('')}
-      <th class="r">Total</th><th class="r">Registr.</th><th class="r">Conclusão</th>
+      <th class="r">Total</th><th class="r">Registr.</th><th class="r">Registro</th><th class="r">Efeito</th>
     </tr></thead><tbody>${linhas}
       <tr class="a2-tot"><td><b>Total</b></td>${tot}<td class="r"><b>${l.length}</b></td><td class="r"><b>${regT}</b></td>
-        <td>${barra(pcT, ac2Sem(pcT).cor)}</td></tr>
+        <td>${barra(ac2Pct(regT,l.length), ac2SemFr(regT,l.length).cor)}</td>
+        <td>${(()=>{ const ef=ac2Efeito(l); return ef.med ? barra(ef.pct, ef.sem.cor) : '<span style="color:var(--t3);font-size:11px">aguardando</span>'; })()}</td></tr>
     </tbody></table></div>
-    <div class="a2-sh" style="margin-top:18px">Momento de cada gestor<small>clique para abrir a lista dele · ${AC2_SEM.map(x=>x.rot).join(' → ')} pela taxa de registro</small></div>
+    <div class="a2-sh" style="margin-top:18px">Momento de cada gestor<small>clique para abrir a lista dele · selo pela taxa de registro; efeito ao lado · entre parênteses, a % registrada em cada tipo</small></div>
     <div class="a2-gcs">${cards}</div>
     <div class="a2-nota">“Registrada” quer dizer que o gestor anotou o que fez naquela demanda. Enquanto ninguém anota, não dá para saber se foi tratada — e o dinheiro segue parado.</div>`;
 }
@@ -4016,8 +4038,17 @@ function ac2RegistroHTML(i){
   if(!i.registro) return pi.txt ? `<div class="vd-reg vd-reg-no"><b>Sem registro do gestor.</b> <span style="color:${pi.cor}">${pi.txt}</span></div>` : '';
   const r = i.registro, quando = r.em ? new Date(r.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
   return `<div class="vd-reg"><div class="vd-reg-h">Registro do gestor${r.gestor?' · '+ac2Esc(r.gestor):''}${quando?' · '+quando:''}${r.n>1?' · '+r.n+' registros (mostrando o último)':''}${pi.txt?` · <span style="color:${pi.cor}">${pi.txt}</span>`:''}</div>
-    <div><b>Ação:</b> ${ac2Esc(r.acao)}${r.causa?' · <b>Causa:</b> '+ac2Esc(r.causa):''}</div>${r.obs?`<div class="vd-reg-obs">"${ac2Esc(r.obs)}"</div>`:''}</div>`;
+    <div><b>Ação:</b> ${ac2Esc(r.acao)}${r.precoNovo?' · <b>Novo preço:</b> '+ac2Brl(r.precoNovo):''}${r.causa?' · <b>Causa:</b> '+ac2Esc(r.causa):''}</div>${r.obs?`<div class="vd-reg-obs">"${ac2Esc(r.obs)}"</div>`:''}${ac2EfeitoHTML(i)}</div>`;
 }
+// EFEITO medido (verificar-tratativas.js, recalculado a cada carga): antes × depois do registro
+const AC2_COR_DESF = { 'Resolvido':'#16a34a', 'Justificado':'#16a34a', 'Progrediu':'#3b82f6', 'Sem efeito':'#f59e0b', 'Piorou':'#dc2626', 'Sem venda':'#94a3b8', 'Aguardando':'#94a3b8' };
+function ac2EfeitoHTML(i){ const rs=i.resultado;
+  if(!rs){ const em=i.registro&&i.registro.em; if(!em) return '';
+    const falta=Math.ceil(7-(Date.now()-Date.parse(em))/864e5);
+    return falta>0 ? `<div class="vd-reg-efeito"><b>Efeito:</b> <span class="a2-tag" style="color:#94a3b8;border-color:#94a3b8">Aguardando</span> a medição compara as vendas antes × depois do registro — verifica em ${falta} dia(s)</div>` : ''; }
+  const cor=AC2_COR_DESF[rs.desfecho]||'var(--c-mut)';
+  const naoAplicou = rs.aplicou==='não' ? ' <b style="color:#dc2626">· o novo preço informado NÃO está sendo praticado</b>' : '';
+  return `<div class="vd-reg-efeito"><b>Efeito:</b> <span class="a2-tag" style="color:${cor};border-color:${cor}">${rs.desfecho}</span> ${ac2Esc(rs.detalhe||'')}${naoAplicou}${rs.recuperado>0?' · <b style="color:#16a34a">recuperado '+ac2Brl(rs.recuperado)+'</b>':''}</div>`; }
 // tarefa de DEVOLUÇÃO: o problema não é preço — mostra as devoluções e o que checar
 function ac2PainelDevolucao(i){
   const D = (typeof DETALHE!=='undefined' && Array.isArray(DETALHE)) ? DETALHE : [], comp = i.competencia || '';
@@ -4383,7 +4414,7 @@ function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(ful
   return `<div class="a2-it ${sev}"><div class="str"></div><div class="a2-ib">`
     +`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${conta}${estTag}${dono}</div>`
     +`<div class="tt" title="${(i.titulo||'').replace(/"/g,'')}">${i.sku} — ${i.titulo||''}</div>`
-    +`<div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span>${ac2TipoDe(i.tipo).k==='devolucao' ? `<span class="a2-tag">devolução ${i.mcPct}% <span style="opacity:.6">(limite ${i.meta}%)</span></span>` : `<span class="a2-tag">margem ${i.mcPct}%${prog} <span style="opacity:.6">(meta ${i.meta}%)</span></span>`}${(()=>{ const pi=ac2PrazoInfo(i); return pi.txt ? `<span class="a2-tag" style="color:${pi.cor};border-color:${pi.cor}">${pi.txt}</span>` : ''; })()}${causaTag}<span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span>${vendas}${anuncio}${i.estado==='fora'?'<span class="a2-tag" style="border-color:#64748b;color:#94a3b8" title="Depois do recálculo dos dados esta tarefa deixou de ser problema. O registro do gestor foi mantido.">saiu da régua após recálculo · registro mantido</span>':''}</div>`
+    +`<div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span>${ac2TipoDe(i.tipo).k==='devolucao' ? `<span class="a2-tag">devolução ${i.mcPct}% <span style="opacity:.6">(normal da operação ${i.meta}%)</span></span>` : `<span class="a2-tag">margem ${i.mcPct}%${prog} <span style="opacity:.6">(meta ${i.meta}%)</span></span>`}${(()=>{ const pi=ac2PrazoInfo(i); return pi.txt ? `<span class="a2-tag" style="color:${pi.cor};border-color:${pi.cor}">${pi.txt}</span>` : ''; })()}${causaTag}<span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span>${vendas}${anuncio}${i.estado==='fora'?'<span class="a2-tag" style="border-color:#64748b;color:#94a3b8" title="Depois do recálculo dos dados esta tarefa deixou de ser problema. O registro do gestor foi mantido.">saiu da régua após recálculo · registro mantido</span>':''}</div>`
     +(tratada?'':`<div class="a2-acao">${acao}</div>`)
     +`<div class="a2-vd" id="${_vk}"></div>`
     +`</div><div class="a2-ir"><div class="rr"><small>em risco</small>${AC2_BRLk(i.risco)}</div>${btn}</div></div>`;
@@ -4509,8 +4540,8 @@ function bcAuthInjectCSS(){ if(document.getElementById('bc-auth-css'))return; co
   .bcl-card p,.bct-sub{margin:0 0 16px;font-size:12.5px;color:var(--t3,#8891a8);line-height:1.5}
   .bcl-f,.bct-f{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
   .bcl-f label,.bct-f label{font-size:11px;font-weight:600;color:var(--t2,#5a6578);text-transform:uppercase;letter-spacing:.04em}
-  .bcl-f input,.bct-f select,.bct-f textarea{padding:10px 12px;border:1px solid var(--bdr2,#e6e8ee);border-radius:9px;font-size:14px;background:var(--surf2,#f7f8fa);color:var(--t1,#1a2030);font-family:inherit}
-  .bcl-f input:focus,.bct-f select:focus,.bct-f textarea:focus{outline:none;border-color:#4f8ef7}
+  .bcl-f input,.bct-f select,.bct-f textarea,.bct-f input{padding:10px 12px;border:1px solid var(--bdr2,#e6e8ee);border-radius:9px;font-size:14px;background:var(--surf2,#f7f8fa);color:var(--t1,#1a2030);font-family:inherit}
+  .bcl-f input:focus,.bct-f select:focus,.bct-f textarea:focus,.bct-f input:focus{outline:none;border-color:#4f8ef7}
   .bct-f textarea{min-height:64px;resize:vertical}
   .bcl-btn{width:100%;padding:11px;border:none;border-radius:9px;background:#4f8ef7;color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
   .bcl-btn:disabled{opacity:.6;cursor:default}
@@ -4595,29 +4626,62 @@ function bcRenderAuthBar(){ const bar=document.getElementById('bc-authbar'); if(
   else { bar.innerHTML=`<span class="bc-chip"><button class="ent" onclick="bcShowLogin()">Entrar</button> <span style="color:var(--t3)">vendo tudo (local)</span></span>`; }
 }
 // ── tratativa: gestor registra a ação na demanda ──
-const BC_ACOES=['Ajustei o preço','Ativei/ajustei Ads','Revisei custo/ficha','Pausei o anúncio','Renegociei frete/embalagem','Troquei/montei kit','Sem ação (justificado)','Outro'];
-const BC_CAUSAS=['Preço desalinhado','Ads caro (ACOS alto)','Custo subiu','Frete/embalagem pesado','Concorrência','Erro de cadastro','Produto em fim de vida','Outro'];
+// OPÇÕES DO REGISTRO (16/10/2026), refeitas a partir dos 91 primeiros registros: causa "Outro" em 38% e
+// "Sem ação (justificado)" em 37%, com observações que mostravam o que faltava — promoção, liquidação
+// de estoque no Full, concorrência/fabricante vendendo abaixo, e o gestor contestando o número.
+// "Sem ação" virou "Mantive de propósito": quase sempre era uma decisão, não uma omissão.
+const BC_OPC = {
+  margem: {
+    acoes: ['Ajustei o preço','Saí ou ajustei promoção/campanha','Ajustei Ads (pausei, reduzi, otimizei)','Revisei custo/ficha do produto',
+            'Mudei frete, modalidade (Full/Flex/coleta) ou embalagem','Montei ou troquei kit/variação','Pausei o anúncio',
+            'Mantive de propósito (estratégia)','Aguardando terceiro (fornecedor, estoque, fim de campanha)','Outro'],
+    causas: ['Preço baixo ou desalinhado','Promoção/campanha (desconto alto ou preço errado)','Concorrência ou fabricante vende mais barato',
+             'Liquidação de estoque (Full ou parado)','Ads caro (ACOS alto)','Custo do produto subiu','Tarifa ou frete da plataforma subiu',
+             'Erro de cadastro (preço, peso, kit)','Produto em fim de vida','O número do sistema parece errado','Outro'] },
+  devolucao: {
+    acoes: ['Corrigi o anúncio (fotos, descrição, medidas, voltagem)','Melhorei a embalagem','Acionei o fornecedor (defeito ou lote)',
+            'Mudei transportadora ou modalidade de envio','Pausei o anúncio','Analisei os motivos e ainda não há ação','Outro'],
+    causas: ['Produto diferente do anúncio','Defeito ou qualidade','Avaria no transporte','Tamanho, medida ou voltagem errada',
+             'Atraso na entrega','Arrependimento do comprador','O número do sistema parece errado','Outro'] } };
+const bcOpcoes = tipo => BC_OPC[ac2TipoDe(tipo).k==='devolucao' ? 'devolucao' : 'margem'];
+// o que pedir em cada ação: o detalhe é o que permite conferir depois se funcionou
+const BC_DICA = a => /ajustei o pre/i.test(a) ? 'ex.: subi de R$ 29,99 para R$ 32,90; margem esperada 21%'
+  : /promo/i.test(a) ? 'ex.: saí da campanha X; o preço volta a R$ 34,90 em 18/10'
+  : /mantive/i.test(a) ? 'por que manter: ex.: concorrente vende a R$ 30; fabricante abaixo; queimar 40 un. paradas no Full'
+  : /aguardando/i.test(a) ? 'o quê e até quando: ex.: fornecedor manda tabela nova até 20/10'
+  : /ads/i.test(a) ? 'ex.: pausei a campanha X; ACOS de 18% para 9%'
+  : /anúncio \(fotos/i.test(a) ? 'o que mudou no anúncio: ex.: incluí medidas e foto da tomada'
+  : 'descreva o que foi feito, com números quando houver';
 ac2.tratar=function(encId){ const id=decodeURIComponent(encId); const it=ac2.DEM.find(x=>x.id===id); if(!it)return; bcAuthInjectCSS();
   let ov=document.getElementById('bc-trat'); if(!ov){ ov=document.createElement('div'); ov.id='bc-trat'; document.body.appendChild(ov);
     ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('on');}); }
-  const opt=arr=>arr.map(o=>`<option>${o}</option>`).join('');
+  const opt=arr=>arr.map(o=>`<option>${o}</option>`).join(''); const OP=bcOpcoes(it.tipo);
   ov.innerHTML=`<div class="bct-card"><h3>Registrar tratativa</h3>
     <div class="bct-sub"><b>${it.sku}</b> — ${(it.titulo||'').slice(0,60)}<br>${it.empresa} · ${it.mkt} · margem ${it.mcPct}% (meta ${it.meta}%) · ${AC2_BRLk(it.risco)} em risco</div>
-    <div class="bct-f"><label>O que você fez</label><select id="bct-acao">${opt(BC_ACOES)}</select></div>
-    <div class="bct-f"><label>Causa (por que estava fora da meta)</label><select id="bct-causa">${opt(BC_CAUSAS)}</select></div>
-    <div class="bct-f"><label>Observação (opcional)</label><textarea id="bct-obs" placeholder="detalhe rápido…"></textarea></div>
+    <div class="bct-f"><label>O que você fez</label><select id="bct-acao" onchange="bcTratarAcao()">${opt(OP.acoes)}</select></div>
+    <div class="bct-f" id="bct-preco-f"><label>Novo preço de venda (R$)</label><input id="bct-preco" inputmode="decimal" placeholder="ex.: 32,90"></div>
+    <div class="bct-f"><label>Causa (por que aconteceu)</label><select id="bct-causa">${opt(OP.causas)}</select></div>
+    <div class="bct-f"><label>O que exatamente foi feito <span style="color:#dc2626">*</span></label><textarea id="bct-obs" rows="3"></textarea></div>
     <div class="bct-err" id="bct-err"></div>
     <div class="bct-row"><button class="cancel" onclick="document.getElementById('bc-trat').classList.remove('on')">Cancelar</button>
     <button class="ok" id="bct-sub" onclick="bcTratarSubmit('${encodeURIComponent(id)}')">✓ Registrar</button></div></div>`;
-  ov.classList.add('on');
+  ov.classList.add('on'); bcTratarAcao();
 };
+// mostra o campo de preço só quando a ação é ajuste de preço, e troca o exemplo do "o que foi feito"
+function bcTratarAcao(){ const a=(document.getElementById('bct-acao')||{}).value||'';
+  const f=document.getElementById('bct-preco-f'); if(f) f.style.display=/ajustei o pre/i.test(a)?'':'none';
+  const o=document.getElementById('bct-obs'); if(o) o.placeholder=BC_DICA(a); }
 async function bcTratarSubmit(encId){ const id=decodeURIComponent(encId); const btn=document.getElementById('bct-sub'), err=document.getElementById('bct-err');
-  const acao=document.getElementById('bct-acao').value, causa=document.getElementById('bct-causa').value, obs=document.getElementById('bct-obs').value;
-  err.textContent=''; btn.disabled=true; btn.textContent='Enviando…';
+  const acao=document.getElementById('bct-acao').value, causa=document.getElementById('bct-causa').value, obs=document.getElementById('bct-obs').value.trim();
+  const precoTxt=((document.getElementById('bct-preco')||{}).value||'').trim(), preco_novo=precoTxt?(precoTxt.includes(',')?+precoTxt.replace(/\./g,'').replace(',','.'):+precoTxt):null;   // aceita 1.234,56 e 32.90
+  err.textContent='';
+  if(obs.length<15){ err.textContent='⚠️ Descreva o que foi feito (pelo menos 15 caracteres) — é o registro que a coordenação acompanha.'; return; }
+  if(/ajustei o pre/i.test(acao) && !(preco_novo>0)){ err.textContent='⚠️ Informe o novo preço de venda.'; return; }
+  btn.disabled=true; btn.textContent='Enviando…';
   try{
-    const r=await authFetch('/api/tratativas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({demanda_id:id,acao,causa,obs,estado:'trat',registrado_em:new Date().toISOString()})});
+    const r=await authFetch('/api/tratativas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({demanda_id:id,acao,causa,obs,preco_novo,estado:'trat'})});
     const d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.erro||('HTTP '+r.status));
-    const it=ac2.DEM.find(x=>x.id===id); if(it){ it.estado='trat'; it.trat=acao; it.causa=causa; }
+    const it=ac2.DEM.find(x=>x.id===id); if(it){ it.estado='trat'; it.trat=acao; it.registro={acao,causa,obs,em:new Date().toISOString(),gestor:(window.BCAUTH&&BCAUTH.user&&BCAUTH.user.gestor_ref)||'',n:((it.registro&&it.registro.n)||0)+1,precoNovo:preco_novo}; }
     document.getElementById('bc-trat').classList.remove('on'); ac2.render();
   }catch(e){ err.textContent='⚠️ '+(/escopo|403/i.test(e.message)?'Essa demanda não é do seu escopo.':/autenticad|401|expir/i.test(e.message)?'Faça login para registrar.':e.message); btn.disabled=false; btn.textContent='✓ Registrar'; }
 }

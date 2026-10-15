@@ -37,7 +37,14 @@ function http(metodo, urlStr, corpo, saltos = 0) {
     r.on("error", rej); if (body) r.write(body); r.end();
   });
 }
-const chamar = (cfg, corpo) => http("POST", cfg.url, Object.assign({ token: cfg.token }, corpo));
+// o Apps Script atende um envio por vez (LockService): se dois chegam juntos (rotina + registro de gestor),
+// o segundo recebe "ocupado". Tenta de novo até 4 vezes, com espera crescente (visto no log de 15/10/2026).
+async function chamar(cfg, corpo) {
+  for (let t = 0; ; t++) {
+    try { return await http("POST", cfg.url, Object.assign({ token: cfg.token }, corpo)); }
+    catch (e) { if (!/ocupado/i.test(e.message) || t >= 3) throw e; await new Promise(r => setTimeout(r, 5000 * (t + 1))); }
+  }
+}
 
 // competência mínima = a MESMA régua do painel (AC2_DESDE no BsanControl.html): demanda de setembro
 // para trás é do modelo antigo e não entra na cobrança. Daqui para frente, todos os meses entram.
@@ -56,9 +63,9 @@ const ORIGEM = { "": "BsanControl", planilha: "Planilha antiga", historico: "His
 
 const CAB_TAREFAS = ["Competência", "Gestor", "Prioridade", "Tipo de ação", "Anúncio", "Produto", "Impacto R$",
   "Margem hoje %", "Meta %", "Situação hoje", "Ação recomendada", "Status", "Prazo (dias)", "Vence em", "Situação do prazo", "Última ação registrada",
-  "Causa", "Observação", "Registrado em", "Reação (h)", "Nº de registros", "Resultado", "Criada em", "ID da tarefa"];
+  "Causa", "O que foi feito", "Registrado em", "Reação (h)", "Nº de registros", "Resultado", "Efeito medido", "Criada em", "ID da tarefa"];
 const CAB_REGISTROS = ["Registrado em", "Gestor", "Competência", "Anúncio", "Produto", "Tipo de ação",
-  "Ação", "Causa", "Observação", "Reação (h)", "Origem", "ID da tarefa"];
+  "Ação", "Novo preço", "Causa", "O que foi feito", "Reação (h)", "Origem", "ID da tarefa"];
 const DATAS = ["Registrado em", "Criada em", "Vence em"];
 // mesmo padrão do painel (AC2_PRAZO_PADRAO): só para tarefa gravada antes de existir prazo_dias
 const PRAZO_PADRAO = [[/preju|estanca/i, 2], [/devolu/i, 5], [/corre/i, 5], [/queima/i, 7], [/matura/i, 14]];
@@ -104,12 +111,12 @@ async function montarOperacao(dbx, empresa, canal, desde) {
       ts.length ? (S(d.estado) === "fora" ? "Registrada · saiu da régua" : "Registrada") : "Pendente",
       prazoDe(d), d.criado_em ? new Date(Date.parse(d.criado_em) + prazoDe(d) * 864e5).toISOString() : "", situacaoPrazo(d, ts), ult ? S(ult.acao) : "", ult ? S(ult.causa) : "", ult ? S(ult.obs) : "",
       ult ? S(ult.registrado_em) : "", ult && ult.reacao_h != null ? +n(ult.reacao_h).toFixed(1) : "", ts.length,
-      r ? S(r.desfecho) : "", S(d.criado_em), id];
+      r ? S(r.desfecho) : "", r ? S(r.detalhe) : "", S(d.criado_em), id];
   }));
   const registros = [CAB_REGISTROS].concat(trat.slice().reverse().map(t => {   // mais recente primeiro
     const d = porId[S(t.demanda_id)] || {};
     return [S(t.registrado_em), S(t.gestor) || S(d.gestor), S(d.competencia), S(d.anuncio_id) || S(d.sku), S(d.titulo).slice(0, 90),
-      S(d.tipo), S(t.acao), S(t.causa), S(t.obs), t.reacao_h != null ? +n(t.reacao_h).toFixed(1) : "",
+      S(d.tipo), S(t.acao), t.preco_novo != null ? +n(t.preco_novo) : "", S(t.causa), S(t.obs), t.reacao_h != null ? +n(t.reacao_h).toFixed(1) : "",
       ORIGEM[S(t.origem)] || S(t.origem), S(t.demanda_id)];
   }));
   return { operacao: opDe(empresa, canal), gestor: op ? S(op.gestor) : [...new Set(dem.map(d => S(d.gestor)))].join(", "), abas: { "Tarefas": tarefas, "Registros": registros }, datas: DATAS,
