@@ -4358,19 +4358,25 @@ function ac2Direcao(){ const l=ac2.filt();
 /* ── Direção no layout do mockup: hero do loop + indicadores + scorecard / comparar ── */
 function ac2Comparar(){ const l=ac2.filt(); const glist=(ac2.ges.size?[...ac2.ges]:AC2_GES).filter(g=>l.some(i=>i.gestor===g));
   const stats=glist.map(g=>({g,m:ac2.metricsDe(l.filter(i=>i.gestor===g))})); const maxR=Math.max.apply(null,stats.map(x=>x.m.recuperado).concat([1]));
-  const cards=stats.map(function(o){ const g=o.g,m=o.m; const d=ac2.desemp(m); const pin=d.k==='ideal'?'🟢':d.k==='crit'?'🔴':'🟡'; const hitCor=m.hit!=null?(m.hit>=.7?'#22c55e':m.hit<.4?'#f87171':'#f59e0b'):'';
+  // MESMA RÉGUA da Direção (16/10/2026). Antes usava a nota antiga (reagir em até 24h), e a mesma pessoa
+  // aparecia "Bom" na Direção e "Crítico" aqui — Maressa: 98% registrado, reação média de 2,1 dias.
+  const cards=stats.map(function(o){ const g=o.g,m=o.m; const li=l.filter(i=>i.gestor===g);
+    const reg=li.filter(ac2Registrada).length, sr=ac2SemFr(reg,li.length), ef=ac2Efeito(li);
+    const np=m.noPrazo!=null?Math.round(100*m.noPrazo):null;
     const row=(lb,v,cor)=>`<div class="row"><span class="lb">${lb}</span><span class="vl" ${cor?`style="color:${cor}"`:''}>${v}</span></div>`;
-    return `<div class="a2-cc" style="cursor:pointer" onclick="ac2.goGes('${g}','direcao')"><div class="a2-gch" style="margin-bottom:6px"><span class="a2-ava" style="background:${AC2_GCOR[g]||'#777'}">${g[0]}</span><div class="gn">${g}</div></div><div><span class="a2-pill ${d.k}">${pin} ${d.t}</span></div>
+    return `<div class="a2-cc" style="cursor:pointer" onclick="ac2.goGes('${g}','direcao')"><div class="a2-gch" style="margin-bottom:6px"><span class="a2-ava" style="background:${AC2_GCOR[g]||'#777'}">${g[0]}</span><div class="gn">${g}</div></div><div>${ac2Selo('Registro', sr, ac2Pct(reg,li.length)+'%')}${ef.med ? ac2Selo('Efeito', ef.sem, ef.ok+'/'+ef.med) : ac2Selo('Efeito', null, 'aguardando')}</div>
      ${row('Demandas',m.total)}
-     ${row('📝 Registrado',Math.round(m.disciplina*100)+'%',m.disciplina>=.6?'#22c55e':m.disciplina<.3?'#f87171':'#f59e0b')}
-     ${row('⚡ Reação',ac2.reacF(m.mediaReacaoH))}
-     ${row('🎯 Acerto',m.hit!=null?Math.round(m.hit*100)+'%':'—',hitCor)}
+     ${row('📝 Registrado',ac2Pct(reg,li.length)+'%',sr.cor)}
+     ${row('⏰ Registro no prazo do tipo',np!=null?np+'%':'—',np!=null?ac2Sem(np).cor:'')}
+     ${row('🚨 Atrasadas agora',m.atrasadas||0,(m.atrasadas||0)>0?'#f87171':'#22c55e')}
+     ${row('⚡ Reação média',ac2.reacF(m.mediaReacaoH))}
+     ${row('🎯 Efeito (funcionou)',ef.med?ef.ok+'/'+ef.med+' · '+ef.pct+'%':'aguardando',ef.med?ef.sem.cor:'')}
      ${row('💸 Em risco',AC2_BRLk(m.risco),'#f87171')}
      ${row('✅ Recuperado',AC2_BRLk(m.recuperado),'#22c55e')}
      <div style="height:4px;background:var(--c-ln);border-radius:2px;margin:7px 0 3px"><span style="display:block;height:100%;width:${Math.round(100*m.recuperado/maxR)}%;background:#22c55e;border-radius:2px"></span></div>
      ${row('⏱️ Perdido/demora',m.demora>0?AC2_BRLk(m.demora):'R$ 0',m.demora>0?'#f87171':'')}</div>`;
   }).join('');
-  return `<div class="a2-sh">Comparar gestores<small>lado a lado · quem recupera mais, mais rápido</small></div><div class="a2-cmp">${cards}</div>`;
+  return `<div class="a2-sh">Comparar gestores<small>lado a lado · mesma régua da Direção: &lt;70% Crítico · 70–89% Atenção · 90–99% Bom · 100% Ideal</small></div><div class="a2-cmp">${cards}</div>`;
 }
 function ac2Hist(g){ const ev=ac2.evolGestor(g), rc=ac2.evolRec(g), cor=AC2_GCOR[g]||'#777', mx=Math.max.apply(null,rc.concat([1])); const sem=['S-5','S-4','S-3','S-2','S-1','Atual'];
   const bars=rc.map((v,i)=>`<div style="flex:1;text-align:center"><div style="height:46px;display:flex;align-items:flex-end;justify-content:center"><div style="width:60%;background:${cor};border-radius:4px 4px 0 0;height:${Math.max(v/mx*100,4)}%"></div></div><div style="font-size:9.5px;color:var(--c-mut);margin-top:3px">${sem[sem.length-rc.length+i]||''}</div><div style="font-size:10px;font-weight:700">${v}</div></div>`).join('');
