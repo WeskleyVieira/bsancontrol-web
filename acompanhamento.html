@@ -3393,6 +3393,8 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-k.on{border-color:var(--c-acc);background:var(--c-accb)}
 #ac2-root .a2-k.nc{cursor:default}
 /* posicao na fila: a coordenacao le de cima para baixo, entao o numero precisa estar visivel */
+#ac2-root .a2-cob{font:inherit;font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;border:1px solid var(--c-ln);background:var(--c-s2);color:var(--c-ink);cursor:pointer;white-space:nowrap}
+#ac2-root .a2-cob:hover{border-color:var(--c-acc);color:var(--c-acc)}
 #ac2-root .a2-pos{display:inline-block;min-width:19px;height:19px;line-height:19px;text-align:center;border-radius:5px;background:var(--c-s2);border:1px solid var(--c-ln);font-size:10.5px;font-weight:800;color:var(--c-mut);margin-right:8px}
 /* quebra por operacao dentro do card do gestor */
 #ac2-root .a2-gc .gc-ops{margin-top:7px;border-top:1px solid var(--c-ln);padding-top:6px}
@@ -3902,21 +3904,79 @@ function ac2PorOp(li){
     .sort((a,b)=> b.risco-a.risco || b.pend-a.pend);
 }
 
+// ── MESA DE COBRANÇA (16/10/2026) ───────────────────────────────────────────────────────────
+// A Coordenação é quem cobra a equipe. A pergunta dela não é "quanto está pendente", é: de quem
+// cobro, o quê, e o que cobro DE NOVO. Três baldes, todos pelo dado:
+//   ATRASADA   sem registro e o prazo do tipo já passou            → cobrar o registro
+//   VENCE 24h  sem registro, vence em menos de 1 dia               → lembrar antes de atrasar
+//   RECOBRAR   registrada, mas a medição mostra que não resolveu:  → cobrar nova ação
+//              piorou · sem efeito · novo preço informado e não aplicado · "aguardando terceiro" há 7+ dias
+//   Se o gestor registrou de novo DEPOIS da medição, sai do balde até a próxima medição.
+const ac2Resta = i => i.criado_em ? ac2Prazo(i) - (Date.now() - Date.parse(i.criado_em))/864e5 : null;
+const ac2Atrasada = i => !ac2Registrada(i) && ac2Resta(i)!=null && ac2Resta(i) < 0;
+const ac2Vence24 = i => { const r = ac2Resta(i); return !ac2Registrada(i) && r!=null && r >= 0 && r < 1; };
+function ac2Recobrar(i){
+  if(!ac2Registrada(i)) return null;
+  const r = i.resultado, g = i.registro || {};
+  if(r && r.em && g.em && Date.parse(g.em) > Date.parse(r.em)) return null;          // já registrou de novo
+  if(r && /Resolvido|Progrediu|Justificado/.test(r.desfecho||'')) return null;
+  if(r && r.aplicou==='não') return 'o novo preço informado não foi aplicado';
+  if(r && /Piorou/.test(r.desfecho||'')) return 'piorou depois da ação';
+  if(r && /Sem efeito/.test(r.desfecho||'')) return 'a ação não teve efeito';
+  if(/aguardando/i.test(g.acao||'') && g.em){ const d = (Date.now()-Date.parse(g.em))/864e5;
+    if(d >= 7) return 'aguardando terceiro há '+Math.floor(d)+' dias — qual o retorno?'; }
+  return null;
+}
+const ac2UrgItem = i => (+i.risco||0) * Math.max(1, -(ac2Resta(i)||0));            // R$ × dias de atraso
+function ac2Mesa(li){
+  const atr = li.filter(ac2Atrasada).sort((a,b)=>ac2UrgItem(b)-ac2UrgItem(a));
+  const v24 = li.filter(ac2Vence24).sort((a,b)=>(+b.risco||0)-(+a.risco||0));
+  const rec = li.map(i=>({i, por:ac2Recobrar(i)})).filter(x=>x.por).sort((a,b)=>(+b.i.risco||0)-(+a.i.risco||0));
+  return { atr, v24, rec,
+    risco: atr.reduce((a,i)=>a+(+i.risco||0),0),
+    maior: atr.length ? Math.max(...atr.map(i=>-ac2Resta(i))) : null,
+    urg: atr.reduce((a,i)=>a+ac2UrgItem(i),0) };
+}
+const ac2AtrLbl = d => d==null ? '—' : (d<1 ? 'menos de 1 dia' : Math.ceil(d)+(Math.ceil(d)===1?' dia':' dias'));
+
+// mensagem pronta para o WhatsApp (negrito com *, uma linha por tarefa)
+function ac2TextoCobranca(g){
+  const li = ac2.filt().filter(i=>i.gestor===g), m = ac2Mesa(li);
+  const hoje = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  const nome = i => String(i.titulo||i.sku||i.anuncio||'').replace(/\s+/g,' ').slice(0,60) + (i.sku?' ('+i.sku+')':'');
+  const op = i => (i.empresa||'')+' · '+(i.mkt||'');
+  const tp = i => ac2TipoDe(i.tipo).curto;
+  const MAX = 25, lista = (arr, f) => arr.slice(0,MAX).map((x,k)=>(k+1)+'. '+f(x)).join('\n') + (arr.length>MAX ? '\n… e mais '+(arr.length-MAX)+' no painel' : '');
+  const p = ['*Cobrança — '+g+'* ('+hoje+')'];
+  if(m.atr.length) p.push('\n⏰ *Atrasadas: '+m.atr.length+'* — registre hoje o que foi feito'+(m.risco>0?' (R$ '+Math.round(m.risco).toLocaleString('pt-BR')+' parado)':'')+'\n'
+    + lista(m.atr, i=>'['+tp(i)+'] '+nome(i)+' · '+op(i)+' · atrasada '+ac2AtrLbl(-ac2Resta(i))+((+i.risco||0)>0?' · R$ '+Math.round(+i.risco):'')));
+  if(m.v24.length) p.push('\n🕐 *Vencem em menos de 24h: '+m.v24.length+'*\n'
+    + lista(m.v24, i=>'['+tp(i)+'] '+nome(i)+' · '+op(i)));
+  if(m.rec.length) p.push('\n🔁 *Registradas que não resolveram: '+m.rec.length+'* — precisa de nova ação\n'
+    + lista(m.rec, x=>'['+tp(x.i)+'] '+nome(x.i)+' · '+op(x.i)+' · você registrou "'+((x.i.registro||{}).acao||'')+'" — '+x.por));
+  if(p.length===1) p.push('\n✅ Nada pendente. Obrigado!');
+  else if(/^https:/.test(location.origin)) p.push('\nRegistre em: '+location.origin);
+  return p.join('\n');
+}
+async function ac2CopiaCobranca(g, btn){
+  const t = ac2TextoCobranca(g);
+  try{ await navigator.clipboard.writeText(t); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+  if(btn){ const o=btn.textContent; btn.textContent='✓ Copiada'; setTimeout(()=>btn.textContent=o, 2200); }
+}
+
 function ac2TopoCoord(){
-  const l = ac2.filt();
-  const pend = l.filter(i=>!ac2Registrada(i));
+  const l = ac2.filt(), m = ac2Mesa(l);
   const reacs = l.filter(i=>i.reacaoH!=null).map(i=>i.reacaoH);
   const media = reacs.length ? reacs.reduce((a,b)=>a+b,0)/reacs.length : null;
-  const riscoPend = pend.reduce((a,i)=>a+(+i.risco||0),0);
-  const gestoresDevendo = new Set(pend.map(i=>i.gestor)).size;
-  const velha = ac2DiasMax(l);
+  const gAtr = new Set(m.atr.map(i=>i.gestor)).size, medidas = l.filter(i=>i.resultado).length;
   const card = (rot,val,sub,c) => `<div class="a2-k nc"><div class="a2-kr">${rot}</div>
     <div class="a2-kv" style="color:${c||'var(--t1)'}">${val}</div><div class="a2-ks">${sub}</div></div>`;
   return ac2Selecao()+`<div class="a2-kpis">
-    ${card('Esperando alguém', pend.length, gestoresDevendo+' gestor(es) com pendência', pend.length?'#dc2626':'#22c55e')}
-    ${card('Parado em R$', AC2_BRLk(riscoPend), 'margem presa nas pendências', riscoPend>0?'#f59e0b':'var(--t3)')}
-    ${card('A mais antiga esperando', ac2DiasLbl(velha), velha==null?'sem data de criação':'desde que a demanda nasceu',
-      velha==null?null:(velha>14?'#dc2626':velha>7?'#f59e0b':'#22c55e'))}
+    ${card('Atrasadas agora', m.atr.length, m.atr.length? gAtr+' gestor(es) · maior atraso '+ac2AtrLbl(m.maior) : 'ninguém atrasado', m.atr.length?'#dc2626':'#22c55e')}
+    ${card('Vencem em 24h', m.v24.length, 'cobrar antes de atrasar', m.v24.length?'#f59e0b':'var(--t3)')}
+    ${card('Recobrar', m.rec.length, medidas ? 'registradas que não resolveram' : 'medição começa 7 dias após o registro', m.rec.length?'#a855f7':'var(--t3)')}
+    ${card('Parado nas atrasadas', AC2_BRLk(m.risco), 'margem presa no que já venceu', m.risco>0?'#f59e0b':'var(--t3)')}
     ${card('Tempo até registrar', media==null?'—':ac2.reacLbl(media), media==null?'ninguém registrou ainda':'média da equipe')}
   </div>`;
 }
@@ -3928,45 +3988,39 @@ function ac2Coord(){
   const esc = g => String(g).replace(/'/g,"\\'");
 
   const linhas = gestores.map(g=>{
-    const li = l.filter(i=>i.gestor===g);
-    const pend = li.filter(i=>!ac2Registrada(i));
-    const reg = li.length - pend.length;
-    const pc = li.length ? Math.round(100*reg/li.length) : 0;
-    const pior = pend.slice().sort((a,b)=>
-      ((+b.risco||0)*Math.max(1,ac2Dias(b)||1)) - ((+a.risco||0)*Math.max(1,ac2Dias(a)||1)))[0] || null;
-    return { g, li, n:li.length, pend:pend.length, reg, pc,
-             risco: pend.reduce((a,i)=>a+(+i.risco||0),0),
-             urg: ac2Urg(li), dias: ac2DiasMax(li), pior,
-             tipos: AC2_TIPOS.filter(t=>pend.some(i=>ac2TipoDe(i.tipo).k===t.k))
-               .map(t=>({t, n: pend.filter(i=>ac2TipoDe(i.tipo).k===t.k).length })) };
-  }).sort((a,b)=> b.urg-a.urg);                       // urgência = dinheiro × dias, não só dinheiro
+    const li = l.filter(i=>i.gestor===g), m = ac2Mesa(li);
+    const reg = li.filter(ac2Registrada).length;
+    const pend = li.length - reg;
+    const comece = m.atr[0] ? { i:m.atr[0], por:'atrasada '+ac2AtrLbl(-ac2Resta(m.atr[0])) }
+      : m.v24[0] ? { i:m.v24[0], por:'vence em 24h' } : m.rec[0] ? { i:m.rec[0].i, por:m.rec[0].por } : null;
+    return { g, li, n:li.length, pend, reg, m, comece, dias: ac2DiasMax(li) };
+  }).sort((a,b)=> b.m.urg-a.m.urg || b.m.atr.length-a.m.atr.length || b.m.rec.length-a.m.rec.length || b.m.v24.length-a.m.v24.length);
 
-  const barra = (pc,c) => `<div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
-    <div style="width:46px;height:5px;background:var(--bdr2);border-radius:999px;overflow:hidden"><div style="width:${pc}%;height:100%;background:${c}"></div></div><b style="color:${c};font-size:12px">${pc}%</b></div>`;
-
+  const num = (v,c) => v ? `<b style="color:${c}">${v}</b>` : '<span style="color:var(--t3)">0</span>';
   const body = linhas.map((o,idx)=>`<tr style="cursor:pointer" onclick="ac2.goGes('${esc(o.g)}','coord')">
       <td><span class="a2-pos">${idx+1}</span><b>${o.g}</b></td>
-      <td class="r" style="color:${o.pend?'#dc2626':'#22c55e'}"><b>${o.pend}</b><span style="color:var(--t3)"> de ${o.n}</span></td>
-      <td>${barra(o.pc, ac2Sem(o.pc).cor)}</td>
-      <td class="r" style="color:${o.risco>0?'#f59e0b':'var(--t3)'}">${o.risco>0?AC2_BRLk(o.risco):'–'}</td>
-      <td class="r" style="color:${o.dias==null?'var(--t3)':(o.dias>14?'#dc2626':o.dias>7?'#f59e0b':'var(--t2)')}">${ac2DiasLbl(o.dias)}</td>
-      <td style="font-size:11px;line-height:1.6">${o.tipos.length?o.tipos.map(x=>`<span style="color:${x.t.cor};font-weight:700">${x.t.curto} ${x.n}</span>`).join(' · '):'<span style="color:#22c55e">nada pendente</span>'}</td>
-      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)" title="${o.pior?String(o.pior.titulo||o.pior.sku).replace(/"/g,''):''}">${o.pior
-        ? `<span style="color:${ac2TipoDe(o.pior.tipo).cor};font-weight:700">${ac2TipoDe(o.pior.tipo).curto}</span> · ${String(o.pior.titulo||o.pior.sku).slice(0,40)}`
-        : '<span style="color:#22c55e">—</span>'}</td>
+      <td class="r">${num(o.m.atr.length,'#dc2626')}</td>
+      <td class="r">${num(o.m.v24.length,'#f59e0b')}</td>
+      <td class="r">${num(o.m.rec.length,'#a855f7')}</td>
+      <td class="r" style="color:${o.m.risco>0?'#f59e0b':'var(--t3)'}">${o.m.risco>0?AC2_BRLk(o.m.risco):'–'}</td>
+      <td class="r" style="color:${o.m.maior==null?'var(--t3)':'#dc2626'}">${ac2AtrLbl(o.m.maior)}</td>
+      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)" title="${o.comece?String(o.comece.i.titulo||o.comece.i.sku).replace(/"/g,'')+' — '+o.comece.por:''}">${o.comece
+        ? `<span style="color:${ac2TipoDe(o.comece.i.tipo).cor};font-weight:700">${ac2TipoDe(o.comece.i.tipo).curto}</span> · ${String(o.comece.i.titulo||o.comece.i.sku).slice(0,34)} <span style="color:var(--t3)">(${o.comece.por})</span>`
+        : '<span style="color:#22c55e">em dia ✓</span>'}</td>
+      <td class="r"><button class="a2-cob" onclick="event.stopPropagation();ac2CopiaCobranca('${esc(o.g)}',this)" title="Copia a mensagem de cobrança deste gestor para colar no WhatsApp">📋 Copiar cobrança</button></td>
     </tr>`).join('');
 
-  // cards por gestor, com a quebra por OPERAÇÃO — o nível a mais que a coordenação pediu
+  // cards por gestor, com a quebra por OPERAÇÃO — onde a pendência dele está concentrada
   const cards = linhas.map(o=>{
-    const s = ac2Sem(o.pc);
+    const s = ac2SemFr(o.reg, o.n), pc = ac2Pct(o.reg, o.n);
     const ops = ac2PorOp(o.li).map(x=>`<div class="gc-op"><span>${x.op}</span>
       <b style="color:${x.pend?'#dc2626':'#22c55e'}">${x.pend}/${x.n}</b>
       <i style="color:${x.risco>0?'#f59e0b':'var(--c-mut)'}">${x.risco>0?AC2_BRLk(x.risco):'–'}</i></div>`).join('');
     return `<div class="a2-gc" onclick="ac2.goGes('${esc(o.g)}','coord')" style="--cc:${s.cor}">
       <div class="gc-h"><b>${o.g}</b><span class="gc-tag">${s.rot}</span></div>
       <div class="gc-v">${o.pend}<small> pendente(s) de ${o.n}</small></div>
-      <div class="cap-b"><span style="width:${o.pc}%;background:${s.cor}"></span></div>
-      <div class="gc-s">${o.pc}% registrado · ${AC2_BRLk(o.risco)} parado · mais antiga: ${ac2DiasLbl(o.dias)}</div>
+      <div class="cap-b"><span style="width:${pc}%;background:${s.cor}"></span></div>
+      <div class="gc-s">${pc}% registrado · ${o.m.atr.length} atrasada(s) · mais antiga: ${ac2DiasLbl(o.dias)}</div>
       <div class="gc-ops">${ops}</div></div>`;
   }).join('');
 
@@ -3975,28 +4029,28 @@ function ac2Coord(){
     const vs = [...new Set(l.map(chave))].filter(Boolean).map(v=>{
       const lv = l.filter(i=>chave(i)===v);
       const reg = lv.filter(ac2Registrada).length;
-      return { v, n:lv.length, reg, pc: lv.length?Math.round(100*reg/lv.length):0,
+      return { v, n:lv.length, reg, pc: ac2Pct(reg, lv.length), sem: ac2SemFr(reg, lv.length), atr: lv.filter(ac2Atrasada).length,
                risco: lv.filter(i=>!ac2Registrada(i)).reduce((s,i)=>s+(+i.risco||0),0) };
     }).sort((a,b)=> a.pc-b.pc || b.risco-a.risco);     // pior primeiro: é onde se age
     if(!vs.length) return '';
     return `<div class="a2-sh" style="margin-top:18px">${rot}<small>${sub} · ordenado do menos alinhado para o mais</small></div>
-      <div class="a2-ccs">${vs.map(x=>{ const s=ac2Sem(x.pc); return `<div class="a2-cc" style="--cc:${s.cor}">
+      <div class="a2-ccs">${vs.map(x=>{ const s=x.sem; return `<div class="a2-cc" style="--cc:${s.cor}">
         <div class="cc-r">${x.v}</div>
         <div class="cc-v" style="color:${s.cor}">${x.pc}<small>%</small></div>
         <div class="cap-b"><span style="width:${x.pc}%;background:${s.cor}"></span></div>
-        <div class="cc-s">${x.reg} de ${x.n} registrada(s)${x.risco>0?` · ${AC2_BRLk(x.risco)} parado`:''}</div></div>`; }).join('')}</div>`;
+        <div class="cc-s">${x.reg} de ${x.n} registrada(s)${x.atr?` · ${x.atr} atrasada(s)`:''}${x.risco>0?` · ${AC2_BRLk(x.risco)} parado`:''}</div></div>`; }).join('')}</div>`;
   };
 
-  return `<div class="a2-sh">A fila do dia<small>ordenado por <b>urgência</b> = dinheiro parado × dias parados · clique para abrir a lista do gestor</small></div>
+  return `<div class="a2-sh">Mesa de cobrança<small>de quem cobrar hoje · ordem = R$ parado × dias de atraso · <b>Recobrar</b> = registrou, mas a medição mostra que não resolveu · o botão copia a mensagem pronta para o WhatsApp</small></div>
     <div class="tbl-wrap"><table class="tbl a2-tbl"><thead><tr>
-      <th>Gestor</th><th class="r">Pendentes</th><th class="r">Conclusão</th><th class="r">Parado</th>
-      <th class="r">Mais antiga</th><th>Tipos pendentes</th><th>Comece por esta</th>
+      <th>Gestor</th><th class="r">Atrasadas</th><th class="r">Vencem 24h</th><th class="r">Recobrar</th><th class="r">Parado</th>
+      <th class="r">Maior atraso</th><th>Comece por esta</th><th class="r">Cobrança</th>
     </tr></thead><tbody>${body}</tbody></table></div>
     <div class="a2-sh" style="margin-top:18px">Cada gestor, por operação<small>onde a pendência dele está concentrada</small></div>
     <div class="a2-gcs">${cards}</div>
     ${blocoConclusao('Conclusão por empresa', i=>i.empresa, 'quais empresas estão em dia')}
     ${blocoConclusao('Conclusão por marketplace', i=>i.mkt, 'quais canais estão em dia')}
-    <div class="a2-nota">A ordem da fila não é só o valor parado: uma demanda de R$ 800 esquecida há três semanas cobra mais atenção que uma de R$ 2.000 aberta ontem. Por isso urgência = dinheiro × dias.</div>`;
+    <div class="a2-nota">Prazo para registrar: Prejuízo, Margem e Queima 1 dia · Maturação e Devolução 2 dias (tarefas criadas a partir de 15/10; as anteriores seguem o prazo da época). A ordem da mesa não é só o valor parado: R$ 800 atrasado há uma semana cobra mais que R$ 2.000 atrasado há algumas horas.</div>`;
 }
 
 
