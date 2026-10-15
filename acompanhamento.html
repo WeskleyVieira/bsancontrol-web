@@ -3402,6 +3402,18 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .vd-alvo{margin:9px 0;padding:9px 11px;background:var(--c-s);border:1px dashed var(--c-ln);border-radius:9px;font-size:11.5px;line-height:1.75}
 #ac2-root .vd-t th,#ac2-root .vd-t td{font-size:10.5px;padding:3px 7px}
 #ac2-root .vd-sup{opacity:.72;margin-top:5px;font-size:10.5px;line-height:1.6}
+#ac2-root .vd-reg{background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.3);border-radius:9px;padding:8px 12px;font-size:11.5px;line-height:1.65;margin:2px 0 8px}
+#ac2-root .vd-reg-no{background:var(--c-s);border-color:var(--c-ln)}
+#ac2-root .vd-reg-h{font-size:10.5px;color:var(--c-mut);margin-bottom:2px}
+#ac2-root .vd-reg-obs{font-style:italic;color:var(--c-ink)}
+#ac2-root .vd-ver{background:var(--c-s);border:1px solid var(--c-ln);border-left:3px solid #3b82f6;border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.7;margin:2px 0 10px}
+#ac2-root .vd-ver div+div{margin-top:3px}
+#ac2-root .vd-sub{font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--c-mut);margin:12px 0 5px}
+#ac2-root .vd-ev{margin-top:10px}
+#ac2-root .vd-ev summary{cursor:pointer;font-size:11px;color:var(--c-mut);padding:5px 0}
+#ac2-root .vd-ev summary:hover{color:var(--c-ink)}
+#ac2-root .vd-deg td{vertical-align:middle}
+#ac2-root .vd-deg .a2-tag{margin-right:4px}
 #ac2-root .vd-hist-ab{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin:4px 0 8px}
 #ac2-root .vd-hist-ab>div:not(.vd-hist-seta){background:var(--c-s);border:1px solid var(--c-ln);border-radius:9px;padding:8px 11px;display:flex;flex-direction:column;gap:2px}
 #ac2-root .vd-hist-ab span{font-size:10.5px;color:var(--c-mut)}
@@ -3474,7 +3486,8 @@ ac2.metricsDe=function(l){
     disciplina:l.length?trat.length/l.length:0,   // % das demandas que o gestor registrou (preenchimento = compromisso)
     risco:ab.reduce((s,i)=>s+i.risco,0), recuperado:l.reduce((s,i)=>s+(i.recuperado||0),0), demora:l.reduce((s,i)=>s+(i.demora||0),0),
     mediaReacaoH:reac.length?reac.reduce((a,b)=>a+b,0)/reac.length:null, mediaTratD:trd.length?trd.reduce((a,b)=>a+b,0)/trd.length:null,
-    noPrazo:reac.length?reac.filter(h=>h<=24).length/reac.length:null, hit,
+    noPrazo:(()=>{ const c=l.filter(i=>i.reacaoH!=null); return c.length ? c.filter(i=>i.reacaoH/24<=ac2Prazo(i)).length/c.length : null; })(),
+    atrasadas:l.filter(i=>ac2PrazoInfo(i).atrasada).length, hit,
     semRegistro:l.filter(i=>!i.trat&&i.estado!=='trat'&&i.funcionou==null).length, reincidentes:l.filter(i=>i.rein).length }; };
 ac2.desemp=function(m){ // REGISTRO é pré-requisito: quem não preenche não pode estar bem. Depois cruza rapidez×retorno.
   if(m.total===0) return {k:'gira',t:'Sem dados'};
@@ -3529,6 +3542,7 @@ const AC2_DESDE = '2026-10';
 // de Prejuízo" numa coluna de tabela não cabe nem se lê.
 const AC2_TIPOS = [
   { k:'prejuizo',  curto:'Prejuízo',  cor:'#dc2626', re:/estanca|prejuí|prejui/i, ajuda:'Está vendendo abaixo do custo. É o que sangra agora.' },
+  { k:'devolucao', curto:'Devolução', cor:'#22d3ee', re:/devolu/i, ajuda:'Muita devolução no anúncio: rever qualidade, descrição e fotos, embalagem, transportadora. Preço não resolve.' },
   { k:'margem',    curto:'Margem',    cor:'#f59e0b', re:/correção de margem|correcao de margem/i, ajuda:'Vende bem mas sobra pouco (menos de 10%).' },
   { k:'queima',    curto:'Queima',    cor:'#e879f9', re:/queima/i, ajuda:'Ainda tem margem, mas está caindo. Agir antes de virar prejuízo.' },
   { k:'maturacao', curto:'Maturação', cor:'#4f8ef7', re:/matura/i, ajuda:'Produto novo: trabalhar a margem, não descartar.' },
@@ -3539,6 +3553,25 @@ function ac2PorTipo(l){ const o={}; AC2_TIPOS.forEach(t=>o[t.k]=0); o.outro=0;
   l.forEach(i=>{ o[ac2TipoDe(i.tipo).k]++; }); return o; }
 // "registrada" = o gestor anotou o que fez. É o pré-requisito de tudo: sem registro não há o que medir.
 const ac2Registrada = i => !!i.trat || i.estado==='trat';
+// PRAZO POR TIPO (14/10/2026). Vem de cada tarefa (db-sync grava de metas.json → prazos_dias);
+// o padrão abaixo só cobre tarefa antiga, gravada antes de existir o campo. Antes a régua era 24h para tudo.
+const AC2_PRAZO_PADRAO = { prejuizo:2, devolucao:5, margem:5, queima:7, maturacao:14 };
+const ac2Prazo = i => i.prazo!=null ? +i.prazo : (AC2_PRAZO_PADRAO[ac2TipoDe(i.tipo).k] || 7);
+// situação do prazo: registrada (no prazo / com X dias de atraso) ou em aberto (vence em X / atrasada X)
+function ac2PrazoInfo(i){
+  const p = ac2Prazo(i);
+  if(ac2Registrada(i)){
+    if(i.reacaoH==null) return { txt:'', atrasada:false };
+    const d = i.reacaoH/24 - p;
+    return d > 0 ? { txt:'registrada com '+Math.ceil(d)+' dia(s) de atraso', cor:'#f59e0b', atrasada:false, atrasou:true }
+                 : { txt:'registrada no prazo', cor:'#16a34a', atrasada:false };
+  }
+  if(!i.criado_em) return { txt:'', atrasada:false };
+  const resta = p - (Date.now() - Date.parse(i.criado_em))/864e5;
+  if(resta < 0) return { txt:'⏰ atrasada '+Math.ceil(-resta)+' dia(s) · prazo '+p+'d', cor:'#dc2626', atrasada:true };
+  return { txt:'vence em '+(resta<1?'menos de 1 dia':Math.ceil(resta)+' dia(s)'), cor: resta<1 ? '#f59e0b' : 'var(--c-mut)', atrasada:false };
+}
+const ac2Esc = t => String(t==null?'':t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 // A LENTE GLOBAL (Grupo/Bsan/Powerfull, no topo) TAMBÉM VALE AQUI. Ela ficou de fora quando o
 // Acompanhamento virou aba própria: dava para estar em "Powerfull" e ver os 6 gestores do grupo,
@@ -3870,169 +3903,276 @@ ac2.abrirVendas = async function(k){
   (ac2._vdHist=ac2._vdHist||{})[k] = { i, H: ac2._histCache[hk] || null };
   el.innerHTML = ac2PainelVendas(i, k);
 };
-ac2.histSku = function(k, sku){
-  const s = (ac2._vdHist||{})[k]; const el = document.getElementById(k+'-hist');
-  if(s && el) el.innerHTML = ac2HistHTML(s.i, s.H, decodeURIComponent(sku||''), k);
-};
-// Histórico de preço e margem, mês a mês, + "o que mudou por unidade" entre a média dos meses
-// anteriores e o mês da tarefa. Plataforma vai numa linha só (comissão + frete + taxas = receita −
-// líquido): a divisão comissão×frete mudou de fonte em 2026 (planilha → API) e, separada, mostraria
-// "o frete subiu R$ 5" onde só a classificação mudou. A soma é comparável mês a mês.
-function ac2HistHTML(i, H, skuSel, k){
+// ── TAREFA: TELA DE DECISÃO (14/10/2026 — auditoria do Weskley "se você fosse o gestor") ──────────
+// Ordem: 1 veredito em poucas linhas → 2 opções de preço em degraus, com margem em R$ e o volume que o
+// produto fazia em cada faixa → conta do mês → 3 histórico + o que mudou + plataforma por dentro →
+// 4 evidência recolhida (mês a mês, vendas). 5 mês corrente marcado "parcial".
+// MARGEM EM R$, NÃO SÓ %: subir preço pode subir a % e derrubar o lucro. Abajur Jowcase: mai/26 a
+// R$ 30,93 fez ~R$ 4.390 de margem no mês; jun/26 a R$ 35,67 fez ~R$ 3.270 — metade do volume.
+const AC2_MES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const ac2Rot = m => AC2_MES[+m.slice(5,7)-1]+'/'+m.slice(2,4);
+const ac2Brl = v => 'R$ '+(Math.round(v*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const ac2BrlK = v => 'R$ '+Math.round(v).toLocaleString('pt-BR');
+const ac2Pc = v => (Math.round(v*10)/10).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+const ac2Dt = d => String(d||'').slice(0,10).split('-').reverse().slice(0,2).join('/');
+
+// meses do anúncio (do /api/historico ou, offline, do DETALHE carregado), com filtro de SKU
+function ac2HistMeses(i, H, skuSel){
   let L = H && Array.isArray(H.linhas) ? H.linhas : null;
-  if(!L){                                            // offline: agrega o DETALHE carregado
+  if(!L){
     const D = (typeof DETALHE!=='undefined' && Array.isArray(DETALHE)) ? DETALHE : [];
     const g = {};
     D.filter(r => r.emp===i.empresa && r.mkt===i.mkt && (i.anuncio ? r.anuncio===i.anuncio : r.sku===i.sku) && /venda/i.test(r.stat||'venda'))
      .forEach(r => { const m=String(r.date||'').slice(0,7), key=m+'|'+(r.sku||'');
-       const o = g[key] || (g[key] = {mes:m, sku:r.sku||'', qtd:0, fat:0, liq:0, imp:0, ctp:0, mc:0});
-       o.qtd += +r.qtd||0; o.fat += +r.fat||0; o.liq += +r.liq||0; o.imp += +r.imp||0; o.ctp += +r.ctp||0; o.mc += +(r.mcReal!=null?r.mcReal:r.mc)||0; });
+       const o = g[key] || (g[key] = {mes:m, sku:r.sku||'', qtd:0, fat:0, liq:0, imp:0, ctp:0, mc:0, comis:0, tarif:0});
+       o.qtd += +r.qtd||0; o.fat += +r.fat||0; o.liq += +r.liq||0; o.imp += +r.imp||0; o.ctp += +r.ctp||0;
+       o.mc += +(r.mcReal!=null?r.mcReal:r.mc)||0; o.comis += Math.abs(+r.comis||0); o.tarif += Math.abs(+r.tarif||0); });
     L = Object.values(g);
   }
-  if(!L.length) return '';
   const skus = [...new Set(L.map(x=>x.sku))].filter(Boolean).sort();
-  const LL = skuSel ? L.filter(x=>x.sku===skuSel) : L;
   const M = {};
-  LL.forEach(x => { const o = M[x.mes] || (M[x.mes] = {mes:x.mes, qtd:0, fat:0, liq:0, imp:0, ctp:0, mc:0});
-    ['qtd','fat','liq','imp','ctp','mc'].forEach(f => o[f] += +x[f]||0); });
+  (skuSel ? L.filter(x=>x.sku===skuSel) : L).forEach(x => {
+    const o = M[x.mes] || (M[x.mes] = {mes:x.mes, qtd:0, fat:0, liq:0, imp:0, ctp:0, mc:0, comis:0, tarif:0});
+    ['qtd','fat','liq','imp','ctp','mc','comis','tarif'].forEach(f => o[f] += +x[f]||0); });
   const meses = Object.values(M).filter(m=>m.qtd>0).sort((a,b)=>a.mes.localeCompare(b.mes));
-  const comp = i.competencia || (meses.length ? meses[meses.length-1].mes : '');
-  const brl = v => 'R$ '+(Math.round(v*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const MES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-  const rot = m => MES[+m.slice(5,7)-1]+'/'+m.slice(2,4);
-  const uni = o => { const q = o.qtd||1; return { preco:o.fat/q, plat:(o.fat-o.liq)/q, imp:o.imp/q, ctp:o.ctp/q,
-    outros:(o.liq-o.imp-o.ctp-o.mc)/q, marg:o.mc/q, pct: o.fat ? 100*o.mc/o.fat : 0 }; };
-  const meta = +i.meta||0;
+  return { skus, M, meses };
+}
+const ac2Uni = o => { const q = o.qtd||1; return { preco:o.fat/q, plat:(o.fat-o.liq)/q, imp:o.imp/q, ctp:o.ctp/q,
+  outros:(o.liq-o.imp-o.ctp-o.mc)/q, marg:o.mc/q, pct: o.fat ? 100*o.mc/o.fat : 0,
+  comis:(o.comis||0)/q, frete:(o.tarif||0)/q, taxas:((o.fat-o.liq)-(o.comis||0)-(o.tarif||0))/q }; };
+const ac2Soma = arr => arr.reduce((a,m)=>{ ['qtd','fat','liq','imp','ctp','mc','comis','tarif'].forEach(f=>a[f]+=+m[f]||0); return a; },
+  {qtd:0,fat:0,liq:0,imp:0,ctp:0,mc:0,comis:0,tarif:0});
+
+ac2.histSku = function(k, sku){
+  const s = (ac2._vdHist||{})[k]; const el = document.getElementById(k+'-hist');
+  if(s && el && s.ctx) el.innerHTML = ac2HistHTML(s.ctx, decodeURIComponent(sku||''), k);
+};
+
+// 3 — histórico: antes × agora, o que mudou por unidade, a plataforma por dentro e (recolhido) mês a mês
+function ac2HistHTML(ctx, skuSel, k){
+  const i = ctx.i, { skus, M, meses } = ac2HistMeses(i, ctx.H, skuSel);
+  if(!meses.length) return '';
+  const comp = ctx.comp, meta = +i.meta||0;
   const corPct = p => p < 0 ? '#dc2626' : p < 10 ? '#f59e0b' : (meta && p >= meta) ? '#22c55e' : 'var(--t1)';
   const atual = M[comp], antes = meses.filter(m=>m.mes<comp);
-  // ── antes × agora + o que mudou ──
-  let topo = '';
+  const parcialTxt = ctx.parcial ? ` (parcial, até ${ac2Dt(ctx.ultimaData)})` : '';
+  let corpo = '';
   if(atual && antes.length){
-    const ref = antes.reduce((a,m)=>{ ['qtd','fat','liq','imp','ctp','mc'].forEach(f=>a[f]+=m[f]); return a; }, {qtd:0,fat:0,liq:0,imp:0,ctp:0,mc:0});
-    const A = uni(ref), N = uni(atual);
+    const A = ac2Uni(ac2Soma(antes)), N = ac2Uni(atual), qAntes = ac2Soma(antes).qtd;
     const efeitos = [   // efeito NA MARGEM por unidade: preço sobe = bom; custo sobe = ruim
       ['Preço de venda', N.preco - A.preco], ['Plataforma (comissão, frete, taxas)', -(N.plat - A.plat)],
       ['Imposto', -(N.imp - A.imp)], ['Custo do produto', -(N.ctp - A.ctp)], ['Entrega própria e outros', -(N.outros - A.outros)] ];
-    const pior = efeitos.slice().sort((a,b)=>a[1]-b[1])[0];
     const falta = A.marg - N.marg;
     const ef = efeitos.filter(e=>Math.abs(e[1])>=0.005).map(([r,v]) =>
-      `<div class="vd-l"><span>${r}</span><b style="color:${v<0?'#dc2626':'#22c55e'}">${v<0?'−':'+'}${brl(Math.abs(v))}/un</b>
-        <i></i><u>${v<0?'tirou':'deu'} margem</u></div>`).join('');
-    topo = `<div class="vd-hist-ab">
-        <div><span>Antes · ${rot(antes[0].mes)}–${rot(antes[antes.length-1].mes)} · ${Math.round(ref.qtd).toLocaleString('pt-BR')} un</span>
-          <b>${brl(A.preco)}/un</b><em style="color:${corPct(A.pct)}">margem ${A.pct.toFixed(1)}% · ${brl(A.marg)}/un</em></div>
+      `<div class="vd-l"><span>${r}</span><b style="color:${v<0?'#dc2626':'#22c55e'}">${v<0?'−':'+'}${ac2Brl(Math.abs(v))}/un</b><i></i><u>${v<0?'tirou':'deu'} margem</u></div>`).join('');
+    corpo += `<div class="vd-hist-ab">
+        <div><span>Antes · ${ac2Rot(antes[0].mes)}–${ac2Rot(antes[antes.length-1].mes)} · ${Math.round(qAntes).toLocaleString('pt-BR')} un</span>
+          <b>${ac2Brl(A.preco)}/un</b><em style="color:${corPct(A.pct)}">margem ${ac2Pc(A.pct)} · ${ac2Brl(A.marg)}/un</em></div>
         <div class="vd-hist-seta">→</div>
-        <div><span>Agora · ${rot(comp)} · ${Math.round(atual.qtd).toLocaleString('pt-BR')} un</span>
-          <b>${brl(N.preco)}/un</b><em style="color:${corPct(N.pct)}">margem ${N.pct.toFixed(1)}% · ${brl(N.marg)}/un</em></div>
+        <div><span>Agora · ${ac2Rot(comp)}${parcialTxt} · ${Math.round(atual.qtd).toLocaleString('pt-BR')} un</span>
+          <b>${ac2Brl(N.preco)}/un</b><em style="color:${corPct(N.pct)}">margem ${ac2Pc(N.pct)} · ${ac2Brl(N.marg)}/un</em></div>
       </div>
-      ${falta > 0.005
-        ? `<div class="vd-hist-falta">Para voltar à margem de antes faltam <b>${brl(falta)} por unidade</b>
-            — no ritmo de ${rot(comp)}, <b>${brl(falta*atual.qtd)}</b> no mês.
-            ${pior && pior[1] < -0.005 ? `O que mais tirou: <b>${pior[0].toLowerCase()}</b> (${brl(Math.abs(pior[1]))}/un).` : ''}</div>`
-        : `<div class="vd-hist-falta">A margem por unidade está igual ou acima da média dos meses anteriores.</div>`}
-      <div class="vd-g" style="margin-top:6px"><div class="vd-l" style="opacity:.7"><span>O que mudou por unidade (agora × antes)</span><b></b><i></i><u></u></div>${ef}
-        <div class="vd-l tot"><span>Margem por unidade</span><b style="color:${falta>0?'#dc2626':'#22c55e'}">${falta>0?'−':'+'}${brl(Math.abs(falta))}/un</b><i></i><u></u></div></div>`;
-  } else if(atual) topo = `<div class="vd-hist-falta">Sem vendas nos meses anteriores — não há histórico para comparar.</div>`;
+      <div class="vd-g"><div class="vd-l" style="opacity:.75"><span>O que mudou por unidade (agora × antes)</span><b></b><i></i><u></u></div>${ef}
+        <div class="vd-l tot"><span>Margem por unidade</span><b style="color:${falta>0?'#dc2626':'#22c55e'}">${falta>0?'−':'+'}${ac2Brl(Math.abs(falta))}/un</b><i></i><u></u></div></div>`;
+    // a plataforma por dentro: só contra os 3 meses ANTERIORES — a estrutura de tarifa do marketplace
+    // muda (no ML, a divisão comissão × frete mudou em 2026); comparar com 12 meses misturaria regras.
+    const ult = antes.slice(-3);
+    if(ult.length && (atual.comis || atual.tarif)){
+      const R = ac2Uni(ac2Soma(ult));
+      const dif = [['comissão', N.comis - R.comis], ['frete', N.frete - R.frete], ['taxas e créditos', N.taxas - R.taxas]]
+        .sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]))[0];
+      const linhaP = (rot, u, cur) => `<tr${cur?' class="vd-hist-cur"':''}><td>${rot}</td><td class="r">${ac2Brl(u.comis)}</td><td class="r">${ac2Brl(u.frete)}</td>
+        <td class="r" style="color:${u.taxas<0?'#22c55e':'var(--t1)'}">${u.taxas<0?'−':''}${ac2Brl(Math.abs(u.taxas))}</td><td class="r"><b>${ac2Brl(u.plat)}</b></td></tr>`;
+      corpo += `<div class="vd-sub">A plataforma por dentro (por unidade)</div>
+        <div class="tbl-wrap"><table class="tbl a2-tbl vd-t"><thead><tr><th>Mês</th><th class="r">Comissão</th><th class="r">Frete</th><th class="r">Taxas e créditos</th><th class="r">Plataforma</th></tr></thead><tbody>
+        ${ult.map(m=>linhaP(ac2Rot(m.mes), ac2Uni(m), false)).join('')}${linhaP(ac2Rot(comp)+(ctx.parcial?' · parcial':''), N, true)}</tbody></table></div>
+        <div class="vd-sup">${Math.abs(dif[1]) >= 0.05
+          ? `Contra os 3 meses anteriores, o que mais mudou na plataforma foi <b>${dif[0]}</b>: ${dif[1]>0?'+':'−'}${ac2Brl(Math.abs(dif[1]))}/un${dif[0]==='taxas e créditos'?' (negativo = crédito a seu favor: bônus Flex, ressarcimentos; quando ele encolhe, a plataforma "sobe")':''}.`
+          : 'A plataforma por unidade está estável contra os 3 meses anteriores.'}</div>`;
+    }
+  } else if(atual) corpo += `<div class="vd-hist-falta">Sem vendas nos meses anteriores — não há histórico para comparar; vale só a meta.</div>`;
   const chips = skus.length > 1 ? `<div class="vd-hist-chips">${['',...skus].map(sk =>
       `<button class="${(skuSel||'')===sk?'on':''}" onclick="event.stopPropagation();ac2.histSku('${k}','${encodeURIComponent(sk)}')">${sk||'Todos os SKUs'}</button>`).join('')}</div>` : '';
-  const linhas = meses.slice().reverse().map(m => { const u = uni(m);
-    return `<tr${m.mes===comp?' class="vd-hist-cur"':''}><td>${rot(m.mes)}</td><td class="r">${Math.round(m.qtd)}</td>
-      <td class="r"><b>${brl(u.preco)}</b></td><td class="r">${brl(u.plat)}</td><td class="r">${brl(u.imp)}</td><td class="r">${brl(u.ctp)}</td>
-      <td class="r" style="color:${u.marg<0?'#dc2626':'var(--t1)'}">${brl(u.marg)}</td><td class="r" style="color:${corPct(u.pct)};font-weight:700">${u.pct.toFixed(1)}%</td></tr>`; }).join('');
-  return `<div class="vd-h" style="margin-top:12px">Histórico de preço e margem · ${i.anuncio ? 'anúncio '+i.anuncio : 'SKU '+(i.sku||'')}${skuSel?' · '+skuSel:''}</div>
-    ${chips}${topo}
-    <div class="tbl-wrap" style="max-height:230px;margin-top:8px"><table class="tbl a2-tbl vd-t"><thead><tr>
-      <th>Mês</th><th class="r">Un</th><th class="r">Preço/un</th><th class="r">Plataforma/un</th><th class="r">Imposto/un</th><th class="r">Custo/un</th><th class="r">Margem/un</th><th class="r">Margem %</th>
-    </tr></thead><tbody>${linhas}</tbody></table></div>
-    <div class="vd-sup">Plataforma = tudo o que o marketplace retém (comissão + frete + taxas). Por unidade, para comparar meses com volumes diferentes.${meta?` Verde = na meta de ${meta}%.`:''}</div>`;
+  // 4 — mês a mês, recolhido; com a margem TOTAL em R$ de cada mês (o lucro, não só a %)
+  const linhas = meses.slice().reverse().map(m => { const u = ac2Uni(m), cur = m.mes===comp;
+    return `<tr${cur?' class="vd-hist-cur"':''}><td>${ac2Rot(m.mes)}${cur&&ctx.parcial?' · parcial':''}</td><td class="r">${Math.round(m.qtd)}</td>
+      <td class="r"><b>${ac2Brl(u.preco)}</b></td><td class="r">${ac2Brl(u.plat)}</td><td class="r">${ac2Brl(u.imp)}</td><td class="r">${ac2Brl(u.ctp)}</td>
+      <td class="r">${ac2Brl(u.marg)}</td><td class="r" style="color:${corPct(u.pct)};font-weight:700">${ac2Pc(u.pct)}</td>
+      <td class="r"><b>${ac2BrlK(m.mc)}</b></td></tr>`; }).join('');
+  return `<div class="vd-h" style="margin-top:12px">Histórico · ${i.anuncio ? 'anúncio '+i.anuncio : 'SKU '+(i.sku||'')}${skuSel?' · '+skuSel:''}</div>
+    ${chips}${corpo}
+    <details class="vd-ev"><summary>Mês a mês · ${meses.length} meses (preço, custos e margem total)</summary>
+      <div class="tbl-wrap" style="max-height:260px;margin-top:6px"><table class="tbl a2-tbl vd-t"><thead><tr>
+        <th>Mês</th><th class="r">Un</th><th class="r">Preço/un</th><th class="r">Plataforma/un</th><th class="r">Imposto/un</th><th class="r">Custo/un</th><th class="r">Margem/un</th><th class="r">Margem %</th><th class="r">Margem no mês</th>
+      </tr></thead><tbody>${linhas}</tbody></table></div>
+      <div class="vd-sup">Plataforma = tudo o que o marketplace retém (comissão + frete + taxas − créditos). "Margem no mês" é o lucro em R$: compare antes de subir o preço — mais % com menos volume pode dar menos dinheiro.${meta?` Verde = na meta de ${meta}%.`:''}</div>
+    </details>`;
+}
+
+// o que o gestor respondeu (14/10/2026: antes só a AÇÃO aparecia, num selo; causa e observação
+// estavam no banco e em lugar nenhum da tela)
+function ac2RegistroHTML(i){
+  const pi = ac2PrazoInfo(i);
+  if(!i.registro) return pi.txt ? `<div class="vd-reg vd-reg-no"><b>Sem registro do gestor.</b> <span style="color:${pi.cor}">${pi.txt}</span></div>` : '';
+  const r = i.registro, quando = r.em ? new Date(r.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+  return `<div class="vd-reg"><div class="vd-reg-h">Registro do gestor${r.gestor?' · '+ac2Esc(r.gestor):''}${quando?' · '+quando:''}${r.n>1?' · '+r.n+' registros (mostrando o último)':''}${pi.txt?` · <span style="color:${pi.cor}">${pi.txt}</span>`:''}</div>
+    <div><b>Ação:</b> ${ac2Esc(r.acao)}${r.causa?' · <b>Causa:</b> '+ac2Esc(r.causa):''}</div>${r.obs?`<div class="vd-reg-obs">"${ac2Esc(r.obs)}"</div>`:''}</div>`;
+}
+// tarefa de DEVOLUÇÃO: o problema não é preço — mostra as devoluções e o que checar
+function ac2PainelDevolucao(i){
+  const D = (typeof DETALHE!=='undefined' && Array.isArray(DETALHE)) ? DETALHE : [], comp = i.competencia || '';
+  const doAn = r => r.emp===i.empresa && r.mkt===i.mkt && (i.anuncio ? r.anuncio===i.anuncio : r.sku===i.sku) && String(r.date||'').slice(0,7)===comp;
+  const dv = D.filter(r => doAn(r) && /devolv/i.test(r.stat||'')), vd = D.filter(r => doAn(r) && /venda/i.test(r.stat||'venda'));
+  const perda = dv.reduce((s,r)=>s+(+(r.mcReal!=null?r.mcReal:r.mc)||0),0);
+  const lin = dv.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r => `<tr><td>${String(r.date||'').split('-').reverse().join('/')}</td>
+    <td style="font-family:ui-monospace,monospace;font-size:10px">${r.ped||''}</td><td>${ac2Esc(r.sku||'')}</td><td class="r">${ac2Brl(+r.fat||0)}</td>
+    <td class="r" style="color:${(+(r.mcReal!=null?r.mcReal:r.mc)||0)<0?'#dc2626':'var(--t1)'}">${ac2Brl(+(r.mcReal!=null?r.mcReal:r.mc)||0)}</td></tr>`).join('');
+  return `<div class="vd-h">Devoluções · ${i.anuncio || i.sku || ''}</div>${ac2RegistroHTML(i)}
+    <div class="vd-ver"><div>${ac2Esc(i.causa||'')} em ${ac2Rot(comp)}. O que a devolução custou ao vendedor: <b>${ac2Brl(Math.min(0,perda))}</b> (frete de volta e tarifas que não voltaram; a mercadoria volta ao estoque).</div>
+      <div><b>Preço não resolve devolução.</b> Cheque nesta ordem: o produto chega como o anúncio promete (fotos, medidas, voltagem, cor)? A embalagem protege? Há defeito de lote? A transportadora atrasa ou avaria? O motivo do comprador está na plataforma, em cada devolução.</div></div>
+    ${lin ? `<div class="tbl-wrap" style="max-height:220px"><table class="tbl a2-tbl vd-t"><thead><tr><th>Data</th><th>Nº da venda</th><th>SKU</th><th class="r">Valor</th><th class="r">Resultado</th></tr></thead><tbody>${lin}</tbody></table></div>`
+          : '<div class="vd-x">As devoluções deste mês não estão no período carregado.</div>'}
+    <div class="vd-sup">${vd.length} venda(s) concluída(s) do anúncio no mesmo mês, para comparar.</div>`;
 }
 function ac2PainelVendas(i, k){
+  if(ac2TipoDe(i.tipo).k==='devolucao') return ac2PainelDevolucao(i);
   const D = (typeof DETALHE!=='undefined' && Array.isArray(DETALHE)) ? DETALHE : [];
   const comp = i.competencia || '';
-  const vd = D.filter(r => r.emp===i.empresa && r.mkt===i.mkt
-    && (i.anuncio ? r.anuncio===i.anuncio : r.sku===i.sku)
-    && (!comp || String(r.date||'').slice(0,7)===comp)
-    && /venda/i.test(r.stat||'venda'));
+  const doAnuncio = r => r.emp===i.empresa && r.mkt===i.mkt && (i.anuncio ? r.anuncio===i.anuncio : r.sku===i.sku) && /venda/i.test(r.stat||'venda');
+  const vd = D.filter(r => doAnuncio(r) && (!comp || String(r.date||'').slice(0,7)===comp));
   const linkRx = `<button class="a2-btn-lin" onclick="event.stopPropagation();ac2.verVendas('${encodeURIComponent(i.sku||'')}','${encodeURIComponent(i.empresa||'')}','${encodeURIComponent(i.mkt||'')}')">ver o histórico no Raio-X →</button>`;
   if(!vd.length) return `<div class="vd-x">Não achei as vendas desta demanda no período carregado. ${linkRx}</div>`;
   const S = (f) => vd.reduce((s,r)=>s+(+r[f]||0),0);
   const fat=S('fat'), liq=S('liq'), imp=S('imp'), ctp=S('ctp'), qtd=S('qtd')||vd.length;
   const plat = fat - liq;                       // o que a plataforma reteve (comissão + frete + taxas)
-  // separa o que ESCALA com o preço do que NÃO escala. Comissão é %; tarifa de envio é R$ por
-  // remessa. Sem a abertura (offline, ou canal não aberto), assumimos tudo proporcional e DIZEMOS isso.
+  // separa o que ESCALA com o preço (comissão, taxas: %) do que NÃO escala (frete: R$ por remessa).
   const temAb = vd.some(r=>r.comis!=null||r.tarif!=null);
   const comis = temAb ? Math.abs(S('comis')) : 0;
   const freteFixo = temAb ? Math.abs(S('tarif')) : 0;
-  const restoPlat = Math.max(0, plat - comis - freteFixo);   // taxas de pagamento e afins: proporcional
-  // A MARGEM É A `mcReal`, não `liq − imp − ctp`. A diferença entre as duas é o custo que não cabe
-  // em nenhuma das três linhas — motoboy do Flex, principalmente. Fechar a conta sem ele dava um
-  // número mais bonito que o da própria tarefa (−10,3% contra os −15,3% reais).
+  const restoPlat = Math.max(0, plat - comis - freteFixo);
+  // A MARGEM É A `mcReal` (com motoboy), a mesma da tarefa.
   const mc = S('mcReal');
   const outros = (liq - imp - ctp) - mc;
   const pct = v => fat ? (100*v/fat) : 0;
   const un = v => qtd ? v/qtd : 0;
-  const brl = v => 'R$ '+(Math.round(v*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  // alvo: quanto a receita teria de ser para a margem bater a meta, mantendo as TAXAS proporcionais
-  // e o custo do produto fixo.  fat*(1-c-t) - ctp = meta*fat  →  fat = ctp / (1-c-t-meta)
-  // taxa PROPORCIONAL = comissão + taxas de pagamento (escalam com o preço).
-  // CUSTO FIXO = frete da remessa + produto + motoboy (não mudam se o preço mudar).
-  const c = fat ? (temAb ? (comis+restoPlat)/fat : plat/fat) : 0;
-  const t = fat?imp/fat:0, m = (+i.meta||0)/100;
+  const c = fat ? (temAb ? (comis+restoPlat)/fat : plat/fat) : 0;      // proporcional ao preço
+  const t = fat ? imp/fat : 0, meta = +i.meta||0, m = meta/100;
+  const fixoUn = un(ctp + outros + freteFixo);                          // não muda com o preço
+  const mUn = P => P*(1-c-t) - fixoUn;                                   // margem/un a um preço P, estrutura de hoje
   const folga = 1 - c - t - m;
+  const pMeta = folga > 0.0001 ? fixoUn/folga : null;
+  const custoAlvo = fat*folga - outros - freteFixo;
+  // 5 — mês parcial: até a última venda carregada
+  const ultimaData = vd.reduce((a,r)=>String(r.date)>a?String(r.date):a, '');
+  const [yy,mm,dd] = ultimaData.slice(0,10).split('-').map(Number);
+  const dim = new Date(Date.UTC(yy, mm, 0)).getUTCDate();
+  const parcial = comp && ultimaData.slice(0,7)===comp && dd < dim;
+  const fator = parcial ? dim/dd : 1;
+  // preços praticados (por venda) e desde quando o preço de hoje vale
+  const pu = r => Math.round(100*(+r.fat||0)/Math.max(1,+r.qtd||1))/100;
+  const pts = {}; vd.forEach(r => { const p = pu(r); pts[p] = (pts[p]||0)+1; });
+  const ptsOrd = Object.entries(pts).map(([p,n])=>[+p,n]).sort((a,b)=>b[1]-a[1]);
+  const pm = ptsOrd[0][0], pmShare = ptsOrd[0][1]/vd.length;
+  let desde = '';
+  { const todas = D.filter(doAnuncio).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    let ix = -1; todas.forEach((r,j)=>{ if(pu(r) > pm + 0.5) ix = j; });
+    if(ix >= 0 && ix < todas.length-1) desde = String(todas[ix+1].date);
+    else if(ix < 0 && todas.length) desde = 'antes de '+ac2Dt(todas[0].date); }
+  const H = ((ac2._vdHist||{})[k]||{}).H || null;
+  const ctx = { i, H, comp, parcial, ultimaData };
+  (ac2._vdHist=ac2._vdHist||{})[k] = Object.assign((ac2._vdHist||{})[k]||{}, { i, H, ctx });
+  // histórico (para o veredito e para o volume por faixa de preço)
+  const { M, meses } = ac2HistMeses(i, H, '');
+  const antes = meses.filter(x=>x.mes<comp), A = antes.length ? ac2Uni(ac2Soma(antes)) : null, N = M[comp] ? ac2Uni(M[comp]) : null;
+  // volume que o produto fazia perto de um preço (meses fechados com preço médio a ±R$ 0,80)
+  // só os 6 meses fechados mais recentes: 12 meses misturava sazonalidade (nov/dez) e mercado antigo
+  const volEm = P => { const ms = antes.slice(-6).filter(x => Math.abs(x.fat/x.qtd - P) <= 0.8);
+    return ms.length ? { un: ms.reduce((s,x)=>s+x.qtd,0)/ms.length, meses: ms.map(x=>ac2Rot(x.mes)) } : null; };
+  const unMesHoje = qtd*fator;
+
+  // ── 1 — VEREDITO ──
+  const ve = [];
+  ve.push(pmShare >= 0.6
+    ? `Hoje sai a <b>${ac2Brl(pm)}</b> em ${Math.round(100*pmShare)}% das vendas${desde?` (${/antes/.test(desde)?desde:'desde '+ac2Dt(desde)})`:''}.`
+    : `Hoje sai em vários preços: <b>${ac2Brl(ptsOrd[0][0])}</b> em ${Math.round(100*ptsOrd[0][1]/vd.length)}% das vendas`
+      + (ptsOrd[1] ? ` e <b>${ac2Brl(ptsOrd[1][0])}</b> em ${Math.round(100*ptsOrd[1][1]/vd.length)}%` : '') + ` — médio ${ac2Brl(un(fat))}.`);
+  if(A){
+    const mAntes = mUn(A.preco), pAntes = 100*mAntes/A.preco;
+    const piora = N ? [['a plataforma', -(N.plat - A.plat)], ['o imposto', -(N.imp - A.imp)], ['o custo do produto', -(N.ctp - A.ctp)], ['a entrega própria', -(N.outros - A.outros)]]
+      .sort((a,b)=>a[1]-b[1])[0] : null;
+    ve.push(`Antes vendia a <b>${ac2Brl(A.preco)}</b> com ${ac2Pc(A.pct)} de margem. Voltar a ${ac2Brl(A.preco)} hoje daria <b>${ac2Pc(pAntes)}</b>`
+      + (pAntes + 0.05 < meta
+          ? ` — <b style="color:#f59e0b">não basta para a meta de ${meta}%</b>${piora && piora[1] < -0.05 ? `, porque ${piora[0]} pesa ${ac2Brl(Math.abs(piora[1]))}/un a mais que antes` : ''}.`
+          : ` — chega à meta de ${meta}%.`));
+  } else ve.push('Produto sem vendas em meses anteriores: compare só com a meta.');
+  ve.push(`Lucro do anúncio em ${ac2Rot(comp)}: <b>${ac2BrlK(mc)}</b>${parcial?` até ${ac2Dt(ultimaData)} (≈ <b>${ac2BrlK(mc*fator)}</b> no mês fechado, no ritmo atual)`:''}.`
+    + ` Distância até a meta no que já vendeu: <b>${ac2BrlK(+i.risco||Math.max(0, fat*m - mc))}</b> — é o "em risco" da tarefa.`);
+
+  // ── 2 — OPÇÕES DE PREÇO EM DEGRAUS ──
+  const r90 = p => Math.ceil(p - 0.9) + 0.9;               // menor preço terminado em ,90 que seja >= p
+  let cands = [[Math.round(un(fat)*100)/100, 'hoje']];   // preço médio real: o lucro desta linha = o do veredito
+  if(A) cands.push([Math.round(A.preco*100)/100, 'preço de antes']);
+  if(pMeta){ cands.push([r90((pm + pMeta)/2), '']); cands.push([r90(pMeta), 'bate a meta']); }
+  cands = cands.filter(([p]) => p > 0).sort((a,b)=>a[0]-b[0])
+    .reduce((acc,cur)=>{ const ult = acc[acc.length-1]; if(ult && Math.abs(ult[0]-cur[0]) < 0.15){ if(cur[1] && !ult[1]) ult[1]=cur[1]; else if(cur[1] && ult[1] && ult[1]!==cur[1]) ult[1]+=' · '+cur[1]; } else acc.push(cur.slice()); return acc; }, []);
+  const linhasD = cands.map(([P, rot]) => {
+    const mu = mUn(P), pc = 100*mu/P, v = rot==='hoje' ? { un: unMesHoje, meses: ['ritmo atual'] } : volEm(P);
+    return { P, rot, mu: rot==='hoje' ? un(mc) : mu, pc: rot==='hoje' ? pct(mc) : pc, v,
+      lucro: rot==='hoje' ? mc*fator : (v ? mu*v.un : null) }; });   // hoje = o real, igual ao veredito
+  const forte = x => x.rot==='hoje' || (x.v && x.v.meses.length >= 2);
+  const melhor = linhasD.filter(x=>x.lucro!=null && forte(x)).sort((a,b)=>b.lucro-a.lucro)[0];
+  const corD = p => p < 0 ? '#dc2626' : p < 10 ? '#f59e0b' : (meta && p >= meta) ? '#22c55e' : 'var(--t1)';
+  const ml = /mercado livre/i.test(i.mkt||'');
+  const degraus = pMeta || A ? `<div class="vd-sub">Opções de preço · margem com a estrutura de custo de hoje</div>
+    <div class="tbl-wrap"><table class="tbl a2-tbl vd-t vd-deg"><thead><tr><th>Preço</th><th></th><th class="r">Margem/un</th><th class="r">Margem %</th><th class="r">Vendia nessa faixa</th><th class="r">Lucro/mês estimado</th></tr></thead><tbody>
+    ${linhasD.map(x => `<tr${x.rot==='hoje'?' class="vd-hist-cur"':''}><td><b>${ac2Brl(x.P)}</b></td>
+      <td>${x.rot?`<span class="a2-tag">${x.rot}</span>`:''}${ml && x.P >= 79 && pm < 79 ? '<span class="a2-tag" style="color:#f59e0b">≥ R$ 79: frete grátis obrigatório muda a conta</span>':''}${melhor && x===melhor && linhasD.filter(y=>y.lucro!=null && forte(y)).length>1 ? '<span class="a2-tag" style="color:#22c55e">★ maior lucro</span>':''}</td>
+      <td class="r">${ac2Brl(x.mu)}</td><td class="r" style="color:${corD(x.pc)};font-weight:700">${ac2Pc(x.pc)}</td>
+      <td class="r">${x.v ? `~${Math.round(x.v.un)} un/mês <span style="opacity:.6">(${x.v.meses.join(', ')})</span>` : '<span style="opacity:.6">sem histórico nessa faixa</span>'}</td>
+      <td class="r">${x.lucro==null ? '—' : forte(x) ? `<b>${ac2BrlK(x.lucro)}</b>` : `<span style="opacity:.55" title="estimativa apoiada em um único mês">${ac2BrlK(x.lucro)} · 1 mês só</span>`}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="vd-sup">${pMeta ? '' : `<b style="color:#f59e0b">A meta de ${meta}% não fecha só com preço</b>: plataforma (${ac2Pc(100*c)}) e imposto (${ac2Pc(100*t)}) já levam ${ac2Pc(100*(c+t))} da venda — renegociar custo, mudar tipo de anúncio/frete ou pausar. `}
+      ${custoAlvo > 0 && ctp > 0 && pMeta ? `Ou, sem mexer no preço: custo de <b>${ac2Brl(un(ctp))}</b> para <b style="color:#22c55e">${ac2Brl(un(custoAlvo))}</b> por unidade bate a meta. ` : ''}
+      "Vendia nessa faixa" = média dos meses, entre os 6 últimos fechados, em que o preço médio esteve a ±R$ 0,80. É referência do passado, não promessa: estoque, Ads, concorrência e sazonalidade mexem no volume. A ★ só aparece com 2 meses ou mais de evidência.${temAb ? '' : ' ⚠ Sem a abertura deste canal, toda a retenção da plataforma foi tratada como % — a conta fica otimista se houver frete fixo.'}</div>` : '';
+
+  // ── conta do mês (o que já existia) ──
   const linha = (rot,v,cor,neg) => `<div class="vd-l"><span>${rot}</span>
-    <b style="color:${cor||'var(--t1)'}">${neg?'−':''}${brl(Math.abs(v))}</b>
+    <b style="color:${cor||'var(--t1)'}">${neg?'−':''}${ac2Brl(Math.abs(v))}</b>
     <i>${neg?'−':''}${Math.abs(pct(v)).toFixed(1)}%</i>
-    <u>${neg?'−':''}${brl(Math.abs(un(v)))}/un</u></div>`;
-  // os dois caminhos: subir preço OU baixar custo. `outros` (motoboy) entra como custo fixo —
-  // ignorá-lo faria o alvo sair otimista, que é justamente o erro que se quer evitar aqui.
-  const fixo = ctp + outros + freteFixo;        // o frete da remessa entra aqui: é R$, não %
-  const fatAlvo = fixo/folga, custoAlvo = fat*folga - outros - freteFixo;
-  const subir = fat ? (100*(fatAlvo/fat - 1)) : 0;
-  const cair  = ctp ? (100*(1 - custoAlvo/ctp)) : 0;
-  const alvos = folga > 0.0001
-    ? `<div class="vd-alvo"><b>Para chegar na meta de ${i.meta}%, um dos dois:</b>
-        <div>• <b>preço</b> de <b>${brl(un(fat))}</b> para <b style="color:#22c55e">${brl(un(fatAlvo))}</b> por unidade
-          <span style="opacity:.65">(${subir>0?'+':''}${subir.toFixed(0)}%)</span></div>
-        <div>• <b>custo</b> de <b>${brl(un(ctp))}</b> para <b style="color:#22c55e">${brl(un(custoAlvo))}</b> por unidade
-          <span style="opacity:.65">(${cair>0?'−':'+'}${Math.abs(cair).toFixed(0)}%)</span></div>
-        <div class="vd-sup">${temAb
-          ? 'Comissão e imposto escalam com o preço; a tarifa de envio e o custo do produto entram como valor fixo.'
-          : '⚠ Sem a abertura deste canal, tratei TODA a retenção da plataforma como percentual — o alvo fica otimista se houver tarifa fixa de envio.'}
-          ${/mercado livre/i.test(i.mkt||'') && un(fat) < 79 && un(fatAlvo) >= 79
-            ? '<br><b style="color:#f59e0b">⚠ O preço-alvo cruza o limiar de frete grátis obrigatório do Mercado Livre.</b> Acima dele o frete passa a ser por sua conta, e esta conta deixa de valer — simule o preço novo antes de aplicar.'
-            : ''}</div>
-      </div>`
-    : `<div class="vd-alvo"><b style="color:#f59e0b">A meta de ${i.meta}% não fecha só com preço.</b>
-        A plataforma (${pct(plat).toFixed(1)}%) e o imposto (${pct(imp).toFixed(1)}%) já consomem
-        ${(100*(c+t)).toFixed(1)}% da venda. Sobram ${(100*(1-c-t)).toFixed(1)}% para custo + margem —
-        é caso de renegociar custo, mudar o tipo de anúncio/frete, ou pausar.</div>`;
-  const vendas = vd.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r=>{
-    const mcR = r.mcReal!=null ? +r.mcReal : (+r.liq||0)-(+r.imp||0)-(+r.ctp||0);   // mesma margem do topo (com motoboy)
-    return `<tr><td>${String(r.date||'').split('-').reverse().join('/')}</td>
-      <td style="font-family:ui-monospace,monospace;font-size:10px">${r.ped||''}</td>
-      <td class="r">${Math.round(+r.qtd||0)}</td><td class="r">${brl(+r.fat||0)}</td>
-      <td class="r">${brl(+r.liq||0)}</td>
-      <td class="r" style="color:${mcR<0?'#dc2626':'#22c55e'}">${brl(mcR)}</td></tr>`; }).join('');
-  return `<div class="vd-h">Para onde foi o dinheiro · ${vd.length} venda(s) em ${comp||'período'} ${linkRx}</div>
+    <u>${neg?'−':''}${ac2Brl(Math.abs(un(v)))}/un</u></div>`;
+  const conta = `<div class="vd-sub">A conta de ${ac2Rot(comp)}${parcial?' (parcial, até '+ac2Dt(ultimaData)+')':''} · ${vd.length} venda(s)</div>
     <div class="vd-g">
       ${linha('Receita', fat)}
-      ${temAb
-        ? linha('Comissão da plataforma (%)', comis+restoPlat, '#f59e0b', true)
-          + linha('Tarifa de envio (R$ por remessa)', freteFixo, '#f59e0b', true)
-        : linha('Plataforma (comissão, frete, taxas)', plat, '#f59e0b', true)}
+      ${temAb ? linha('Comissão e taxas (%)', comis+restoPlat, '#f59e0b', true) + linha('Tarifa de envio (R$ por remessa)', freteFixo, '#f59e0b', true)
+              : linha('Plataforma (comissão, frete, taxas)', plat, '#f59e0b', true)}
       ${linha('Imposto', imp, '#f59e0b', true)}
       ${linha('Custo do produto', ctp, '#f59e0b', true)}
       ${Math.abs(outros)>0.005 ? linha('Entrega própria e outros (motoboy)', outros, '#f59e0b', true) : ''}
       <div class="vd-l tot"><span>Sobrou (margem)</span>
-        <b style="color:${mc<0?'#dc2626':'#22c55e'}">${brl(mc)}</b>
+        <b style="color:${mc<0?'#dc2626':'#22c55e'}">${ac2Brl(mc)}</b>
         <i style="color:${mc<0?'#dc2626':'#22c55e'}">${pct(mc).toFixed(1)}%</i>
-        <u style="color:${mc<0?'#dc2626':'#22c55e'}">${brl(un(mc))}/un</u></div>
-    </div>
-    <div id="${k}-hist">${ac2HistHTML(i, ((ac2._vdHist||{})[k]||{}).H, '', k)}</div>
-    ${alvos}
-    <div class="tbl-wrap" style="max-height:200px"><table class="tbl a2-tbl vd-t"><thead><tr>
-      <th>Data</th><th>Nº da venda</th><th class="r">Qtd</th><th class="r">Valor</th><th class="r">Líquido</th><th class="r">Margem</th>
-    </tr></thead><tbody>${vendas}</tbody></table></div>`;
+        <u style="color:${mc<0?'#dc2626':'#22c55e'}">${ac2Brl(un(mc))}/un</u></div>
+    </div>`;
+  // ── 4 — evidência: preços praticados + vendas, recolhido ──
+  const vendas = vd.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r=>{
+    const mcR = r.mcReal!=null ? +r.mcReal : (+r.liq||0)-(+r.imp||0)-(+r.ctp||0);
+    return `<tr><td>${String(r.date||'').split('-').reverse().join('/')}</td>
+      <td style="font-family:ui-monospace,monospace;font-size:10px">${r.ped||''}</td>
+      <td class="r">${Math.round(+r.qtd||0)}</td><td class="r">${ac2Brl(+r.fat||0)}</td>
+      <td class="r">${ac2Brl(+r.liq||0)}</td>
+      <td class="r" style="color:${mcR<0?'#dc2626':'#22c55e'}">${ac2Brl(mcR)}</td></tr>`; }).join('');
+  const precos = ptsOrd.slice(0,5).map(([p,n])=>`${ac2Brl(p)} × ${n}`).join(' · ') + (ptsOrd.length>5?` · +${ptsOrd.length-5} preços`:'');
+  return `<div class="vd-h">Decisão · ${i.anuncio || i.sku || ''} ${linkRx}</div>
+    ${ac2RegistroHTML(i)}
+    <div class="vd-ver">${ve.map(x=>`<div>${x}</div>`).join('')}</div>
+    ${degraus}
+    ${conta}
+    <div id="${k}-hist">${ac2HistHTML(ctx, '', k)}</div>
+    <details class="vd-ev"><summary>As ${vd.length} vendas de ${ac2Rot(comp)} · preços praticados: ${precos}</summary>
+      <div class="tbl-wrap" style="max-height:220px;margin-top:6px"><table class="tbl a2-tbl vd-t"><thead><tr>
+        <th>Data</th><th>Nº da venda</th><th class="r">Qtd</th><th class="r">Valor</th><th class="r">Líquido</th><th class="r">Margem</th>
+      </tr></thead><tbody>${vendas}</tbody></table></div>
+    </details>`;
 }
 
 // atalho secundário: o Raio-X do SKU, para ver o histórico do produto (não o desta demanda)
@@ -4217,7 +4357,7 @@ function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(ful
   // o contexto — mas um gestor toca várias operações, e sem isso a tarefa não diz de quem ela é.
   const conta=`<span class="a2-ic">${i.empresa} · ${i.mkt}</span>`;
   const tratada=i.estado==='trat'; const resolvido=i.funcionou===true;
-  const estTag=resolvido?`<span class="a2-tag est" style="background:rgba(34,197,94,.14);color:#16a34a;border:1px solid rgba(34,197,94,.35)">✅ resolvido${i.trat?' · '+i.trat:''}</span>`:tratada?`<span class="a2-tag est" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">✓ tratada${i.trat?' · '+i.trat:''}</span>`:`<span class="a2-tag est">a diagnosticar</span>`;
+  const estTag=resolvido?`<span class="a2-tag est" style="background:rgba(34,197,94,.14);color:#16a34a;border:1px solid rgba(34,197,94,.35)">✅ resolvido${i.trat?' · '+i.trat:''}</span>`:tratada?`<span class="a2-tag est" title="${i.registro?ac2Esc(i.registro.acao+(i.registro.causa?' · causa: '+i.registro.causa:'')+(i.registro.obs?' — '+i.registro.obs:'')):''}" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">✓ tratada${i.trat?' · '+i.trat:''}</span>`:`<span class="a2-tag est">a diagnosticar</span>`;
   const causaTag=(i.causa&&i.causa!=='—')?`<span class="a2-tag causa" style="opacity:.85">${i.causa}</span>`:'';
   const prog=(i.mcDepois!=null)?` <span style="color:${i.mcDepois>=i.meta?'#22c55e':'#f59e0b'}">→ ${i.mcDepois}%</span>`:'';
   const online=(ac2._fonte||'').indexOf('API')>=0;
@@ -4243,7 +4383,7 @@ function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(ful
   return `<div class="a2-it ${sev}"><div class="str"></div><div class="a2-ib">`
     +`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${conta}${estTag}${dono}</div>`
     +`<div class="tt" title="${(i.titulo||'').replace(/"/g,'')}">${i.sku} — ${i.titulo||''}</div>`
-    +`<div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span><span class="a2-tag">margem ${i.mcPct}%${prog} <span style="opacity:.6">(meta ${i.meta}%)</span></span>${causaTag}<span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span>${vendas}${anuncio}</div>`
+    +`<div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span>${ac2TipoDe(i.tipo).k==='devolucao' ? `<span class="a2-tag">devolução ${i.mcPct}% <span style="opacity:.6">(limite ${i.meta}%)</span></span>` : `<span class="a2-tag">margem ${i.mcPct}%${prog} <span style="opacity:.6">(meta ${i.meta}%)</span></span>`}${(()=>{ const pi=ac2PrazoInfo(i); return pi.txt ? `<span class="a2-tag" style="color:${pi.cor};border-color:${pi.cor}">${pi.txt}</span>` : ''; })()}${causaTag}<span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span>${vendas}${anuncio}${i.estado==='fora'?'<span class="a2-tag" style="border-color:#64748b;color:#94a3b8" title="Depois do recálculo dos dados esta tarefa deixou de ser problema. O registro do gestor foi mantido.">saiu da régua após recálculo · registro mantido</span>':''}</div>`
     +(tratada?'':`<div class="a2-acao">${acao}</div>`)
     +`<div class="a2-vd" id="${_vk}"></div>`
     +`</div><div class="a2-ir"><div class="rr"><small>em risco</small>${AC2_BRLk(i.risco)}</div>${btn}</div></div>`;
@@ -4256,7 +4396,7 @@ const AC2_DRILL={tinha:{t:'Demandas a resolver',f:()=>true},risco:{t:'R$ em risc
   demora:{t:'R$ perdido por demora',f:i=>i.demora>0,v:l=>AC2_BRL(l.reduce((s,i)=>s+(i.demora||0),0))},
   status:{t:'Itens que estão pesando',f:i=>ac2.aberto(i)},
   semreg:{t:'Sem tratativa registrada',f:i=>!i.trat&&i.estado!=='trat'&&i.funcionou==null},
-  noprazo:{t:'Reação no prazo (≤24h)',f:i=>i.reacaoH!=null,v:l=>{const ok=l.filter(i=>i.reacaoH<=24).length;return l.length?Math.round(ok/l.length*100)+'%':'—';}},
+  noprazo:{t:'Registro dentro do prazo do tipo',f:i=>i.reacaoH!=null,v:l=>{const ok=l.filter(i=>i.reacaoH/24<=ac2Prazo(i)).length;return l.length?Math.round(ok/l.length*100)+'%':'—';}},
   reacao:{t:'Tempo de reação (detecção → registro)',f:i=>i.reacaoH!=null,v:l=>{const a=l.map(i=>i.reacaoH);return ac2.reacF(a.length?a.reduce((x,y)=>x+y,0)/a.length:null);}},
   tratativa:{t:'Tempo de tratativa (registro → ação)',f:i=>i.tratD!=null},
   rein:{t:'Reincidentes (voltaram a sangrar)',f:i=>i.rein}};

@@ -47,6 +47,8 @@ const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa,
   // urgência (dinheiro × dias) vira só dinheiro — era o que a fila fazia antes.
   criado_em: r.criado_em || null,
   estado: (r.estado && r.estado !== "diag") ? r.estado : (r.acao ? "trat" : "diag"), trat: r.acao || null, reacaoH: r.reacao_h, tratD: null, demora: 0,
+  prazo: r.prazo_dias == null ? null : +r.prazo_dias,
+  registro: r.acao ? { acao: r.acao, causa: r.t_causa || "", obs: r.t_obs || "", em: r.t_em || null, gestor: r.t_gestor || "", n: +r.t_n || 1 } : null,
   recuperado: r.recuperado || 0, mcDepois: (r.mc_depois == null ? null : r.mc_depois), desfecho: r.desfecho || null,
   funcionou: r.desfecho ? (r.desfecho === "Resolvido" || r.desfecho === "Progrediu") : null });
 
@@ -60,8 +62,12 @@ async function rotaGET(u, user) {
   }
   if (u.pathname === "/api/demandas") {
     // ESCOPO POR PERFIL: gestor só vê as contas dele; direção/coordenação veem tudo
-    let sql = `SELECT d.*, t.acao, t.reacao_h, r.desfecho, r.recuperado, r.mc_depois FROM demandas d
-      LEFT JOIN (SELECT demanda_id, MAX(acao) acao, MAX(reacao_h) reacao_h FROM tratativas GROUP BY demanda_id) t ON t.demanda_id=d.id
+    // o REGISTRO DO GESTOR: o último (ação, causa, observação, quando, quem) + quantos já houve; e a
+    // reação do PRIMEIRO registro (MIN) — é ela que mede se registrou dentro do prazo.
+    let sql = `SELECT d.*, t.acao, t.t_causa, t.t_obs, t.t_em, t.t_gestor, t.t_n, t.reacao_h, r.desfecho, r.recuperado, r.mc_depois FROM demandas d
+      LEFT JOIN (SELECT t1.demanda_id, t1.acao, t1.causa AS t_causa, t1.obs AS t_obs, t1.registrado_em AS t_em, t1.gestor AS t_gestor,
+          c.n AS t_n, c.reac1 AS reacao_h FROM tratativas t1
+        JOIN (SELECT demanda_id, MAX(id) ult, COUNT(*) n, MIN(reacao_h) reac1 FROM tratativas GROUP BY demanda_id) c ON c.ult=t1.id) t ON t.demanda_id=d.id
       LEFT JOIN (SELECT demanda_id, MAX(desfecho) desfecho, MAX(recuperado) recuperado, MAX(mc_depois) mc_depois FROM resultados GROUP BY demanda_id) r ON r.demanda_id=d.id`;
     const args = [], w = [];
     if (q.mes) { w.push("d.competencia=?"); args.push(q.mes); }   // ?mes opcional; sem ele devolve todos os meses — o painel filtra por período no cliente (segue o filtro do topo)

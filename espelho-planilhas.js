@@ -55,11 +55,22 @@ const ACAO = {
 const ORIGEM = { "": "BsanControl", planilha: "Planilha antiga", historico: "Histórico (importado)" };
 
 const CAB_TAREFAS = ["Competência", "Gestor", "Prioridade", "Tipo de ação", "Anúncio", "Produto", "Impacto R$",
-  "Margem hoje %", "Meta %", "Situação hoje", "Ação recomendada", "Status", "Última ação registrada",
+  "Margem hoje %", "Meta %", "Situação hoje", "Ação recomendada", "Status", "Prazo (dias)", "Vence em", "Situação do prazo", "Última ação registrada",
   "Causa", "Observação", "Registrado em", "Reação (h)", "Nº de registros", "Resultado", "Criada em", "ID da tarefa"];
 const CAB_REGISTROS = ["Registrado em", "Gestor", "Competência", "Anúncio", "Produto", "Tipo de ação",
   "Ação", "Causa", "Observação", "Reação (h)", "Origem", "ID da tarefa"];
-const DATAS = ["Registrado em", "Criada em"];
+const DATAS = ["Registrado em", "Criada em", "Vence em"];
+// mesmo padrão do painel (AC2_PRAZO_PADRAO): só para tarefa gravada antes de existir prazo_dias
+const PRAZO_PADRAO = [[/preju|estanca/i, 2], [/devolu/i, 5], [/corre/i, 5], [/queima/i, 7], [/matura/i, 14]];
+const prazoDe = d => d.prazo_dias != null ? +d.prazo_dias : ((PRAZO_PADRAO.find(([re]) => re.test(S(d.tipo))) || [0, 7])[1]);
+function situacaoPrazo(d, ts) {
+  const p = prazoDe(d), nasc = Date.parse(d.criado_em || "");
+  if (ts.length) { const h = ts[0].reacao_h; if (h == null) return "Registrada";
+    const atraso = h / 24 - p; return atraso > 0 ? "Registrada com " + Math.ceil(atraso) + " dia(s) de atraso" : "Registrada no prazo"; }
+  if (isNaN(nasc)) return "";
+  const resta = p - (Date.now() - nasc) / 864e5;
+  return resta < 0 ? "ATRASADA " + Math.ceil(-resta) + " dia(s)" : "No prazo";
+}
 
 async function emLotes(dbx, sql, ids) {
   const out = [];
@@ -90,7 +101,8 @@ async function montarOperacao(dbx, empresa, canal, desde) {
     const id = S(d.id), ts = tPor[id] || [], ult = ts[ts.length - 1], r = rPor[id];
     return [S(d.competencia), S(d.gestor), prio[id], S(d.tipo), S(d.anuncio_id) || S(d.sku), S(d.titulo).slice(0, 90),
       Math.round(n(d.risco)), +n(d.mc_pct).toFixed(1), +n(d.meta).toFixed(1), S(d.causa), ACAO[S(d.tipo)] || "Rever preço e custo.",
-      ts.length ? "Registrada" : "Pendente", ult ? S(ult.acao) : "", ult ? S(ult.causa) : "", ult ? S(ult.obs) : "",
+      ts.length ? (S(d.estado) === "fora" ? "Registrada · saiu da régua" : "Registrada") : "Pendente",
+      prazoDe(d), d.criado_em ? new Date(Date.parse(d.criado_em) + prazoDe(d) * 864e5).toISOString() : "", situacaoPrazo(d, ts), ult ? S(ult.acao) : "", ult ? S(ult.causa) : "", ult ? S(ult.obs) : "",
       ult ? S(ult.registrado_em) : "", ult && ult.reacao_h != null ? +n(ult.reacao_h).toFixed(1) : "", ts.length,
       r ? S(r.desfecho) : "", S(d.criado_em), id];
   }));
