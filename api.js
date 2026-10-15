@@ -48,12 +48,15 @@ const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa,
   criado_em: r.criado_em || null,
   estado: (r.estado && r.estado !== "diag") ? r.estado : (r.acao ? "trat" : "diag"), trat: r.acao || null, reacaoH: r.reacao_h, tratD: null, demora: 0,
   prazo: r.prazo_dias == null ? null : +r.prazo_dias,
-  registro: r.acao ? { acao: r.acao, causa: r.t_causa || "", obs: r.t_obs || "", em: r.t_em || null, gestor: r.t_gestor || "", n: +r.t_n || 1, precoNovo: r.t_preco == null ? null : +r.t_preco } : null,
+  registro: r.acao ? { acao: r.acao, causa: r.t_causa || "", obs: r.t_obs || "", em: r.t_em || null, gestor: r.t_gestor || "", n: +r.t_n || 1, precoNovo: r.t_preco == null ? null : +r.t_preco, ate: r.t_ate || null } : null,
   recuperado: r.recuperado || 0, mcDepois: (r.mc_depois == null ? null : r.mc_depois), desfecho: r.desfecho || null,
   resultado: r.desfecho ? { desfecho: r.desfecho, detalhe: r.r_detalhe || "", mcAntes: r.r_mc_antes, mcDepois: r.mc_depois, precoAntes: r.r_pa, precoDepois: r.r_pd,
     lucroDiaAntes: r.r_la, lucroDiaDepois: r.r_ld, aplicou: r.r_aplicou || null, dias: r.r_dias, em: r.r_em, recuperado: r.recuperado || 0 } : null,
-  // acerto do gestor: Aguardando/Sem venda não entram (ainda não dá para julgar); Justificado conta a favor
-  funcionou: !r.desfecho || r.desfecho === "Aguardando" || r.desfecho === "Sem venda" ? null : /Resolvido|Progrediu|Justificado/.test(r.desfecho) });
+  // o preço que o comprador paga hoje no anúncio × o que o gestor informou (só ML por enquanto)
+  checagem: r.c_sit ? { situacao: r.c_sit, praticado: r.c_prat == null ? null : +r.c_prat, tabela: r.c_tab == null ? null : +r.c_tab, promocao: r.c_promo || "", em: r.c_em } : null,
+  // acerto do gestor: só veredito FECHADO conta. Leitura parcial (1–2 vendas), Pausado, Sem leitura e
+  // Aguardando não entram (ainda não dá para julgar); Justificado conta a favor; Parou de vender, contra.
+  funcionou: !r.desfecho || /Aguardando|Sem venda|Sem leitura|Pausado|parcial/.test(r.desfecho) ? null : /Resolvido|Progrediu|Justificado/.test(r.desfecho) });
 
 async function rotaGET(u, user) {
   const q = Object.fromEntries(u.searchParams);
@@ -68,13 +71,19 @@ async function rotaGET(u, user) {
     // ESCOPO POR PERFIL: gestor só vê as contas dele; direção/coordenação veem tudo
     // o REGISTRO DO GESTOR: o último (ação, causa, observação, quando, quem) + quantos já houve; e a
     // reação do PRIMEIRO registro (MIN) — é ela que mede se registrou dentro do prazo.
-    let sql = `SELECT d.*, t.acao, t.t_causa, t.t_obs, t.t_em, t.t_gestor, t.t_n, t.reacao_h, r.desfecho, r.recuperado, r.mc_depois FROM demandas d
-      LEFT JOIN (SELECT t1.demanda_id, t1.acao, t1.causa AS t_causa, t1.obs AS t_obs, t1.registrado_em AS t_em, t1.gestor AS t_gestor, t1.preco_novo AS t_preco,
+    // TODA coluna que o mapDem lê tem de estar AQUI: até 16/10/2026 t_preco e os r_* ficavam só nos subselects, e o
+    // painel nunca recebia o novo preço informado nem o detalhe da medição (vinham sempre vazios).
+    let sql = `SELECT d.*, t.acao, t.t_causa, t.t_obs, t.t_em, t.t_gestor, t.t_n, t.reacao_h, t.t_preco, t.t_ate,
+      r.desfecho, r.recuperado, r.mc_depois, r.r_mc_antes, r.r_pa, r.r_pd, r.r_la, r.r_ld, r.r_aplicou, r.r_dias, r.r_detalhe, r.r_em,
+      ck.c_sit, ck.c_prat, ck.c_tab, ck.c_promo, ck.c_em FROM demandas d
+      LEFT JOIN (SELECT t1.demanda_id, t1.acao, t1.causa AS t_causa, t1.obs AS t_obs, t1.registrado_em AS t_em, t1.gestor AS t_gestor, t1.preco_novo AS t_preco, t1.aguardar_ate AS t_ate,
           c.n AS t_n, c.reac1 AS reacao_h FROM tratativas t1
         JOIN (SELECT demanda_id, MAX(id) ult, COUNT(*) n, MIN(reacao_h) reac1 FROM tratativas GROUP BY demanda_id) c ON c.ult=t1.id) t ON t.demanda_id=d.id
       LEFT JOIN (SELECT r1.demanda_id, r1.desfecho, r1.recuperado, r1.mc_depois, r1.mc_antes AS r_mc_antes, r1.preco_antes AS r_pa, r1.preco_depois AS r_pd,
           r1.lucro_dia_antes AS r_la, r1.lucro_dia_depois AS r_ld, r1.aplicou AS r_aplicou, r1.dias AS r_dias, r1.detalhe AS r_detalhe, r1.verificado_em AS r_em
-        FROM resultados r1 JOIN (SELECT demanda_id, MAX(id) ult FROM resultados GROUP BY demanda_id) rr ON rr.ult=r1.id) r ON r.demanda_id=d.id`;
+        FROM resultados r1 JOIN (SELECT demanda_id, MAX(id) ult FROM resultados GROUP BY demanda_id) rr ON rr.ult=r1.id) r ON r.demanda_id=d.id
+      LEFT JOIN (SELECT c1.demanda_id, c1.situacao AS c_sit, c1.preco_praticado AS c_prat, c1.preco_tabela AS c_tab, c1.promocao AS c_promo, c1.verificado_em AS c_em
+        FROM checagem_preco c1 JOIN (SELECT demanda_id, MAX(verificado_em) ult FROM checagem_preco GROUP BY demanda_id) cc ON cc.demanda_id=c1.demanda_id AND cc.ult=c1.verificado_em) ck ON ck.demanda_id=d.id`;
     const args = [], w = [];
     if (q.mes) { w.push("d.competencia=?"); args.push(q.mes); }   // ?mes opcional; sem ele devolve todos os meses — o painel filtra por período no cliente (segue o filtro do topo)
     if (user && user.perfil === "gestor") { w.push("d.gestor=?"); args.push(user.gestor_ref); }
@@ -238,6 +247,9 @@ async function rotaGET(u, user) {
 let _colPreco = false;   // coluna tratativas.preco_novo garantida uma vez por processo — ANTES de qualquer
 // SELECT que a cite: sem ela o /api/demandas falharia e o Acompanhamento inteiro sairia vazio
 async function garantePrecoNovo() { if (_colPreco) return; try { await dbx.exec("ALTER TABLE tratativas ADD COLUMN preco_novo REAL"); } catch (e) { }
+  try { await dbx.exec("ALTER TABLE tratativas ADD COLUMN aguardar_ate TEXT"); } catch (e) { }
+  // checagem do preço praticado (checar-preco.js) — a tabela tem de existir antes do JOIN do /api/demandas
+  try { await dbx.exec("CREATE TABLE IF NOT EXISTS checagem_preco (demanda_id TEXT, verificado_em TEXT, preco_informado REAL, preco_praticado REAL, preco_tabela REAL, promocao TEXT, situacao TEXT, status_anuncio TEXT)"); } catch (e) { }   // "aguardando terceiro": até quando (16/10/2026)
   // colunas da verificação de efeito (verificar-tratativas.js) — mesmas garantias, mesma razão
   for (const c of ["preco_antes REAL", "preco_depois REAL", "lucro_dia_antes REAL", "lucro_dia_depois REAL", "un_dia_antes REAL", "un_dia_depois REAL", "aplicou TEXT", "dias INTEGER", "detalhe TEXT"])
     try { await dbx.exec("ALTER TABLE resultados ADD COLUMN " + c); } catch (e) { }
@@ -295,9 +307,11 @@ const server = http.createServer(async (req, res) => {
       if (String(o.obs || "").trim().length < 15) return J(res, { ok: false, erro: "Descreva o que foi feito (pelo menos 15 caracteres)." }, 400);
       const precoNovo = o.preco_novo != null && o.preco_novo !== "" ? +String(o.preco_novo).replace(",", ".") : null;
       if (/ajustei o pre/i.test(o.acao || "") && !(precoNovo > 0)) return J(res, { ok: false, erro: "Informe o novo preço de venda." }, 400);
+      // "aguardando terceiro": a data que o gestor dá é quando a coordenação recobra (sem data: 3 dias)
+      const ate = /^d{4}-d{2}-d{2}$/.test(String(o.aguardar_ate || "")) ? String(o.aguardar_ate) : null;
       await garantePrecoNovo();
-      await dbx.run("INSERT INTO tratativas(demanda_id,gestor,acao,causa,obs,estado,registrado_em,reacao_h,preco_novo) VALUES(?,?,?,?,?,?,?,?,?)",
-        [o.demanda_id, (user && user.gestor_ref) || o.gestor || "", o.acao || "", o.causa || "", o.obs || "", o.estado || "trat", agora, reacaoH, precoNovo]);
+      await dbx.run("INSERT INTO tratativas(demanda_id,gestor,acao,causa,obs,estado,registrado_em,reacao_h,preco_novo,aguardar_ate) VALUES(?,?,?,?,?,?,?,?,?,?)",
+        [o.demanda_id, (user && user.gestor_ref) || o.gestor || "", o.acao || "", o.causa || "", o.obs || "", o.estado || "trat", agora, reacaoH, precoNovo, ate]);
       if (o.estado) await dbx.run("UPDATE demandas SET estado=? WHERE id=?", [o.estado, o.demanda_id]);
       // espelha na planilha Google da operação (o bot lê de lá). Assíncrono: não segura a resposta.
       try { require("./espelho-planilhas").agendarPorDemanda(dbx, o.demanda_id); } catch (e) { console.error("[planilhas] " + e.message); }

@@ -3393,6 +3393,7 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-k.on{border-color:var(--c-acc);background:var(--c-accb)}
 #ac2-root .a2-k.nc{cursor:default}
 /* posicao na fila: a coordenacao le de cima para baixo, entao o numero precisa estar visivel */
+#ac2-root .vd-reg-ck{font-size:12px;margin-top:3px}
 #ac2-root .a2-cob{font:inherit;font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;border:1px solid var(--c-ln);background:var(--c-s2);color:var(--c-ink);cursor:pointer;white-space:nowrap}
 #ac2-root .a2-cob:hover{border-color:var(--c-acc);color:var(--c-acc)}
 #ac2-root .a2-pos{display:inline-block;min-width:19px;height:19px;line-height:19px;text-align:center;border-radius:5px;background:var(--c-s2);border:1px solid var(--c-ln);font-size:10.5px;font-weight:800;color:var(--c-mut);margin-right:8px}
@@ -3800,7 +3801,7 @@ function ac2DirHero(){
   return ac2Selecao()+`<div class="a2-kpis">
     ${card('O que tem para fazer', l.length, 'demandas desde out/26', null, '')}
     ${card('O que foi registrado', reg+'/'+l.length, ac2Pct(reg,l.length)+'% · '+ac2SemFr(reg,l.length).rot, ac2SemFr(reg,l.length).cor, 'reg')}
-    ${(()=>{ const ef=ac2Efeito(l); return ef.med ? card('O que funcionou', ef.ok+'/'+ef.med, ef.pct+'% das já medidas · '+ef.sem.rot, ef.sem.cor) : card('O que funcionou', '—', 'medição começa 7 dias após o registro', 'var(--t3)'); })()}
+    ${(()=>{ const ef=ac2Efeito(l); return ef.med ? card('O que funcionou', ef.ok+'/'+ef.med, ef.pct+'% das já medidas · '+ef.sem.rot, ef.sem.cor) : card('O que funcionou', '—', 'o veredito sai com 3 vendas depois do registro', 'var(--t3)'); })()}
     ${card('Ainda sem registro', semReg, semReg?'ninguém anotou o que fez':'tudo anotado', semReg?'#dc2626':'#22c55e', 'pend')}
     ${(()=>{ const a=l.filter(i=>ac2PrazoInfo(i).atrasada).length; return card('Atrasadas agora', a, a?'sem registro e fora do prazo':'ninguém atrasado', a?'#dc2626':'#22c55e'); })()}
     ${card('Dinheiro parado nelas', AC2_BRLk(risco), 'margem que dá para recuperar', risco>0?'#f59e0b':'var(--t3)')}
@@ -3920,11 +3921,17 @@ function ac2Recobrar(i){
   const r = i.resultado, g = i.registro || {};
   if(r && r.em && g.em && Date.parse(g.em) > Date.parse(r.em)) return null;          // já registrou de novo
   if(r && /Resolvido|Progrediu|Justificado/.test(r.desfecho||'')) return null;
+  { const ck=i.checagem, c=ac2ChecagemTxt(i);
+    if(c && !c.ok && g.em && Date.parse(ck.em) > Date.parse(g.em) && Date.now()-Date.parse(g.em) > 864e5) return c.txt; }
   if(r && r.aplicou==='não') return 'o novo preço informado não foi aplicado';
   if(r && /Piorou/.test(r.desfecho||'')) return 'piorou depois da ação';
   if(r && /Sem efeito/.test(r.desfecho||'')) return 'a ação não teve efeito';
-  if(/aguardando/i.test(g.acao||'') && g.em){ const d = (Date.now()-Date.parse(g.em))/864e5;
-    if(d >= 7) return 'aguardando terceiro há '+Math.floor(d)+' dias — qual o retorno?'; }
+  if(r && /Abaixo da meta/.test(r.desfecho||'')) return 'a 1ª venda depois da ação já veio abaixo da meta'+(r.mcDepois!=null?' ('+(+r.mcDepois).toFixed(1).replace('.',',')+'% · meta '+(+i.meta||0).toFixed(0)+'%)':'');
+  if(r && /Parou de vender/.test(r.desfecho||'')) return 'parou de vender depois da ação';
+  // "aguardando terceiro": recobra na data que o gestor deu (sem data, 3 dias depois do registro)
+  if(/aguardando/i.test(g.acao||'') && g.em && !(r && r.desfecho && !/Aguardando/.test(r.desfecho))){
+    const lim = g.ate ? Date.parse(g.ate+'T23:59:59-03:00') : Date.parse(g.em) + 3*864e5;
+    if(Date.now() > lim) return g.ate ? 'o prazo que você deu ('+g.ate.split('-').reverse().slice(0,2).join('/')+') passou — qual o retorno?' : 'aguardando terceiro há '+Math.floor((Date.now()-Date.parse(g.em))/864e5)+' dias, sem data — qual o retorno?'; }
   return null;
 }
 const ac2UrgItem = i => (+i.risco||0) * Math.max(1, -(ac2Resta(i)||0));            // R$ × dias de atraso
@@ -3975,7 +3982,7 @@ function ac2TopoCoord(){
   return ac2Selecao()+`<div class="a2-kpis">
     ${card('Atrasadas agora', m.atr.length, m.atr.length? gAtr+' gestor(es) · maior atraso '+ac2AtrLbl(m.maior) : 'ninguém atrasado', m.atr.length?'#dc2626':'#22c55e')}
     ${card('Vencem em 24h', m.v24.length, 'cobrar antes de atrasar', m.v24.length?'#f59e0b':'var(--t3)')}
-    ${card('Recobrar', m.rec.length, medidas ? 'registradas que não resolveram' : 'medição começa 7 dias após o registro', m.rec.length?'#a855f7':'var(--t3)')}
+    ${card('Recobrar', m.rec.length, medidas ? 'registradas que não resolveram' : 'a 1ª leitura sai na 1ª venda depois do registro', m.rec.length?'#a855f7':'var(--t3)')}
     ${card('Parado nas atrasadas', AC2_BRLk(m.risco), 'margem presa no que já venceu', m.risco>0?'#f59e0b':'var(--t3)')}
     ${card('Tempo até registrar', media==null?'—':ac2.reacLbl(media), media==null?'ninguém registrou ainda':'média da equipe')}
   </div>`;
@@ -4214,19 +4221,27 @@ function ac2HistHTML(ctx, skuSel, k){
 
 // o que o gestor respondeu (14/10/2026: antes só a AÇÃO aparecia, num selo; causa e observação
 // estavam no banco e em lugar nenhum da tela)
+// CHECAGEM DO PREÇO NO ANÚNCIO (checar-preco.js, ML): o que o comprador paga hoje × o que o gestor informou
+function ac2ChecagemTxt(i){ const c=i.checagem, r=i.registro||{}; if(!c) return null;
+  const inf = r.precoNovo ? ac2Brl(r.precoNovo) : 'o preço informado';
+  if(c.situacao==='aplicado') return { ok:true, txt:'conferido no anúncio: saindo a '+ac2Brl(c.praticado)+' ✓' };
+  if(c.situacao==='promoção derruba') return { ok:false, txt:'a tabela está em '+ac2Brl(c.tabela)+', mas uma promoção'+(c.promocao?' ('+c.promocao+')':'')+' faz o anúncio sair a '+ac2Brl(c.praticado) };
+  if(c.situacao==='não aplicado') return { ok:false, txt:'você informou '+inf+', mas o anúncio está saindo a '+ac2Brl(c.praticado) };
+  if(c.situacao==='pausado') return { ok:true, txt:'anúncio pausado — sem preço praticado para conferir' };
+  return null; }
 function ac2RegistroHTML(i){
   const pi = ac2PrazoInfo(i);
   if(!i.registro) return pi.txt ? `<div class="vd-reg vd-reg-no"><b>Sem registro do gestor.</b> <span style="color:${pi.cor}">${pi.txt}</span></div>` : '';
   const r = i.registro, quando = r.em ? new Date(r.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
   return `<div class="vd-reg"><div class="vd-reg-h">Registro do gestor${r.gestor?' · '+ac2Esc(r.gestor):''}${quando?' · '+quando:''}${r.n>1?' · '+r.n+' registros (mostrando o último)':''}${pi.txt?` · <span style="color:${pi.cor}">${pi.txt}</span>`:''}</div>
-    <div><b>Ação:</b> ${ac2Esc(r.acao)}${r.precoNovo?' · <b>Novo preço:</b> '+ac2Brl(r.precoNovo):''}${r.causa?' · <b>Causa:</b> '+ac2Esc(r.causa):''}</div>${r.obs?`<div class="vd-reg-obs">"${ac2Esc(r.obs)}"</div>`:''}${ac2EfeitoHTML(i)}</div>`;
+    <div><b>Ação:</b> ${ac2Esc(r.acao)}${r.precoNovo?' · <b>Novo preço:</b> '+ac2Brl(r.precoNovo):''}${r.ate?' · <b>Retorno até:</b> '+r.ate.split('-').reverse().join('/'):''}${r.causa?' · <b>Causa:</b> '+ac2Esc(r.causa):''}</div>${(()=>{ const c=ac2ChecagemTxt(i); return c?`<div class="vd-reg-ck" style="color:${c.ok?'#16a34a':'#dc2626'}"><b>Preço no anúncio:</b> ${c.txt}</div>`:''; })()}${r.obs?`<div class="vd-reg-obs">"${ac2Esc(r.obs)}"</div>`:''}${ac2EfeitoHTML(i)}</div>`;
 }
 // EFEITO medido (verificar-tratativas.js, recalculado a cada carga): antes × depois do registro
-const AC2_COR_DESF = { 'Resolvido':'#16a34a', 'Justificado':'#16a34a', 'Progrediu':'#3b82f6', 'Sem efeito':'#f59e0b', 'Piorou':'#dc2626', 'Sem venda':'#94a3b8', 'Aguardando':'#94a3b8' };
+const AC2_COR_DESF = { 'Resolvido':'#16a34a', 'Justificado':'#16a34a', 'Progrediu':'#3b82f6', 'Sem efeito':'#f59e0b', 'Piorou':'#dc2626', 'Sem venda':'#94a3b8', 'Aguardando':'#94a3b8',
+  'No caminho (parcial)':'#3b82f6', 'Abaixo da meta (parcial)':'#dc2626', 'Parou de vender':'#dc2626', 'Pausado':'#94a3b8', 'Sem leitura':'#94a3b8' };
 function ac2EfeitoHTML(i){ const rs=i.resultado;
   if(!rs){ const em=i.registro&&i.registro.em; if(!em) return '';
-    const falta=Math.ceil(7-(Date.now()-Date.parse(em))/864e5);
-    return falta>0 ? `<div class="vd-reg-efeito"><b>Efeito:</b> <span class="a2-tag" style="color:#94a3b8;border-color:#94a3b8">Aguardando</span> a medição compara as vendas antes × depois do registro — verifica em ${falta} dia(s)</div>` : ''; }
+    return `<div class="vd-reg-efeito"><b>Efeito:</b> <span class="a2-tag" style="color:#94a3b8;border-color:#94a3b8">Aguardando</span> a 1ª leitura sai na 1ª venda depois do registro; o veredito, com 3 vendas</div>`; }
   const cor=AC2_COR_DESF[rs.desfecho]||'var(--c-mut)';
   const naoAplicou = rs.aplicou==='não' ? ' <b style="color:#dc2626">· o novo preço informado NÃO está sendo praticado</b>' : '';
   return `<div class="vd-reg-efeito"><b>Efeito:</b> <span class="a2-tag" style="color:${cor};border-color:${cor}">${rs.desfecho}</span> ${ac2Esc(rs.detalhe||'')}${naoAplicou}${rs.recuperado>0?' · <b style="color:#16a34a">recuperado '+ac2Brl(rs.recuperado)+'</b>':''}</div>`; }
@@ -4847,6 +4862,7 @@ ac2.tratar=function(encId){ const id=decodeURIComponent(encId); const it=ac2.DEM
     <div class="bct-sub"><b>${it.sku}</b> — ${(it.titulo||'').slice(0,60)}<br>${it.empresa} · ${it.mkt} · margem ${it.mcPct}% (meta ${it.meta}%) · ${AC2_BRLk(it.risco)} em risco</div>
     <div class="bct-f"><label>O que você fez</label><select id="bct-acao" onchange="bcTratarAcao()">${opt(OP.acoes)}</select></div>
     <div class="bct-f" id="bct-preco-f"><label>Novo preço de venda (R$)</label><input id="bct-preco" inputmode="decimal" placeholder="ex.: 32,90"></div>
+    <div class="bct-f" id="bct-ate-f"><label>Até quando espera o retorno?</label><input id="bct-ate" type="date"></div>
     <div class="bct-f"><label>Causa (por que aconteceu)</label><select id="bct-causa">${opt(OP.causas)}</select></div>
     <div class="bct-f"><label>O que exatamente foi feito <span style="color:#dc2626">*</span></label><textarea id="bct-obs" rows="3"></textarea></div>
     <div class="bct-err" id="bct-err"></div>
@@ -4857,6 +4873,7 @@ ac2.tratar=function(encId){ const id=decodeURIComponent(encId); const it=ac2.DEM
 // mostra o campo de preço só quando a ação é ajuste de preço, e troca o exemplo do "o que foi feito"
 function bcTratarAcao(){ const a=(document.getElementById('bct-acao')||{}).value||'';
   const f=document.getElementById('bct-preco-f'); if(f) f.style.display=/ajustei o pre/i.test(a)?'':'none';
+  const fa=document.getElementById('bct-ate-f'); if(fa) fa.style.display=/aguardando/i.test(a)?'':'none';
   const o=document.getElementById('bct-obs'); if(o) o.placeholder=BC_DICA(a); }
 async function bcTratarSubmit(encId){ const id=decodeURIComponent(encId); const btn=document.getElementById('bct-sub'), err=document.getElementById('bct-err');
   const acao=document.getElementById('bct-acao').value, causa=document.getElementById('bct-causa').value, obs=document.getElementById('bct-obs').value.trim();
@@ -4866,9 +4883,9 @@ async function bcTratarSubmit(encId){ const id=decodeURIComponent(encId); const 
   if(/ajustei o pre/i.test(acao) && !(preco_novo>0)){ err.textContent='⚠️ Informe o novo preço de venda.'; return; }
   btn.disabled=true; btn.textContent='Enviando…';
   try{
-    const r=await authFetch('/api/tratativas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({demanda_id:id,acao,causa,obs,preco_novo,estado:'trat'})});
+    const r=await authFetch('/api/tratativas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({demanda_id:id,acao,causa,obs,preco_novo,aguardar_ate:(/aguardando/i.test(acao)&&(document.getElementById('bct-ate')||{}).value)||null,estado:'trat'})});
     const d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.erro||('HTTP '+r.status));
-    const it=ac2.DEM.find(x=>x.id===id); if(it){ it.estado='trat'; it.trat=acao; it.registro={acao,causa,obs,em:new Date().toISOString(),gestor:(window.BCAUTH&&BCAUTH.user&&BCAUTH.user.gestor_ref)||'',n:((it.registro&&it.registro.n)||0)+1,precoNovo:preco_novo}; }
+    const it=ac2.DEM.find(x=>x.id===id); if(it){ it.estado='trat'; it.trat=acao; it.registro={acao,causa,obs,em:new Date().toISOString(),gestor:(window.BCAUTH&&BCAUTH.user&&BCAUTH.user.gestor_ref)||'',n:((it.registro&&it.registro.n)||0)+1,precoNovo:preco_novo,ate:(/aguardando/i.test(acao)&&(document.getElementById('bct-ate')||{}).value)||null}; }
     document.getElementById('bc-trat').classList.remove('on'); ac2.render();
   }catch(e){ err.textContent='⚠️ '+(/escopo|403/i.test(e.message)?'Essa demanda não é do seu escopo.':/autenticad|401|expir/i.test(e.message)?'Faça login para registrar.':e.message); btn.disabled=false; btn.textContent='✓ Registrar'; }
 }
