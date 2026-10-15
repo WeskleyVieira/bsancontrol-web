@@ -3654,7 +3654,7 @@ ac2.render=function(){
   lv.innerHTML=[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor','a lista dele']].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('')
     +'<span class="a2-lvsep"></span>'
     +[['filtrar','🔎 Filtrar'],['comparar','📊 Comparar']].map(x=>`<button class="a2-lvb ${(ac2.cmp?'comparar':'filtrar')===x[0]?'on':''}" onclick="ac2.setCmp('${x[0]}')">${x[1]}</button>`).join('')
-    +'<button class="a2-lvb" onclick="ac2Fotos()" title="Gera uma imagem nítida de cada bloco da tela, pronta para colar no grupo">📷 Imagens p/ o grupo</button>';
+    +'<button class="a2-lvb" onclick="ac2Fotos()" title="Gera UMA imagem nítida com os indicadores do topo e o momento de cada gestor, pronta para colar no grupo">📷 Imagem p/ o grupo</button>';
   ac2RenderFiltros();
   const cmpMode=ac2.cmp && ac2.nivel!=='gestor';
   if(ac2.nivel==='direcao'){ kpi.innerHTML=ac2DirHero(); body.innerHTML=cmpMode?ac2Comparar():ac2DirScore(); }
@@ -3697,13 +3697,18 @@ async function ac2Fotos(){
     const recorte=[ac2.gestorSel, ac2.cmp&&ac2.nivel!=='gestor'?'Comparar':''].filter(Boolean).join(' · ');
     const bg=getComputedStyle(document.body).backgroundColor||'#0b0f17';
     root.appendChild(palco);
-    const blocos=ac2BlocosFoto(), imgs=[];
+    let blocos=ac2BlocosFoto(); const imgs=[];
+    const QUER = { direcao:[/^Resumo$/, /^Momento de cada gestor/i], coord:[/^Resumo$/, /^Mesa de cobrança/i], gestor:[/^Resumo$/] }[ac2.nivel];
+    if(QUER){ const esc = QUER.map(re=>blocos.find(b=>re.test(b.titulo))).filter(Boolean);
+      if(esc.length) blocos = [{ titulo:'Painel', nos: esc.flatMap(b=>b.nos) }]; }
+    // imagem única mais larga (1400px): os 6 cartões do topo e os cartões dos gestores cabem numa linha cada — sem buraco e sem imagem comprida
+    const LARG = QUER && blocos.length===1 ? 1400 : 1100; palco.style.width = LARG+'px';
     for(let k=0;k<blocos.length;k++){
-      const b=blocos[k], box=document.createElement('div'); box.className='a2-foto';
+      const b=blocos[k], box=document.createElement('div'); box.className='a2-foto'; box.style.width=LARG+'px';
       box.innerHTML=`<div class="a2-foto-h"><b>Grupo Bsan · Acompanhamento — ${nivel}${recorte?' · '+recorte:''}</b><span>período ${ac2.perLabel()} · gerado em ${quando} · ${k+1}/${blocos.length}</span></div>`;
       b.nos.forEach(n=>box.appendChild(n.cloneNode(true)));
       palco.appendChild(box);
-      const w=Math.max(1100, box.scrollWidth);
+      const w=Math.max(LARG, box.scrollWidth);
       const opt={ pixelRatio:2, backgroundColor:bg, width:w, style:{ width:w+'px' } };
       let url; try{ url=await htmlToImage.toPng(box,opt); }
       catch(e){ url=await htmlToImage.toPng(box,Object.assign({skipFonts:true},opt)); }   // fonte externa bloqueada: segue com a do sistema
@@ -3718,9 +3723,9 @@ function ac2MostraFotos(imgs, nivel){
   window._a2Fotos=imgs;
   const nome=i=>`bsan_${(nivel||'painel').toLowerCase()}_${String(i+1).padStart(2,'0')}_${imgs[i].titulo.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}.png`;
   window._a2FotoNome=nome;
-  ov.innerHTML=`<div class="a2f-box"><div class="a2f-top"><b>${imgs.length} imagem(ns) prontas</b>
+  ov.innerHTML=`<div class="a2f-box"><div class="a2f-top"><b>${imgs.length===1?'Imagem pronta':imgs.length+' imagens prontas'}</b>
       <span>Copiar e colar no WhatsApp Web (Ctrl+V) · ou baixar</span>
-      <button onclick="ac2BaixaFotos()">⬇ Baixar todas</button><button onclick="document.getElementById('a2-fotos').classList.remove('on')">Fechar</button></div>
+      ${imgs.length>1?'<button onclick="ac2BaixaFotos()">⬇ Baixar todas</button>':''}<button onclick="document.getElementById('a2-fotos').classList.remove('on')">Fechar</button></div>
     <div class="a2f-lista">${imgs.map((x,i)=>`<div class="a2f-it"><div class="a2f-it-h"><b>${i+1}. ${x.titulo}</b>
       <button onclick="ac2CopiaFoto(${i},this)">📋 Copiar</button><a download="${nome(i)}" href="${x.url}">⬇ Baixar</a></div>
       <img src="${x.url}" alt="${x.titulo}"></div>`).join('')}</div></div>`;
