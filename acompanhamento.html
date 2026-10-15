@@ -3559,7 +3559,7 @@ function ac2PorTipo(l){ const o={}; AC2_TIPOS.forEach(t=>o[t.k]=0); o.outro=0;
 const ac2Registrada = i => !!i.trat || i.estado==='trat';
 // PRAZO POR TIPO (14/10/2026). Vem de cada tarefa (db-sync grava de metas.json → prazos_dias);
 // o padrão abaixo só cobre tarefa antiga, gravada antes de existir o campo. Antes a régua era 24h para tudo.
-const AC2_PRAZO_PADRAO = { prejuizo:2, devolucao:5, margem:5, queima:7, maturacao:14 };
+const AC2_PRAZO_PADRAO = { prejuizo:1, devolucao:2, margem:1, queima:1, maturacao:2 };   // prazos do Weskley, 16/10/2026
 const ac2Prazo = i => i.prazo!=null ? +i.prazo : (AC2_PRAZO_PADRAO[ac2TipoDe(i.tipo).k] || 7);
 // situação do prazo: registrada (no prazo / com X dias de atraso) ou em aberto (vence em X / atrasada X)
 function ac2PrazoInfo(i){
@@ -3649,6 +3649,32 @@ function ac2Selecao(){
   return `<div class="a2-sel">👁 ${txt}${limpar}</div>`;
 }
 
+// QUEM ESTÁ EM ATRASO (16/10/2026): prazo por tipo (Prejuízo/Margem/Queima 1 dia; Maturação/Devolução 2).
+// "Atrasada agora" = sem registro e já passou do prazo. "Fora do prazo" = registrou, mas depois do prazo.
+function ac2Atrasos(l){
+  const gs=[...new Set(l.map(i=>i.gestor))].filter(Boolean);
+  const esc=g=>String(g).replace(/'/g,"\'");
+  const linhas=gs.map(g=>{ const li=l.filter(i=>i.gestor===g);
+    const atr=li.filter(i=>ac2PrazoInfo(i).atrasada);
+    const maior=atr.reduce((m,i)=>Math.max(m, Math.ceil((Date.now()-Date.parse(i.criado_em))/864e5-ac2Prazo(i))),0);
+    const reg=li.filter(i=>ac2Registrada(i)&&i.reacaoH!=null), fora=reg.filter(i=>i.reacaoH/24>ac2Prazo(i)).length;
+    const noPrazo=reg.length?ac2Pct(reg.length-fora,reg.length):null;
+    return { g, n:li.length, atr:atr.length, maior, risco:atr.reduce((a,i)=>a+(+i.risco||0),0), reg:reg.length, fora, noPrazo,
+      tipos:AC2_TIPOS.map(t=>{const k=atr.filter(i=>ac2TipoDe(i.tipo).k===t.k).length;return k?`<span style="color:${t.cor};font-weight:700">${t.curto} ${k}</span>`:'';}).filter(Boolean).join(' · ') };
+  }).sort((a,b)=>b.atr-a.atr||b.risco-a.risco);
+  if(!linhas.length) return '';
+  const tot=linhas.reduce((a,x)=>a+x.atr,0);
+  const tr=linhas.map(x=>`<tr style="cursor:pointer" onclick="ac2.goGes('${esc(x.g)}','direcao')">
+      <td><b>${x.g}</b></td>
+      <td class="r"><b style="color:${x.atr?'#dc2626':'#16a34a'}">${x.atr}</b><span style="color:var(--t3)"> de ${x.n}</span></td>
+      <td>${x.tipos||'<span style="color:var(--t3)">—</span>'}</td>
+      <td class="r">${x.atr?x.maior+' dia(s)':'—'}</td>
+      <td class="r" style="color:${x.risco?'#f59e0b':'var(--t3)'}">${x.risco?AC2_BRLk(x.risco):'—'}</td>
+      <td class="r">${x.reg?`<span style="color:${ac2SemFr(x.reg-x.fora,x.reg).cor};font-weight:700">${x.noPrazo}%</span> <span style="color:var(--t3)">(${x.fora} de ${x.reg} fora do prazo)</span>`:'<span style="color:var(--t3)">sem registro</span>'}</td></tr>`).join('');
+  return `<div class="a2-sh" style="margin-top:6px">Quem está em atraso<small>${tot} tarefa(s) sem registro já passaram do prazo · prazo (tarefas criadas a partir de 15/10): Prejuízo, Margem e Queima 1 dia · Maturação e Devolução 2 dias; as anteriores seguem o prazo da época · clique para abrir a lista do gestor</small></div>
+    <div class="tbl-wrap"><table class="tbl a2-tbl"><thead><tr><th>Gestor</th><th class="r">Atrasadas agora</th><th>De que tipo</th><th class="r">Maior atraso</th><th class="r">R$ parado nelas</th><th class="r">Registradas no prazo</th></tr></thead>
+    <tbody>${tr}</tbody></table></div>`;
+}
 function ac2DirHero(){
   const base = ac2.filt();                 // o universo do recorte, sem os filtros do próprio nível
   const l = ac2FiltDir();
@@ -3677,8 +3703,9 @@ function ac2DirHero(){
     ${card('O que foi registrado', reg+'/'+l.length, ac2Pct(reg,l.length)+'% · '+ac2SemFr(reg,l.length).rot, ac2SemFr(reg,l.length).cor, 'reg')}
     ${(()=>{ const ef=ac2Efeito(l); return ef.med ? card('O que funcionou', ef.ok+'/'+ef.med, ef.pct+'% das já medidas · '+ef.sem.rot, ef.sem.cor) : card('O que funcionou', '—', 'medição começa 7 dias após o registro', 'var(--t3)'); })()}
     ${card('Ainda sem registro', semReg, semReg?'ninguém anotou o que fez':'tudo anotado', semReg?'#dc2626':'#22c55e', 'pend')}
+    ${(()=>{ const a=l.filter(i=>ac2PrazoInfo(i).atrasada).length; return card('Atrasadas agora', a, a?'sem registro e fora do prazo':'ninguém atrasado', a?'#dc2626':'#22c55e'); })()}
     ${card('Dinheiro parado nelas', AC2_BRLk(risco), 'margem que dá para recuperar', risco>0?'#f59e0b':'var(--t3)')}
-  </div><div class="a2-caps">${caps}</div>`;
+  </div><div class="a2-caps">${caps}</div>${ac2Atrasos(l)}`;
 }
 
 // A direção pergunta duas coisas: "que tipo de problema temos?" e "quem está devendo?".

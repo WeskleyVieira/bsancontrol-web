@@ -68,7 +68,7 @@ const CAB_REGISTROS = ["Registrado em", "Gestor", "Competência", "Anúncio", "P
   "Ação", "Novo preço", "Causa", "O que foi feito", "Reação (h)", "Origem", "ID da tarefa"];
 const DATAS = ["Registrado em", "Criada em", "Vence em"];
 // mesmo padrão do painel (AC2_PRAZO_PADRAO): só para tarefa gravada antes de existir prazo_dias
-const PRAZO_PADRAO = [[/preju|estanca/i, 2], [/devolu/i, 5], [/corre/i, 5], [/queima/i, 7], [/matura/i, 14]];
+const PRAZO_PADRAO = [[/preju|estanca/i, 1], [/devolu/i, 2], [/corre/i, 1], [/queima/i, 1], [/matura/i, 2]];
 const prazoDe = d => d.prazo_dias != null ? +d.prazo_dias : ((PRAZO_PADRAO.find(([re]) => re.test(S(d.tipo))) || [0, 7])[1]);
 function situacaoPrazo(d, ts) {
   const p = prazoDe(d), nasc = Date.parse(d.criado_em || "");
