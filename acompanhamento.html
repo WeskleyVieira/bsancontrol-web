@@ -3361,6 +3361,31 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-gc .gc-v{font-size:23px;font-weight:800;color:var(--cc);line-height:1.1}
 #ac2-root .a2-gc .gc-v small{font-size:11.5px;font-weight:600;color:var(--c-mut)}
 #ac2-root .a2-gc .gc-s{font-size:11px;color:var(--c-mut);font-weight:600}
+#ac2-root .a2-gc .gc-tipos{margin-top:7px;border-top:1px solid var(--c-ln);padding-top:5px}
+#ac2-root .a2-gc .gt-l{display:grid;grid-template-columns:1fr 44px 38px 64px 70px;align-items:center;gap:4px;font-size:11px;line-height:1.9}
+#ac2-root .a2-gc .gt-h{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--c-mut);line-height:1.6}
+#ac2-root .a2-gc .gt-n{font-weight:700}
+#ac2-root .a2-gc .gt-q{color:var(--c-mut);text-align:right}
+#ac2-root .a2-gc .gt-p{font-weight:800;text-align:right}
+#ac2-root .a2-gc .gt-s{font-size:9.5px;font-weight:800;border:1px solid;border-radius:999px;padding:0 6px;text-align:center;line-height:1.6}
+#ac2-root .a2-gc .gt-e{font-size:10px;font-weight:700;text-align:right;color:var(--c-mut)}
+#ac2-root .a2-palco{position:fixed;left:-20000px;top:0;width:1100px;pointer-events:none}
+#ac2-root .a2-foto{width:1100px;padding:22px 26px;background:var(--bg)}
+#ac2-root .a2-foto .a2-foto-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--c-ln)}
+#ac2-root .a2-foto .a2-foto-h b{font-size:15px;color:var(--c-ink)}
+#ac2-root .a2-foto .a2-foto-h span{font-size:11.5px;color:var(--c-mut)}
+#ac2-root .a2-foto .tbl-wrap{overflow:visible}
+#a2-fotos{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);padding:24px}
+#a2-fotos.on{display:block}
+#a2-fotos .a2f-box{max-width:1100px;height:100%;margin:0 auto;background:var(--c-s,#111827);border-radius:12px;display:flex;flex-direction:column;overflow:hidden;color:var(--c-ink,#e5e7eb)}
+#a2-fotos .a2f-top{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--c-ln,#333)}
+#a2-fotos .a2f-top span{flex:1;font-size:12px;opacity:.7}
+#a2-fotos button,#a2-fotos a{font:inherit;font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px;border:1px solid var(--c-ln,#444);background:transparent;color:inherit;cursor:pointer;text-decoration:none}
+#a2-fotos .a2f-lista{overflow:auto;padding:14px 16px}
+#a2-fotos .a2f-it{margin-bottom:18px}
+#a2-fotos .a2f-it-h{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+#a2-fotos .a2f-it-h b{flex:1}
+#a2-fotos img{width:100%;border:1px solid var(--c-ln,#333);border-radius:8px}
 #ac2-root .a2-gc .gc-t{font-size:10.5px;margin-top:6px;line-height:1.5}
 #ac2-root .a2-gc .gc-o{font-size:10px;color:var(--c-mut);margin-top:5px;border-top:1px solid var(--c-ln);padding-top:5px;line-height:1.4}
 #ac2-root .a2-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
@@ -3590,7 +3615,8 @@ ac2.render=function(){
   const lv=document.getElementById('a2-lv'), kpi=document.getElementById('a2-kpi'), body=document.getElementById('a2-body'), bar=document.getElementById('a2-bar');
   lv.innerHTML=[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor','a lista dele']].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('')
     +'<span class="a2-lvsep"></span>'
-    +[['filtrar','🔎 Filtrar'],['comparar','📊 Comparar']].map(x=>`<button class="a2-lvb ${(ac2.cmp?'comparar':'filtrar')===x[0]?'on':''}" onclick="ac2.setCmp('${x[0]}')">${x[1]}</button>`).join('');
+    +[['filtrar','🔎 Filtrar'],['comparar','📊 Comparar']].map(x=>`<button class="a2-lvb ${(ac2.cmp?'comparar':'filtrar')===x[0]?'on':''}" onclick="ac2.setCmp('${x[0]}')">${x[1]}</button>`).join('')
+    +'<button class="a2-lvb" onclick="ac2Fotos()" title="Gera uma imagem nítida de cada bloco da tela, pronta para colar no grupo">📷 Imagens p/ o grupo</button>';
   ac2RenderFiltros();
   const cmpMode=ac2.cmp && ac2.nivel!=='gestor';
   if(ac2.nivel==='direcao'){ kpi.innerHTML=ac2DirHero(); body.innerHTML=cmpMode?ac2Comparar():ac2DirScore(); }
@@ -3598,6 +3624,77 @@ ac2.render=function(){
   else { kpi.innerHTML=ac2TopoGestor(); body.innerHTML=ac2Gestor(); }
 };
 ac2.setModo=function(m){ ac2.modo=m; ac2.render(); };
+
+// ── IMAGENS PARA O GRUPO (16/10/2026) ─────────────────────────────────────────────────────────
+// Print com zoom reduzido sai borrado. Aqui cada bloco da tela (cartões, "Quem está em atraso",
+// tabela por tipo, cartões dos gestores…) vira um PNG próprio, em largura fixa de 1100px (letra legível no celular) e
+// resolução 2x, com cabeçalho (nível, período, data). Copiar → colar direto no WhatsApp Web.
+// A biblioteca (html-to-image) só é baixada no 1º clique.
+function ac2CarregaFoto(){
+  if(window.htmlToImage) return Promise.resolve();
+  return new Promise((ok,err)=>{ const sc=document.createElement('script');
+    sc.src='https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js';
+    sc.onload=ok; sc.onerror=()=>err(new Error('não consegui carregar o gerador de imagem (internet?)')); document.head.appendChild(sc); });
+}
+// separa a tela em blocos: o topo (cartões) e cada título .a2-sh com o que vem até o próximo título
+function ac2BlocosFoto(){
+  const kpi=document.getElementById('a2-kpi'), body=document.getElementById('a2-body'), blocos=[];
+  const corta = (el, tituloPadrao) => { let atual=null;
+    [...el.children].forEach(c=>{
+      if(c.classList.contains('a2-sel')) return;                     // a faixa de filtro vai no cabeçalho
+      if(c.classList.contains('a2-sh')){ atual={ titulo:(c.childNodes[0]&&c.childNodes[0].textContent||'').trim()||tituloPadrao, nos:[c] }; blocos.push(atual); }
+      else { if(!atual){ atual={ titulo:tituloPadrao, nos:[] }; blocos.push(atual); } atual.nos.push(c); } }); };
+  corta(kpi, 'Resumo'); corta(body, 'Detalhe');
+  return blocos.filter(b=>b.nos.some(n=>n.offsetHeight>0));
+}
+async function ac2Fotos(){
+  const btn=event&&event.currentTarget; const txt0=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='Gerando…'; }
+  const root=document.getElementById('ac2-root');
+  const palco=document.createElement('div'); palco.className='a2-palco';
+  try{
+    await ac2CarregaFoto();
+    const nivel={direcao:'Direção',coord:'Coordenação',gestor:'Gestor'}[ac2.nivel]||'';
+    const quando=new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const recorte=[ac2.gestorSel, ac2.cmp&&ac2.nivel!=='gestor'?'Comparar':''].filter(Boolean).join(' · ');
+    const bg=getComputedStyle(document.body).backgroundColor||'#0b0f17';
+    root.appendChild(palco);
+    const blocos=ac2BlocosFoto(), imgs=[];
+    for(let k=0;k<blocos.length;k++){
+      const b=blocos[k], box=document.createElement('div'); box.className='a2-foto';
+      box.innerHTML=`<div class="a2-foto-h"><b>Grupo Bsan · Acompanhamento — ${nivel}${recorte?' · '+recorte:''}</b><span>período ${ac2.perLabel()} · gerado em ${quando} · ${k+1}/${blocos.length}</span></div>`;
+      b.nos.forEach(n=>box.appendChild(n.cloneNode(true)));
+      palco.appendChild(box);
+      const w=Math.max(1100, box.scrollWidth);
+      const opt={ pixelRatio:2, backgroundColor:bg, width:w, style:{ width:w+'px' } };
+      let url; try{ url=await htmlToImage.toPng(box,opt); }
+      catch(e){ url=await htmlToImage.toPng(box,Object.assign({skipFonts:true},opt)); }   // fonte externa bloqueada: segue com a do sistema
+      imgs.push({ titulo:b.titulo, url });
+    }
+    ac2MostraFotos(imgs, nivel);
+  } catch(e){ alert('Não deu para gerar as imagens: '+e.message); }
+  finally{ palco.remove(); if(btn){ btn.disabled=false; btn.textContent=txt0; } }
+}
+function ac2MostraFotos(imgs, nivel){
+  let ov=document.getElementById('a2-fotos'); if(!ov){ ov=document.createElement('div'); ov.id='a2-fotos'; document.body.appendChild(ov); }
+  window._a2Fotos=imgs;
+  const nome=i=>`bsan_${(nivel||'painel').toLowerCase()}_${String(i+1).padStart(2,'0')}_${imgs[i].titulo.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}.png`;
+  window._a2FotoNome=nome;
+  ov.innerHTML=`<div class="a2f-box"><div class="a2f-top"><b>${imgs.length} imagem(ns) prontas</b>
+      <span>Copiar e colar no WhatsApp Web (Ctrl+V) · ou baixar</span>
+      <button onclick="ac2BaixaFotos()">⬇ Baixar todas</button><button onclick="document.getElementById('a2-fotos').classList.remove('on')">Fechar</button></div>
+    <div class="a2f-lista">${imgs.map((x,i)=>`<div class="a2f-it"><div class="a2f-it-h"><b>${i+1}. ${x.titulo}</b>
+      <button onclick="ac2CopiaFoto(${i},this)">📋 Copiar</button><a download="${nome(i)}" href="${x.url}">⬇ Baixar</a></div>
+      <img src="${x.url}" alt="${x.titulo}"></div>`).join('')}</div></div>`;
+  ov.classList.add('on');
+}
+async function ac2CopiaFoto(i, btn){
+  try{ const blob=await (await fetch(window._a2Fotos[i].url)).blob();
+    await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+    btn.textContent='✓ Copiada — cole no grupo'; setTimeout(()=>btn.textContent='📋 Copiar',2500); }
+  catch(e){ btn.textContent='Copiar falhou — use Baixar'; }
+}
+function ac2BaixaFotos(){ (window._a2Fotos||[]).forEach((x,i)=>setTimeout(()=>{ const a=document.createElement('a'); a.href=x.url; a.download=window._a2FotoNome(i); document.body.appendChild(a); a.click(); a.remove(); }, i*350)); }
 
 // ═══════════ NÍVEL 1 · DIREÇÃO — "quanto tem para fazer e quanto foi feito" ═══════════
 // Espelha o painel consolidado que a equipe já usa: por gestor, quantas demandas, de que tipos,
@@ -3749,16 +3846,19 @@ function ac2DirScore(){
     const s = ac2SemFr(reg, li.length), efG = ac2Efeito(li);
     const risco = li.filter(i=>!ac2Registrada(i)).reduce((a,i)=>a+(+i.risco||0),0);
     const ops = [...new Set(li.map(i=>`${i.empresa} · ${i.mkt}`))];
+    // uma linha por tipo (16/10/2026): o selo é por tipo — o gestor pode estar Ideal em Prejuízo e Crítico em Queima
     const pt = AC2_TIPOS.filter(t=>li.some(i=>ac2TipoDe(i.tipo).k===t.k))
-      .map(t=>{ const lt=li.filter(i=>ac2TipoDe(i.tipo).k===t.k), n=lt.length, r=lt.filter(ac2Registrada).length, sr=ac2SemFr(r,n);
-        return `<span style="color:${t.cor};font-weight:700">${t.curto} ${n}</span> <span style="color:${sr.cor}">(${ac2Pct(r,n)}%)</span>`; }).join(' · ');
+      .map(t=>{ const lt=li.filter(i=>ac2TipoDe(i.tipo).k===t.k), n=lt.length, r=lt.filter(ac2Registrada).length, sr=ac2SemFr(r,n), ef=ac2Efeito(lt);
+        return `<div class="gt-l"><span class="gt-n" style="color:${t.cor}">${t.curto}</span><span class="gt-q">${r}/${n}</span>
+          <span class="gt-p" style="color:${sr.cor}">${ac2Pct(r,n)}%</span><span class="gt-s" style="color:${sr.cor};border-color:${sr.cor}">${sr.rot}</span>
+          <span class="gt-e"${ef.med?` style="color:${ef.sem.cor}" title="efeito: ${ef.ok} de ${ef.med} medidas funcionaram"`:''}>${ef.med?'efeito '+ef.pct+'%':''}</span></div>`; }).join('');
     return `<div class="a2-gc" onclick="ac2.goGes('${esc(g)}','direcao')" style="--cc:${s.cor}">
       <div class="gc-h"><b>${g}</b><span class="gc-tag">${s.rot}</span></div>
       <div class="gc-v">${li.length-reg}<small> de ${li.length} sem registro</small></div>
       <div class="cap-b"><span style="width:${pc}%;background:${s.cor}"></span></div>
       <div class="gc-s">${pc}% registrado${risco>0?` · ${AC2_BRLk(risco)} parado`:''}</div>
       <div class="cap-selos">${ac2Selo('Registro', s, pc+'%')}${efG.med ? ac2Selo('Efeito', efG.sem, efG.ok+'/'+efG.med) : ac2Selo('Efeito', null, 'aguardando')}</div>
-      <div class="gc-t">${pt}</div>
+      <div class="gc-tipos"><div class="gt-l gt-h"><span>Tipo</span><span>Reg.</span><span>%</span><span>Selo</span><span></span></div>${pt}</div>
       <div class="gc-o">${ops.slice(0,3).join(' • ')}${ops.length>3?` • +${ops.length-3}`:''}</div></div>`;
   }).sort().join('');
 
@@ -3772,7 +3872,7 @@ function ac2DirScore(){
         <td>${barra(ac2Pct(regT,l.length), ac2SemFr(regT,l.length).cor)}</td>
         <td>${(()=>{ const ef=ac2Efeito(l); return ef.med ? barra(ef.pct, ef.sem.cor) : '<span style="color:var(--t3);font-size:11px">aguardando</span>'; })()}</td></tr>
     </tbody></table></div>
-    <div class="a2-sh" style="margin-top:18px">Momento de cada gestor<small>clique para abrir a lista dele · selo pela taxa de registro; efeito ao lado · entre parênteses, a % registrada em cada tipo</small></div>
+    <div class="a2-sh" style="margin-top:18px">Momento de cada gestor<small>clique para abrir a lista dele · selo geral no topo; abaixo, cada tipo com a sua % registrada e o seu selo · efeito aparece quando já houver medição</small></div>
     <div class="a2-gcs">${cards}</div>
     <div class="a2-nota">“Registrada” quer dizer que o gestor anotou o que fez naquela demanda. Enquanto ninguém anota, não dá para saber se foi tratada — e o dinheiro segue parado.</div>`;
 }
