@@ -3630,7 +3630,7 @@ const AC2_TIPOS_PROMO = [
   { k:'promo_encareceu', curto:'Encareceu',    cor:'#a78bfa', re:/promo · encareceu/i,    ajuda:'O preço da promoção ficou acima do que o anúncio vendia: aproximar para não perder a venda.' },
 ];
 let AC2_TIPOS = AC2_TIPOS_TAREFAS;   // troca com a sub-aba (ac2.setSub)
-const AC2_ISPROMO = i => /^promo|/.test(String(i&&i.id||'')) || /^promo ·/i.test(String(i&&i.tipo||''));
+const AC2_ISPROMO = i => /^promo\|/.test(String(i&&i.id||'')) || /^promo ·/i.test(String(i&&i.tipo||''));
 const ac2TipoDe = t => (AC2_TIPOS.find(x => x.re.test(String(t||''))) || { k:'outro', curto:'Outro', cor:'#8891a8', ajuda:'' });
 // conta quantas de cada tipo há numa lista
 function ac2PorTipo(l){ const o={}; AC2_TIPOS.forEach(t=>o[t.k]=0); o.outro=0;
@@ -3651,6 +3651,8 @@ function ac2PrazoInfo(i){
                  : { txt:'registrada no prazo', cor:'#16a34a', atrasada:false };
   }
   if(!i.criado_em) return { txt:'', atrasada:false };
+  // prazo que ainda não começou (promoções que entraram numa sexta: o relógio começa na segunda — metas.json → promo.inicio_prazo)
+  if(Date.parse(i.criado_em) > Date.now()) return { txt:'prazo começa em '+ac2Dt(i.criado_em)+' · '+p+' dia(s)', cor:'var(--c-mut)', atrasada:false };
   const resta = p - (Date.now() - Date.parse(i.criado_em))/864e5;
   if(resta < 0) return { txt:'⏰ atrasada '+Math.ceil(-resta)+' dia(s) · prazo '+p+'d', cor:'#dc2626', atrasada:true };
   return { txt:'vence em '+(resta<1?'menos de 1 dia':Math.ceil(resta)+' dia(s)'), cor: resta<1 ? '#f59e0b' : 'var(--c-mut)', atrasada:false };
