@@ -3234,6 +3234,12 @@ const AC2_GES  = (()=>{const s=[];Object.values(AC2_GESTOR).forEach(g=>{if(!s.in
 const AC2_DIMS = [{k:'pts',l:'Ponto',g:i=>i.ponto},{k:'emp',l:'Empresa',g:i=>i.empresa},{k:'mkt',l:'Marketplace',g:i=>i.mkt},{k:'ges',l:'Gestor',g:i=>i.gestor}];
 function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=document.createElement('style'); s.id='ac2-css'; s.textContent=`
 #ac2-root{--c-s:var(--surf);--c-s2:var(--surf2);--c-ink:var(--t1);--c-mut:var(--t3);--c-ln:var(--bdr2);--c-acc:#4f8ef7;--c-accb:rgba(79,142,247,.14);--c-pos:#22c55e;--c-posb:rgba(34,197,94,.13);--c-warn:#f59e0b;--c-warnb:rgba(245,158,11,.14);--c-neg:#f87171;--c-negb:rgba(248,113,113,.13);font-family:'Inter',sans-serif;}
+#ac2-root .a2-sub{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+#ac2-root .a2-subb{border:1px solid var(--c-ln);background:transparent;color:var(--c-mut);border-radius:999px;padding:6px 14px;font-weight:700;font-size:13px;cursor:pointer}
+#ac2-root .a2-subb.on{background:#4f8ef7;border-color:#4f8ef7;color:#fff}
+#ac2-root .a2-subb.off{opacity:.45;cursor:default}
+#ac2-root .a2-subn{display:inline-block;margin-left:4px;padding:0 7px;border-radius:999px;background:rgba(127,127,127,.18);font-size:11px}
+#ac2-root .a2-subb.on .a2-subn{background:rgba(255,255,255,.25)}
 #ac2-root .a2-lv{display:flex;gap:4px;border-bottom:1px solid var(--c-ln);margin-top:10px}
 #ac2-root .a2-lvb{background:none;border:none;color:var(--c-mut);font-weight:700;font-size:13.5px;padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent}
 #ac2-root .a2-lvb small{font-weight:500;font-size:11px;color:var(--c-mut);margin-left:4px}
@@ -3496,7 +3502,7 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 @media(max-width:860px){#ac2-root .a2-kpis{grid-template-columns:repeat(2,1fr)}}
 `; document.head.appendChild(s); }
 async function ac2Open(){ ac2injectCSS(); bcAuthInjectCSS(); const root=document.getElementById('ac2-root'); if(!root)return;
-  root.innerHTML=`<div id="bc-authbar" style="display:flex;justify-content:flex-end;margin-bottom:6px"></div><div class="a2-lv" id="a2-lv"></div><div class="a2-bar" id="a2-bar"></div><div id="a2-kpi"></div><div id="a2-body"></div>
+  root.innerHTML=`<div id="bc-authbar" style="display:flex;justify-content:flex-end;margin-bottom:6px"></div><div class="a2-sub" id="a2-sub"></div><div class="a2-lv" id="a2-lv"></div><div class="a2-bar" id="a2-bar"></div><div id="a2-kpi"></div><div id="a2-body"></div>
    <div class="a2-ov" id="a2-ov" onclick="if(event.target===this)ac2.closeDrill()"><div class="a2-mo"><div class="a2-mh" id="a2-mh"></div><div class="a2-mb" id="a2-mb"></div></div></div>`;
   bcRenderAuthBar();
   const b=document.getElementById('a2-body'); if(b) b.innerHTML='<div style="padding:34px;text-align:center;color:var(--t3)">⏳ carregando do banco…</div>';
@@ -3607,13 +3613,24 @@ const AC2_DESDE = '2026-10';
 // ── TIPOS DE DEMANDA ─────────────────────────────────────────────────────────────────────────
 // O pipeline gera 4. Na tela usamos o nome CURTO: quem acompanha não é técnico, e "Estancamento
 // de Prejuízo" numa coluna de tabela não cabe nem se lê.
-const AC2_TIPOS = [
+const AC2_TIPOS_TAREFAS = [
   { k:'prejuizo',  curto:'Prejuízo',  cor:'#dc2626', re:/estanca|prejuí|prejui/i, ajuda:'Está vendendo abaixo do custo. É o que sangra agora.' },
   { k:'devolucao', curto:'Devolução', cor:'#22d3ee', re:/devolu/i, ajuda:'Muita devolução no anúncio: rever qualidade, descrição e fotos, embalagem, transportadora. Preço não resolve.' },
   { k:'margem',    curto:'Margem',    cor:'#f59e0b', re:/correção de margem|correcao de margem/i, ajuda:'Vende bem mas sobra pouco (menos de 10%).' },
   { k:'queima',    curto:'Queima',    cor:'#e879f9', re:/queima/i, ajuda:'Ainda tem margem, mas está caindo. Agir antes de virar prejuízo.' },
   { k:'maturacao', curto:'Maturação', cor:'#4f8ef7', re:/matura/i, ajuda:'Produto novo: trabalhar a margem, não descartar.' },
 ];
+// ── SUB-ABA PROMOS (16/10/2026) ──────────────────────────────────────────────────────────────────
+// Exceções do módulo de promoções do ML viram tarefas (db-sync → promo-demandas.js, id "promo|…"), com a MESMA
+// mecânica das Tarefas: prazo (2 dias), registro, cobrança, efeito pelas vendas e os mesmos indicadores em cada nível.
+// Todas à mostra, sem limite (definição do Weskley). Produto sem custo NÃO vira tarefa (é cadastro, não é do gestor).
+const AC2_TIPOS_PROMO = [
+  { k:'promo_sangra',    curto:'Sangrando',    cor:'#dc2626', re:/promo · sangra/i,       ajuda:'A promoção ativa deixou a margem abaixo do piso (10%). Sair da campanha ou reduzir o desconto.' },
+  { k:'promo_preco',     curto:'Preço errado', cor:'#f59e0b', re:/promo · preço errado/i, ajuda:'Abaixo do piso já no preço cheio: rever o preço de cadastro (âncora da conta) ou o custo.' },
+  { k:'promo_encareceu', curto:'Encareceu',    cor:'#a78bfa', re:/promo · encareceu/i,    ajuda:'O preço da promoção ficou acima do que o anúncio vendia: aproximar para não perder a venda.' },
+];
+let AC2_TIPOS = AC2_TIPOS_TAREFAS;   // troca com a sub-aba (ac2.setSub)
+const AC2_ISPROMO = i => /^promo|/.test(String(i&&i.id||'')) || /^promo ·/i.test(String(i&&i.tipo||''));
 const ac2TipoDe = t => (AC2_TIPOS.find(x => x.re.test(String(t||''))) || { k:'outro', curto:'Outro', cor:'#8891a8', ajuda:'' });
 // conta quantas de cada tipo há numa lista
 function ac2PorTipo(l){ const o={}; AC2_TIPOS.forEach(t=>o[t.k]=0); o.outro=0;
@@ -3622,7 +3639,7 @@ function ac2PorTipo(l){ const o={}; AC2_TIPOS.forEach(t=>o[t.k]=0); o.outro=0;
 const ac2Registrada = i => !!i.trat || i.estado==='trat';
 // PRAZO POR TIPO (14/10/2026). Vem de cada tarefa (db-sync grava de metas.json → prazos_dias);
 // o padrão abaixo só cobre tarefa antiga, gravada antes de existir o campo. Antes a régua era 24h para tudo.
-const AC2_PRAZO_PADRAO = { prejuizo:1, devolucao:2, margem:1, queima:1, maturacao:2 };   // prazos do Weskley, 16/10/2026
+const AC2_PRAZO_PADRAO = { prejuizo:1, devolucao:2, margem:1, queima:1, maturacao:2, promo_sangra:2, promo_preco:2, promo_encareceu:2 };   // prazos do Weskley, 16/10/2026
 const ac2Prazo = i => i.prazo!=null ? +i.prazo : (AC2_PRAZO_PADRAO[ac2TipoDe(i.tipo).k] || 7);
 // situação do prazo: registrada (no prazo / com X dias de atraso) ou em aberto (vence em X / atrasada X)
 function ac2PrazoInfo(i){
@@ -3643,7 +3660,11 @@ const ac2Esc = t => String(t==null?'':t).replace(/[&<>"]/g, c => ({'&':'&amp;','
 // A LENTE GLOBAL (Grupo/Bsan/Powerfull, no topo) TAMBÉM VALE AQUI. Ela ficou de fora quando o
 // Acompanhamento virou aba própria: dava para estar em "Powerfull" e ver os 6 gestores do grupo,
 // com operações da Bsan Shop e da Jowcase na tela. Uma lente que não cascateia mente sobre o recorte.
-ac2.filt=function(){ const ms=ac2.mesesSel(); return ac2.DEM.filter(i=>ac2.compDe(i)>=AC2_DESDE&&(!ms||ms.has(ac2.compDe(i)))&&(typeof PONTO_SEL==='undefined'||!PONTO_SEL||i.ponto===PONTO_SEL)&&AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)); };
+ac2.filt=function(){ const ms=ac2.mesesSel(); return ac2.DEM.filter(i=>ac2.compDe(i)>=AC2_DESDE&&(!ms||ms.has(ac2.compDe(i)))&&(typeof PONTO_SEL==='undefined'||!PONTO_SEL||i.ponto===PONTO_SEL)&&AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)&&ac2.daSub(i)); };
+if(!ac2.sub) ac2.sub='tarefas';
+ac2.daSub=function(i){ return ac2.sub==='promos' ? AC2_ISPROMO(i) : !AC2_ISPROMO(i); };
+ac2.setSub=function(s){ if(ac2.sub===s) return; ac2.sub=s; AC2_TIPOS = s==='promos' ? AC2_TIPOS_PROMO : AC2_TIPOS_TAREFAS;
+  AC2_TIPO_FILTRO=''; AC2_DIR_TIPO=''; ac2.opSel=null; ac2.render(); };
 ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risco:l.reduce((s,i)=>s+i.risco,0), prej:prej.length, riscoPrej:prej.reduce((s,i)=>s+i.risco,0), corr:l.length-prej.length}; };
 ac2.go=function(n){ ac2.nivel=n; if(n!=='gestor'){ac2.gestorSel=null;ac2.opSel=null;} ac2.render(); };
 // trocar de gestor zera a operação: a do gestor anterior não existe no novo
@@ -3651,6 +3672,13 @@ ac2.goGes=function(g,from){ ac2.gestorSel=g||null; ac2.opSel=null; AC2_TIPO_FILT
 ac2.render=function(){
   ac2._vdMap={}; ac2._vdSeq=0;   // o mapa das quebras é por render: senão cresce a cada repintura
   const lv=document.getElementById('a2-lv'), kpi=document.getElementById('a2-kpi'), body=document.getElementById('a2-body'), bar=document.getElementById('a2-bar');
+  // SUB-ABAS do Acompanhamento: Tarefas · Promos · (Anúncios, em breve). Cada uma com a mesma mecânica e os mesmos níveis.
+  const sb=document.getElementById('a2-sub');
+  if(sb){ const ms=ac2.mesesSel(); const base=(ac2.DEM||[]).filter(i=>ac2.compDe(i)>=AC2_DESDE&&(!ms||ms.has(ac2.compDe(i)))&&(typeof PONTO_SEL==='undefined'||!PONTO_SEL||i.ponto===PONTO_SEL)&&(!ac2.gestorSel||i.gestor===ac2.gestorSel));
+    const nP=base.filter(AC2_ISPROMO).length, nT=base.length-nP;
+    sb.innerHTML=[['tarefas','📋 Tarefas',nT,'margem, prejuízo, queima, devolução'],['promos','🏷️ Promos',nP,'promoções do Mercado Livre']]
+      .map(x=>'<button class="a2-subb '+(ac2.sub===x[0]?'on':'')+'" onclick="ac2.setSub(\''+x[0]+'\')" title="'+x[3]+'">'+x[1]+' <span class="a2-subn">'+x[2]+'</span></button>').join('')
+      +'<button class="a2-subb off" disabled title="em construção">📦 Anúncios <span class="a2-subn">em breve</span></button>'; }
   lv.innerHTML=[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor','a lista dele']].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('')
     +'<span class="a2-lvsep"></span>'
     +[['filtrar','🔎 Filtrar'],['comparar','📊 Comparar']].map(x=>`<button class="a2-lvb ${(ac2.cmp?'comparar':'filtrar')===x[0]?'on':''}" onclick="ac2.setCmp('${x[0]}')">${x[1]}</button>`).join('')
@@ -3811,7 +3839,7 @@ function ac2Atrasos(l){
       <td class="r">${x.atr?x.maior+' dia(s)':'—'}</td>
       <td class="r" style="color:${x.risco?'#f59e0b':'var(--t3)'}">${x.risco?AC2_BRLk(x.risco):'—'}</td>
       <td class="r">${x.reg?`<span style="color:${ac2SemFr(x.reg-x.fora,x.reg).cor};font-weight:700">${x.noPrazo}%</span> <span style="color:var(--t3)">(${x.fora} de ${x.reg} fora do prazo)</span>`:'<span style="color:var(--t3)">sem registro</span>'}</td></tr>`).join('');
-  return `<div class="a2-sh" style="margin-top:6px">Quem está em atraso<small>${tot} tarefa(s) sem registro já passaram do prazo · prazo (tarefas criadas a partir de 15/10): Prejuízo, Margem e Queima 1 dia · Maturação e Devolução 2 dias; as anteriores seguem o prazo da época · clique para abrir a lista do gestor</small></div>
+  return `<div class="a2-sh" style="margin-top:6px">Quem está em atraso<small>${tot} tarefa(s) sem registro já passaram do prazo · ${ac2.sub==='promos' ? 'prazo das promoções: 2 dias' : 'prazo (tarefas criadas a partir de 15/10): Prejuízo, Margem e Queima 1 dia · Maturação e Devolução 2 dias; as anteriores seguem o prazo da época'} · clique para abrir a lista do gestor</small></div>
     <div class="tbl-wrap"><table class="tbl a2-tbl"><thead><tr><th>Gestor</th><th class="r">Atrasadas agora</th><th>De que tipo</th><th class="r">Maior atraso</th><th class="r">R$ parado nelas</th><th class="r">Registradas no prazo</th></tr></thead>
     <tbody>${tr}</tbody></table></div>`;
 }
@@ -4097,7 +4125,7 @@ function ac2Coord(){
     <div class="a2-gcs">${cards}</div>
     ${blocoConclusao('Conclusão por empresa', i=>i.empresa, 'quais empresas estão em dia')}
     ${blocoConclusao('Conclusão por marketplace', i=>i.mkt, 'quais canais estão em dia')}
-    <div class="a2-nota">Prazo para registrar: Prejuízo, Margem e Queima 1 dia · Maturação e Devolução 2 dias (tarefas criadas a partir de 15/10; as anteriores seguem o prazo da época). A ordem da mesa não é só o valor parado: R$ 800 atrasado há uma semana cobra mais que R$ 2.000 atrasado há algumas horas.</div>`;
+    <div class="a2-nota">Prazo para registrar: ${ac2.sub==='promos' ? 'promoções 2 dias' : 'Prejuízo, Margem e Queima 1 dia · Maturação e Devolução 2 dias (tarefas criadas a partir de 15/10; as anteriores seguem o prazo da época)'}. A ordem da mesa não é só o valor parado: R$ 800 atrasado há uma semana cobra mais que R$ 2.000 atrasado há algumas horas.</div>`;
 }
 
 
@@ -4475,6 +4503,7 @@ function ac2PainelVendas(i, k){
 // se apoia em dado (★ com histórico · 1 mês só · sem histórico); se o dado não aponta causa, a frase diz
 // isso em vez de inventar. Tudo sai do ac2Analise — o mesmo motor do painel aberto.
 function ac2Problema(i, a){
+  if(AC2_ISPROMO(i)) return '<b>'+ac2Esc(String(i.causa||'').split(' · campanhas:')[0])+'</b>';
   const k = ac2TipoDe(i.tipo).k;
   if(k==='devolucao') return `<b>${ac2Esc(i.causa||'Devolução acima do normal')}</b>`;
   const ok = a && !a.vazio, pc = ok ? a.pct(a.mc) : +i.mcPct, meta = +i.meta||0;
@@ -4561,7 +4590,16 @@ function ac2Sugestoes(i, a){
   return s;
 }
 const AC2_CONF = { forte:['★ com histórico','#16a34a'], fraca:['1 mês de histórico','#d97706'], sem:['sem histórico','#dc2626'] };
+// tarefa de PROMOÇÃO: o que fazer pelo tipo + campanhas ativas + link do anúncio (a conta completa segue disponível)
+function ac2PromoResumo(i){ const k=ac2TipoDe(i.tipo).k, c=String(i.causa||''), camp=(c.split(' · campanhas: ')[1]||'').trim();
+  const fazer = k==='promo_sangra' ? 'Sair da campanha que está derrubando a margem ou reduzir o desconto até a margem voltar a pelo menos 10%. Se nem sem promoção fecha, rever o preço de cadastro (âncora) ou o custo.'
+    : k==='promo_preco' ? 'Rever o preço de cadastro (âncora da conta): está abaixo de 10% já no preço cheio. Se o preço é o de mercado, rever custo ou produto.'
+    : 'Aproximar o preço da promoção do preço em que o anúncio vendia, sem descer abaixo de 10% de margem.';
+  const link = i.anuncio && /^MLB\d/i.test(i.anuncio) ? ' · <a href="https://produto.mercadolivre.com.br/'+String(i.anuncio).replace(/^MLB/i,'MLB-')+'" target="_blank" rel="noopener">abrir o anúncio ↗</a>' : '';
+  return '<div class="dm-l dm-lk"><span class="dm-k">O que fazer</span><div>'+fazer+link+'</div></div>'
+    + (camp ? '<div class="dm-l dm-lk"><span class="dm-k">Campanhas</span><div>'+ac2Esc(camp)+'</div></div>' : ''); }
 function ac2ResumoHTML(i, a){
+  if(AC2_ISPROMO(i)) return ac2PromoResumo(i);
   const causa = ac2Causa(a), sug = ac2Sugestoes(i, a);
   if(!causa && !sug.length) return `<div class="dm-l dm-mut">Sem vendas deste anúncio no período carregado — abra a conta completa ou o Raio-X.</div>`;
   return (causa ? `<div class="dm-l dm-lk"><span class="dm-k">O que aconteceu</span><div>${causa}</div></div>` : '')
@@ -4595,7 +4633,7 @@ function ac2DemRow(i, modo){
       <div class="dm-meta">${meta} · ${conta}</div>
       <div class="a2-vd" id="${_vk}"></div>
     </div>
-    <div class="dm-side">${modo==='feita' ? '' : `<small>${ac2TipoDe(i.tipo).k==='devolucao'?'custo das devoluções':'falta p/ meta'}</small><b>${AC2_BRLk(+i.risco||0)}</b>`}${btn}</div>
+    <div class="dm-side">${modo==='feita' ? '' : `<small>${AC2_ISPROMO(i)?'em jogo (30 dias)':ac2TipoDe(i.tipo).k==='devolucao'?'custo das devoluções':'falta p/ meta'}</small><b>${AC2_BRLk(+i.risco||0)}</b>`}${btn}</div>
   </div>`;
 }
 // preenche causa/sugestão das linhas visíveis: busca o histórico em segundo plano, 4 de cada vez
@@ -4778,7 +4816,7 @@ function ac2DirKPI(){
   const l=ac2.filt(); const m=ac2.met(l);
   const mu=ac2.mesUnico(); let dm=null, perfPrev=null, cmpLbl='';
   if(mu){ const pm=ac2.mesAnterior(mu);
-    const lp=ac2.DEM.filter(i=>ac2.compDe(i)===pm && AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i))) && (!ac2.gestorSel||i.gestor===ac2.gestorSel));
+    const lp=ac2.DEM.filter(i=>ac2.compDe(i)===pm && AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i))) && (!ac2.gestorSel||i.gestor===ac2.gestorSel) && ac2.daSub(i));
     if(lp.length) dm=ac2.met(lp);
     const pr=ac2.rangeDoMes(pm); perfPrev=ac2.perfRange(pr[0],pr[1]);
     cmpLbl='vs '+ac2._MESNOME[+pm.split('-')[1]-1];
@@ -5098,6 +5136,11 @@ function bcRenderAuthBar(){ const bar=document.getElementById('bc-authbar'); if(
 // de estoque no Full, concorrência/fabricante vendendo abaixo, e o gestor contestando o número.
 // "Sem ação" virou "Mantive de propósito": quase sempre era uma decisão, não uma omissão.
 const BC_OPC = {
+  promo: {
+    acoes: ['Saí da campanha','Reduzi o desconto da promoção','Ajustei o preço da promoção','Ajustei o preço de cadastro (âncora)',
+            'Revisei custo/ficha do produto','Pausei o anúncio','Mantive de propósito (estratégia)','Aguardando terceiro (fornecedor, estoque, fim de campanha)','Outro'],
+    causas: ['Campanha do ML com desconto acima do suportado','Desconto próprio alto demais','Preço de cadastro (âncora) errado',
+             'Custo do produto subiu','Tarifa ou frete da plataforma subiu','Estratégia: queima de estoque','O número do sistema parece errado','Outro'] },
   margem: {
     acoes: ['Ajustei o preço','Saí ou ajustei promoção/campanha','Ajustei Ads (pausei, reduzi, otimizei)','Revisei custo/ficha do produto',
             'Mudei frete, modalidade (Full/Flex/coleta) ou embalagem','Montei ou troquei kit/variação','Pausei o anúncio',
@@ -5110,7 +5153,7 @@ const BC_OPC = {
             'Mudei transportadora ou modalidade de envio','Pausei o anúncio','Analisei os motivos e ainda não há ação','Outro'],
     causas: ['Produto diferente do anúncio','Defeito ou qualidade','Avaria no transporte','Tamanho, medida ou voltagem errada',
              'Atraso na entrega','Arrependimento do comprador','O número do sistema parece errado','Outro'] } };
-const bcOpcoes = tipo => BC_OPC[ac2TipoDe(tipo).k==='devolucao' ? 'devolucao' : 'margem'];
+const bcOpcoes = tipo => BC_OPC[/^promo ·/i.test(String(tipo||'')) ? 'promo' : ac2TipoDe(tipo).k==='devolucao' ? 'devolucao' : 'margem'];
 // o que pedir em cada ação: o detalhe é o que permite conferir depois se funcionou
 const BC_DICA = a => /ajustei o pre/i.test(a) ? 'ex.: subi de R$ 29,99 para R$ 32,90; margem esperada 21%'
   : /promo/i.test(a) ? 'ex.: saí da campanha X; o preço volta a R$ 34,90 em 18/10'

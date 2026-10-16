@@ -42,7 +42,8 @@ function http(metodo, urlStr, corpo, saltos = 0) {
 async function chamar(cfg, corpo) {
   for (let t = 0; ; t++) {
     try { return await http("POST", cfg.url, Object.assign({ token: cfg.token }, corpo)); }
-    catch (e) { if (!/ocupado/i.test(e.message) || t >= 3) throw e; await new Promise(r => setTimeout(r, 5000 * (t + 1))); }
+    // também HTTP 404/5xx: o Google às vezes devolve "página não encontrada" com o script sobrecarregado (16/10/2026, Jowcase)
+    catch (e) { if (!/ocupado|HTTP (404|5\d\d)/i.test(e.message) || t >= 3) throw e; await new Promise(r => setTimeout(r, 5000 * (t + 1))); }
   }
 }
 
@@ -57,7 +58,10 @@ const ACAO = {
   "Estancamento de Prejuízo": "Subir preço, renegociar custo ou pausar o anúncio.",
   "Correção de Margem": "Rever preço, custo da ficha e frete.",
   "Queima de Margem": "Agir agora, antes de virar prejuízo: preço ou custo.",
-  "Maturação (produto novo)": "Produto novo: trabalhar a margem, não descartar."
+  "Maturação (produto novo)": "Produto novo: trabalhar a margem, não descartar.",
+  "Promo · Sangrando": "Sair da campanha ou reduzir o desconto até a margem voltar ao piso.",
+  "Promo · Preço errado": "Rever o preço de cadastro/âncora: abaixo do piso já no preço cheio.",
+  "Promo · Encareceu": "Aproximar o preço da promoção do preço em que o anúncio vendia."
 };
 const ORIGEM = { "": "BsanControl", planilha: "Planilha antiga", historico: "Histórico (importado)" };
 
@@ -68,7 +72,7 @@ const CAB_REGISTROS = ["Registrado em", "Gestor", "Competência", "Anúncio", "P
   "Ação", "Novo preço", "Causa", "O que foi feito", "Reação (h)", "Origem", "ID da tarefa"];
 const DATAS = ["Registrado em", "Criada em", "Vence em"];
 // mesmo padrão do painel (AC2_PRAZO_PADRAO): só para tarefa gravada antes de existir prazo_dias
-const PRAZO_PADRAO = [[/preju|estanca/i, 1], [/devolu/i, 2], [/corre/i, 1], [/queima/i, 1], [/matura/i, 2]];
+const PRAZO_PADRAO = [[/^promo/i, 2], [/preju|estanca/i, 1], [/devolu/i, 2], [/corre/i, 1], [/queima/i, 1], [/matura/i, 2]];
 const prazoDe = d => d.prazo_dias != null ? +d.prazo_dias : ((PRAZO_PADRAO.find(([re]) => re.test(S(d.tipo))) || [0, 7])[1]);
 function situacaoPrazo(d, ts) {
   const p = prazoDe(d), nasc = Date.parse(d.criado_em || "");
