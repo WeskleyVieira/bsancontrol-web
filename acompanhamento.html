@@ -5340,7 +5340,7 @@ function _renderGerMetas(){
   const brl=v=>'R$ '+Math.round(+v||0).toLocaleString('pt-BR');
   const bk=v=>{ v=+v||0; const a=Math.abs(v); return a>=1e6?'R$ '+(v/1e6).toFixed(2).replace('.',',')+' mi':a>=1e3?'R$ '+(v/1e3).toFixed(1).replace('.',',')+' mil':brl(v); };
   const pc=(v,d=1)=>((+v||0)*100).toFixed(d).replace('.',',')+'%';
-  const IDS=['c-met-acum','c-met-mcdia','c-met-ating','c-met-bonus','c-met-tacos','c-met-hfat','c-met-hmc'];
+  const IDS=['c-met-acum','c-met-mcdia','c-met-ponte','c-met-evol','c-met-ating','c-met-bonus','c-met-tacos','c-met-hfat','c-met-hmc'];
   IDS.forEach(id=>{ if(charts[id]){ charts[id].destroy(); delete charts[id]; } });
   const L=(typeof COMISSAO!=='undefined'&&Array.isArray(COMISSAO))?COMISSAO:[];
   const D=(typeof COMISSAO_DET!=='undefined'&&Array.isArray(COMISSAO_DET))?COMISSAO_DET:[];
@@ -5356,7 +5356,27 @@ function _renderGerMetas(){
   // corrente, conta até ontem
   const hoje=new Date(), hojeM=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
   const fechado=_MET_MES<hojeM||(!!maxG&&maxG.slice(0,7)>_MET_MES);
-  const dd=fechado?dm:(ultM?+ultM.slice(8,10):Math.max(1,hoje.getDate()-1)), resta=Math.max(0,dm-dd), fP=(!fechado&&dd>0)?dm/dd:1;
+  const dd=fechado?dm:(ultM?+ultM.slice(8,10):Math.max(1,hoje.getDate()-1)), resta=Math.max(0,dm-dd);
+  // PESO DE CADA DIA DA SEMANA (fase 2, 19/10/2026): sábado e domingo vendem menos — com a reta, o gestor parecia
+  // atrasado na segunda e adiantado na sexta. Peso = venda média daquele dia da semana ÷ média geral, nos 90 dias antes
+  // do mês (todo o grupo, p/ não oscilar com o filtro). Sem histórico suficiente, peso 1 (= reta).
+  const W=Array(7).fill(1);
+  { const t0=Date.UTC(yy,mm-1,1), de=new Date(t0-91*864e5).toISOString().slice(0,10), ate=new Date(t0-864e5).toISOString().slice(0,10);
+    const porDia={}; for(const r of R0){ if(r.date&&r.date>=de&&r.date<=ate) porDia[r.date]=(porDia[r.date]||0)+(+r.fat||0); }
+    const soma=Array(7).fill(0), n=Array(7).fill(0);
+    for(let t=t0-91*864e5;t<t0;t+=864e5){ const d=new Date(t).toISOString().slice(0,10), w=new Date(t).getUTCDay(); soma[w]+=porDia[d]||0; n[w]++; }
+    const media=soma.reduce((a,b)=>a+b,0)/Math.max(1,n.reduce((a,b)=>a+b,0));
+    if(media>0&&Object.keys(porDia).length>=60) for(let w=0;w<7;w++) W[w]=n[w]?Math.max(.2,(soma[w]/n[w])/media):1; }
+  const pesoDia=i=>W[new Date(Date.UTC(yy,mm-1,i)).getUTCDay()];
+  const cumW=[0]; for(let i=1;i<=dm;i++) cumW[i]=cumW[i-1]+pesoDia(i);
+  const fP=(!fechado&&dd>0&&cumW[dd]>0)?cumW[dm]/cumW[dd]:1;   // fator de projeção do mês (não mais linear)
+  // O ÚLTIMO DIA PODE ESTAR PELA METADE (o atualizar roda de hora em hora): se ele é hoje, a projeção parte de ONTEM —
+  // senão um dia com 11 horas de venda contaria como dia cheio e puxaria a projeção do mês para baixo.
+  const hojeISO=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-'+String(hoje.getDate()).padStart(2,'0');
+  const parcial=!fechado&&ultM===hojeISO&&dd>1&&cumW[dd-1]>0, ddP=parcial?dd-1:dd;
+  const hojeOp={}; if(parcial) for(const r of R0){ if(r.date===hojeISO){ const k=r.emp+' · '+r.mkt; hojeOp[k]=(hojeOp[k]||0)+(+r.fat||0); } }
+  // fator por operação: (mês − hoje) × peso do mês inteiro ÷ peso até ontem, aplicado sobre o valor do mês
+  const fOp=(op,fatMes)=>{ if(fechado) return 1; if(!parcial||!(fatMes>0)) return fP; const h=Math.min(hojeOp[op]||0,fatMes); return ((fatMes-h)/fatMes)*cumW[dm]/cumW[dd-1]; };
   const NOMES=['','janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   const gesDe=op=>{ const [e,m]=String(op).split(' · '); return (typeof AC2_GESTOR!=='undefined'&&AC2_GESTOR[e+'|'+m])||'—'; };
   const gCor=g=>(typeof AC2_GCOR!=='undefined'&&AC2_GCOR[g])||'var(--t2)';
@@ -5371,8 +5391,8 @@ function _renderGerMetas(){
   // ── cada operação: 4 indicadores (ou 2, sem Ads) com meta, realizado e projeção; bônus projetado com a régua do bônus
   const calcOp=l=>{
     const d=D.find(x=>x.mes===l.mes&&x.operacao===l.operacao)||{};
-    const fp=l.mes===_MET_MES?fP:1;
     const fatR=+d.Faturamento_real||+l.faturamento||0, adsR=+d.Ads_real||0;
+    const fp=l.mes===_MET_MES?fOp(l.operacao,fatR):1;
     const ind=[
       {n:'Faturamento',dica:'vendas sem devolução e cancelamento',meta:+d.Faturamento_obj||0,real:fatR,proj:fatR*fp,peso:+d.Faturamento_peso||0,tipo:'maior',fmt:brl},
       {n:'Margem final',dica:'o que sobra depois de produto, impostos, tarifas, frete, Ads e custos da operação',meta:+d.MC_obj||0,real:+d.MC_real||0,proj:+d.MC_real||0,peso:+d.MC_peso||0,tipo:'maior',fmt:v=>pc(v),taxa:true},
@@ -5421,7 +5441,7 @@ function _renderGerMetas(){
     +'<span class="pf-lbl">Mês</span><select class="abc-select" onchange="metMes(this.value)">'+meses.map(s=>`<option value="${s}"${s===_MET_MES?' selected':''}>${NOMES[+s.slice(5)]} ${s.slice(0,4)}</option>`).join('')+'</select>'
     +(gestores.length>1?'<span class="pf-lbl" style="margin-left:6px;">Gestor</span><select class="abc-select" onchange="metGes(this.value)"><option value="">Todos</option>'+gestores.map(g=>`<option value="${esc(g)}"${g===_MET_GES?' selected':''}>${esc(g)}</option>`).join('')+'</select>':'')
     +'<span class="pf-lbl" style="margin-left:6px;">Operação</span><select class="abc-select" onchange="metOp(this.value)"><option value="">Todas</option>'+opsOpc.map(o=>`<option value="${esc(o)}"${o===_MET_OP?' selected':''}>${esc(o)}</option>`).join('')+'</select>'
-    +`<span style="font-size:11px;color:var(--t3);">${fechado?'mês fechado':'dia '+dd+' de '+dm+' · faltam '+resta+' dias'}</span>`
+    +`<span style="font-size:11px;color:var(--t3);">${fechado?'mês fechado':'dia '+dd+' de '+dm+' · faltam '+resta+' dias'+(parcial?' · hoje ainda em andamento: a projeção parte de ontem':'')}</span>`
     +`<button class="dshort" style="margin-left:auto;" onclick="metAjuda()">${_MET_AJUDA?'✕ fechar':'❓ Como funcionam as metas'}</button></div>`;
 
   // ── explicação para o gestor (linguagem simples)
@@ -5438,6 +5458,22 @@ function _renderGerMetas(){
       +'</div>';
   }
 
+  // ── ONDE ESTÁ O BÔNUS QUE SE PERDE: por meta, quanto do teto cada uma deixa de pagar (no ritmo atual)
+  const perde={};
+  ops.forEach(o=>{ const sp=o.ind.reduce((s,i)=>s+i.peso,0)||1, base=o.teto*Math.max(0,o.mcontP);
+    o.ind.forEach(i=>{ const k=i.n==='Orçamento de Ads'?'TACOS':i.n; perde[k]=(perde[k]||0)+(i.peso-_metBonus(i.proj,i.meta,i.peso,i.tipo))/sp*base; }); });
+  const vaz=Object.entries(perde).filter(x=>x[1]>=1).sort((a,b)=>b[1]-a[1]);
+  { const it=[]; const ok='✅', no='⚠️';
+    if(metaFatT) it.push((atFatF=>(atFatF>=1?ok:no)+(fechado?' Faturamento fechou em ':' No ritmo atual o faturamento fecha em ')+'<b>'+Math.round(100*atFatF)+'% da meta</b> ('+bk(fatPT)+' de '+bk(metaFatT)+')'+(atFatF<1&&!fechado&&resta?' — precisa de <b>'+bk((metaFatT-fatRT)/resta)+'/dia</b> até o fim do mês':''))(fatPT/metaFatT));
+    if(metaMcT) it.push((mcRT>=metaMcT?ok:no)+' Margem final em <b>'+pc(mcRT)+'</b> (meta '+pc(metaMcT)+')'+(mcRT>=metaMcT?'':' — faltam '+((metaMcT-mcRT)*100).toFixed(1).replace('.',',')+' pontos'));
+    if(comAds.length&&metaTacT) it.push((tacRT<=metaTacT?ok:no)+' TACOS em <b>'+pc(tacRT)+'</b> (teto '+pc(metaTacT)+')'+(tacRT>metaTacT?' — Ads '+((tacRT-metaTacT)*100).toFixed(1).replace('.',',')+' pontos acima do teto':''));
+    const lead=bonusMaxT?Math.round(100*bonusPT/bonusMaxT):0;
+    const NM={'Faturamento':'faturamento','Margem final':'margem final','TACOS':'TACOS/Ads acima do teto'};
+    const leak=vaz.length?' O que mais tira bônus'+(ops.length>1?' (somando as operações que estão abaixo da própria meta)':'')+': '+vaz.slice(0,2).map(x=>'<b>'+(NM[x[0]]||x[0])+'</b> ('+bk(x[1])+')').join(' e ')+'.':' Todas as metas no ritmo — bônus cheio.';
+    h+='<div class="cc" style="margin-top:14px;border-left:3px solid '+(lead>=90?'#22c55e':lead>=70?'#f59e0b':'#f87171')+';padding:12px 16px;font-size:13px;line-height:1.75;color:var(--t2);">'
+      +'<div style="font-weight:700;color:var(--t);margin-bottom:2px;">📍 Resumo — '+escopo+'</div>'+it.join('<br>')
+      +'<br>💰 Bônus '+(fechado?'do mês':'projetado')+' <b style="color:#22c55e;">'+bk(bonusPT)+'</b> = '+lead+'% do máximo ('+bk(bonusMaxT)+').'+leak+'</div>';
+  }
   // ── PROGRESSO DO MÊS: KPIs no padrão da Metas & Forecast
   const barra=(r,c)=>`<div style="height:5px;background:var(--bdr2);border-radius:3px;overflow:hidden;margin-top:8px;"><div style="height:100%;width:${Math.max(0,Math.min(100,100*r))}%;background:${c};"></div></div>`;
   const kpi=(eye,val,c,linha1,linha2,r)=>`<div class="kpi" style="border-color:${c}33"><div class="kpi-glow" style="background:${c}"></div>
@@ -5447,7 +5483,7 @@ function _renderGerMetas(){
   h+=`<div class="sl" style="margin-top:16px;">Progresso do mês · ${escopo}</div>`
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;">'
     +kpi(fechado?'💰 Bônus do mês':'💰 Bônus projetado',bk(bonusPT),'#22c55e','de '+bk(bonusMaxT)+' possíveis ('+Math.round(100*atBon)+'%)',fechado?'':'se fechasse hoje: '+bk(bonusHojeT),atBon)
-    +kpi('Faturamento · meta',metaFatT?Math.round(100*atFat)+'%':'—',corAt(atFat),(fechado?'':'projeção ')+bk(fatPT)+' de '+bk(metaFatT),fechado?'':'até agora '+bk(fatRT)+(metaFatT>fatRT&&resta?' · faltam '+bk((metaFatT-fatRT)/resta)+'/dia':''),atFat)
+    +kpi('Faturamento · meta',metaFatT?Math.round(100*atFat)+'%':'—',corAt(atFat),(fechado?'':'projeção ')+bk(fatPT)+' de '+bk(metaFatT),fechado?'':'até agora '+bk(fatRT)+(metaFatT>fatRT&&resta?' · precisa de '+bk((metaFatT-fatRT)/resta)+'/dia, vem fazendo '+bk(ddP?(fatRT-(parcial?Object.entries(hojeOp).filter(([k])=>ops.some(o=>o.l.operacao===k)).reduce((s2,[,v])=>s2+v,0):0))/ddP:0)+'/dia':''),atFat)
     +kpi('Margem final · meta',pc(mcRT),corAt(atMc),'meta '+pc(metaMcT)+' · depois do Ads e custos','lucro '+bk(fechado?mcontT:mcontPT)+(fechado?'':' projetado'),atMc)
     +(comAds.length?kpi('TACOS · teto',pc(tacRT),tacRT<=metaTacT?'#22c55e':tacRT<=metaTacT*1.1?'#f59e0b':'#f87171','teto '+pc(metaTacT)+' · (Ads + afiliados) ÷ faturamento','Ads '+bk(adsRT)+' de '+bk(metaAdsT)+' do orçamento'+(fechado?'':' · ritmo '+bk(adsPT)),atTac):'')
     +kpi('Progresso das metas',Math.round(100*(ops.length?ops.reduce((s,o)=>s+o.progP*Math.max(0,o.mcontP),0)/Math.max(1,ops.reduce((s,o)=>s+Math.max(0,o.mcontP),0)):0))+'%','#4f8ef7','média ponderada pelo lucro',ops.length+' operação'+(ops.length>1?'ões':''),null)
@@ -5456,10 +5492,15 @@ function _renderGerMetas(){
   // ── RITMO DO MÊS: acumulado × meta e margem por dia
   const box=(id,t,sub,hgt)=>`<div class="cc"><div class="cc-hdr"><div><div class="cc-title">${t}</div><div class="cc-sub">${sub}</div></div></div><div style="position:relative;height:${hgt||260}px;margin-top:6px;"><canvas id="${id}"></canvas></div></div>`;
   h+='<div class="sl" style="margin-top:18px;">Ritmo do mês</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;">'
-    +box('c-met-acum','📈 Faturamento acumulado × meta','realizado · ritmo necessário até a meta · projeção no ritmo atual')
+    +box('c-met-acum','📈 Faturamento acumulado × meta','realizado · ritmo necessário até a meta (pesa o dia da semana) · projeção no ritmo atual')
     +box('c-met-mcdia','📊 Margem depois do Ads por dia','barras = margem do dia · linha = margem acumulada no mês · tracejado = meta')
     +'</div>';
 
+  // ── POR QUE ESTOU ASSIM · VOU CHEGAR?
+  h+='<div class="sl" style="margin-top:18px;">Por que estou assim · vou chegar?</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;">'
+    +box('c-met-ponte','🌉 Ponte do lucro: meta → projeção','quanto do lucro veio de vender mais/menos (volume), de preço e custo (margem) e do Ads acima/abaixo do teto',280)
+    +box('c-met-evol','🔭 Evolução da projeção de faturamento','como a previsão de fechamento do mês mudou a cada dia · subindo = acelerando',280)
+    +'</div>';
   // ── COMPARATIVO ENTRE OPERAÇÕES
   const nOps=opsG.length, hBar=Math.max(200,34*nOps+60);
   h+=`<div class="sl" style="margin-top:18px;">Comparativo entre operações${_MET_GES?' · '+esc(_MET_GES):''}</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;">`
@@ -5536,16 +5577,20 @@ function _renderGerMetas(){
   const fatD=Array(dm).fill(0), mcD=Array(dm).fill(0);
   for(const r of R0){ if(!r.date||r.date.slice(0,7)!==_MET_MES) continue; const k=r.emp+'||'+r.mkt; if(!keys.has(k)) continue; const i=+r.date.slice(8,10)-1; fatD[i]+=+r.fat||0; mcD[i]+=+r.mc||0; }
   if(typeof _adsOpPer==='function') keys.forEach(k=>{ for(let i=0;i<dd;i++){ const d=_MET_MES+'-'+String(i+1).padStart(2,'0'); mcD[i]-=_adsOpPer(k,d,d); } });
+  // a série diária vem das vendas do dia (todas as situações); o cartão usa o faturamento da COMISSÃO (só venda efetivada).
+  // Ajusta a escala do faturamento diário p/ o acumulado do gráfico bater com o cartão (Bsan ML out/26: ~2% de diferença).
+  { const sr=fatD.reduce((a,b)=>a+b,0); if(sr>0&&fatRT>0){ const k=fatRT/sr; for(let i=0;i<dm;i++){ fatD[i]*=k; mcD[i]*=k; } } }   // margem junto: o % do dia não muda
   const lab=Array.from({length:dm},(_,i)=>String(i+1));
   // 1) acumulado × meta
   { let ac=0; const real=fatD.map((v,i)=>{ ac+=v; return i<dd?ac:null; }); const acDd=real[dd-1]||0;
-    const ideal=lab.map((_,i)=>metaFatT?metaFatT*(i+1)/dm:null);
-    const proj=lab.map((_,i)=>(!fechado&&i>=dd-1&&dd>0)?acDd+(acDd/dd)*(i+1-dd):null);
+    const ideal=lab.map((_,i)=>metaFatT?metaFatT*cumW[i+1]/cumW[dm]:null);
+    const acP=parcial?(real[ddP-1]||0):acDd;   // base da projeção = acumulado até ontem se hoje está pela metade
+    const proj=lab.map((_,i)=>(!fechado&&i>=ddP-1&&ddP>0&&cumW[ddP]>0)?acP*cumW[i+1]/cumW[ddP]:null);
     const el=document.getElementById('c-met-acum');
     if(el) charts['c-met-acum']=new Chart(el,{type:'line',data:{labels:lab,datasets:[
       {label:'Realizado',data:real,borderColor:'#00c2a8',backgroundColor:'rgba(0,194,168,.12)',fill:true,tension:.25,pointRadius:0,borderWidth:2.5},
       {label:'Ritmo para bater a meta',data:ideal,borderColor:'#94a3b8',borderDash:[6,5],pointRadius:0,borderWidth:1.5,fill:false},
-      ...(fechado?[]:[{label:'Projeção no ritmo atual',data:proj,borderColor:acDd/dd*dm>=metaFatT?'#22c55e':'#f59e0b',borderDash:[2,4],pointRadius:0,borderWidth:2,fill:false}])]},
+      ...(fechado?[]:[{label:'Projeção no ritmo atual',data:proj,borderColor:(proj[dm-1]||0)>=metaFatT?'#22c55e':'#f59e0b',borderDash:[2,4],pointRadius:0,borderWidth:2,fill:false}])]},
       options:Object.assign(baseOpt(),{interaction:{mode:'index',intersect:false},
         plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{title:c=>'dia '+c[0].label,label:c=>c.raw==null?null:c.dataset.label+': '+brl(c.raw)}}}),
         scales:{x:{ticks:{color:tc,font:{size:9},maxTicksLimit:16},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:fK},grid:{color:gc}}}})}); }
@@ -5560,6 +5605,26 @@ function _renderGerMetas(){
       options:Object.assign(baseOpt(),{interaction:{mode:'index',intersect:false},
         plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{title:c=>'dia '+c[0].label,label:c=>c.raw==null?null:c.dataset.label+': '+c.raw.toFixed(1)+'%'}}}),
         scales:{x:{ticks:{color:tc,font:{size:9},maxTicksLimit:16},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc}}}})}); }
+  // 2b) PONTE DO LUCRO (cascata): lucro da meta → volume → margem (preço e custo) → Ads → lucro projetado
+  //   volume = (fat projetado − meta de fat) × meta de margem · Ads = −fat projetado × (TACOS − teto)
+  //   margem = o resto da diferença de margem (preço, custo do produto, frete, tarifas) — a soma fecha no lucro projetado
+  { let lm=0,ev=0,em=0,ea=0,lp=0;
+    ops.forEach(o=>{ if(!(o.metaFat>0)) return; const lmo=o.metaFat*o.metaMc, ad=o.metaTac>0?-o.fatP*(o.tacR-o.metaTac):0, vo=(o.fatP-o.metaFat)*o.metaMc;
+      lm+=lmo; ev+=vo; ea+=ad; em+=o.fatP*o.mcR-lmo-vo-ad; lp+=o.fatP*o.mcR; });
+    const passos=[['Lucro da meta',0,lm,'#64748b'],['Volume',lm,lm+ev,ev>=0?'#22c55e':'#f87171'],['Margem (preço e custo)',lm+ev,lm+ev+em,em>=0?'#22c55e':'#f87171'],['Ads × teto',lm+ev+em,lm+ev+em+ea,ea>=0?'#22c55e':'#f87171'],[fechado?'Lucro realizado':'Lucro projetado',0,lp,'#00c2a8']];
+    const el=document.getElementById('c-met-ponte');
+    if(el) charts['c-met-ponte']=new Chart(el,{type:'bar',data:{labels:passos.map(p=>p[0]),datasets:[{label:'R$',data:passos.map(p=>[Math.min(p[1],p[2]),Math.max(p[1],p[2])]),backgroundColor:passos.map(p=>p[3]),borderRadius:3,barPercentage:.7}]},
+      options:Object.assign(baseOpt(),{plugins:Object.assign(baseOpt().plugins,{legend:{display:false},tooltip:{callbacks:{label:c=>{ const p=passos[c.dataIndex]; const v=p[2]-p[1]; return (c.dataIndex===0||c.dataIndex===4)?brl(p[2]):((v>=0?'+':'−')+brl(Math.abs(v))); }}}}),
+        scales:{x:{ticks:{color:tc,font:{size:10.5}},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>'R$ '+fK(v)},grid:{color:gc}}}})}); }
+  // 2c) EVOLUÇÃO DA PROJEÇÃO: a cada dia, onde o mês fecharia naquele ritmo (com o peso do dia da semana)
+  { let ac=0; const pj=fatD.map((v,i)=>{ ac+=v; return (i<ddP&&cumW[i+1]>0&&i>=2)?ac*cumW[dm]/cumW[i+1]:null; });
+    const el=document.getElementById('c-met-evol');
+    if(el) charts['c-met-evol']=new Chart(el,{type:'line',data:{labels:lab,datasets:[
+      {label:'Projeção de fechamento',data:pj,borderColor:'#4f8ef7',backgroundColor:'rgba(79,142,247,.1)',fill:true,pointRadius:2,borderWidth:2.5,tension:.25,spanGaps:true},
+      {label:'Meta',data:lab.map(()=>metaFatT||null),borderColor:'#f59e0b',borderDash:[6,5],pointRadius:0,borderWidth:1.5}]},
+      options:Object.assign(baseOpt(),{interaction:{mode:'index',intersect:false},
+        plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{title:c=>'projeção feita no dia '+c[0].label,label:c=>c.raw==null?null:c.dataset.label+': '+brl(c.raw)}}}),
+        scales:{x:{ticks:{color:tc,font:{size:9},maxTicksLimit:16},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>'R$ '+fK(v)},grid:{color:gc}}}})}); }
   // 3) atingimento por operação
   { const lb=opsG.map(o=>curto(o.l.operacao)), af=opsG.map(o=>o.metaFat?Math.round(100*o.fatP/o.metaFat):null), am=opsG.map(o=>o.metaMc?Math.round(100*o.mcR/o.metaMc):null);
     const cor=a=>a.map(v=>v==null?'transparent':v>=100?'#22c55e':v>=90?'#f59e0b':'#f87171');
