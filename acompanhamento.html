@@ -5624,9 +5624,20 @@ function _gvSearch(v){ _gvQuery=(v||'').trim().toLowerCase(); _gvPage=0; renderG
 function _gvToggleNeg(){ _gvNeg=!_gvNeg; _gvPage=0; renderGerencial(); }
 // rótulo curto do meio de envio (Amazon: FBA/FBM · ML: Full/Flex/Correios/Combinado)
 function envioLabel(ent){ const e=String(ent||'');
-  if(/full/i.test(e)) return 'Full';
+  if(/full|fulfillment/i.test(e)) return 'Full';
   if(/flex/i.test(e)) return 'Flex';
-  if(/correios|pontos de envio|mercado envios/i.test(e)) return 'Mercado Envios';
+  // Shopee (19/10/2026): o coletor passou a gravar a modalidade real (antes tudo virava "Correios")
+  if(/shopee xpress/i.test(e)) return 'Shopee Xpress';
+  if(/entrega r[aá]pida/i.test(e)) return 'Entrega Rápida';
+  if(/entrega direta/i.test(e)) return 'Entrega Direta';
+  if(/turbo/i.test(e)) return 'Turbo';
+  if(/retirada/i.test(e)) return 'Retirada';
+  if(/pontos de envio|mercado envios/i.test(e)) return 'Mercado Envios';
+  if(/correios/i.test(e)) return 'Correios';                 // Shopee antes de 19/10/2026 (coletor sem a modalidade real)
+  if(/coleta/i.test(e)) return 'Coleta';                     // ML "Coleta" e Shein "Shein Coleta"
+  if(/ag[eê]ncia/i.test(e)) return 'Agência';                // Magalu "Agência Magalu"
+  if(/vapt/i.test(e)) return 'VAPT';
+  if(/^normal$/i.test(e)) return 'Normal';
   if(/combino/i.test(e)) return 'Combinado';
   if(/flash/i.test(e)) return 'Flash';
   if(/^fba$/i.test(e)||/^amazon$/i.test(e)) return 'FBA';
@@ -5634,7 +5645,10 @@ function envioLabel(ent){ const e=String(ent||'');
   return e||'—';
 }
 function envioCor(ent){ const l=envioLabel(ent);
-  return {Full:'#4f8ef7',Flex:'#f59e0b','Mercado Envios':'#8891a8',Combinado:'#a78bfa',FBA:'#4f8ef7',FBM:'#8891a8',Flash:'#22d3ee'}[l]||'var(--t3)'; }
+  // uma cor por modalidade (19/10/2026)
+  return {Full:'#4f8ef7',Flex:'#f59e0b',Coleta:'#8b5cf6','Mercado Envios':'#8891a8',Normal:'#64748b',Combinado:'#a78bfa',
+    FBA:'#2563eb',FBM:'#94a3b8',Flash:'#22d3ee',Agência:'#0ea5e9',VAPT:'#eab308',Correios:'#a8a29e',
+    'Shopee Xpress':'#f97316','Entrega Rápida':'#ec4899','Entrega Direta':'#ef4444',Turbo:'#84cc16',Retirada:'#14b8a6'}[l]||'var(--t3)'; }
 // colunas de custo abertas por marketplace (o key precisa bater com o campo do DETALHE)
 function _gvCols(mkt, aberto){
   const M=s=>new RegExp(s,'i').test(mkt||'');
