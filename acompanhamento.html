@@ -5327,17 +5327,21 @@ function _renderGerAcomp(){
 // Mesma régua que paga o bônus (COMISSAO/COMISSAO_DET, do comissao.js): margem FINAL = depois do Ads e dos
 // custos do gestor. As metas saem do metas-auto.js (séries A/B/C, sazonalidade, TACOS pela margem) — 19/10/2026.
 // Online, o /api/extras já entrega ao gestor só as operações dele; aqui o seletor de gestor é a visão do coordenador.
-let _MET_MES='', _MET_GES='', _MET_AJUDA=false;
+let _MET_MES='', _MET_GES='', _MET_OP='', _MET_AJUDA=false;
 function metMes(v){ _MET_MES=v; renderGerencial(); }
 function metGes(v){ _MET_GES=v; renderGerencial(); }
 function metAjuda(){ _MET_AJUDA=!_MET_AJUDA; renderGerencial(); }
 // cópia fiel do bonusMeta do comissao.js: "maior" = quanto mais melhor (teto 100%); "custo" = passou do teto, perde na proporção
 function _metBonus(real,obj,peso,tipo){ if(!(obj>0)) return 0; const r=tipo==='custo'?Math.max(0,Math.min(2-real/obj,1)):Math.min(real/obj,1); return r*peso; }
+function metOp(v){ _MET_OP=v; renderGerencial(); }
 function _renderGerMetas(){
   const root=document.getElementById('met-root'); if(!root) return;
   const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   const brl=v=>'R$ '+Math.round(+v||0).toLocaleString('pt-BR');
+  const bk=v=>{ v=+v||0; const a=Math.abs(v); return a>=1e6?'R$ '+(v/1e6).toFixed(2).replace('.',',')+' mi':a>=1e3?'R$ '+(v/1e3).toFixed(1).replace('.',',')+' mil':brl(v); };
   const pc=(v,d=1)=>((+v||0)*100).toFixed(d).replace('.',',')+'%';
+  const IDS=['c-met-acum','c-met-mcdia','c-met-ating','c-met-bonus','c-met-tacos','c-met-hfat','c-met-hmc'];
+  IDS.forEach(id=>{ if(charts[id]){ charts[id].destroy(); delete charts[id]; } });
   const L=(typeof COMISSAO!=='undefined'&&Array.isArray(COMISSAO))?COMISSAO:[];
   const D=(typeof COMISSAO_DET!=='undefined'&&Array.isArray(COMISSAO_DET))?COMISSAO_DET:[];
   if(!L.length){ root.innerHTML='<div class="cc" style="padding:30px;text-align:center;color:var(--t2);font-size:13px;line-height:1.7;">Sem metas carregadas ainda.<br><span style="font-size:12px;color:var(--t3)">As metas vêm de <code>Comissao/Comissao_Metas.xlsx</code> (calculadas pelo <code>metas-auto.js</code>) e entram no painel na rodada do <code>geral</code>.</span></div>'; return; }
@@ -5356,28 +5360,36 @@ function _renderGerMetas(){
   const NOMES=['','janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   const gesDe=op=>{ const [e,m]=String(op).split(' · '); return (typeof AC2_GESTOR!=='undefined'&&AC2_GESTOR[e+'|'+m])||'—'; };
   const gCor=g=>(typeof AC2_GCOR!=='undefined'&&AC2_GCOR[g])||'var(--t2)';
+  const curto=op=>{ const [e,m]=String(op).split(' · '); const M={'Mercado Livre':'ML','Magazine Luiza':'Magalu','TikTok Shop':'TikTok','Kwai Shop':'Kwai'}; return (M[m]||m)+' · '+e.replace('Powerfull Imports','Powerfull').replace('Pesseguinho Store','Pesseguinho').replace('Powerfull Filial','Filial'); };
   const rowsM=L.filter(r=>r.mes===_MET_MES);
   const gestores=[...new Set(rowsM.map(r=>gesDe(r.operacao)))].sort();
   if(_MET_GES&&!gestores.includes(_MET_GES)) _MET_GES='';
-  const sel=rowsM.filter(r=>!_MET_GES||gesDe(r.operacao)===_MET_GES);
+  const doGes=rowsM.filter(r=>!_MET_GES||gesDe(r.operacao)===_MET_GES);
+  if(_MET_OP&&!doGes.some(r=>r.operacao===_MET_OP)) _MET_OP='';
+  const sel=doGes.filter(r=>!_MET_OP||r.operacao===_MET_OP);
 
   // ── cada operação: 4 indicadores (ou 2, sem Ads) com meta, realizado e projeção; bônus projetado com a régua do bônus
-  const ops=sel.map(l=>{
-    const d=D.find(x=>x.mes===_MET_MES&&x.operacao===l.operacao)||{};
+  const calcOp=l=>{
+    const d=D.find(x=>x.mes===l.mes&&x.operacao===l.operacao)||{};
+    const fp=l.mes===_MET_MES?fP:1;
     const fatR=+d.Faturamento_real||+l.faturamento||0, adsR=+d.Ads_real||0;
     const ind=[
-      {n:'Faturamento',dica:'vendas sem devolução e cancelamento',meta:+d.Faturamento_obj||0,real:fatR,proj:fatR*fP,peso:+d.Faturamento_peso||0,tipo:'maior',fmt:brl},
+      {n:'Faturamento',dica:'vendas sem devolução e cancelamento',meta:+d.Faturamento_obj||0,real:fatR,proj:fatR*fp,peso:+d.Faturamento_peso||0,tipo:'maior',fmt:brl},
       {n:'Margem final',dica:'o que sobra depois de produto, impostos, tarifas, frete, Ads e custos da operação',meta:+d.MC_obj||0,real:+d.MC_real||0,proj:+d.MC_real||0,peso:+d.MC_peso||0,tipo:'maior',fmt:v=>pc(v),taxa:true},
       {n:'TACOS',dica:'(Ads + afiliados) ÷ faturamento — teto: margem 15% → 3%, 20% → 5%',meta:+d.TACOS_obj||0,real:+d.TACOS_real||0,proj:+d.TACOS_real||0,peso:+d.TACOS_peso||0,tipo:'custo',fmt:v=>pc(v),taxa:true},
-      {n:'Orçamento de Ads',dica:'faturamento líquido do mês anterior × teto de TACOS',meta:+d.Ads_obj||0,real:adsR,proj:adsR*fP,peso:+d.Ads_peso||0,tipo:'custo',fmt:brl},
+      {n:'Orçamento de Ads',dica:'faturamento líquido do mês anterior × teto de TACOS',meta:+d.Ads_obj||0,real:adsR,proj:adsR*fp,peso:+d.Ads_peso||0,tipo:'custo',fmt:brl},
     ].filter(i=>i.peso>0);
     const somaP=ind.reduce((s,i)=>s+i.peso,0)||1;
     const progP=ind.reduce((s,i)=>s+_metBonus(i.proj,i.meta,i.peso,i.tipo),0)/somaP;
     const teto=(+d.Teto)||((+l.teto_pct||0)/100);
-    const mcont=+l.margem_cont||0, mcontP=mcont*fP;
-    const bonusP=fechado?(+l.bonus_final_rs||0):Math.max(0,progP*teto*mcontP);
-    return {l,d,ind,fatR,mcont,mcontP,progP:fechado?(+l.progresso_metas||0)/100:progP,teto,bonusHoje:+l.bonus_final_rs||0,bonusP,bonusMax:Math.max(0,teto*mcontP),ges:gesDe(l.operacao),serie:String(d.Serie||'')};
-  }).sort((a,b)=>b.mcontP-a.mcontP);
+    const mcont=+l.margem_cont||0, mcontP=mcont*fp;
+    const fechadoM=l.mes!==_MET_MES||fechado;
+    const bonusP=fechadoM?(+l.bonus_final_rs||0):Math.max(0,progP*teto*mcontP);
+    return {l,d,ind,fatR,fatP:fatR*fp,mcont,mcontP,adsR,adsP:adsR*fp,progP:fechadoM?(+l.progresso_metas||0)/100:progP,teto,bonusHoje:+l.bonus_final_rs||0,bonusP,bonusMax:Math.max(0,teto*mcontP),ges:gesDe(l.operacao),serie:String(d.Serie||''),
+      metaFat:+d.Faturamento_obj||0, metaMc:+d.MC_obj||0, metaTac:+d.TACOS_obj||0, metaAds:+d.Ads_obj||0, tacR:+d.TACOS_real||0, mcR:+d.MC_real||0};
+  };
+  const opsG=doGes.map(calcOp).sort((a,b)=>b.mcontP-a.mcontP);   // todas do gestor (gráficos comparativos)
+  const ops=opsG.filter(o=>!_MET_OP||o.l.operacao===_MET_OP);   // seleção (KPIs, ritmo, cards)
 
   const st=i=>{
     if(!(i.meta>0)) return ['sem meta','var(--t3)'];
@@ -5385,19 +5397,36 @@ function _renderGerMetas(){
     if(i.tipo==='maior') return r>=1?[fechado?'✅ batida':'✅ no ritmo','#22c55e']:r>=0.9?['🟡 perto','#f59e0b']:['🔴 abaixo','#f87171'];
     return r<=1?['✅ dentro','#22c55e']:r<=1.1?['🟡 no limite','#f59e0b']:['🔴 estourou','#f87171'];
   };
+  const corAt=r=>r>=1?'#22c55e':r>=0.9?'#f59e0b':'#f87171';
   const SCOR={A:'#22c55e',B:'#4f8ef7',C:'#a855f7'};
   const badge=(t,c)=>`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;border:1px solid ${c};color:${c};white-space:nowrap;">${t}</span>`;
 
+  // ── totais da seleção (meta de margem e teto de TACOS ponderados pela meta de faturamento)
+  const S_=(arr,k)=>arr.reduce((s,o)=>s+(+o[k]||0),0);
+  const metaFatT=S_(ops,'metaFat'), fatRT=S_(ops,'fatR'), fatPT=S_(ops,'fatP');
+  const mcontT=S_(ops,'mcont'), mcontPT=S_(ops,'mcontP');
+  const pesoMeta=ops.filter(o=>o.metaFat>0&&o.metaMc>0);
+  const metaMcT=pesoMeta.length?pesoMeta.reduce((s,o)=>s+o.metaMc*o.metaFat,0)/S_(pesoMeta,'metaFat'):0;
+  const mcRT=fatRT?mcontT/fatRT:0;
+  const comAds=ops.filter(o=>o.metaTac>0);
+  const metaTacT=comAds.length?comAds.reduce((s,o)=>s+o.metaTac*o.metaFat,0)/(S_(comAds,'metaFat')||1):0;
+  const tacRT=S_(comAds,'fatR')?comAds.reduce((s,o)=>s+o.tacR*o.fatR,0)/S_(comAds,'fatR'):0;
+  const adsRT=S_(comAds,'adsR'), adsPT=S_(comAds,'adsP'), metaAdsT=S_(comAds,'metaAds');
+  const bonusPT=S_(ops,'bonusP'), bonusMaxT=S_(ops,'bonusMax'), bonusHojeT=S_(ops,'bonusHoje');
+  const escopo=_MET_OP?esc(_MET_OP):(_MET_GES?'operações de '+esc(_MET_GES):'todas as operações');
+
   // ── controles
+  const opsOpc=doGes.map(r=>r.operacao).sort();
   let h='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px;">'
-    +'<span style="font-size:12px;color:var(--t2)">Mês:</span><select class="abc-select" onchange="metMes(this.value)">'+meses.map(s=>`<option value="${s}"${s===_MET_MES?' selected':''}>${NOMES[+s.slice(5)]} ${s.slice(0,4)}</option>`).join('')+'</select>'
-    +(gestores.length>1?'<span style="font-size:12px;color:var(--t2);margin-left:6px;">Gestor:</span><select class="abc-select" onchange="metGes(this.value)"><option value="">Todos</option>'+gestores.map(g=>`<option value="${esc(g)}"${g===_MET_GES?' selected':''}>${esc(g)}</option>`).join('')+'</select>':'')
-    +`<span style="font-size:11px;color:var(--t3);">${fechado?'mês fechado':'dia '+dd+' de '+dm+' · faltam '+resta+' dias · projeção = ritmo de hoje até o fim do mês'}</span>`
+    +'<span class="pf-lbl">Mês</span><select class="abc-select" onchange="metMes(this.value)">'+meses.map(s=>`<option value="${s}"${s===_MET_MES?' selected':''}>${NOMES[+s.slice(5)]} ${s.slice(0,4)}</option>`).join('')+'</select>'
+    +(gestores.length>1?'<span class="pf-lbl" style="margin-left:6px;">Gestor</span><select class="abc-select" onchange="metGes(this.value)"><option value="">Todos</option>'+gestores.map(g=>`<option value="${esc(g)}"${g===_MET_GES?' selected':''}>${esc(g)}</option>`).join('')+'</select>':'')
+    +'<span class="pf-lbl" style="margin-left:6px;">Operação</span><select class="abc-select" onchange="metOp(this.value)"><option value="">Todas</option>'+opsOpc.map(o=>`<option value="${esc(o)}"${o===_MET_OP?' selected':''}>${esc(o)}</option>`).join('')+'</select>'
+    +`<span style="font-size:11px;color:var(--t3);">${fechado?'mês fechado':'dia '+dd+' de '+dm+' · faltam '+resta+' dias'}</span>`
     +`<button class="dshort" style="margin-left:auto;" onclick="metAjuda()">${_MET_AJUDA?'✕ fechar':'❓ Como funcionam as metas'}</button></div>`;
 
   // ── explicação para o gestor (linguagem simples)
+  const ip=+(D.find(x=>x.Ipca12m)||{}).Ipca12m||0, se=+(D.find(x=>x.Selic)||{}).Selic||0;
   if(_MET_AJUDA){
-    const ip=+(D.find(x=>x.Ipca12m)||{}).Ipca12m||0, se=+(D.find(x=>x.Selic)||{}).Selic||0;
     const bloco=(t,txt)=>`<div style="margin-bottom:12px;"><div style="font-weight:700;color:var(--t);margin-bottom:3px;">${t}</div><div>${txt}</div></div>`;
     h+='<div class="cc" style="margin-top:12px;font-size:12.5px;line-height:1.65;color:var(--t2);border-left:3px solid var(--a);">'
       +bloco('1 · O que conta é a margem final','Margem final = o que sobra da venda depois de pagar o produto, os impostos, as tarifas do marketplace, o frete, o <b>Ads</b> e os custos da operação (Full etc.). É sobre ela que o bônus é pago. Olhar a margem antes do Ads dá uma falsa sensação de lucro.')
@@ -5409,20 +5438,48 @@ function _renderGerMetas(){
       +'</div>';
   }
 
-  // ── KPIs da seleção
-  const S_=k=>ops.reduce((s,o)=>s+o[k],0);
-  const metaFatT=ops.reduce((s,o)=>s+((o.ind.find(i=>i.n==='Faturamento')||{}).meta||0),0), fatPT=ops.reduce((s,o)=>s+o.fatR*fP,0);
-  const mcPT=fatPT?S_('mcontP')/fatPT:0;
-  const card=(lbl,val,c,sub)=>`<div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:12px 14px;"><div style="font-size:11px;color:var(--t2);margin-bottom:4px;">${lbl}</div><div style="font-size:20px;font-weight:700;color:${c||'var(--t)'};line-height:1.1;">${val}</div>${sub?`<div style="font-size:10.5px;color:var(--t3);margin-top:4px;">${sub}</div>`:''}</div>`;
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:14px;">'
-    +card(fechado?'💰 Bônus do mês':'💰 Bônus projetado',brl(S_('bonusP')),'#22c55e',fechado?ops.length+' operações':'no ritmo atual · se fechasse hoje: '+brl(S_('bonusHoje')))
-    +card('Bônus máximo (100% das metas)',brl(S_('bonusMax')),'var(--t)','o que fica na mesa: '+brl(Math.max(0,S_('bonusMax')-S_('bonusP'))))
-    +card(fechado?'Faturamento':'Faturamento projetado',brl(fatPT),metaFatT&&fatPT>=metaFatT?'#22c55e':'#f59e0b',metaFatT?'meta '+brl(metaFatT)+' · '+Math.round(100*fatPT/metaFatT)+'%':'')
-    +card(fechado?'Lucro (margem final)':'Lucro projetado (margem final)',brl(S_('mcontP')),S_('mcontP')>=0?'#22c55e':'#f87171',pc(mcPT)+' do faturamento · depois do Ads')
+  // ── PROGRESSO DO MÊS: KPIs no padrão da Metas & Forecast
+  const barra=(r,c)=>`<div style="height:5px;background:var(--bdr2);border-radius:3px;overflow:hidden;margin-top:8px;"><div style="height:100%;width:${Math.max(0,Math.min(100,100*r))}%;background:${c};"></div></div>`;
+  const kpi=(eye,val,c,linha1,linha2,r)=>`<div class="kpi" style="border-color:${c}33"><div class="kpi-glow" style="background:${c}"></div>
+    <div class="kpi-eye" style="color:${c}">${eye}</div><div class="kpi-val" style="font-size:22px">${val}</div>
+    <div class="kpi-pct" style="color:var(--t2)">${linha1}</div>${linha2?`<div class="kpi-sub">${linha2}</div>`:''}${r!=null?barra(r,c):''}<div class="kpi-accent" style="background:${c}"></div></div>`;
+  const atFat=metaFatT?fatPT/metaFatT:0, atMc=metaMcT?mcRT/metaMcT:0, atTac=metaTacT?(tacRT<=metaTacT?1:metaTacT/tacRT):1, atBon=bonusMaxT?bonusPT/bonusMaxT:0;
+  h+=`<div class="sl" style="margin-top:16px;">Progresso do mês · ${escopo}</div>`
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;">'
+    +kpi(fechado?'💰 Bônus do mês':'💰 Bônus projetado',bk(bonusPT),'#22c55e','de '+bk(bonusMaxT)+' possíveis ('+Math.round(100*atBon)+'%)',fechado?'':'se fechasse hoje: '+bk(bonusHojeT),atBon)
+    +kpi('Faturamento · meta',metaFatT?Math.round(100*atFat)+'%':'—',corAt(atFat),(fechado?'':'projeção ')+bk(fatPT)+' de '+bk(metaFatT),fechado?'':'até agora '+bk(fatRT)+(metaFatT>fatRT&&resta?' · faltam '+bk((metaFatT-fatRT)/resta)+'/dia':''),atFat)
+    +kpi('Margem final · meta',pc(mcRT),corAt(atMc),'meta '+pc(metaMcT)+' · depois do Ads e custos','lucro '+bk(fechado?mcontT:mcontPT)+(fechado?'':' projetado'),atMc)
+    +(comAds.length?kpi('TACOS · teto',pc(tacRT),tacRT<=metaTacT?'#22c55e':tacRT<=metaTacT*1.1?'#f59e0b':'#f87171','teto '+pc(metaTacT)+' · (Ads + afiliados) ÷ faturamento','Ads '+bk(adsRT)+' de '+bk(metaAdsT)+' do orçamento'+(fechado?'':' · ritmo '+bk(adsPT)),atTac):'')
+    +kpi('Progresso das metas',Math.round(100*(ops.length?ops.reduce((s,o)=>s+o.progP*Math.max(0,o.mcontP),0)/Math.max(1,ops.reduce((s,o)=>s+Math.max(0,o.mcontP),0)):0))+'%','#4f8ef7','média ponderada pelo lucro',ops.length+' operação'+(ops.length>1?'ões':''),null)
     +'</div>';
 
-  // ── cards por operação
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:12px;margin-top:14px;">';
+  // ── RITMO DO MÊS: acumulado × meta e margem por dia
+  const box=(id,t,sub,hgt)=>`<div class="cc"><div class="cc-hdr"><div><div class="cc-title">${t}</div><div class="cc-sub">${sub}</div></div></div><div style="position:relative;height:${hgt||260}px;margin-top:6px;"><canvas id="${id}"></canvas></div></div>`;
+  h+='<div class="sl" style="margin-top:18px;">Ritmo do mês</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;">'
+    +box('c-met-acum','📈 Faturamento acumulado × meta','realizado · ritmo necessário até a meta · projeção no ritmo atual')
+    +box('c-met-mcdia','📊 Margem depois do Ads por dia','barras = margem do dia · linha = margem acumulada no mês · tracejado = meta')
+    +'</div>';
+
+  // ── COMPARATIVO ENTRE OPERAÇÕES
+  const nOps=opsG.length, hBar=Math.max(200,34*nOps+60);
+  h+=`<div class="sl" style="margin-top:18px;">Comparativo entre operações${_MET_GES?' · '+esc(_MET_GES):''}</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;">`
+    +box('c-met-ating','🎯 Atingimento das metas (projeção)','% da meta · faturamento e margem final · linha de 100% = meta batida',hBar)
+    +box('c-met-bonus','💰 Bônus: projetado × o que fica na mesa','verde = bônus no ritmo atual · cinza = o que falta para 100% das metas',hBar)
+    +'</div>';
+  const opsAds=opsG.filter(o=>o.metaTac>0);
+  if(opsAds.length) h+='<div style="margin-top:14px;">'+box('c-met-tacos','📣 TACOS × teto','gasto com Ads e afiliados ÷ faturamento · barra cinza = teto da operação (pela margem: 15% → 3%, 20% → 5%)',Math.max(180,30*opsAds.length+60))+'</div>';
+
+  // ── HISTÓRICO: meses com meta
+  const mesesH=meses.filter(m=>m<=_MET_MES);
+  const histo=mesesH.map(m=>{ const os=L.filter(r=>r.mes===m&&(!_MET_GES||gesDe(r.operacao)===_MET_GES)&&(!_MET_OP||r.operacao===_MET_OP)).map(calcOp);
+    const mf=S_(os,'metaFat'), fr=S_(os,'fatR'), fp=S_(os,'fatP'), pm=os.filter(o=>o.metaFat>0&&o.metaMc>0);
+    return {m, metaFat:mf, fat:fr, fatP:fp, mc:fr?S_(os,'mcont')/fr:0, metaMc:pm.length?pm.reduce((s,o)=>s+o.metaMc*o.metaFat,0)/S_(pm,'metaFat'):0, bonus:S_(os,'bonusP')}; });
+  if(mesesH.length>1) h+='<div class="sl" style="margin-top:18px;">Histórico · meta × realizado</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;">'
+    +box('c-met-hfat','Faturamento por mês','barras = realizado (mês corrente: projeção) · linha = meta',220)
+    +box('c-met-hmc','Margem final por mês','realizado × meta (ponderada pela meta de faturamento)',220)+'</div>';
+
+  // ── DETALHE POR OPERAÇÃO (cards)
+  h+='<div class="sl" style="margin-top:18px;">Detalhe por operação</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:12px;">';
   ops.forEach(o=>{
     const sc=SCOR[o.serie]||'var(--t3)';
     const fatI=o.ind.find(i=>i.n==='Faturamento')||{meta:0};
@@ -5455,10 +5512,9 @@ function _renderGerMetas(){
 
   // ── placar do ano: lucro (margem final) acumulado por operação + as duas linhas do ano seguinte
   const ano=_MET_MES.slice(0,4), mesesAno=meses.filter(m=>m.slice(0,4)===ano&&m<=_MET_MES);
-  const ip=+(D.find(x=>x.Ipca12m)||{}).Ipca12m||0, se=+(D.find(x=>x.Selic)||{}).Selic||0;
   const opsSel=new Set(sel.map(r=>r.operacao));
   const lucro=(op,m)=>{ const r=L.find(x=>x.mes===m&&x.operacao===op); return r?(+r.margem_cont||0):null; };
-  let tp='<div class="cc" style="margin-top:16px;"><div class="cc-hdr"><div><div class="cc-title">🏁 Placar do ano — lucro da operação (margem final)</div>'
+  let tp='<div class="sl" style="margin-top:18px;">Placar do ano</div><div class="cc"><div class="cc-hdr"><div><div class="cc-title">🏁 Lucro da operação (margem final)</div>'
     +`<div class="cc-sub">Base que vai virar a régua de ${+ano+1}: cada mês de ${+ano+1} será comparado com o mesmo mês de ${ano}. Linha amarela = ${ano} + ${pc(ip)} (inflação) · linha verde = ${ano} + ${pc(se,2)} (Selic).</div></div></div>`
     +'<div class="tbl-wrap" style="overflow:auto;margin-top:8px;"><table class="tbl" style="font-size:12px;"><thead><tr><th style="text-align:left;">Operação</th>'
     +mesesAno.map(m=>`<th class="r">${NOMES[+m.slice(5)].slice(0,3)}</th>`).join('')
@@ -5469,6 +5525,80 @@ function _renderGerMetas(){
   tp+=`</tbody></table></div><div style="font-size:10.5px;color:var(--t3);margin-top:6px;">${fechado?'':'* mês em andamento (até agora). '}Só entram os meses que já têm meta registrada. O placar oficial começa em janeiro de ${+ano+1}; os índices ficam travados em janeiro para a linha não mudar no meio do ano.</div></div>`;
   h+=tp;
   root.innerHTML=h;
+
+  // ═══ GRÁFICOS ═══
+  if(typeof Chart==='undefined') return;
+  const tc=isDark?'#8891a8':'#556070', gc=isDark?'rgba(255,255,255,.05)':'rgba(0,0,0,.06)';
+  const fK=v=>{ const a=Math.abs(v); return a>=1e6?(v/1e6).toFixed(1)+'mi':a>=1e3?(v/1e3).toFixed(0)+'k':Math.round(v); };
+  const baseOpt=()=>({responsive:true,maintainAspectRatio:false,animation:{duration:300},plugins:{legend:{position:'bottom',labels:{color:tc,font:{family:'Inter',size:11},boxWidth:12,padding:10}},datalabels:{display:false}}});
+  // série diária da seleção (ROWS = vendas por dia × operação; Ads rateado por dia, como no Diário)
+  const keys=new Set(ops.map(o=>{ const [e,m]=o.l.operacao.split(' · '); return e+'||'+m; }));
+  const fatD=Array(dm).fill(0), mcD=Array(dm).fill(0);
+  for(const r of R0){ if(!r.date||r.date.slice(0,7)!==_MET_MES) continue; const k=r.emp+'||'+r.mkt; if(!keys.has(k)) continue; const i=+r.date.slice(8,10)-1; fatD[i]+=+r.fat||0; mcD[i]+=+r.mc||0; }
+  if(typeof _adsOpPer==='function') keys.forEach(k=>{ for(let i=0;i<dd;i++){ const d=_MET_MES+'-'+String(i+1).padStart(2,'0'); mcD[i]-=_adsOpPer(k,d,d); } });
+  const lab=Array.from({length:dm},(_,i)=>String(i+1));
+  // 1) acumulado × meta
+  { let ac=0; const real=fatD.map((v,i)=>{ ac+=v; return i<dd?ac:null; }); const acDd=real[dd-1]||0;
+    const ideal=lab.map((_,i)=>metaFatT?metaFatT*(i+1)/dm:null);
+    const proj=lab.map((_,i)=>(!fechado&&i>=dd-1&&dd>0)?acDd+(acDd/dd)*(i+1-dd):null);
+    const el=document.getElementById('c-met-acum');
+    if(el) charts['c-met-acum']=new Chart(el,{type:'line',data:{labels:lab,datasets:[
+      {label:'Realizado',data:real,borderColor:'#00c2a8',backgroundColor:'rgba(0,194,168,.12)',fill:true,tension:.25,pointRadius:0,borderWidth:2.5},
+      {label:'Ritmo para bater a meta',data:ideal,borderColor:'#94a3b8',borderDash:[6,5],pointRadius:0,borderWidth:1.5,fill:false},
+      ...(fechado?[]:[{label:'Projeção no ritmo atual',data:proj,borderColor:acDd/dd*dm>=metaFatT?'#22c55e':'#f59e0b',borderDash:[2,4],pointRadius:0,borderWidth:2,fill:false}])]},
+      options:Object.assign(baseOpt(),{interaction:{mode:'index',intersect:false},
+        plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{title:c=>'dia '+c[0].label,label:c=>c.raw==null?null:c.dataset.label+': '+brl(c.raw)}}}),
+        scales:{x:{ticks:{color:tc,font:{size:9},maxTicksLimit:16},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:fK},grid:{color:gc}}}})}); }
+  // 2) margem depois do Ads por dia
+  { let fa=0,ma=0; const pd=fatD.map((f,i)=>i<dd&&f>0?100*mcD[i]/f:null), acum=fatD.map((f,i)=>{ if(i>=dd) return null; fa+=f; ma+=mcD[i]; return fa?100*ma/fa:null; });
+    const metaL=lab.map(()=>metaMcT?100*metaMcT:null);
+    const el=document.getElementById('c-met-mcdia');
+    if(el) charts['c-met-mcdia']=new Chart(el,{data:{labels:lab,datasets:[
+      {type:'bar',label:'Margem do dia',data:pd,backgroundColor:pd.map(v=>v==null?'transparent':(metaMcT&&v>=100*metaMcT?'rgba(34,197,94,.55)':'rgba(248,113,113,.5)')),borderWidth:0,order:3},
+      {type:'line',label:'Acumulada no mês',data:acum,borderColor:'#f59e0b',pointRadius:0,borderWidth:2.5,tension:.3,order:1},
+      {type:'line',label:'Meta',data:metaL,borderColor:'#94a3b8',borderDash:[6,5],pointRadius:0,borderWidth:1.5,order:2}]},
+      options:Object.assign(baseOpt(),{interaction:{mode:'index',intersect:false},
+        plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{title:c=>'dia '+c[0].label,label:c=>c.raw==null?null:c.dataset.label+': '+c.raw.toFixed(1)+'%'}}}),
+        scales:{x:{ticks:{color:tc,font:{size:9},maxTicksLimit:16},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc}}}})}); }
+  // 3) atingimento por operação
+  { const lb=opsG.map(o=>curto(o.l.operacao)), af=opsG.map(o=>o.metaFat?Math.round(100*o.fatP/o.metaFat):null), am=opsG.map(o=>o.metaMc?Math.round(100*o.mcR/o.metaMc):null);
+    const cor=a=>a.map(v=>v==null?'transparent':v>=100?'#22c55e':v>=90?'#f59e0b':'#f87171');
+    const el=document.getElementById('c-met-ating');
+    if(el) charts['c-met-ating']=new Chart(el,{type:'bar',data:{labels:lb,datasets:[
+      {label:'Faturamento',data:af,backgroundColor:cor(af),borderRadius:3,barPercentage:.9,categoryPercentage:.75},
+      {label:'Margem final',data:am,backgroundColor:cor(am).map(c=>c==='transparent'?c:c+'99'),borderColor:cor(am),borderWidth:1,borderRadius:3,barPercentage:.9,categoryPercentage:.75}]},
+      options:Object.assign(baseOpt(),{indexAxis:'y',plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{label:c=>c.raw==null?null:c.dataset.label+': '+c.raw+'% da meta'}}}),
+        scales:{x:{suggestedMax:120,ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:c=>c.tick&&c.tick.value===100?'#94a3b8':gc,lineWidth:c=>c.tick&&c.tick.value===100?2:1}},
+          y:{ticks:{color:c=>opsG[c.index]&&opsG[c.index].l.operacao===_MET_OP?'#00c2a8':tc,font:{size:10.5}},grid:{display:false}}}})}); }
+  // 4) bônus projetado × na mesa
+  { const lb=opsG.map(o=>curto(o.l.operacao));
+    const el=document.getElementById('c-met-bonus');
+    if(el) charts['c-met-bonus']=new Chart(el,{type:'bar',data:{labels:lb,datasets:[
+      {label:fechado?'Bônus':'Bônus projetado',data:opsG.map(o=>Math.round(o.bonusP)),backgroundColor:'#22c55e',borderRadius:3,stack:'b'},
+      {label:'Fica na mesa',data:opsG.map(o=>Math.round(Math.max(0,o.bonusMax-o.bonusP))),backgroundColor:isDark?'rgba(148,163,184,.28)':'rgba(100,116,139,.25)',borderRadius:3,stack:'b'}]},
+      options:Object.assign(baseOpt(),{indexAxis:'y',plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{label:c=>c.dataset.label+': '+brl(c.raw)}}}),
+        scales:{x:{stacked:true,ticks:{color:tc,font:{size:10},callback:v=>'R$ '+fK(v)},grid:{color:gc}},y:{stacked:true,ticks:{color:tc,font:{size:10.5}},grid:{display:false}}}})}); }
+  // 5) TACOS × teto
+  if(opsAds.length){ const el=document.getElementById('c-met-tacos');
+    if(el) charts['c-met-tacos']=new Chart(el,{type:'bar',data:{labels:opsAds.map(o=>curto(o.l.operacao)),datasets:[
+      {label:'TACOS real',data:opsAds.map(o=>+(100*o.tacR).toFixed(2)),backgroundColor:opsAds.map(o=>o.tacR<=o.metaTac?'#22c55e':o.tacR<=o.metaTac*1.1?'#f59e0b':'#f87171'),borderRadius:3},
+      {label:'Teto',data:opsAds.map(o=>+(100*o.metaTac).toFixed(2)),backgroundColor:isDark?'rgba(148,163,184,.3)':'rgba(100,116,139,.25)',borderRadius:3}]},
+      options:Object.assign(baseOpt(),{indexAxis:'y',plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw.toFixed(1)+'%'}}}),
+        scales:{x:{ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc}},y:{ticks:{color:tc,font:{size:10.5}},grid:{display:false}}}})}); }
+  // 6) histórico
+  if(mesesH.length>1){ const lb=histo.map(x=>NOMES[+x.m.slice(5)].slice(0,3)+'/'+x.m.slice(2,4));
+    const e1=document.getElementById('c-met-hfat');
+    if(e1) charts['c-met-hfat']=new Chart(e1,{data:{labels:lb,datasets:[
+      {type:'bar',label:'Realizado',data:histo.map(x=>x.m===_MET_MES?x.fatP:x.fat),backgroundColor:histo.map(x=>(x.m===_MET_MES&&!fechado)?'rgba(0,194,168,.45)':(x.metaFat&&(x.m===_MET_MES?x.fatP:x.fat)>=x.metaFat?'#22c55e':'#00c2a8')),borderRadius:3,order:2},
+      {type:'line',label:'Meta',data:histo.map(x=>x.metaFat||null),borderColor:'#f59e0b',pointRadius:4,pointBackgroundColor:'#f59e0b',borderWidth:2,order:1}]},
+      options:Object.assign(baseOpt(),{plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{label:c=>c.dataset.label+': '+brl(c.raw)}}}),
+        scales:{x:{ticks:{color:tc,font:{size:10}},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>'R$ '+fK(v)},grid:{color:gc}}}})});
+    const e2=document.getElementById('c-met-hmc');
+    if(e2) charts['c-met-hmc']=new Chart(e2,{type:'line',data:{labels:lb,datasets:[
+      {label:'Margem final realizada',data:histo.map(x=>+(100*x.mc).toFixed(1)),borderColor:'#00c2a8',backgroundColor:'#00c2a8',pointRadius:4,borderWidth:2.5,tension:.25},
+      {label:'Meta',data:histo.map(x=>x.metaMc?+(100*x.metaMc).toFixed(1):null),borderColor:'#f59e0b',borderDash:[6,5],pointRadius:3,borderWidth:2}]},
+      options:Object.assign(baseOpt(),{plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw+'%'}}}),
+        scales:{x:{ticks:{color:tc,font:{size:10}},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc}}}})}); }
 }
 // ═══════════ GERENCIAL · sub-aba COMISSÃO — bônus dos gestores por operação × mês ═══════════
 function comMes(v){ _COM_MES=v; _COM_OP=''; renderGerencial(); }
