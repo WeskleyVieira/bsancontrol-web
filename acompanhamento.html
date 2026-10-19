@@ -991,7 +991,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
     <div class="cc" style="margin-top:16px;">
       <div class="cc-hdr"><div>
         <div class="cc-title">📈 Faturamento e margem por dia</div>
-        <div class="cc-sub">Barras = faturamento do dia · linha = MC % (margem capada, a mesma base da comissão)</div>
+        <div class="cc-sub">Barras = faturamento do dia · linha = margem % depois do Ads (a mesma base da comissão)</div>
       </div></div>
       <div style="position:relative;height:300px;margin-top:8px;"><canvas id="c-ger-dia"></canvas></div>
     </div>
@@ -1256,7 +1256,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
       <button class="stab" data-tm="ped" onclick="setDiarioTendMetric('ped',this)">Pedidos</button>
       <button class="stab" data-tm="qtd" onclick="setDiarioTendMetric('qtd',this)">Unidades</button>
       <button class="stab on" data-tm="fat" onclick="setDiarioTendMetric('fat',this)">Faturamento</button>
-      <button class="stab" data-tm="mc" onclick="setDiarioTendMetric('mc',this)">MC (R$)</button>
+      <button class="stab" data-tm="mc" onclick="setDiarioTendMetric('mc',this)">MC pós-Ads</button>
     </div></div>
     <div style="position:relative;height:300px"><canvas id="c-diario-tend"></canvas></div>
   </div>
@@ -2424,6 +2424,42 @@ function _adsDiaSeries(emp,mkt,ps,pe){
     const o=by[r.data]||(by[r.data]={date:r.data,inv:0,rec:0,vatr:0}); o.inv+=+r.inv||0; o.rec+=+r.rec||0; o.vatr+=+r.vatr||0; });
   return Object.values(by).sort((a,b)=>a.date<b.date?-1:1);
 }
+// ═══ ADS POR DIA × OPERAÇÃO — para o gestor ver a margem DEPOIS do Ads (19/10/2026) ═══
+// Olhar a margem antes do Ads dá falsa sensação de lucro (Bsan ML out/26: 22,2% antes × 16,4% depois).
+// Ads do mês da operação = o MAIOR entre os grãos anúncio e campanha (mesmo gasto, nunca somar) — mesma regra do comissao.js.
+// AFILIADO fica de fora: já está descontado na margem (vem no líquido); subtrair de novo contaria duas vezes.
+// Rateio por dia: série diária da plataforma (AdsDia, ML) quando existe; senão, pelo faturamento de cada dia do mês.
+let _ADSD=null;
+function _adsDiaMap(){
+  const R0=(typeof ROWS!=='undefined'&&Array.isArray(ROWS))?ROWS:[];
+  const sig=ADS.length+'|'+ADS_CAMP.length+'|'+ADS_DIA.length+'|'+R0.length;
+  if(_ADSD&&_ADSD.sig===sig) return _ADSD;
+  const afi=x=>/afiliad/i.test(String(x.fonte||'')+' '+String(x.campanha||''));
+  const add=(o,k,m,v)=>{ (o[k]=o[k]||{})[m]=(o[k][m]||0)+v; };
+  const serie=(o,k,d,v)=>{ const m=d.slice(0,7); const x=(o[k]=o[k]||{}); const y=(x[m]=x[m]||{tot:0,d:{}}); y.tot+=v; y.d[d]=(y.d[d]||0)+v; };
+  const perAd={},camp={},dia={},fat={};
+  ADS.forEach(a=>{ if(afi(a))return; add(perAd,a.emp+'||'+a.mkt,String(a.comp).slice(0,7),+a.inv||0); });
+  ADS_CAMP.forEach(a=>{ if(afi(a))return; add(camp,a.emp+'||'+a.mkt,String(a.comp).slice(0,7),+a.inv||0); });
+  ADS_DIA.forEach(a=>{ if(afi(a))return; serie(dia,a.emp+'||'+a.mkt,String(a.data).slice(0,10),+a.inv||0); });
+  R0.forEach(r=>{ if(r.date) serie(fat,r.emp+'||'+r.mkt,r.date,+r.fat||0); });
+  const porDia={}, mesInv={};
+  new Set([...Object.keys(perAd),...Object.keys(camp)]).forEach(k=>{
+    new Set([...Object.keys(perAd[k]||{}),...Object.keys(camp[k]||{})]).forEach(m=>{
+      const inv=Math.max((perAd[k]||{})[m]||0,(camp[k]||{})[m]||0); if(!(inv>0)) return;
+      (mesInv[k]=mesInv[k]||{})[m]=inv;
+      const dd=(dia[k]||{})[m], ff=(fat[k]||{})[m], base=(dd&&dd.tot>0)?dd:((ff&&ff.tot>0)?ff:null);
+      if(!base) return;
+      const out=(porDia[k]=porDia[k]||{});
+      for(const d in base.d) out[d]=(out[d]||0)+inv*base.d[d]/base.tot;
+    });
+  });
+  return _ADSD={sig,porDia,mesInv};
+}
+// Ads da operação (chave "emp||mkt") no período [s,e]
+function _adsOpPer(k,s,e){ const o=_adsDiaMap().porDia[k]; if(!o) return 0; let t=0; for(const d in o){ if(d>=s&&d<=e) t+=o[d]; } return t; }
+// operação que investiu em Ads em algum dos 3 meses anteriores e está sem Ads coletado neste mês → margem aparece inflada
+function _adsFaltando(k,mes){ const m=_adsDiaMap().mesInv[k]||{}; if(m[mes]>0) return false; const [y,mm]=mes.split('-').map(Number);
+  for(let i=1;i<=3;i++){ const ant=new Date(Date.UTC(y,mm-1-i,1)).toISOString().slice(0,7); if(m[ant]>0) return true; } return false; }
 // investimento total de Ads da operação: por-anúncio quando há (ML/Shopee); senão soma do grão campanha (Amazon/Magalu/TikTok)
 function _adsInvOper(emp,mkt,ps,pe){
   const perAd=Object.values(_adsIndex(emp,mkt,ps,pe)).reduce((s,a)=>s+(a.inv||0),0);
@@ -5584,11 +5620,13 @@ function renderGerencial(){
       <div class="kpi-pct" style="color:${cor}">${sinal} ${Math.abs(d).toFixed(1)}${pp?' pp':'%'} <span style="color:var(--t3);font-weight:400">${sub}</span></div>
       <div class="kpi-accent" style="background:linear-gradient(90deg,${MKT_C[mkt]||'#00c2a8'},${(MKT_C[mkt]||'#00c2a8')}44)"></div></div>`;
   };
-  const _adsInvOp=(typeof _adsInvOper==='function')?_adsInvOper(emp,mkt,ps,pe):0;
+  // margem DEPOIS do Ads é o número principal (19/10/2026); o "antes do Ads" fica como referência
+  const _kOp=emp+'||'+mkt, _adsA=_adsOpPer(_kOp,ps,pe), _adsB=_adsOpPer(_kOp,cs,ce);
+  const _mcA=A.mc-_adsA, _mcB=B.mc-_adsB, _pA=A.mcp&&A.mc?A.mcp*_mcA/A.mc:0, _pB=B.mcp&&B.mc?B.mcp*_mcB/B.mc:0;
   kp.innerHTML =
     cardK('Faturamento',brl(A.fat),'vs '+brl(B.fat),dl(A.fat,B.fat))+
-    cardK('Margem de contribuição',brl(A.mc),_adsInvOp>0?('pós-Ads '+brl(A.mc-_adsInvOp)):('vs '+brl(B.mc)),dl(A.mc,B.mc))+
-    cardK('MC %',A.mcp.toFixed(1)+'%','vs '+B.mcp.toFixed(1)+'%',A.mcp-B.mcp,true)+
+    cardK('Margem depois do Ads',brl(_mcA),'antes do Ads '+brl(A.mc)+(_adsA>0?' · Ads '+brl(_adsA):''),dl(_mcA,_mcB))+
+    cardK('MC % depois do Ads',_pA.toFixed(1)+'%','vs '+_pB.toFixed(1)+'% · antes do Ads '+A.mcp.toFixed(1)+'%',_pA-_pB,true)+
     cardK('Pedidos',A.nped.toLocaleString('pt-BR'),'vs '+B.nped.toLocaleString('pt-BR'),dl(A.nped,B.nped))+
     cardK('Ticket médio',brl(A.tkt),'vs '+brl(B.tkt),dl(A.tkt,B.tkt));
 
@@ -5607,6 +5645,7 @@ function renderGerencial(){
   if(conc>=60) av.push({c:'#f59e0b',t:`<b>Concentração de risco:</b> os 5 maiores anúncios respondem por ${conc.toFixed(0)}% do faturamento.`});
   if(B.fat&&dl(A.fat,B.fat)<=-20) av.push({c:'#f59e0b',t:`<b>Queda relevante:</b> faturamento ${dl(A.fat,B.fat).toFixed(0)}% abaixo do período anterior.`});
   if(A.dev) av.push({c:'#8891a8',t:`${A.dev} devolução(ões) registrada(s) no período.`});
+  if(_adsFaltando(_kOp,pe.slice(0,7))) av.push({c:'#f59e0b',t:`<b>Ads deste mês ainda não coletado</b> — a operação investiu em Ads no mês passado; até o relatório entrar, a margem aparece maior do que é.`});
   al.innerHTML = av.length
     ? av.map(x=>`<div style="padding:9px 12px;background:var(--surf);border:1px solid var(--bdr2);border-left:3px solid ${x.c};border-radius:8px;font-size:12.5px;margin-bottom:7px;font-family:'Inter',sans-serif;">${x.t}</div>`).join('')
     : `<div style="padding:9px 12px;background:var(--surf);border:1px solid var(--bdr2);border-radius:8px;color:var(--t2);font-size:12.5px;font-family:'Inter',sans-serif;">✓ Nenhum alerta no período.</div>`;
@@ -5615,15 +5654,15 @@ function renderGerencial(){
   const tc=isDark?'#8891a8':'#556070', gc=isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)';
   const dias=[...new Set(A.linhas.map(r=>r.date))].sort();
   const fatDia=dias.map(d=>A.linhas.filter(r=>r.date===d).reduce((a,r)=>a+(+r.fat||0),0));
-  const mcpDia=dias.map(d=>{const l=A.linhas.filter(r=>r.date===d);const f=l.reduce((a,r)=>a+(+r.fat||0),0);const m=l.reduce((a,r)=>a+(+r.mc||0),0);return f?100*m/f:0;});
+  const mcpDia=dias.map(d=>{const l=A.linhas.filter(r=>r.date===d);const f=l.reduce((a,r)=>a+(+r.fat||0),0);const m=l.reduce((a,r)=>a+(+r.mc||0),0)-_adsOpPer(_kOp,d,d);return f?100*m/f:0;});
   const dm=d=>d.slice(8)+'/'+d.slice(5,7);
   dc('c-ger-dia');charts['c-ger-dia']=new Chart(document.getElementById('c-ger-dia'),{
     data:{labels:dias.map(dm),datasets:[
       {type:'bar',label:'Faturamento',data:fatDia,backgroundColor:(MKT_C[mkt]||'#00c2a8')+'cc',borderWidth:0,yAxisID:'y',order:2},
-      {type:'line',label:'MC %',data:mcpDia,borderColor:'#f59e0b',backgroundColor:'transparent',tension:.3,pointRadius:0,borderWidth:2,yAxisID:'y1',order:1}]},
+      {type:'line',label:'MC % depois do Ads',data:mcpDia,borderColor:'#f59e0b',backgroundColor:'transparent',tension:.3,pointRadius:0,borderWidth:2,yAxisID:'y1',order:1}]},
     options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},interaction:{mode:'index',intersect:false},
       plugins:{legend:{position:'bottom',labels:{color:tc,font:{family:'Inter',size:11},padding:10}},
-        tooltip:{callbacks:{label:c=>c.dataset.label==='MC %'?('MC %: '+c.raw.toFixed(1)+'%'):('Faturamento: '+brl(c.raw))}}},
+        tooltip:{callbacks:{label:c=>c.dataset.yAxisID==='y1'?('MC % depois do Ads: '+c.raw.toFixed(1)+'%'):('Faturamento: '+brl(c.raw))}}},
       scales:{x:{ticks:{color:tc,font:{size:9},maxTicksLimit:14},grid:{display:false}},
         y:{position:'left',ticks:{color:tc,font:{size:10},callback:v=>brlK?brlK(v):v},grid:{color:gc}},
         y1:{position:'right',ticks:{color:tc,font:{size:10},callback:v=>v.toFixed(0)+'%'},grid:{display:false}}}}});
@@ -5638,7 +5677,11 @@ function renderGerencial(){
       plugins:{legend:{position:'right',labels:{color:tc,font:{family:'Inter',size:11},padding:8}},
         tooltip:{callbacks:{label:c=>c.label+': '+brl(c.raw)+' ('+(A.fat?(100*c.raw/A.fat).toFixed(0):0)+'%)'}}}}});
 
-  const temAds=A.linhas.some(r=>String(r.ads||'').trim()!=='');
+  // marcação por venda (sim/não) quando o relatório traz; senão, a receita atribuída ao Ads no próprio relatório de Ads
+  // (antes: ML com marcação vazia/"não" saía 100% orgânico mesmo com R$ 27 mil vindos de Ads em out/26)
+  const _marcaSim=A.linhas.some(r=>/^(sim|s|1|true)$/i.test(String(r.ads||'').trim()));
+  let _recAds=0; if(!_marcaSim){ try{ _recAds=Object.values(_adsIndex(emp,mkt,ps,pe)).reduce((s2,a)=>s2+(a.recAds||0),0)||Object.values(_adsCampList(emp,mkt,ps,pe)).reduce((s2,c)=>s2+(c.rec||0),0); }catch(e){} }
+  const temAds=_marcaSim||_recAds>0;
   const boxAds=document.getElementById('ger-ads-box');
   if(!temAds){
     if(boxAds) boxAds.innerHTML='<div style="padding:26px;text-align:center;color:var(--t3);font-size:12.5px;font-family:\'Inter\',sans-serif;">Esta operação não tem marcação de origem (Ads) nos relatórios.</div>';
@@ -5646,7 +5689,8 @@ function renderGerencial(){
   } else {
     if(boxAds&&!document.getElementById('c-ger-ads')) boxAds.innerHTML='<div style="position:relative;height:230px;"><canvas id="c-ger-ads"></canvas></div>';
     let pago=0,org=0;
-    A.linhas.forEach(r=>{const v=+r.fat||0; if(/^(sim|s|1|true)$/i.test(String(r.ads||'').trim())) pago+=v; else org+=v;});
+    if(_marcaSim) A.linhas.forEach(r=>{const v=+r.fat||0; if(/^(sim|s|1|true)$/i.test(String(r.ads||'').trim())) pago+=v; else org+=v;});
+    else { pago=Math.min(_recAds,A.fat); org=Math.max(0,A.fat-pago); }
     dc('c-ger-ads');charts['c-ger-ads']=new Chart(document.getElementById('c-ger-ads'),{type:'doughnut',
       data:{labels:['Orgânico','Via Ads'],datasets:[{data:[org,pago],backgroundColor:['#00c2a8','#f59e0b'],borderWidth:2,borderColor:isDark?'#101520':'#fff'}]},
       options:{responsive:true,maintainAspectRatio:false,cutout:'56%',animation:{duration:300},
@@ -9078,7 +9122,7 @@ function setDiarioAnalise(v,btn){
 function diarioSetClassSort(k){ diarioClassSort=k; renderDiarioClassificacao(); }
 let diarioMetaPct=(()=>{const v=parseFloat(localStorage.getItem('bsancontrol_diario_meta_v1'));return isNaN(v)?5:v;})();
 let diarioMetaMetrics=(()=>{try{const a=JSON.parse(localStorage.getItem('bsancontrol_diario_metametrics_v1'));return Array.isArray(a)&&a.length?a:['fat'];}catch(e){return ['fat'];}})();
-const DIARIO_META_LABEL={fat:'Faturamento',mc:'MC (R$)',ped:'Pedidos',qtd:'Unidades'};
+const DIARIO_META_LABEL={fat:'Faturamento',mc:'MC pós-Ads',ped:'Pedidos',qtd:'Unidades'};
 const DIARIO_META_LETTER={fat:'F',mc:'M',ped:'P',qtd:'U'};
 const DIARIO_META_ORDER=['fat','mc','ped','qtd'];
 function onDiarioMetaChange(v){
@@ -9197,15 +9241,18 @@ function diarioPeriods(ref){
   };
 }
 
+// mc = margem DEPOIS do Ads (o que o gestor deve olhar); mcAntes = antes do Ads; ads = investimento rateado no período
 function diarioAgg(s,e,emp,mkt){
-  let o={qtd:0,ped:0,fat:0,mc:0};
+  let o={qtd:0,ped:0,fat:0,mc:0,mcAntes:0,ads:0}; const ops=new Set();
   for(const r of ROWS){
     if(r.date<s||r.date>e)continue;
     if(!noPonto(r))continue;
     if(emp&&r.emp!==emp)continue;
     if(mkt&&r.mkt!==mkt)continue;
     o.qtd+=r.qtd;o.ped+=(r.ped||0);o.fat+=r.fat;o.mc+=r.mc;
+    ops.add(r.emp+'||'+r.mkt);
   }
+  o.mcAntes=o.mc; ops.forEach(k=>{ o.ads+=_adsOpPer(k,s,e); }); o.mc-=o.ads;
   return o;
 }
 function diarioAggByOp(s,e,emp,mkt){
@@ -9219,11 +9266,12 @@ function diarioAggByOp(s,e,emp,mkt){
     if(!m[k])m[k]={emp:r.emp,mkt:r.mkt,qtd:0,ped:0,fat:0,mc:0};
     m[k].qtd+=r.qtd;m[k].ped+=(r.ped||0);m[k].fat+=r.fat;m[k].mc+=r.mc;
   }
+  for(const k in m){ const a=_adsOpPer(k,s,e); m[k].mcAntes=m[k].mc; m[k].ads=a; m[k].mc-=a; }   // margem depois do Ads
   return m;
 }
 function diarioMetrics(a){
   const ped=a.ped||0;
-  return{qtd:a.qtd,ped,fat:a.fat,mc:a.mc,
+  return{qtd:a.qtd,ped,fat:a.fat,mc:a.mc,mcAntes:a.mcAntes!=null?a.mcAntes:a.mc,ads:a.ads||0,
     mcpct:a.fat>0?a.mc/a.fat*100:0,
     ticket:ped>0?a.fat/ped:0};   // ticket médio = faturamento por pedido
 }
@@ -9232,8 +9280,8 @@ const DIARIO_METRICS=[
   {k:'ped',   label:'Pedidos',      fmt:v=>Math.round(v).toLocaleString('pt-BR'), kind:'num'},
   {k:'qtd',   label:'Unidades',     fmt:v=>Math.round(v).toLocaleString('pt-BR'), kind:'num'},
   {k:'fat',   label:'Faturamento',  fmt:v=>brl(v),               kind:'money'},
-  {k:'mc',    label:'MC (R$)',      fmt:v=>brl(v),               kind:'money'},
-  {k:'mcpct', label:'MC %',         fmt:v=>v.toFixed(1)+'%',     kind:'pp'},
+  {k:'mc',    label:'MC pós-Ads (R$)', fmt:v=>brl(v),            kind:'money'},
+  {k:'mcpct', label:'MC % pós-Ads',    fmt:v=>v.toFixed(1)+'%',  kind:'pp'},
   {k:'ticket',label:'Ticket médio', fmt:v=>brl(v),               kind:'money'},
 ];
 
@@ -9386,7 +9434,7 @@ function diarioSelection(ref){
 // aplica o divisor de média (div) a um agregado bruto {qtd,ped,fat,mc}
 function diarioApplyDiv(raw,div){
   if(!div||div===1) return raw;
-  return {qtd:raw.qtd/div,ped:raw.ped/div,fat:raw.fat/div,mc:raw.mc/div};
+  return {qtd:raw.qtd/div,ped:raw.ped/div,fat:raw.fat/div,mc:raw.mc/div,mcAntes:(raw.mcAntes!=null?raw.mcAntes:raw.mc)/div,ads:(raw.ads||0)/div};
 }
 
 function renderDiario(){
@@ -9463,8 +9511,8 @@ function renderDiarioVeredito(ref,cur,ontem,semp){
     <div style="display:flex;gap:12px;flex-wrap:wrap;flex:1">
       ${chip('Pedidos',Math.round(cur.ped).toLocaleString('pt-BR'),cur.ped,ontem.ped)}
       ${chip('Unidades',Math.round(cur.qtd).toLocaleString('pt-BR'),cur.qtd,ontem.qtd)}
-      ${chip('MC R$',brl(cur.mc),cur.mc,ontem.mc)}
-      ${chip('MC %',cur.mcpct.toFixed(1)+'%',cur.mcpct,ontem.mcpct,'pp')}
+      ${chip('MC pós-Ads',brl(cur.mc),cur.mc,ontem.mc)}
+      ${chip('MC % pós-Ads',cur.mcpct.toFixed(1)+'%',cur.mcpct,ontem.mcpct,'pp')}
       ${chip('Ticket médio',brl(cur.ticket),cur.ticket,ontem.ticket)}
     </div>
   </div>`;
@@ -9506,7 +9554,9 @@ function renderDiarioClassificacao(){
   const {arr,S}=diarioBuildOps();
   diarioSyncMetaControls();
   const subEl=document.getElementById('diario-class-sub');
-  if(subEl) subEl.textContent=`${S.title} · ${S.sub} · clique num indicador para reordenar · nº pequeno = posição (e movimento vs comparativo)`;
+  if(subEl){ const mesC=S.ok?S.cur[1].slice(0,7):''; const falt=mesC?arr.filter(o=>_adsFaltando(o.emp+'||'+o.mkt,mesC)).map(o=>o.emp+' · '+o.mkt):[];
+    subEl.innerHTML=`${S.title} · ${S.sub} · margem já com o Ads descontado · clique num indicador para reordenar · nº pequeno = posição (e movimento vs comparativo)`
+      +(falt.length?`<div style="color:#f59e0b;margin-top:4px;">⚠️ Ads deste mês ainda não coletado em: ${falt.join(', ')} — a margem delas aparece maior do que é.</div>`:''); }
 
   const W=diarioGetWeights();
   const totW=(W.mc+W.mcpct+W.fat+W.qtd+W.ped)||1;
@@ -9520,8 +9570,8 @@ function renderDiarioClassificacao(){
     {k:'ped',   label:'Pedidos', kind:'num'},
     {k:'qtd',   label:'Unidades',kind:'num'},
     {k:'fat',   label:'Faturamento', kind:'money'},
-    {k:'mc',    label:'MC (R$)', kind:'money'},
-    {k:'mcpct', label:'MC %',    kind:'pp'},
+    {k:'mc',    label:'MC pós-Ads', kind:'money'},
+    {k:'mcpct', label:'MC % pós-Ads', kind:'pp'},
     {k:'ticket',label:'Ticket médio', kind:'money'},
   ];
   const fmtVal=(v,kind)=> kind==='money'?brl(v) : kind==='pp'?v.toFixed(1)+'%' : Math.round(v).toLocaleString('pt-BR');
@@ -9753,7 +9803,7 @@ function renderDiarioRelation(arr){
       scales:{
         x:{title:{display:true,text:'Faturamento (R$)',color:tc,font:{size:11}},
            ticks:{color:tc,font:{size:10},callback:v=>brlK(v)},grid:{color:gc}},
-        y:{title:{display:true,text:'Margem % (MC)',color:tc,font:{size:11}},
+        y:{title:{display:true,text:'Margem % depois do Ads',color:tc,font:{size:11}},
            ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc}}}}
   });
   // NÃO altera #diario-chart-title/#diario-chart-sub: eles pertencem ao card de Contribuição/Evolução.
@@ -9763,7 +9813,7 @@ function renderDiarioRelation(arr){
 // Ranking de contribuição (métrica atual − anterior), barra divergente
 const DIARIO_CONTRIB={
   fat:{k:'fat',label:'Faturamento (R$)',money:true},
-  mc: {k:'mc', label:'MC (R$)',         money:true},
+  mc: {k:'mc', label:'MC pós-Ads (R$)', money:true},
   ped:{k:'ped',label:'Pedidos',         money:false},
   qtd:{k:'qtd',label:'Unidades',        money:false},
 };
@@ -9805,7 +9855,7 @@ const DIARIO_TEND_KPI={
   ped:{k:'ped',l:'Pedidos',    c:'#4f8ef7',money:false},
   qtd:{k:'qtd',l:'Unidades',   c:'#facc15',money:false},
   fat:{k:'fat',l:'Faturamento',c:'#00c2a8',money:true},
-  mc: {k:'mc', l:'MC (R$)',    c:'#34d399',money:true},
+  mc: {k:'mc', l:'MC pós-Ads (R$)', c:'#34d399',money:true},
 };
 function setDiarioTendMetric(k,btn){
   diarioTendMetric=k;
