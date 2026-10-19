@@ -975,6 +975,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
       <button class="dshort" id="btn-ger-produtos" onclick="gerSub('produtos')">Anúncios</button>
       <button class="dshort" style="opacity:.42;cursor:not-allowed;" disabled title="Depois de Produtos">Full</button>
       <button class="dshort" id="btn-ger-ads" onclick="gerSub('ads')">Publicidade</button>
+      <button class="dshort" id="btn-ger-metas" onclick="gerSub('metas')" title="Metas do mês por operação: objetivo × realizado × projeção, e o placar do ano" style="margin-left:8px;border-left:2px solid var(--bdr2);padding-left:14px;">🎯 Metas</button>
       <button class="dshort" id="btn-ger-comissao" onclick="gerSub('comissao')" title="Comissão dos gestores (metas ponderadas → bônus)" style="margin-left:8px;border-left:2px solid var(--bdr2);padding-left:14px;">💰 Comissão</button>
     </div>
   </div>
@@ -1081,6 +1082,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
   </div>
 
   <!-- Sub-aba COMISSÃO — bônus dos gestores por operação × mês (visão de coordenador) -->
+  <div id="ger-sub-metas" style="display:none;"><div id="met-root"></div></div>
   <div id="ger-sub-comissao" style="display:none;">
     <div id="com-ctrl" style="margin-top:14px;"></div>
     <div id="com-kpis" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px;"></div>
@@ -2339,7 +2341,7 @@ let GER_SUB='panorama';
 // A COMISSÃO fica: ela interessa a quem está olhando a própria operação.
 // `GER_GRUPO` decide quais sub-abas precisam de uma operação escolhida ('op') e quais são
 // visão de coordenador ('todas') — a comissão é das segundas, e por isso dispensa o seletor.
-const GER_GRUPO={panorama:'op',vendas:'op',diag:'op',produtos:'op',ads:'op',comissao:'todas'};
+const GER_GRUPO={panorama:'op',vendas:'op',diag:'op',produtos:'op',ads:'op',metas:'todas',comissao:'todas'};
 let ESTOQUE=[]; // aba "Estoque" (Tiny): saldo por SKU (snapshot) — Geral/Full/disponível + cobertura
 let PRODUTOS=[]; // aba "Produtos" (Tiny): cadastro-mãe (sku, gtin, tipo, situação)
 let ACOMP=[];       // aba "Acompanhamento": placar da verificação por resultado (semana × operação)
@@ -3168,13 +3170,13 @@ function _renderGerPubAnuncio(arr,ch,tb,sub,ttl,afil,opMcp){
 // Os painéis de panorama/vendas/diag/produtos/ads vivem DENTRO de #ger-body; acomp e comissao são
 // irmãos, fora dele — por isso #ger-body também entra na conta.
 function _gerPainel(){
-  const subs=['panorama','vendas','diag','produtos','ads','comissao'];
+  const subs=['panorama','vendas','diag','produtos','ads','metas','comissao'];
   subs.forEach(s=>{ const el=document.getElementById('ger-sub-'+s); if(el) el.style.display = (s===GER_SUB)?'block':'none'; });
   const corpo=document.getElementById('ger-body');
   if(corpo) corpo.style.display = (GER_GRUPO[GER_SUB]==='todas') ? 'none' : corpo.style.display;
 }
 function _gerSubHighlight(){
-  [['btn-ger-panorama','panorama'],['btn-ger-vendas','vendas'],['btn-ger-diag','diag'],['btn-ger-comissao','comissao'],['btn-ger-produtos','produtos'],['btn-ger-ads','ads']].forEach(([bid,sid])=>{
+  [['btn-ger-panorama','panorama'],['btn-ger-vendas','vendas'],['btn-ger-diag','diag'],['btn-ger-comissao','comissao'],['btn-ger-metas','metas'],['btn-ger-produtos','produtos'],['btn-ger-ads','ads']].forEach(([bid,sid])=>{
     const b=document.getElementById(bid); if(!b)return; const on=GER_SUB===sid;
     b.style.borderColor=on?'var(--a)':'var(--bdr2)'; b.style.color=on?'var(--a)':'var(--t2)'; b.style.background=on?'var(--a3)':'transparent';
   });
@@ -5285,6 +5287,153 @@ function _renderGerAcomp(){
     itb.innerHTML=hi;
   }
 }
+// ═══════════ GERENCIAL · sub-aba METAS — meta do mês × realizado × projeção, por gestor e operação ═══════════
+// Mesma régua que paga o bônus (COMISSAO/COMISSAO_DET, do comissao.js): margem FINAL = depois do Ads e dos
+// custos do gestor. As metas saem do metas-auto.js (séries A/B/C, sazonalidade, TACOS pela margem) — 19/10/2026.
+// Online, o /api/extras já entrega ao gestor só as operações dele; aqui o seletor de gestor é a visão do coordenador.
+let _MET_MES='', _MET_GES='', _MET_AJUDA=false;
+function metMes(v){ _MET_MES=v; renderGerencial(); }
+function metGes(v){ _MET_GES=v; renderGerencial(); }
+function metAjuda(){ _MET_AJUDA=!_MET_AJUDA; renderGerencial(); }
+// cópia fiel do bonusMeta do comissao.js: "maior" = quanto mais melhor (teto 100%); "custo" = passou do teto, perde na proporção
+function _metBonus(real,obj,peso,tipo){ if(!(obj>0)) return 0; const r=tipo==='custo'?Math.max(0,Math.min(2-real/obj,1)):Math.min(real/obj,1); return r*peso; }
+function _renderGerMetas(){
+  const root=document.getElementById('met-root'); if(!root) return;
+  const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const brl=v=>'R$ '+Math.round(+v||0).toLocaleString('pt-BR');
+  const pc=(v,d=1)=>((+v||0)*100).toFixed(d).replace('.',',')+'%';
+  const L=(typeof COMISSAO!=='undefined'&&Array.isArray(COMISSAO))?COMISSAO:[];
+  const D=(typeof COMISSAO_DET!=='undefined'&&Array.isArray(COMISSAO_DET))?COMISSAO_DET:[];
+  if(!L.length){ root.innerHTML='<div class="cc" style="padding:30px;text-align:center;color:var(--t2);font-size:13px;line-height:1.7;">Sem metas carregadas ainda.<br><span style="font-size:12px;color:var(--t3)">As metas vêm de <code>Comissao/Comissao_Metas.xlsx</code> (calculadas pelo <code>metas-auto.js</code>) e entram no painel na rodada do <code>geral</code>.</span></div>'; return; }
+  // dias corridos do mês = último dia com venda no mês; projeção linear até o fim do mês
+  const R0=(typeof ROWS!=='undefined'&&Array.isArray(ROWS))?ROWS:[];
+  let maxG=''; for(const r of R0){ if(r.date&&r.date>maxG) maxG=r.date; }
+  const meses=[...new Set(L.map(r=>r.mes))].sort();
+  if(!_MET_MES||!meses.includes(_MET_MES)) _MET_MES=meses.includes(maxG.slice(0,7))?maxG.slice(0,7):meses[meses.length-1];
+  const [yy,mm]=_MET_MES.split('-').map(Number), dm=new Date(yy,mm,0).getDate();
+  let ultM=''; for(const r of R0){ if(r.date&&r.date.slice(0,7)===_MET_MES&&r.date>ultM) ultM=r.date; }
+  // mês fechado = já passou no calendário (ou os dados já entraram no mês seguinte); sem venda carregada no mês
+  // corrente, conta até ontem
+  const hoje=new Date(), hojeM=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+  const fechado=_MET_MES<hojeM||(!!maxG&&maxG.slice(0,7)>_MET_MES);
+  const dd=fechado?dm:(ultM?+ultM.slice(8,10):Math.max(1,hoje.getDate()-1)), resta=Math.max(0,dm-dd), fP=(!fechado&&dd>0)?dm/dd:1;
+  const NOMES=['','janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const gesDe=op=>{ const [e,m]=String(op).split(' · '); return (typeof AC2_GESTOR!=='undefined'&&AC2_GESTOR[e+'|'+m])||'—'; };
+  const gCor=g=>(typeof AC2_GCOR!=='undefined'&&AC2_GCOR[g])||'var(--t2)';
+  const rowsM=L.filter(r=>r.mes===_MET_MES);
+  const gestores=[...new Set(rowsM.map(r=>gesDe(r.operacao)))].sort();
+  if(_MET_GES&&!gestores.includes(_MET_GES)) _MET_GES='';
+  const sel=rowsM.filter(r=>!_MET_GES||gesDe(r.operacao)===_MET_GES);
+
+  // ── cada operação: 4 indicadores (ou 2, sem Ads) com meta, realizado e projeção; bônus projetado com a régua do bônus
+  const ops=sel.map(l=>{
+    const d=D.find(x=>x.mes===_MET_MES&&x.operacao===l.operacao)||{};
+    const fatR=+d.Faturamento_real||+l.faturamento||0, adsR=+d.Ads_real||0;
+    const ind=[
+      {n:'Faturamento',dica:'vendas sem devolução e cancelamento',meta:+d.Faturamento_obj||0,real:fatR,proj:fatR*fP,peso:+d.Faturamento_peso||0,tipo:'maior',fmt:brl},
+      {n:'Margem final',dica:'o que sobra depois de produto, impostos, tarifas, frete, Ads e custos da operação',meta:+d.MC_obj||0,real:+d.MC_real||0,proj:+d.MC_real||0,peso:+d.MC_peso||0,tipo:'maior',fmt:v=>pc(v),taxa:true},
+      {n:'TACOS',dica:'(Ads + afiliados) ÷ faturamento — teto: margem 15% → 3%, 20% → 5%',meta:+d.TACOS_obj||0,real:+d.TACOS_real||0,proj:+d.TACOS_real||0,peso:+d.TACOS_peso||0,tipo:'custo',fmt:v=>pc(v),taxa:true},
+      {n:'Orçamento de Ads',dica:'faturamento líquido do mês anterior × teto de TACOS',meta:+d.Ads_obj||0,real:adsR,proj:adsR*fP,peso:+d.Ads_peso||0,tipo:'custo',fmt:brl},
+    ].filter(i=>i.peso>0);
+    const somaP=ind.reduce((s,i)=>s+i.peso,0)||1;
+    const progP=ind.reduce((s,i)=>s+_metBonus(i.proj,i.meta,i.peso,i.tipo),0)/somaP;
+    const teto=(+d.Teto)||((+l.teto_pct||0)/100);
+    const mcont=+l.margem_cont||0, mcontP=mcont*fP;
+    const bonusP=fechado?(+l.bonus_final_rs||0):Math.max(0,progP*teto*mcontP);
+    return {l,d,ind,fatR,mcont,mcontP,progP:fechado?(+l.progresso_metas||0)/100:progP,teto,bonusHoje:+l.bonus_final_rs||0,bonusP,bonusMax:Math.max(0,teto*mcontP),ges:gesDe(l.operacao),serie:String(d.Serie||'')};
+  }).sort((a,b)=>b.mcontP-a.mcontP);
+
+  const st=i=>{
+    if(!(i.meta>0)) return ['sem meta','var(--t3)'];
+    const r=i.proj/i.meta;
+    if(i.tipo==='maior') return r>=1?[fechado?'✅ batida':'✅ no ritmo','#22c55e']:r>=0.9?['🟡 perto','#f59e0b']:['🔴 abaixo','#f87171'];
+    return r<=1?['✅ dentro','#22c55e']:r<=1.1?['🟡 no limite','#f59e0b']:['🔴 estourou','#f87171'];
+  };
+  const SCOR={A:'#22c55e',B:'#4f8ef7',C:'#a855f7'};
+  const badge=(t,c)=>`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;border:1px solid ${c};color:${c};white-space:nowrap;">${t}</span>`;
+
+  // ── controles
+  let h='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px;">'
+    +'<span style="font-size:12px;color:var(--t2)">Mês:</span><select class="abc-select" onchange="metMes(this.value)">'+meses.map(s=>`<option value="${s}"${s===_MET_MES?' selected':''}>${NOMES[+s.slice(5)]} ${s.slice(0,4)}</option>`).join('')+'</select>'
+    +(gestores.length>1?'<span style="font-size:12px;color:var(--t2);margin-left:6px;">Gestor:</span><select class="abc-select" onchange="metGes(this.value)"><option value="">Todos</option>'+gestores.map(g=>`<option value="${esc(g)}"${g===_MET_GES?' selected':''}>${esc(g)}</option>`).join('')+'</select>':'')
+    +`<span style="font-size:11px;color:var(--t3);">${fechado?'mês fechado':'dia '+dd+' de '+dm+' · faltam '+resta+' dias · projeção = ritmo de hoje até o fim do mês'}</span>`
+    +`<button class="dshort" style="margin-left:auto;" onclick="metAjuda()">${_MET_AJUDA?'✕ fechar':'❓ Como funcionam as metas'}</button></div>`;
+
+  // ── explicação para o gestor (linguagem simples)
+  if(_MET_AJUDA){
+    const ip=+(D.find(x=>x.Ipca12m)||{}).Ipca12m||0, se=+(D.find(x=>x.Selic)||{}).Selic||0;
+    const bloco=(t,txt)=>`<div style="margin-bottom:12px;"><div style="font-weight:700;color:var(--t);margin-bottom:3px;">${t}</div><div>${txt}</div></div>`;
+    h+='<div class="cc" style="margin-top:12px;font-size:12.5px;line-height:1.65;color:var(--t2);border-left:3px solid var(--a);">'
+      +bloco('1 · O que conta é a margem final','Margem final = o que sobra da venda depois de pagar o produto, os impostos, as tarifas do marketplace, o frete, o <b>Ads</b> e os custos da operação (Full etc.). É sobre ela que o bônus é pago. Olhar a margem antes do Ads dá uma falsa sensação de lucro.')
+      +bloco('2 · Quatro metas, pesos diferentes','<b>Margem final</b> pesa 6 · <b>TACOS</b> pesa 2 · <b>Faturamento</b> pesa 1 · <b>Ads dentro do orçamento</b> pesa 1. Operação sem Ads: Faturamento 4 e Margem 6. Cada meta batida soma o peso inteiro; meta não batida soma a parte que foi atingida. <b>Bônus = progresso × teto (3,33%, ou 5% na Powerfull) × margem final em R$</b> — por isso vender muito com margem ruim paga pouco.')
+      +bloco('3 · Como a meta é calculada (automática)','<b>Faturamento</b> = ritmo dos 3 últimos meses (o mais recente pesa mais) × o fator do mês (ex.: novembro 1,10; Amazon 1,20 pela Black Friday) + 5% de desafio. A ideia é uma meta que se bate em cerca de metade dos meses: nem fácil, nem impossível.<br><b>Margem</b> = a margem real da operação nos últimos meses, subindo 1 ponto por mês até o alvo da série.')
+      +bloco('4 · Séries','<b>Série A</b> — a partir de R$ 20 mil/mês: margem alvo 20%; crescer até R$ 170 mil/mês por operação (acima disso, avisar: é hora de avaliar outro CNPJ).<br><b>Série B</b> — R$ 10 a 20 mil/mês: margem alvo 18%, sem frear as vendas.<br><b>Série C</b> — até R$ 10 mil/mês ou conta nova: margem alvo 15%.<br>A série sai da média dos 3 últimos meses — um mês ruim sozinho não rebaixa ninguém.')
+      +bloco('5 · Ads tem teto','O orçamento de Ads do mês = faturamento do mês anterior × o teto de TACOS. O teto depende da margem: <b>margem 15% → até 3%</b> · <b>18% → 4,2%</b> · <b>20% → até 5%</b>. Gastar acima do teto é meta de TACOS não batida.')
+      +bloco('6 · O placar do ano','Além do mês, cada operação tem um placar anual em R$ comparando o lucro do ano com o do ano anterior, mês a mês (assim a sazonalidade já está descontada). <b>Linha amarela</b> = lucro do ano passado + '+(ip?pc(ip):'a inflação')+' (o quanto as coisas ficaram mais caras): abaixo dela, a operação <b>encolheu</b>. <b>Linha verde</b> = lucro do ano passado + '+(se?pc(se,2):'a Selic')+' (o quanto o dinheiro renderia parado no banco, sem risco): entre as duas, a operação <b>sobreviveu</b>; acima da verde, <b>cresceu de verdade</b>.')
+      +'</div>';
+  }
+
+  // ── KPIs da seleção
+  const S_=k=>ops.reduce((s,o)=>s+o[k],0);
+  const metaFatT=ops.reduce((s,o)=>s+((o.ind.find(i=>i.n==='Faturamento')||{}).meta||0),0), fatPT=ops.reduce((s,o)=>s+o.fatR*fP,0);
+  const mcPT=fatPT?S_('mcontP')/fatPT:0;
+  const card=(lbl,val,c,sub)=>`<div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:12px 14px;"><div style="font-size:11px;color:var(--t2);margin-bottom:4px;">${lbl}</div><div style="font-size:20px;font-weight:700;color:${c||'var(--t)'};line-height:1.1;">${val}</div>${sub?`<div style="font-size:10.5px;color:var(--t3);margin-top:4px;">${sub}</div>`:''}</div>`;
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:14px;">'
+    +card(fechado?'💰 Bônus do mês':'💰 Bônus projetado',brl(S_('bonusP')),'#22c55e',fechado?ops.length+' operações':'no ritmo atual · se fechasse hoje: '+brl(S_('bonusHoje')))
+    +card('Bônus máximo (100% das metas)',brl(S_('bonusMax')),'var(--t)','o que fica na mesa: '+brl(Math.max(0,S_('bonusMax')-S_('bonusP'))))
+    +card(fechado?'Faturamento':'Faturamento projetado',brl(fatPT),metaFatT&&fatPT>=metaFatT?'#22c55e':'#f59e0b',metaFatT?'meta '+brl(metaFatT)+' · '+Math.round(100*fatPT/metaFatT)+'%':'')
+    +card(fechado?'Lucro (margem final)':'Lucro projetado (margem final)',brl(S_('mcontP')),S_('mcontP')>=0?'#22c55e':'#f87171',pc(mcPT)+' do faturamento · depois do Ads')
+    +'</div>';
+
+  // ── cards por operação
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:12px;margin-top:14px;">';
+  ops.forEach(o=>{
+    const sc=SCOR[o.serie]||'var(--t3)';
+    const fatI=o.ind.find(i=>i.n==='Faturamento')||{meta:0};
+    const adsI=o.ind.find(i=>i.n==='Orçamento de Ads');
+    const falta=Math.max(0,fatI.meta-o.fatR);
+    let linhas=o.ind.map(i=>{ const [t,c]=st(i);
+      return `<tr><td style="text-align:left;" title="${esc(i.dica)}">${i.n} <span style="color:var(--t3);font-size:10px;">peso ${i.peso}</span></td>`
+        +`<td class="r">${i.meta>0?i.fmt(i.meta):'—'}</td><td class="r">${i.fmt(i.real)}</td>`
+        +`<td class="r" style="color:var(--t2);">${fechado?'':(i.taxa?'≈ ':'')+i.fmt(i.proj)}</td>`
+        +`<td style="color:${c};font-weight:600;white-space:nowrap;">${t}</td></tr>`; }).join('');
+    const notas=[];
+    if(fatI.meta>0) notas.push(falta>0?(fechado?`Faltaram <b>${brl(falta)}</b> para a meta de faturamento.`:`Faltam <b>${brl(falta)}</b> de faturamento → <b>${brl(resta?falta/resta:falta)}/dia</b> nos ${resta} dias que restam.`):'✅ Meta de faturamento já alcançada.');
+    if(adsI&&adsI.meta>0&&!(adsI.real>0)) notas.push('⚠️ O gasto de Ads deste mês ainda não foi coletado — o TACOS aparece mais baixo do que é.');
+    else if(adsI&&adsI.meta>0) notas.push(`Ads: gastou <b>${brl(adsI.real)}</b> de <b>${brl(adsI.meta)}</b> do orçamento${fechado?'':' · no ritmo, fecha em '+brl(adsI.proj)}.`);
+    if(o.mcont<0) notas.push('🔴 Margem final negativa: sem bônus enquanto a operação estiver no prejuízo.');
+    const origem=String(o.d.Origem||'manual');
+    h+=`<div class="cc" style="border-left:3px solid ${sc};padding:14px 16px;">`
+      +`<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">`
+      +`<div><div style="font-weight:700;font-size:14px;color:var(--t);">${esc(o.l.operacao)}</div>`
+      +`<div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap;">${o.serie?badge('Série '+o.serie,sc):badge('sem série','var(--t3)')}<span style="font-size:11px;color:${gCor(o.ges)};font-weight:600;">${esc(o.ges)}</span><span style="font-size:10.5px;color:var(--t3);">progresso ${Math.round(100*o.progP)}%</span></div></div>`
+      +`<div style="text-align:right;"><div style="font-size:10.5px;color:var(--t3);">${fechado?'bônus':'bônus projetado'}</div><div style="font-size:20px;font-weight:700;color:#22c55e;line-height:1.1;">${brl(o.bonusP)}</div><div style="font-size:10.5px;color:var(--t3);">máximo ${brl(o.bonusMax)}${fechado?'':' · hoje '+brl(o.bonusHoje)}</div></div></div>`
+      +`<div class="tbl-wrap" style="margin-top:10px;overflow:auto;"><table class="tbl" style="font-size:12px;"><thead><tr><th style="text-align:left;">Meta</th><th class="r">Objetivo</th><th class="r">${fechado?'Realizado':'Até agora'}</th><th class="r">${fechado?'':'Fecha o mês em'}</th><th style="text-align:left;">Situação</th></tr></thead><tbody>${linhas}</tbody></table></div>`
+      +`<div style="font-size:11.5px;color:var(--t2);margin-top:8px;line-height:1.6;">${notas.join('<br>')}`
+      +`<br>Lucro da operação (margem final): <b style="color:${o.mcont>=0?'var(--t)':'#f87171'}">${brl(o.mcont)}</b>${fechado?'':' até agora · projeção '+brl(o.mcontP)}</div>`
+      +(origem==='auto'&&o.d.ObsMeta?`<div style="font-size:10.5px;color:var(--t3);margin-top:6px;">Como a meta foi feita: ${esc(o.d.ObsMeta)}</div>`:'')
+      +(origem!=='auto'?`<div style="font-size:10.5px;color:var(--t3);margin-top:6px;">Meta definida à mão (antes da régua automática).</div>`:'')
+      +'</div>';
+  });
+  h+='</div>';
+
+  // ── placar do ano: lucro (margem final) acumulado por operação + as duas linhas do ano seguinte
+  const ano=_MET_MES.slice(0,4), mesesAno=meses.filter(m=>m.slice(0,4)===ano&&m<=_MET_MES);
+  const ip=+(D.find(x=>x.Ipca12m)||{}).Ipca12m||0, se=+(D.find(x=>x.Selic)||{}).Selic||0;
+  const opsSel=new Set(sel.map(r=>r.operacao));
+  const lucro=(op,m)=>{ const r=L.find(x=>x.mes===m&&x.operacao===op); return r?(+r.margem_cont||0):null; };
+  let tp='<div class="cc" style="margin-top:16px;"><div class="cc-hdr"><div><div class="cc-title">🏁 Placar do ano — lucro da operação (margem final)</div>'
+    +`<div class="cc-sub">Base que vai virar a régua de ${+ano+1}: cada mês de ${+ano+1} será comparado com o mesmo mês de ${ano}. Linha amarela = ${ano} + ${pc(ip)} (inflação) · linha verde = ${ano} + ${pc(se,2)} (Selic).</div></div></div>`
+    +'<div class="tbl-wrap" style="overflow:auto;margin-top:8px;"><table class="tbl" style="font-size:12px;"><thead><tr><th style="text-align:left;">Operação</th>'
+    +mesesAno.map(m=>`<th class="r">${NOMES[+m.slice(5)].slice(0,3)}</th>`).join('')
+    +`<th class="r">Acumulado</th><th class="r" style="color:#f59e0b;">🟡 ${+ano+1} p/ não encolher</th><th class="r" style="color:#22c55e;">🟢 ${+ano+1} p/ crescer</th></tr></thead><tbody>`;
+  [...opsSel].sort().forEach(op=>{ const vs=mesesAno.map(m=>lucro(op,m)); const ac=vs.reduce((s,v)=>s+(v||0),0);
+    tp+=`<tr><td style="text-align:left;white-space:nowrap;">${esc(op)}</td>`+vs.map((v,i)=>`<td class="r" style="color:${v==null?'var(--t3)':v<0?'#f87171':'var(--t)'};">${v==null?'—':brl(v)}${(!fechado&&mesesAno[i]===_MET_MES&&v!=null)?'*':''}</td>`).join('')
+      +`<td class="r" style="font-weight:700;">${brl(ac)}</td><td class="r" style="color:#f59e0b;">${brl(ac*(1+ip))}</td><td class="r" style="color:#22c55e;">${brl(ac*(1+se))}</td></tr>`; });
+  tp+=`</tbody></table></div><div style="font-size:10.5px;color:var(--t3);margin-top:6px;">${fechado?'':'* mês em andamento (até agora). '}Só entram os meses que já têm meta registrada. O placar oficial começa em janeiro de ${+ano+1}; os índices ficam travados em janeiro para a linha não mudar no meio do ano.</div></div>`;
+  h+=tp;
+  root.innerHTML=h;
+}
 // ═══════════ GERENCIAL · sub-aba COMISSÃO — bônus dos gestores por operação × mês ═══════════
 function comMes(v){ _COM_MES=v; _COM_OP=''; renderGerencial(); }
 function comOp(op){ _COM_OP=(_COM_OP===op?'':op); renderGerencial(); }
@@ -5386,6 +5535,13 @@ function renderGerencial(){
     vazio.style.display='none'; corpo.style.display='none';
     _gerPainel(); _gerSubHighlight();
     ac2Open();
+    return;
+  }
+  // Metas — visão do gestor (todas as operações dele) ou do coordenador (todas)
+  if(GER_SUB==='metas'){
+    vazio.style.display='none'; corpo.style.display='none';
+    _gerPainel(); _gerSubHighlight();
+    _renderGerMetas();
     return;
   }
   // Comissão — também visão de coordenador (todas as operações × mês)
