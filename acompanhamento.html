@@ -3570,7 +3570,9 @@ async function ac2Open(){ ac2injectCSS(); bcAuthInjectCSS(); const root=document
     // em vez de cair no calculo local, que deriva a fila do proprio DETALHE (378 demandas).
     // Era a causa de "nao carrega as tarefas".
     if(!Array.isArray(j) || !j.length) throw new Error('banco sem demandas');
-    ac2.DEM=j; ac2._fonte='banco (API)'; }
+    // EM OBSERVAÇÃO (20/10/2026): problema que só aparece em venda ESTIMADA (plataforma ainda não liquidou) não é tarefa —
+    // fica fora da fila, das contagens, dos atrasos e da nota, num bloco à parte, até a venda liquidada confirmar (db-sync).
+    ac2.OBS=j.filter(i=>i.estado==='aguardando'); ac2.DEM=j.filter(i=>i.estado!=='aguardando'); ac2._fonte='banco (API)'; }
   catch(e){ ac2.DEM=ac2BuildDemandas(); ac2._fonte='calculado aqui'+(/banco sem/.test(e&&e.message||'')?' (banco vazio)':' (sem servidor)'); } }   // fallback: abriu o arquivo direto, sem servidor
   const _u=BCAUTH.user; if(_u&&_u.perfil==='gestor'){ ac2.gestorSel=_u.gestor_ref; ac2.nivel='gestor'; }   // gestor logado abre direto na própria lista
   bcRenderAuthBar(); ac2.render(); }
@@ -4861,6 +4863,10 @@ function ac2Gestor(){
   const blocoFeitas = feitas.length ? `<details class="dm-feitas"${!fazer.length && !rec.length ? ' open' : ''}><summary><b>Feitas · ${feitas.length}</b><span>o que você registrou e o resultado medido — clique para abrir</span></summary>${feitas.map(i=>ac2DemRow(i,'feita')).join('')}</details>` : '';
   const rotuloOp = ac2.opSel==='__todas__' ? 'todas as operações' : ac2.opSel;
   const voltar = `<button onclick="ac2.goOp(null)" class="a2-btn-lin">← operações de ${g}</button>`;
+  // bloco EM OBSERVAÇÃO: só informa (sem prazo, sem registro) — vira tarefa sozinho se a venda liquidada confirmar
+  const _ms = ac2.mesesSel();
+  const obs = (ac2.OBS||[]).filter(i=>i.gestor===g && (ac2.opSel==='__todas__' || ((i.empresa||'?')+' · '+(i.mkt||'?'))===ac2.opSel) && (!_ms || _ms.has(ac2.compDe(i))));
+  const blocoObs = obs.length ? `<details class="dm-feitas"><summary><b>Em observação · aguardando liquidação · ${obs.length}</b><span>a margem ruim aparece só em venda que a plataforma ainda não liquidou (valor estimado) — não conta prazo nem nota; vira tarefa sozinha se a venda liquidada confirmar</span></summary>${obs.map(i=>`<div class="a2-nota" style="margin:6px 0"><b>${ac2Esc(i.titulo||i.sku||'')}</b> · ${ac2Esc(i.sku||'')} · ${ac2Esc(i.tipo||'')} · margem estimada ${i.mc_pct!=null?i.mc_pct:(i.mcPct!=null?i.mcPct:'—')}%<br><span style="color:var(--t3)">${ac2Esc(String(i.causa||'').split(' · aguardando')[0])} · aguardando${ac2Esc((String(i.causa||'').split(' · aguardando')[1]||'').replace(/^ liquidação:/,' liquidação:'))}</span></div>`).join('')}</details>` : '';
   return `<div class="a2-sh">${g} · ${rotuloOp}<small>a fazer primeiro (atrasadas no topo) · depois o que precisa ser refeito · as feitas ficam guardadas abaixo</small></div>
     <div style="margin:2px 0 8px">${voltar}</div>
     <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:2px 0 4px">${chips}</div>
@@ -4868,7 +4874,8 @@ function ac2Gestor(){
     ${sec('A fazer', 'sem registro · registre o que foi feito dentro do prazo', '#dc2626', fazer, 'fazer')}
     ${sec('Recobrar', 'você registrou, mas a medição ou a checagem mostram que não resolveu', '#a855f7', rec, 'recobrar')}
     ${vazioFazer}
-    ${blocoFeitas}`;
+    ${blocoFeitas}
+    ${blocoObs}`;
 }
 
 function ac2DirKPI(){
