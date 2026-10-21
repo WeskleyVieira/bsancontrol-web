@@ -3547,9 +3547,21 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .vd-ver{background:var(--c-s);border:1px solid var(--c-ln);border-left:3px solid #3b82f6;border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.7;margin:2px 0 10px}
 #ac2-root .vd-ver div+div{margin-top:3px}
 #ac2-root .vd-sub{font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--c-mut);margin:12px 0 5px}
-#ac2-root .vd-ev{margin-top:10px}
-#ac2-root .vd-ev summary{cursor:pointer;font-size:11px;color:var(--c-mut);padding:5px 0}
-#ac2-root .vd-ev summary:hover{color:var(--c-ink)}
+#ac2-root .vd-ev{margin-top:10px;border:1px solid var(--c-ln);border-radius:10px;background:var(--c-s)}
+#ac2-root .vd-ev summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--c-ink);padding:10px 12px}
+#ac2-root .vd-ev summary::-webkit-details-marker{display:none}
+#ac2-root .vd-ev summary:before{content:'▸';color:var(--c-acc);font-size:11px}
+#ac2-root .vd-ev[open] summary:before{content:'▾'}
+#ac2-root .vd-ev[open] summary{border-bottom:1px solid var(--c-ln)}
+#ac2-root .vd-ev summary:hover{color:var(--c-acc)}
+#ac2-root .vd-ev .vd-abre{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--c-acc);border:1px solid var(--c-acc);border-radius:999px;padding:2px 8px}
+#ac2-root .vd-ev .vd-abre-f{display:none}
+#ac2-root .vd-ev[open] .vd-abre-a{display:none}
+#ac2-root .vd-ev[open] .vd-abre-f{display:inline}
+#ac2-root .vd-atalhos{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+#ac2-root .vd-abre-btn{font:inherit;font-size:12px;font-weight:700;color:var(--c-acc);background:transparent;border:1px solid var(--c-acc);border-radius:8px;padding:6px 12px;cursor:pointer}
+#ac2-root .vd-abre-btn:hover{background:rgba(79,142,247,.12)}
+#ac2-root .vd-hist-lab{font-size:11px;font-weight:700;color:var(--c-mut);margin:8px 0 6px}
 #ac2-root .vd-deg td{vertical-align:middle}
 #ac2-root .vd-deg .a2-tag{margin-right:4px}
 #ac2-root .vd-hist-ab{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin:4px 0 8px}
@@ -3560,8 +3572,11 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .vd-hist-seta{font-size:18px;color:var(--c-mut)}
 #ac2-root .vd-hist-falta{font-size:11.5px;line-height:1.6;margin:2px 0 4px}
 #ac2-root .vd-hist-chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
-#ac2-root .vd-hist-chips button{font-size:10.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--c-ln);background:transparent;color:var(--c-mut);cursor:pointer}
-#ac2-root .vd-hist-chips button.on{border-color:#3b82f6;color:var(--c-ink);background:rgba(59,130,246,.12)}
+#ac2-root .vd-hist-chips button{font:inherit;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;border:1px solid var(--c-ln);background:var(--c-s);color:var(--c-ink);cursor:pointer}
+#ac2-root .vd-hist-chips button:hover{border-color:var(--c-acc)}
+#ac2-root .vd-hist-chips button.on{border-color:#3b82f6;color:var(--c-ink);background:rgba(59,130,246,.16)}
+#ac2-root .a2-num{font:inherit;font-weight:800;font-size:13px;min-width:28px;height:26px;padding:0 8px;border-radius:8px;border:1px solid;background:transparent;cursor:pointer;line-height:1}
+#ac2-root .a2-num:hover{background:rgba(255,255,255,.06)}
 #ac2-root .vd-hist-cur td{background:rgba(59,130,246,.10);font-weight:700}
 @media(max-width:600px){#ac2-root .vd-hist-ab{grid-template-columns:1fr}#ac2-root .vd-hist-seta{display:none}}
 @media(max-width:860px){#ac2-root .a2-kpis{grid-template-columns:repeat(2,1fr)}}
@@ -4211,12 +4226,14 @@ function ac2Coord(){
     return { g, li, n:li.length, pend, reg, m, comece, dias: ac2DiasMax(li) };
   }).sort((a,b)=> b.m.urg-a.m.urg || b.m.atr.length-a.m.atr.length || b.m.rec.length-a.m.rec.length || b.m.v24.length-a.m.v24.length);
 
-  const num = (v,c) => v ? `<b style="color:${c}">${v}</b>` : '<span style="color:var(--t3)">0</span>';
+  const numGo = (v,c,foco,g,tit) => v
+    ? `<button type="button" class="a2-num" style="color:${c};border-color:${c}66" title="${tit}" onclick="event.stopPropagation();ac2.verFila('${foco}','${esc(g)}')">${v}</button>`
+    : '<span style="color:var(--t3)">0</span>';
   const body = linhas.map((o,idx)=>`<tr style="cursor:pointer" onclick="ac2.goGes('${esc(o.g)}','coord')">
       <td><span class="a2-pos">${idx+1}</span><b>${o.g}</b></td>
-      <td class="r"${o.m.atr.length?` onclick="event.stopPropagation();ac2.verFila('atrasadas','${esc(o.g)}')" title="Abrir as ${o.m.atr.length} atrasadas" style="cursor:pointer;text-decoration:underline"`:''}>${num(o.m.atr.length,'#dc2626')}</td>
-      <td class="r"${o.m.v24.length?` onclick="event.stopPropagation();ac2.verFila('vence24','${esc(o.g)}')" title="Abrir as ${o.m.v24.length} que vencem em 24h" style="cursor:pointer;text-decoration:underline"`:''}>${num(o.m.v24.length,'#f59e0b')}</td>
-      <td class="r"${o.m.rec.length?` onclick="event.stopPropagation();ac2.verFila('recobrar','${esc(o.g)}')" title="Abrir as ${o.m.rec.length} para cobrar nova ação" style="cursor:pointer;text-decoration:underline"`:''}>${num(o.m.rec.length,'#a855f7')}</td>
+      <td class="r">${numGo(o.m.atr.length,'#dc2626','atrasadas',o.g,'Abrir as atrasadas')}</td>
+      <td class="r">${numGo(o.m.v24.length,'#f59e0b','vence24',o.g,'Abrir as que vencem em 24h')}</td>
+      <td class="r">${numGo(o.m.rec.length,'#a855f7','recobrar',o.g,'Abrir as que pedem nova ação')}</td>
       <td class="r" style="color:${o.m.risco>0?'#f59e0b':'var(--t3)'}">${o.m.risco>0?AC2_BRLk(o.m.risco):'–'}</td>
       <td class="r" style="color:${o.m.maior==null?'var(--t3)':'#dc2626'}">${ac2AtrLbl(o.m.maior)}</td>
       <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)" title="${o.comece?String(o.comece.i.titulo||o.comece.i.sku).replace(/"/g,'')+' — '+o.comece.por:''}">${o.comece
@@ -4419,7 +4436,7 @@ function ac2HistHTML(ctx, skuSel, k){
           : 'A plataforma por unidade está estável contra os 3 meses anteriores.'}</div>`;
     }
   } else if(atual) corpo += `<div class="vd-hist-falta">Sem vendas nos meses anteriores — não há histórico para comparar; vale só a meta.</div>`;
-  const chips = skus.length > 1 ? `<div class="vd-hist-chips">${['',...skus].map(sk =>
+  const chips = skus.length > 1 ? `<div class="vd-hist-lab">SKU deste anúncio · clique para ver um só</div><div class="vd-hist-chips">${['',...skus].map(sk =>
       `<button class="${(skuSel||'')===sk?'on':''}" onclick="event.stopPropagation();ac2.histSku('${k}','${encodeURIComponent(sk)}')">${sk||'Todos os SKUs'}</button>`).join('')}</div>` : '';
   // 4 — mês a mês, recolhido; com a margem TOTAL em R$ de cada mês (o lucro, não só a %)
   const linhas = meses.slice().reverse().map(m => { const u = ac2Uni(m), cur = m.mes===comp;
@@ -4429,7 +4446,7 @@ function ac2HistHTML(ctx, skuSel, k){
       <td class="r"><b>${ac2BrlK(m.mc)}</b></td></tr>`; }).join('');
   return `<div class="vd-h" style="margin-top:12px">Histórico · ${i.anuncio ? 'anúncio '+i.anuncio : 'SKU '+(i.sku||'')}${skuSel?' · '+skuSel:''}</div>
     ${chips}${corpo}
-    <details class="vd-ev"><summary>Mês a mês · ${meses.length} meses (preço, custos e margem total)</summary>
+    <details class="vd-ev"><summary>Mês a mês · ${meses.length} meses<span class="vd-abre"><span class="vd-abre-a">Abrir</span><span class="vd-abre-f">Fechar</span></span></summary>
       <div class="tbl-wrap" style="max-height:260px;margin-top:6px"><table class="tbl a2-tbl vd-t"><thead><tr>
         <th>Mês</th><th class="r">Un</th><th class="r">Preço/un</th><th class="r">Plataforma/un</th><th class="r">Imposto/un</th><th class="r">Custo/un</th><th class="r">Margem/un</th><th class="r">Margem %</th><th class="r">Margem no mês</th>
       </tr></thead><tbody>${linhas}</tbody></table></div>
@@ -4556,7 +4573,7 @@ function ac2Analise(i, H){
 
 function ac2PainelVendas(i, k){
   if(ac2TipoDe(i.tipo).k==='devolucao') return ac2PainelDevolucao(i);
-  const linkRx = `<button class="a2-btn-lin" onclick="event.stopPropagation();ac2.verVendas('${encodeURIComponent(i.sku||'')}','${encodeURIComponent(i.empresa||'')}','${encodeURIComponent(i.mkt||'')}')">ver o histórico no Raio-X →</button>`;
+  const linkRx = `<button class="vd-abre-btn" onclick="event.stopPropagation();ac2.verVendas('${encodeURIComponent(i.sku||'')}','${encodeURIComponent(i.empresa||'')}','${encodeURIComponent(i.mkt||'')}')">Raio-X deste SKU</button>`;
   const H = ((ac2._vdHist||{})[k]||{}).H || null;
   const a = ac2Analise(i, H);
   if(!a || a.vazio) return `<div class="vd-x">Não achei as vendas desta demanda no período carregado. ${linkRx}</div>`;
@@ -4619,22 +4636,28 @@ function ac2PainelVendas(i, k){
   // ── 4 — evidência: preços praticados + vendas, recolhido ──
   const vendas = vd.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r=>{
     const mcR = r.mcReal!=null ? +r.mcReal : (+r.liq||0)-(+r.imp||0)-(+r.ctp||0);
+    const fatR = +r.fat||0, pcV = fatR ? 100*mcR/fatR : 0;
+    const dpp = A ? pcV - A.pct : null;
+    const cmp = dpp==null ? '' : `<div style="font-size:10px;font-weight:700;color:${dpp<0?'#dc2626':'#22c55e'}">${dpp>0?'+':''}${dpp.toFixed(1).replace('.',',')} pp vs antes</div>`;
     return `<tr><td>${String(r.date||'').split('-').reverse().join('/')}</td>
       <td style="font-family:ui-monospace,monospace;font-size:10px">${r.ped||''}</td>
-      <td class="r">${Math.round(+r.qtd||0)}</td><td class="r">${ac2Brl(+r.fat||0)}</td>
+      <td class="r">${Math.round(+r.qtd||0)}</td><td class="r">${ac2Brl(fatR)}</td>
       <td class="r">${ac2Brl(+r.liq||0)}</td>
-      <td class="r" style="color:${mcR<0?'#dc2626':'#22c55e'}">${ac2Brl(mcR)}</td></tr>`; }).join('');
+      <td class="r" style="color:${mcR<0?'#dc2626':'#22c55e'}">${ac2Brl(mcR)}</td>
+      <td class="r" style="color:${corD(pcV)};font-weight:700">${ac2Pc(pcV)}${cmp}</td></tr>`; }).join('');
   const precos = ptsOrd.slice(0,5).map(([p,n])=>`${ac2Brl(p)} × ${n}`).join(' · ') + (ptsOrd.length>5?` · +${ptsOrd.length-5} preços`:'');
-  return `<div class="vd-h">Decisão · ${i.anuncio || i.sku || ''} ${linkRx}</div>
+  return `<div class="vd-h">Decisão · ${i.anuncio || i.sku || ''}</div>
+    <div class="vd-atalhos">${linkRx}</div>
     ${ac2RegistroHTML(i)}
     <div class="vd-ver">${ve.map(x=>`<div>${x}</div>`).join('')}</div>
     ${degraus}
     ${conta}
     <div id="${k}-hist">${ac2HistHTML(ctx, '', k)}</div>
-    ${vd.length ? `<details class="vd-ev"><summary>As ${vd.length} vendas de ${ac2Rot(comp)} · preços praticados: ${precos}</summary>
-      <div class="tbl-wrap" style="max-height:220px;margin-top:6px"><table class="tbl a2-tbl vd-t"><thead><tr>
-        <th>Data</th><th>Nº da venda</th><th class="r">Qtd</th><th class="r">Valor</th><th class="r">Líquido</th><th class="r">Margem</th>
+    ${vd.length ? `<details class="vd-ev"><summary>As ${vd.length} vendas de ${ac2Rot(comp)}<span class="vd-abre"><span class="vd-abre-a">Abrir</span><span class="vd-abre-f">Fechar</span></span></summary>
+      <div class="tbl-wrap" style="max-height:220px;margin:8px 10px 4px"><table class="tbl a2-tbl vd-t"><thead><tr>
+        <th>Data</th><th>Nº da venda</th><th class="r">Qtd</th><th class="r">Valor</th><th class="r">Líquido</th><th class="r">Margem</th><th class="r">Margem %</th>
       </tr></thead><tbody>${vendas}</tbody></table></div>
+      <div class="vd-sup" style="padding:0 12px 10px">Preços praticados: ${precos}. ${A?`A linha "vs antes" compara a margem % desta venda com a dos meses anteriores deste anúncio (${ac2Pc(A.pct)}).`:''} A cor segue a meta${meta?` de ${meta}%`:''}.</div>
     </details>` : ''}`;
 }
 
