@@ -6385,7 +6385,7 @@ function _gvSearch(v){ _gvQuery=(v||'').trim().toLowerCase(); _gvPage=0; renderG
 function _gvToggleNeg(){ _gvNeg=!_gvNeg; _gvPage=0; renderGerencial(); }
 // rótulo curto do meio de envio (Amazon: FBA/FBM · ML: Full/Flex/Correios/Combinado)
 function envioLabel(ent){ const e=String(ent||'');
-  if(/full|fulfillment/i.test(e)) return 'Full';
+  if(/full|fulfillment|^sfs$/i.test(e)) return 'Full';
   if(/flex/i.test(e)) return 'Flex';
   // Shopee (19/10/2026): o coletor passou a gravar a modalidade real (antes tudo virava "Correios")
   if(/shopee xpress/i.test(e)) return 'Shopee Xpress';
@@ -6419,19 +6419,21 @@ function _gvCols(mkt, aberto){
     {k:'fat',l:'Valor venda',t:'Receita = preço cheio − desconto'},
     {k:'comis',l:'Comissão',t:'Tarifas de venda Amazon'},
     {k:'tarif',l:'Tarifas',t:'Taxas FBA e outras'},
-    {k:'freteC',l:'Frete',t:'Créditos de remessa/embalagem'},
+    {k:'freteC',l:'Frete',t:'Frete pago pelo comprador. Antes de liquidar, é o valor do pedido; depois, o crédito que a Amazon lançou.'},
+    {k:'motoboy',l:'Motoboy',t:'Custo do motoboy no Flash, pago por nós. Já sai da margem.'},
+    {k:'repasse',l:'Repasse Flash',t:'Frete que a Amazon credita no Flash. Já entra na margem.'},
     {k:'reemb',l:'Reembolso',t:'Reembolso de devolução (negativo; já abatido no líquido)'}];
   if(M('mercado livre')) return [
     {k:'fat',l:'Valor venda'},
     {k:'comis',l:'Tarifa de venda',t:'Tarifa de venda e impostos do ML'},
-    {k:'tarif',l:'Tarifa de frete',t:'Tarifas de envio'},
-    {k:'freteC',l:'Receita de envio',t:'Frete pago pelo comprador (crédito)'},
+    {k:'tarif',l:'Tarifa de frete',t:'Tarifa de envio bruta. A receita de envio ao lado é o frete do comprador; juntas, fecham no custo líquido.'},
+    {k:'freteC',l:'Receita de envio',t:'Frete pago pelo comprador. No Flex esse crédito está na coluna Flex (bônus).'},
     {k:'flex',l:'Flex (bônus)',t:'Bônus de frete Flex (Descontos e bônus) que o ML paga'},
     {k:'motoboy',l:'Motoboy',t:'Custo de entrega Flex pago pelo vendedor'},
-    {k:'fatura',l:'Taxas fatura',t:'Tarifas via fatura (afiliados, Ads, devolução externa)'}];
+    {k:'fatura',l:'Taxas fatura',t:'Tarifa da fatura ligada a esta venda e que não entrou no total (devolução externa). Ads e armazenagem são custo da conta, não da venda.'}];
   if(M('shopee')) return [
     {k:'fat',l:'Valor venda'},
-    {k:'desc',l:'Cupom',t:'Cupom do vendedor'},
+    {k:'desc',l:'Cupom',t:'Cupom do vendedor. Já saiu do valor da venda; a coluna só mostra quanto foi.'},
     {k:'comis',l:'Comissão',t:'Taxa de comissão Shopee'},
     {k:'tarif',l:'Taxa de serviço',t:'Taxa de serviço + transação'},
     {k:'motoboy',l:'Flex',t:'Custo de entrega Flex / entrega direta (motoboy)'}];
@@ -6490,14 +6492,14 @@ function _renderGerVendas(rows, mkt){
   const negBtn=document.getElementById('gv-neg-btn'); if(negBtn){negBtn.style.borderColor=_gvNeg?'#f87171':'var(--bdr2)';negBtn.style.color=_gvNeg?'#f87171':'var(--t1)';}
   const filtrado=!!(_gvQuery||_gvNeg);
   // ── totais (do que está em vista) ──
-  const T={n:ord.length,qtd:0,fat:0,pcheio:0,desc:0,comis:0,tarif:0,frete:0,flex:0,subs:0,copart:0,vapt:0,afil:0,pub:0,motoboy:0,fatura:0,reemb:0,liq:0,imp:0,ctp:0,mc:0,base:0};
-  ord.forEach(r=>{T.qtd+=r.qtd;T.fat+=r.fat;T.pcheio+=r.pcheio||0;T.desc+=r.desc||0;T.comis+=r.comis||0;T.tarif+=r.tarif||0;T.frete+=r.freteC||0;T.flex+=r.flex||0;T.subs+=r.subs||0;T.copart+=r.copart||0;T.vapt+=r.vapt||0;T.afil+=r.afil||0;T.pub+=r.pub||0;T.motoboy+=r.motoboy||0;T.fatura+=r.fatura||0;T.reemb+=r.reemb||0;T.liq+=r.liq;T.imp+=r.imp;T.ctp+=r.ctp;T.mc+=r.mc;T.base+=mcBase(r.mkt,r.fat,r.liq);});
+  const T={n:ord.length,qtd:0,fat:0,pcheio:0,desc:0,comis:0,tarif:0,frete:0,flex:0,subs:0,copart:0,vapt:0,afil:0,pub:0,motoboy:0,fatura:0,reemb:0,repasse:0,liq:0,imp:0,ctp:0,mc:0,base:0};
+  ord.forEach(r=>{T.qtd+=r.qtd;T.fat+=r.fat;T.pcheio+=r.pcheio||0;T.desc+=r.desc||0;T.comis+=r.comis||0;T.tarif+=r.tarif||0;T.frete+=r.freteC||0;T.flex+=r.flex||0;T.subs+=r.subs||0;T.copart+=r.copart||0;T.vapt+=r.vapt||0;T.afil+=r.afil||0;T.pub+=r.pub||0;T.motoboy+=r.motoboy||0;T.fatura+=r.fatura||0;T.reemb+=r.reemb||0;T.repasse+=r.repasse||0;T.liq+=r.liq;T.imp+=r.imp;T.ctp+=r.ctp;T.mc+=r.mc;T.base+=mcBase(r.mkt,r.fat,r.liq);});
   const mcpTot=T.base?100*T.mc/T.base:0;
   if(title) title.textContent='🧾 Vendas da operação — '+((aberto||isMagalu||isTemu)?('abertura de custos'+(isAmz?' (Amazon)':isML?' (Mercado Livre)':isShopee?' (Shopee)':isMagalu?' (Magazine Luiza)':isTikTok?' (TikTok Shop)':isShein?' (Shein)':isTemu?' (Temu)':'')):'custo da plataforma');
   if(sub) sub.innerHTML = (isML
     ? 'Cada venda aberta em <b>tarifa de venda</b>, <b>tarifa de frete</b>, <b>receita de envio</b> e <b>Flex</b>. Na maioria das vendas a abertura fecha no líquido; quando há ajustes (cancelamentos, acréscimos, pacotes) o <b>Líquido</b> continua sendo a verdade.'
     : isShopee
-    ? 'Cada venda aberta em <b>cupom</b>, <b>comissão</b> e <b>taxa de serviço</b> da Shopee. É <b>informativa</b> — o <b>Líquido</b> vem da liquidação (Acelera/Income) e é a verdade.'
+    ? 'Cada venda aberta em <b>cupom</b>, <b>comissão</b> e <b>taxa de serviço</b> da Shopee. O cupom <b>já saiu do valor da venda</b> — a coluna só mostra quanto foi. O <b>Líquido</b> vem da liquidação e é a verdade.'
     : isMagalu
     ? 'Modelo de <b>repasse</b> do Magalu: o <b>Custo plataforma</b> (Valor venda − Líquido) é o que a plataforma reteve (comissão + tarifa fixa + serviços). <b>Coparticipação de frete</b>, <b>subsídios</b> e <b>acerto Vapt</b> entram quando há; o <b>Líquido</b> é o repasse.'
     : isTikTok
@@ -6507,12 +6509,12 @@ function _renderGerVendas(rows, mkt){
     : isTemu
     ? 'Modelo de <b>markup</b> da Temu: você define o <b>preço-base</b> (= Líquido, o que recebe); a Temu vende ao cliente por um <b>Varejo</b> maior e fica com a diferença (<b>markup + frete</b>). Sua <b>MC% é sobre o preço-base</b>; o imposto incide sobre o Varejo (NF).'
     : aberto
-    ? 'Cada venda com preço cheio, desconto, comissão, tarifas (FBA) e frete (crédito). A abertura é <b>informativa</b> — pode não fechar 100% no líquido por convenções do relatório da Amazon; o <b>Líquido</b> é o valor efetivamente liquidado.'
+    ? 'Preço, desconto, frete do comprador, motoboy e repasse do Flash entram na hora. <b>Comissão e tarifas ficam em branco até a Amazon liberar</b> o lançamento. A linha em liquidação troca o número na coleta seguinte. O <b>Líquido</b> é a verdade.'
     : 'Este canal ainda não tem a abertura por venda no pipeline — mostramos o <b>Custo plataforma</b> (Valor venda − Líquido). O detalhamento entra quando o canal for aberto no pipeline.')
     + (filtrado?` <span style="color:var(--a2)">· filtro ativo: ${ord.length.toLocaleString('pt-BR')} de ${totOp.toLocaleString('pt-BR')} vendas</span>`:'');
   const chip=(lbl,val,cor)=>`<div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:10px;padding:9px 12px;min-width:92px;"><div style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin-bottom:4px;">${lbl}</div><div style="font-size:15px;font-weight:800;color:${cor||'var(--t1)'};line-height:1;">${val}</div></div>`;
-  const _tcol={pcheio:T.pcheio,desc:-T.desc,comis:T.comis,tarif:T.tarif,freteC:T.frete,flex:T.flex,subs:T.subs,copart:T.copart,vapt:T.vapt,afil:T.afil,pub:T.pub,motoboy:-T.motoboy,fatura:-T.fatura,reemb:T.reemb};
-  const _ccol=k=>{ if(k==='desc')return '#f59e0b'; if(['comis','tarif','afil','pub','motoboy','fatura','reemb'].includes(k))return '#f87171'; if(['freteC','flex','subs','copart','vapt'].includes(k))return (_tcol[k]>=0?'#22c55e':'#f87171'); return undefined; };
+  const _tcol={pcheio:T.pcheio,desc:-T.desc,comis:T.comis,tarif:T.tarif,freteC:T.frete,flex:T.flex,subs:T.subs,copart:T.copart,vapt:T.vapt,afil:T.afil,pub:T.pub,motoboy:-T.motoboy,fatura:-T.fatura,reemb:T.reemb,repasse:T.repasse};
+  const _ccol=k=>{ if(k==='desc')return '#f59e0b'; if(['comis','tarif','afil','pub','motoboy','fatura','reemb'].includes(k))return '#f87171'; if(['freteC','flex','subs','copart','vapt','repasse'].includes(k))return (_tcol[k]>=0?'#22c55e':'#f87171'); return undefined; };
   let chips=chip('Vendas',T.n.toLocaleString('pt-BR'))+chip('Unidades',T.qtd.toLocaleString('pt-BR'));
   cols.forEach(c=>{
     if(c.k==='fat') chips+=chip(isTemu?'Varejo (NF)':'Faturamento',brl2(T.fat));
@@ -6554,7 +6556,7 @@ function _renderGerVendas(rows, mkt){
       if(c.k==='desc'){ cor='#f59e0b'; val=-raw; }
       else if(c.k==='motoboy'||c.k==='fatura'){ cor='#f87171'; val=-raw; }
       else if(c.k==='comis'||c.k==='tarif'||c.k==='afil'||c.k==='pub'||c.k==='reemb'){ cor='#f87171'; }
-      else if(c.k==='freteC'||c.k==='flex'){ cor=raw>0?'#22c55e':'#f87171'; }
+      else if(c.k==='freteC'||c.k==='flex'||c.k==='repasse'){ cor=raw>0?'#22c55e':'#f87171'; }
       else if(c.k==='subs'||c.k==='vapt'||c.k==='copart'){ cor=raw>=0?'#22c55e':'#f87171'; }
       h+=`<td style="text-align:right;color:${cor}">${brl2(val)}</td>`;
     });
@@ -6563,7 +6565,7 @@ function _renderGerVendas(rows, mkt){
       +`<td style="text-align:right;color:var(--t2)">${brl2(-r.ctp)}</td>`
       +`<td style="text-align:right;font-weight:600;color:${r.mc>=0?'var(--t1)':'#f87171'}">${brl2(r.mc)}</td>`
       +`<td style="text-align:right">${mcPct(p,1)}</td>`
-      +`<td>${statBadge(r.stat)}</td>`
+      +`<td>${(provis(r.fonte)&&(r.stat==='venda'||!r.stat))?'<span style="color:#facc15;font-weight:600;font-size:11px;" title="Ainda em liquidação. A próxima coleta troca só o que a plataforma de fato cobrou.">Em liquidação</span>':statBadge(r.stat)}</td>`
       +'</tr>';
   });
   h+='</tbody>';

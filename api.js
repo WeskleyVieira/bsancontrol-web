@@ -188,12 +188,12 @@ async function rotaGET(u, user) {
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const raw = await dbx.all(`SELECT data, canal, sku, pedido, preco_cheio, desconto, comissao, tarifas,
         frete, reembolso, afiliados, publicidade, bonus_flex, custo_motoboy, custo_fatura,
-        subsidios, copart_frete, acerto_vapt, forma_entrega, veio_de_ads
+        subsidios, copart_frete, acerto_vapt, repasse_flash, forma_entrega, veio_de_ads
       FROM vendas WHERE ${w.join(" AND ")}`, args);
     const PAR = [["pcheio", "preco_cheio"], ["desc", "desconto"], ["comis", "comissao"], ["tarif", "tarifas"],
       ["freteC", "frete"], ["reemb", "reembolso"], ["afil", "afiliados"], ["pub", "publicidade"],
       ["flex", "bonus_flex"], ["motoboy", "custo_motoboy"], ["fatura", "custo_fatura"],
-      ["subs", "subsidios"], ["copart", "copart_frete"], ["vapt", "acerto_vapt"]];
+      ["subs", "subsidios"], ["copart", "copart_frete"], ["vapt", "acerto_vapt"], ["repasse", "repasse_flash"]];
     const abertura = raw.map(v => {
       // mesma chave que o painel monta do DETALHE: pedido|sku|data|canal
       const o = { k: (v.pedido || "") + "|" + (v.sku || "") + "|" + v.data + "|" + (v.canal || "") };
