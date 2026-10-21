@@ -3432,6 +3432,9 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-gc .gc-s{font-size:11px;color:var(--c-mut);font-weight:600}
 #ac2-root .gc-tipos{margin-top:7px;border-top:1px solid var(--c-ln);padding-top:5px}
 #ac2-root .gc-tipos .gt-l{display:grid;grid-template-columns:1fr 44px 38px 64px 70px;align-items:center;gap:4px;font-size:11px;line-height:1.9}
+#ac2-root .a2-prog .gc-tipos .gt-l{cursor:pointer;border-radius:6px;margin:1px -4px;padding:0 4px}
+#ac2-root .a2-prog .gc-tipos .gt-l:hover{background:rgba(255,255,255,.05)}
+#ac2-root .a2-prog .gc-tipos .gt-l.on{background:rgba(79,142,247,.14)}
 #ac2-root .gc-tipos .gt-h{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--c-mut);line-height:1.6}
 #ac2-root .gc-tipos .gt-n{font-weight:700}
 #ac2-root .gc-tipos .gt-q{color:var(--c-mut);text-align:right}
@@ -3750,9 +3753,9 @@ ac2.daSub=function(i){ return ac2.sub==='promos' ? AC2_ISPROMO(i) : !AC2_ISPROMO
 ac2.setSub=function(s){ if(ac2.sub===s) return; ac2.sub=s; AC2_TIPOS = s==='promos' ? AC2_TIPOS_PROMO : AC2_TIPOS_TAREFAS;
   AC2_TIPO_FILTRO=''; AC2_DIR_TIPO=''; ac2.opSel=null; ac2.render(); };
 ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risco:l.reduce((s,i)=>s+i.risco,0), prej:prej.length, riscoPrej:prej.reduce((s,i)=>s+i.risco,0), corr:l.length-prej.length}; };
-ac2.go=function(n){ ac2.nivel=n; ac2.foco=null; ac2.focoDe=null; ac2.focoGes=null; ac2.focoOp=null; if(n!=='gestor'){ac2.gestorSel=null;ac2.opSel=null;} ac2.render(); };
+ac2.go=function(n){ ac2.nivel=n; ac2.foco=null; ac2.focoDe=null; ac2.focoGes=null; ac2.focoOp=null; ac2.focoTipo=''; if(n!=='gestor'){ac2.gestorSel=null;ac2.opSel=null;} ac2.render(); };
 // trocar de gestor zera a operação: a do gestor anterior não existe no novo
-ac2.goGes=function(g,from){ ac2.gestorSel=g||null; ac2.opSel=null; AC2_TIPO_FILTRO=''; ac2.foco=null; ac2.focoDe=null; ac2.focoGes=null; ac2.focoOp=null; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
+ac2.goGes=function(g,from){ ac2.gestorSel=g||null; ac2.opSel=null; AC2_TIPO_FILTRO=''; ac2.foco=null; ac2.focoDe=null; ac2.focoGes=null; ac2.focoOp=null; ac2.focoTipo=''; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
 ac2.render=function(){
   ac2._vdMap={}; ac2._vdSeq=0;   // o mapa das quebras é por render: senão cresce a cada repintura
   const lv=document.getElementById('a2-lv'), kpi=document.getElementById('a2-kpi'), body=document.getElementById('a2-body'), bar=document.getElementById('a2-bar');
@@ -4131,8 +4134,11 @@ const AC2_FOCO = {
   vence24:{tit:'Vencem em 24h', cor:'#f59e0b', subC:'ainda no prazo · cobre antes de atrasar', subG:'registre antes de atrasar'},
   recobrar:{tit:'Recobrar', cor:'#a855f7', subC:'já registraram e não resolveu · cobre uma nova ação', subG:'registre outra ação'},
   parado:{tit:'Parado nas atrasadas', cor:'#f59e0b', subC:'margem presa no que já venceu · da maior para a menor', subG:'registre o que está segurando essa margem'},
-  pendentes:{tit:'Pendentes', cor:'#dc2626', subC:'ainda sem registro · cobre o que foi feito', subG:'sem registro'},
-  aguardando:{tit:'Aguardando resultado', cor:'#94a3b8', subC:'registradas, medição ainda não saiu', subG:'a medição sai na primeira venda depois do registro'}
+  pendentes:{tit:'Ainda sem registro', cor:'#dc2626', subC:'ainda sem registro · cobre o que foi feito', subG:'é o que falta para o percentual de Registro subir'},
+  aguardando:{tit:'Aguardando resultado', cor:'#94a3b8', subC:'registradas, medição ainda não saiu', subG:'a medição sai na primeira venda depois do registro'},
+  efeito:{tit:'Medidas', cor:'#60a5fa', subC:'já medidas · as que não funcionaram primeiro', subG:'as que já têm veredito · as que não funcionaram vêm primeiro'},
+  fora:{tit:'Fora do prazo', cor:'#f59e0b', subC:'prazo vencido sem registro, ou registro depois do prazo', subG:'estas puxam o percentual de No prazo para baixo'},
+  tipo:{tit:'Por tipo', cor:'#94a3b8', subC:'tarefas deste tipo', subG:'sem registro pede o registro · as que não resolveram pedem outra ação'}
 };
 function ac2ItensFoco(li, foco){
   const urg=(a,b)=>ac2UrgItem(b)-ac2UrgItem(a);
@@ -4142,6 +4148,9 @@ function ac2ItensFoco(li, foco){
   if(foco==='vence24') return li.filter(ac2Vence24).sort(risco);
   if(foco==='recobrar') return li.filter(i=>ac2Recobrar(i)).sort(risco);
   if(foco==='aguardando') return li.filter(i=>ac2Registrada(i) && !ac2Recobrar(i) && !(i.resultado && i.resultado.desfecho));
+  if(foco==='efeito') return li.filter(i=>i.funcionou!=null).sort((a,b)=>(a.funcionou===true)-(b.funcionou===true) || risco(a,b));
+  if(foco==='fora') return li.filter(i=>ac2EvtPrazo(i)!=null && !ac2NoPrazo(i)).sort((a,b)=>(ac2Registrada(a)-ac2Registrada(b)) || urg(a,b));
+  if(foco==='tipo') return li.filter(i=>ac2TipoDe(i.tipo).k===ac2.focoTipo).sort((a,b)=>(ac2Registrada(a)-ac2Registrada(b)) || (ac2Recobrar(b)?1:0)-(ac2Recobrar(a)?1:0) || risco(a,b));
   return li.filter(i=>!ac2Registrada(i)).sort((a,b)=>{ const ra=ac2Resta(a), rb=ac2Resta(b); const za=ra!=null&&ra<0?0:1, zb=rb!=null&&rb<0?0:1; return za-zb || (za===0?ac2UrgItem(b)-ac2UrgItem(a):0) || risco(a,b); });
 }
 function ac2ListaFoco(li, foco){
@@ -4152,11 +4161,18 @@ function ac2ListaFoco(li, foco){
   if(ac2.focoOp) base = base.filter(i=>((i.empresa||'?')+' · '+(i.mkt||'?'))===ac2.focoOp);
   const rec = ac2ItensFoco(base, foco);
   const quem = [ac2.focoGes, ac2.focoOp].filter(Boolean).join(' · ');
-  const topo = `<div class="a2-sh">${meta.tit}${quem?' · '+ac2Esc(quem):''}<small>${cobra?meta.subC:meta.subG}</small></div>
+  const tinfo = foco==='tipo' ? (AC2_TIPOS.find(t=>t.k===ac2.focoTipo)||null) : null;
+  const topo = `<div class="a2-sh">${tinfo?tinfo.curto:meta.tit}${quem?' · '+ac2Esc(quem):''}<small>${cobra?meta.subC:meta.subG}</small></div>
     <div style="margin:2px 0 8px"><button type="button" onclick="ac2.sairRec()" class="a2-btn-lin">← voltar</button></div>`;
   if(!rec.length) return topo+`<div class="a2-vazio">Nada nesta fila para o recorte atual.</div>`;
-  const modo = cobra ? 'cobrar' : (foco==='recobrar' ? 'recobrar' : foco==='aguardando' ? 'feita' : 'fazer');
-  const bloco = arr => arr.map(x=>ac2DemRow(x,'cobrar'===modo&&foco==='recobrar'?'cobrar':modo)).join('');
+  const modoItem = i => {
+    if(cobra) return 'cobrar';
+    if(foco==='recobrar') return 'recobrar';
+    if(foco==='aguardando' || foco==='efeito') return 'feita';
+    if(foco==='fora' || foco==='tipo') return !ac2Registrada(i) ? 'fazer' : (ac2Recobrar(i) ? 'recobrar' : 'feita');
+    return 'fazer';
+  };
+  const bloco = arr => arr.map(x=>ac2DemRow(x, modoItem(x))).join('');
   const gs = [];
   rec.forEach(i=>{ let o=gs.find(g=>g.g===i.gestor); if(!o) gs.push(o={g:i.gestor, arr:[]}); o.arr.push(i); });
   gs.sort((a,b)=>b.arr.length-a.arr.length);
@@ -4168,17 +4184,27 @@ function ac2ListaFoco(li, foco){
   }).join('');
   const nota = cobra
     ? 'A lista é o que o card contou. Copiar cobrança leva só estas tarefas para o WhatsApp. Quem registra é o gestor.'
-    : (foco==='aguardando' ? 'Estas já foram registradas. O resultado aparece na primeira venda depois do registro.' : 'Registre em cada linha. A tarefa sai desta fila quando o registro entra.');
+    : (foco==='aguardando' ? 'Estas já foram registradas. O resultado aparece na primeira venda depois do registro.'
+      : foco==='efeito' ? 'Estas já foram medidas. As que não funcionaram aparecem primeiro. Para registrar outra ação, use o card Recobrar.'
+      : foco==='fora' ? 'Ou o prazo venceu sem registro, ou o registro entrou depois do prazo.'
+      : foco==='tipo' ? 'Sem registro, o botão pede o registro. As que não resolveram pedem outra ação.'
+      : foco==='pendentes' ? 'Estas ainda não têm registro. É a diferença entre o percentual do card e 100%.'
+      : 'Registre em cada linha. A tarefa sai desta fila quando o registro entra.');
   return topo+`<div class="a2-nota">${nota}</div>`+corpo;
 }
 ac2.verFila=function(foco, g, op){
   g=g||null; op=op||null;
-  if(ac2.foco===foco && (ac2.focoGes||null)===(g) && (ac2.focoOp||null)===(op)){ ac2.sairRec(); return; }
+  if(ac2.foco===foco && (ac2.focoGes||null)===(g) && (ac2.focoOp||null)===(op) && foco!=='tipo'){ ac2.sairRec(); return; }
+  if(foco!=='tipo') ac2.focoTipo='';
   ac2.foco=foco; ac2.focoDe=ac2.nivel; ac2.focoGes=g; ac2.focoOp=op; ac2.cmp=false; ac2.render();
+};
+ac2.verTipo=function(k){
+  if(ac2.foco==='tipo' && ac2.focoTipo===k && !ac2.focoGes && !ac2.focoOp){ ac2.focoTipo=''; ac2.sairRec(); return; }
+  ac2.focoTipo=k; ac2.verFila('tipo');
 };
 ac2.verFilaRec=function(){ ac2.verFila('recobrar'); };
 ac2.verRecobrar=function(g){ ac2.verFila('recobrar', g); };
-ac2.sairRec=function(){ ac2.foco=null; ac2.focoDe=null; ac2.focoGes=null; ac2.focoOp=null; ac2.render(); };
+ac2.sairRec=function(){ ac2.foco=null; ac2.focoDe=null; ac2.focoGes=null; ac2.focoOp=null; ac2.focoTipo=''; ac2.render(); };
 ac2.copiaFoco=async function(g, btn){
   const li = ac2.filt().filter(i=>!g || i.gestor===g);
   const base = ac2.focoOp ? li.filter(i=>((i.empresa||'?')+' · '+(i.mkt||'?'))===ac2.focoOp) : li;
@@ -4876,25 +4902,27 @@ function ac2TopoGestor(){
   const pA = sA.n ? Math.round(100*sA.ok/sA.n) : null, pB = sB.n ? Math.round(100*sB.ok/sB.n) : null;
   const seta = pA==null||pB==null ? '' : pB>pA ? ' <b style="color:#16a34a">↑</b>' : pB<pA ? ' <b style="color:#dc2626">↓</b>' : ' →';
   const pjT = ac2PrazoJanela(li, 0, agora+1);
-  const card = (rot,val,sub,c,extra,foco) => `<div class="a2-k${foco?' rec':''}${foco&&ac2.foco===foco?' on':''}"${foco?` onclick="ac2.verFila('${foco}')"`:''}><div class="a2-kr">${rot}</div>
+  const foraN = li.filter(i=>ac2EvtPrazo(i)!=null && !ac2NoPrazo(i)).length;
+  const card = (rot,val,sub,c,extra,foco) => `<div class="a2-k${foco?' rec':' nc'}${foco&&ac2.foco===foco?' on':''}"${foco?` onclick="ac2.verFila('${foco}')"`:''}><div class="a2-kr">${rot}</div>
     <div class="a2-kv" style="color:${c||'var(--t1)'}">${val}</div><div class="a2-ks">${sub}</div>${extra||''}</div>`;
   const tipos = AC2_TIPOS.filter(t=>li.some(i=>ac2TipoDe(i.tipo).k===t.k)).map(t=>{
     const lt=li.filter(i=>ac2TipoDe(i.tipo).k===t.k), n=lt.length, r=lt.filter(ac2Registrada).length, s=ac2SemFr(r,n), e=ac2Efeito(lt);
-    return `<div class="gt-l"><span class="gt-n" style="color:${t.cor}">${t.curto}</span><span class="gt-q">${r}/${n}</span>
+    const on = ac2.foco==='tipo' && ac2.focoTipo===t.k;
+    return `<div class="gt-l${on?' on':''}" onclick="ac2.verTipo('${t.k}')" title="Abrir as tarefas de ${t.curto}"><span class="gt-n" style="color:${t.cor}">${t.curto}</span><span class="gt-q">${r}/${n}</span>
       <span class="gt-p" style="color:${s.cor}">${ac2Pct(r,n)}%</span><span class="gt-s" style="color:${s.cor};border-color:${s.cor}">${s.rot}</span>
       <span class="gt-e"${e.med?` style="color:${e.sem.cor}"`:''}>${e.med?'efeito '+e.pct+'%':''}</span></div>`; }).join('');
   return `<div class="a2-shh">Para hoje</div><div class="a2-kpis">
     ${card('Atrasadas', m.atr.length, m.atr.length ? 'clique para registrar · maior atraso '+ac2AtrLbl(m.maior) : 'nada atrasado', m.atr.length?'#dc2626':'#22c55e', '', m.atr.length?'atrasadas':'')}
     ${card('Vencem em 24h', m.v24.length, m.v24.length?'clique para registrar antes de atrasar':'nada vencendo agora', m.v24.length?'#f59e0b':'var(--t3)', '', m.v24.length?'vence24':'')}
     ${card('Recobrar', rec.length, rec.length ? 'clique para ver o motivo e registrar outra ação' : 'nada para refazer', rec.length?'#a855f7':'var(--t3)', '', rec.length?'recobrar':'')}
-    ${card('Feitas, aguardando resultado', aguard.length, aguard.length?'clique para ver as que ainda não foram medidas':'a medição sai na 1ª venda depois do registro', '', aguard.length?'aguardando':'')}
+    ${card('Feitas, aguardando resultado', aguard.length, aguard.length?'clique para ver as que ainda não foram medidas':'a medição sai na 1ª venda depois do registro', aguard.length?'#94a3b8':'var(--t3)', '', aguard.length?'aguardando':'')}
   </div>
   <div class="a2-shh">Como estou indo <small>mesma régua da Direção: &lt;70% Crítico · 70–89% Atenção · 90–99% Bom · 100% Ideal</small></div>
   <div class="a2-kpis a2-prog">
-    ${card('Registro', pc+'%', `${reg} de ${li.length} registradas · equipe ${pf(eq.registro)}`, sr.cor, `<div class="cap-selos">${ac2Selo('Registro', sr, pc+'%')}</div>${subir?`<div class="a2-ks" style="margin-top:4px">${subir}</div>`:''}`)}
-    ${card('Efeito', ef.med ? ef.pct+'%' : '—', ef.med ? `${ef.ok} de ${ef.med} medidas funcionaram · equipe ${pf(eq.efeito)}` : 'o veredito sai com 3 vendas depois do registro', ef.med?ef.sem.cor:'var(--t3)', ef.med?`<div class="cap-selos">${ac2Selo('Efeito', ef.sem, ef.pct+'%')}</div>`:'')}
-    ${card('No prazo', pjT.n ? Math.round(100*pjT.ok/pjT.n)+'%' : '—', `semana passada ${pA==null?'—':pA+'%'} → esta semana ${pB==null?'—':pB+'%'}${seta} · equipe ${pf(eq.no_prazo)}`, pjT.n ? ac2SemFr(pjT.ok,pjT.n).cor : 'var(--t3)')}
-    <div class="a2-k"><div class="a2-kr">Por tipo</div><div class="gc-tipos">${tipos}</div></div>
+    ${card('Registro', pc+'%', `${reg} de ${li.length} registradas · equipe ${pf(eq.registro)}${pend?' · clique para ver as que faltam':''}`, sr.cor, `<div class="cap-selos">${ac2Selo('Registro', sr, pc+'%')}</div>${subir?`<div class="a2-ks" style="margin-top:4px">${subir}</div>`:''}`, pend?'pendentes':'')}
+    ${card('Efeito', ef.med ? ef.pct+'%' : '—', ef.med ? `${ef.ok} de ${ef.med} medidas funcionaram · equipe ${pf(eq.efeito)} · clique para ver cada uma` : 'o veredito sai com 3 vendas depois do registro', ef.med?ef.sem.cor:'var(--t3)', ef.med?`<div class="cap-selos">${ac2Selo('Efeito', ef.sem, ef.pct+'%')}</div>`:'', ef.med?'efeito':'')}
+    ${card('No prazo', pjT.n ? Math.round(100*pjT.ok/pjT.n)+'%' : '—', `semana passada ${pA==null?'—':pA+'%'} → esta semana ${pB==null?'—':pB+'%'}${seta} · equipe ${pf(eq.no_prazo)}${foraN?' · clique para ver as que passaram do prazo':''}`, pjT.n ? ac2SemFr(pjT.ok,pjT.n).cor : 'var(--t3)', '', foraN?'fora':'')}
+    <div class="a2-k nc"><div class="a2-kr">Por tipo</div><div class="a2-ks">clique no tipo</div><div class="gc-tipos">${tipos}</div></div>
   </div>`;
 }
 
