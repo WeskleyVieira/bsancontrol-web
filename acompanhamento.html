@@ -2385,8 +2385,10 @@ function _adKeyAds(mkt,anuncio){ // no Ads do Magalu/Shopee o anuncio_id já vem
   return String(anuncio||'').trim().toUpperCase();
 }
 // conjunto de competências (YYYY-MM) que caem num range de datas
-function _mesesRange(ps,pe){ const meses=new Set(); const d0=new Date(ps),d1=new Date(pe);
-  for(let y=d0.getFullYear(),m=d0.getMonth();y<d1.getFullYear()||(y===d1.getFullYear()&&m<=d1.getMonth());m++){ if(m>11){m=-1;y++;continue;} meses.add(y+'-'+String(m+1).padStart(2,'0')); } return meses; }
+// (21/10/2026) pelas STRINGS YYYY-MM: new Date("2026-10-01") é meia-noite UTC = 30/09 21h em Brasília → setembro entrava
+// no período e, na Amazon (sem série diária), o Ads do mês inteiro de setembro somava em out (R$ 5.144 em vez de R$ 2.136).
+function _mesesRange(ps,pe){ const meses=new Set(); let y=+String(ps).slice(0,4), m=+String(ps).slice(5,7); const ey=+String(pe).slice(0,4), em=+String(pe).slice(5,7); let g=0;
+  while((y<ey||(y===ey&&m<=em)) && g++<600){ meses.add(y+'-'+String(m).padStart(2,'0')); m++; if(m>12){m=1;y++;} } return meses; }
 // PRÓ-RATA do Ads: o grão por-anúncio/campanha é MENSAL; a série diária (AdsDia) é exata (bate com a plataforma).
 // Fator = fração do Ads de cada (campanha × mês) que cai no período [ps,pe], pela série diária. Fallback: op-level; senão 1.
 function _adsFatores(emp,mkt,ps,pe){
@@ -2395,7 +2397,11 @@ function _adsFatores(emp,mkt,ps,pe){
     const inv=+r.inv||0, rec=+r.rec||0, k=r.campanha+'|'+mes, inPer=(r.data>=ps&&r.data<=pe);
     (dMes[k]=dMes[k]||{inv:0,rec:0}).inv+=inv; dMes[k].rec+=rec; (dMesOp[mes]=dMesOp[mes]||{inv:0,rec:0}).inv+=inv; dMesOp[mes].rec+=rec;
     if(inPer){ (dPer[k]=dPer[k]||{inv:0,rec:0}).inv+=inv; dPer[k].rec+=rec; (dPerOp[mes]=dPerOp[mes]||{inv:0,rec:0}).inv+=inv; dPerOp[mes].rec+=rec; } });
-  const frac=(camp,mes,c)=>{ const k=camp+'|'+mes; if(dMes[k]&&dMes[k][c]>0) return (dPer[k]?dPer[k][c]:0)/dMes[k][c]; if(dMesOp[mes]&&dMesOp[mes][c]>0) return (dPerOp[mes]?dPerOp[mes][c]:0)/dMesOp[mes][c]; return 1; };
+  // sem série diária (Amazon): pró-rata pelo FATURAMENTO do período no mês — a mesma base do _adsDiaMap. Antes devolvia 1
+  // (o mês inteiro de Ads em qualquer período parcial).
+  const fM={},fP={}; ((typeof ROWS!=='undefined'&&Array.isArray(ROWS))?ROWS:[]).forEach(r=>{ if(r.emp!==emp||r.mkt!==mkt||!r.date)return; const mes=String(r.date).slice(0,7); if(!meses.has(mes))return;
+    fM[mes]=(fM[mes]||0)+(+r.fat||0); if(r.date>=ps&&r.date<=pe) fP[mes]=(fP[mes]||0)+(+r.fat||0); });
+  const frac=(camp,mes,c)=>{ const k=camp+'|'+mes; if(dMes[k]&&dMes[k][c]>0) return (dPer[k]?dPer[k][c]:0)/dMes[k][c]; if(dMesOp[mes]&&dMesOp[mes][c]>0) return (dPerOp[mes]?dPerOp[mes][c]:0)/dMesOp[mes][c]; return fM[mes]>0 ? (fP[mes]||0)/fM[mes] : 1; };
   return { inv:(camp,mes)=>frac(camp,mes,'inv'), rec:(camp,mes)=>frac(camp,mes,'rec') };
 }
 // índice de Ads (anúncio) para uma operação e período — já com pró-rata pelo período
