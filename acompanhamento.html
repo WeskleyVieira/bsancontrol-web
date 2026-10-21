@@ -3427,7 +3427,7 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-cap .cap-s{font-size:10.5px;color:var(--c-mut);font-weight:600}
 /* CARD de gestor: o "momento" de cada um, no formato que a direcao ja usa */
 #ac2-root .a2-gcs{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px;margin-top:10px}
-#ac2-root .a2-gc{background:var(--c-s);border:1px solid var(--c-ln);border-top:3px solid var(--cc);border-radius:11px;padding:11px 12px;cursor:pointer;transition:transform .12s,border-color .12s}
+#ac2-root .a2-gc{background:var(--c-s);border:1px solid var(--c-ln);border-top:3px solid var(--cc);border-radius:11px;padding:11px 12px;cursor:pointer;transition:transform .12s,border-color .12s;overflow:hidden}
 #ac2-root .a2-gc:hover{transform:translateY(-2px);border-color:var(--cc)}
 #ac2-root .a2-gc .gc-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
 #ac2-root .a2-gc .gc-h b{font-size:13.5px;color:var(--c-ink)}
@@ -3436,16 +3436,17 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-gc .gc-v small{font-size:11.5px;font-weight:600;color:var(--c-mut)}
 #ac2-root .a2-gc .gc-s{font-size:11px;color:var(--c-mut);font-weight:600}
 #ac2-root .gc-tipos{margin-top:7px;border-top:1px solid var(--c-ln);padding-top:5px}
-#ac2-root .gc-tipos .gt-l{display:grid;grid-template-columns:1fr 44px 38px 64px 70px;align-items:center;gap:4px;font-size:11px;line-height:1.9}
+#ac2-root .gc-tipos .gt-l{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:2px 6px;font-size:11px;line-height:1.7}
 #ac2-root .a2-prog .gc-tipos .gt-l{cursor:pointer;border-radius:6px;margin:1px -4px;padding:0 4px}
 #ac2-root .a2-prog .gc-tipos .gt-l:hover{background:rgba(255,255,255,.05)}
 #ac2-root .a2-prog .gc-tipos .gt-l.on{background:rgba(79,142,247,.14)}
 #ac2-root .gc-tipos .gt-h{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--c-mut);line-height:1.6}
-#ac2-root .gc-tipos .gt-n{font-weight:700}
+#ac2-root .gc-tipos .gt-n{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #ac2-root .gc-tipos .gt-q{color:var(--c-mut);text-align:right}
 #ac2-root .gc-tipos .gt-p{font-weight:800;text-align:right}
 #ac2-root .gc-tipos .gt-s{font-size:9.5px;font-weight:800;border:1px solid;border-radius:999px;padding:0 6px;text-align:center;line-height:1.6}
-#ac2-root .gc-tipos .gt-e{font-size:10px;font-weight:700;text-align:right;color:var(--c-mut)}
+#ac2-root .gc-tipos .gt-e{grid-column:1 / -1;justify-self:end;font-size:10px;font-weight:700;text-align:right;color:var(--c-mut);line-height:1.2}
+#ac2-root .gc-tipos .gt-e:empty{display:none}
 #ac2-root .a2-palco{position:fixed;left:-20000px;top:0;width:1100px;pointer-events:none}
 #ac2-root .a2-foto{width:1100px;padding:22px 26px;background:var(--bg)}
 #ac2-root .a2-foto .a2-foto-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--c-ln)}
@@ -3506,7 +3507,7 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .dm-feitas>summary b{font-size:14.5px;color:var(--t1)}
 #ac2-root .dm-feitas>summary span{font-size:12px;color:var(--t2)}
 #ac2-root .a2-shh small{font-weight:500;text-transform:none;letter-spacing:0;color:var(--t3);margin-left:8px}
-@media (max-width:700px){ #ac2-root #a2-lv{flex-wrap:wrap;row-gap:4px} #ac2-root .a2-prog>.a2-k:last-child{grid-column:1/-1} #ac2-root .gc-tipos .gt-l{grid-template-columns:1fr 36px 36px 58px 62px} }
+@media (max-width:700px){ #ac2-root #a2-lv{flex-wrap:wrap;row-gap:4px} #ac2-root .a2-prog>.a2-k:last-child{grid-column:1/-1} }
 @media (max-width:700px){ #ac2-root .a2-dem{flex-direction:column} #ac2-root .dm-side{flex-direction:row;align-items:center;justify-content:space-between;text-align:left} #ac2-root .dm-lk{grid-template-columns:1fr;gap:0} }
 #ac2-root .a2-cob{font:inherit;font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;border:1px solid var(--c-ln);background:var(--c-s2);color:var(--c-ink);cursor:pointer;white-space:nowrap}
 #ac2-root .a2-cob:hover{border-color:var(--c-acc);color:var(--c-acc)}
@@ -4054,7 +4055,7 @@ function ac2DirScore(){
       <div class="cap-b"><span style="width:${pc}%;background:${s.cor}"></span></div>
       <div class="gc-s">${pc}% registrado${risco>0?` · ${AC2_BRLk(risco)} parado`:''}</div>
       <div class="cap-selos">${ac2Selo('Registro', s, pc+'%')}${efG.med ? ac2Selo('Efeito', efG.sem, efG.ok+'/'+efG.med) : ac2Selo('Efeito', null, 'aguardando')}</div>
-      <div class="gc-tipos"><div class="gt-l gt-h"><span>Tipo</span><span>Reg.</span><span>%</span><span>Selo</span><span></span></div>${pt}</div>
+      <div class="gc-tipos"><div class="gt-l gt-h"><span>Tipo</span><span>Reg.</span><span>%</span><span>Selo</span></div>${pt}</div>
       <div class="gc-o">${ops.slice(0,3).join(' • ')}${ops.length>3?` • +${ops.length-3}`:''}</div></div>`;
   }).sort().join('');
 
