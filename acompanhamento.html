@@ -10774,7 +10774,7 @@ renderAll();
         try{
           var txt=document.getElementById('bc-dataload-txt');
           if(txt && tent>1) txt.textContent='Servidor acordando… tentativa '+tent+' de 3';
-          r=await authFetch('/api/dataset?meses=24',{cache:'no-store'});
+          r=await authFetch('/api/dataset?meses=24',{cache:'no-cache'});
           if(r.ok) break;
           ultimoErro=new Error('HTTP '+r.status); r=null;
         }catch(err){ ultimoErro=err; r=null; }
@@ -10798,7 +10798,7 @@ renderAll();
   async function bcCarregaDetalhe(){
     if(_detLoaded) return;
     try{
-      var r=await authFetch('/api/detalhe?meses=24',{cache:'no-store'});
+      var r=await authFetch('/api/detalhe?meses=24',{cache:'no-cache'});
       if(!r.ok) return;
       var d=await r.json();
       DETALHE = d.detalhe||[]; _detLoaded=true;
@@ -10844,7 +10844,7 @@ renderAll();
   async function bcCarregaExtras(){
     if(_extLoaded) return;
     try{
-      var r=await authFetch('/api/extras',{cache:'no-store'});
+      var r=await authFetch('/api/extras',{cache:'no-cache'});
       if(!r.ok) return;
       var d=await r.json();
       if(d.ads) ADS=d.ads; if(d.adsCamp) ADS_CAMP=d.adsCamp; if(d.adsDia) ADS_DIA=d.adsDia;

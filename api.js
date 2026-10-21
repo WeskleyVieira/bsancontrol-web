@@ -28,8 +28,15 @@ const JZ = (req, res, obj, code = 200) => {
 };
 // cache em memória de respostas pesadas (buffer já gzipado), por escopo, com TTL — evita re-buscar 44MB a cada acesso
 const _gzCache = new Map();
-const GZ_TTL = +(process.env.CACHE_TTL_MS || 15 * 60 * 1000);
+// (21/10/2026) o cache vale até o próximo db-sync (que chama /api/cache/clear); 12h é só rede de segurança. Antes: 15 min — com o
+// Render Free hibernando, cada acordada relia a base inteira do Supabase (17 GB de egress em out/26 → restrição do plano free).
+const GZ_TTL = +(process.env.CACHE_TTL_MS || 12 * 3600 * 1000);
 const GZ_CAP = 90 * 1024 * 1024;   // ~90MB de teto (Render free tem 512MB)
+// VERSÃO DOS DADOS (ETag): muda a cada db-sync (cache/clear), a cada escrita que mexe nos extras e a cada reinício. O navegador guarda a
+// resposta e, na próxima abertura, só pergunta "mudou?" (If-None-Match) → 304 sem corpo e SEM consultar o banco. Corta o tráfego
+// do Render (4,8 GB de respostas em out/26) e o egress do Supabase: cada usuário baixa os dados 1x por atualização, não 1x por abertura.
+let _geracao = Date.now();
+const etagDe = k => 'W/"' + _geracao.toString(36) + '-' + crypto.createHash("sha1").update(k).digest("hex").slice(0, 12) + '"';
 function gzCacheGet(k) { const e = _gzCache.get(k); if (e && Date.now() - e.t < GZ_TTL) { _gzCache.delete(k); _gzCache.set(k, e); return e.buf; } if (e) _gzCache.delete(k); return null; }
 function gzCacheSet(k, buf) { let tot = buf.length; for (const e of _gzCache.values()) tot += e.buf.length; while (tot > GZ_CAP && _gzCache.size) { const first = _gzCache.keys().next().value; tot -= _gzCache.get(first).buf.length; _gzCache.delete(first); } _gzCache.set(k, { t: Date.now(), buf }); }
 // ponto(s) em que um gestor opera (1 ou 2) — restringe a visão dele; direção/coord veem tudo
@@ -282,7 +289,7 @@ const server = http.createServer(async (req, res) => {
     // ── cache-bust: o db-sync chama isto no fim de cada atualização (dado novo → limpa o cache na hora) ──
     if (req.method === "POST" && u.pathname === "/api/cache/clear") {
       if (String(req.headers["x-bust-token"] || "") !== BUST_TOKEN) return J(res, { ok: false, erro: "token inválido" }, 403);
-      const n = _gzCache.size; _gzCache.clear();
+      const n = _gzCache.size; _gzCache.clear(); _geracao = Date.now();
       return J(res, { ok: true, limpas: n });
     }
     // ── LOGIN ──
@@ -348,7 +355,7 @@ const server = http.createServer(async (req, res) => {
       const rows = Array.isArray(o.rows) ? o.rows : [];
       await dbx.run("INSERT INTO datasets(nome,json,atualizado) VALUES(?,?,?) ON CONFLICT(nome) DO UPDATE SET json=EXCLUDED.json, atualizado=EXCLUDED.atualizado",
         ["envios", JSON.stringify(rows), new Date().toISOString()]);
-      for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k);   // invalida cache
+      for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k); _geracao = Date.now();   // invalida cache
       return J(res, { ok: true, n: rows.length });
     }
     // ── POST /api/custos (coord/direção sobem custos operacionais + afi/lives; Ads já vem do dataset) ──
@@ -359,7 +366,7 @@ const server = http.createServer(async (req, res) => {
       const o = await body(req);
       await dbx.run("INSERT INTO datasets(nome,json,atualizado) VALUES(?,?,?) ON CONFLICT(nome) DO UPDATE SET json=EXCLUDED.json, atualizado=EXCLUDED.atualizado",
         ["custos", JSON.stringify(o.custos || {}), new Date().toISOString()]);
-      for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k);
+      for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k); _geracao = Date.now();
       return J(res, { ok: true });
     }
     // ── ADMIN de usuários (SÓ Direção) ──
@@ -398,10 +405,12 @@ const server = http.createServer(async (req, res) => {
       const aceitaGz = /\bgzip\b/.test(String(req.headers["accept-encoding"] || ""));
       // cache por escopo (dados do gestor são restritos ao ponto dele; direção/coord compartilham)
       const ckey = u.pathname + u.search + "#" + (user ? user.perfil + ":" + (user.gestor_ref || "") : "anon");
-      if (pesada && aceitaGz) { const hit = gzCacheGet(ckey); if (hit) { res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "HIT" }); return res.end(hit); } }
+      const etag = pesada ? etagDe(ckey) : null, vers = etag ? { ETag: etag, "Cache-Control": "private, no-cache" } : {};
+      if (etag && String(req.headers["if-none-match"] || "") === etag) { res.writeHead(304, vers); return res.end(); }   // não mudou: o navegador usa a cópia dele
+      if (pesada && aceitaGz) { const hit = gzCacheGet(ckey); if (hit) { res.writeHead(200, Object.assign({ "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "HIT" }, vers)); return res.end(hit); } }
       const out = await rotaGET(u, user);
       if (out === null) return J(res, { erro: "rota não encontrada" }, 404);
-      if (pesada && aceitaGz) { const buf = zlib.gzipSync(Buffer.from(JSON.stringify(out))); gzCacheSet(ckey, buf); res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "MISS" }); return res.end(buf); }
+      if (pesada && aceitaGz) { const buf = zlib.gzipSync(Buffer.from(JSON.stringify(out))); gzCacheSet(ckey, buf); res.writeHead(200, Object.assign({ "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "MISS" }, vers)); return res.end(buf); }
       return JZ(req, res, out);
     }
     // ── estático ──
