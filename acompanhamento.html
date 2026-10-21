@@ -1000,14 +1000,14 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
       <div class="cc">
         <div class="cc-hdr"><div>
           <div class="cc-title">Modalidade de envio</div>
-          <div class="cc-sub">Como sai o faturamento da operação</div>
+          <div class="cc-sub" id="ger-mod-sub">Como sai o faturamento da operação</div>
         </div></div>
-        <div style="position:relative;height:230px;margin-top:8px;"><canvas id="c-ger-mod"></canvas></div>
+        <div id="ger-mod-box" style="margin-top:8px;"><div style="position:relative;height:230px;"><canvas id="c-ger-mod"></canvas></div></div>
       </div>
       <div class="cc">
         <div class="cc-hdr"><div>
           <div class="cc-title">Orgânico vs. Ads</div>
-          <div class="cc-sub">Quanto do faturamento depende de mídia paga</div>
+          <div class="cc-sub" id="ger-ads-sub">Quanto do faturamento depende de mídia paga</div>
         </div></div>
         <div id="ger-ads-box" style="margin-top:8px;"><div style="position:relative;height:230px;"><canvas id="c-ger-ads"></canvas></div></div>
       </div>
@@ -1072,6 +1072,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
           <div class="cc-sub" id="ga-sub">ACOS × margem (MC%) define quem lucra e quem queima</div>
         </div>
         <button onclick="abrirGuiaGer()" style="margin-left:auto;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t2);font-size:12px;padding:7px 11px;cursor:pointer;white-space:nowrap;">ⓘ Como ler</button>
+        <button class="dshort" onclick="exportGerPublicidadeCSV()">Exportar CSV</button>
       </div>
       <div id="ga-chips" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:12px;"></div>
       <div class="tbl-wrap" style="overflow:auto;max-height:64vh;margin-top:12px;">
@@ -2868,6 +2869,7 @@ function _renderGerProdutos(A,B,mkt){
     <div style="display:flex;gap:3px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;padding:3px;">${tgBtn('anuncio','Por anúncio')}${tgBtn('sku','Por SKU')}</div>
     <input id="gp-search" type="text" placeholder="Buscar título, SKU ou ID…" oninput="_gpSearch(this.value)" value="${esc(_gpQuery)}" style="flex:1;min-width:200px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);font-family:'Inter',sans-serif;font-size:12px;padding:7px 12px;outline:none;">
     <button onclick="abrirGuiaGer()" style="background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t2);font-size:12px;padding:7px 11px;cursor:pointer;white-space:nowrap;">ⓘ Como ler</button>
+    <button class="dshort" onclick="exportGerProdutosCSV()">Exportar CSV</button>
   </div>
   <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;">${chips}</div>`;
 
@@ -2877,7 +2879,7 @@ function _renderGerProdutos(A,B,mkt){
 
   // ── tabela = SCORECARD DE PRODUTO (P&L por unidade). Ads entra só como impacto (− Ads → margem final).
   //    ACOS/ação de mídia NÃO ficam aqui — são da aba Publicidade.
-  const sv={tit:o=>o.tit||o.sku,rel:o=>_RANK[o.aF],qtd:o=>o.qtd,fat:o=>o.fat,preco:o=>o.qtd?o.fat/o.qtd:0,custo:o=>o.qtd?o.ctp/o.qtd:0,mcun:o=>o.qtd?o.mc/o.qtd:0,mc:o=>o.mc,adsInv:o=>o.adsInv||0,res:o=>o.mcPosAds}[GER_PSORT.col]||(o=>o.fat);
+  const sv={tit:o=>o.tit||o.sku,rel:o=>_RANK[o.aF],qtd:o=>o.qtd,fat:o=>o.fat,preco:o=>o.qtd?o.fat/o.qtd:0,custo:o=>o.qtd?o.ctp/o.qtd:0,mcun:o=>o.qtd?o.mc/o.qtd:0,mc:o=>o.mc,adsRec:o=>o.adsRec||0,adsInv:o=>o.adsInv||0,tacos:o=>o.fat>0?100*(o.adsInv||0)/o.fat:-1,res:o=>o.mcPosAds}[GER_PSORT.col]||(o=>o.fat);
   const lin=view.slice().sort((a,b)=>{const x=sv(a),y=sv(b);const c=(typeof x==='string')?String(x).localeCompare(String(y)):(x-y);return (c*GER_PSORT.dir)||(b.fat-a.fat);});
   const scc=c=>GER_PSORT.col===c?(GER_PSORT.dir<0?' ▾':' ▴'):'';
   const stk='position:sticky;top:0;background:var(--surf2);z-index:3;';
@@ -2885,43 +2887,89 @@ function _renderGerProdutos(A,B,mkt){
   const relBadge=v=>`<span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:4px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;background:${v==='A'?'rgba(34,197,94,.16)':v==='B'?'rgba(79,142,247,.16)':'rgba(136,145,168,.16)'};color:${v==='A'?'#22c55e':v==='B'?'#4f8ef7':'#8891a8'}">${v}</span>`;
   const movMk=o=>o.mov==='novo'?' <span style="color:#4f8ef7;font-size:9px;font-family:\'DM Mono\',monospace" title="novo no período">novo</span>':(o.mov>0?` <span style="color:#22c55e;font-size:10px" title="subiu de relevância: ${o.antF}→${o.aF}">▲</span>`:(o.mov<0?` <span style="color:#f87171;font-size:10px" title="caiu de relevância: ${o.antF}→${o.aF}">▼</span>`:''));
   const devMk=o=>o.devPct>5?` <span style="color:#f59e0b;font-size:9px" title="Devolução: ${o.devPct.toFixed(0)}% (${o.devU}un devolvida(s))">↩${o.devPct.toFixed(0)}%</span>`:'';
-  const mcCell=(rs,pct,bold)=>`<td class="r"><span style="font-weight:${bold?700:600};color:${rs<0?'#f87171':'var(--t1)'}">${brl(rs)}</span><div style="font-size:9.5px;margin-top:1px">${mcPct(pct,1)}</div></td>`;
-  const ncol=9+(hasAds?2:0);
+  const parte=v=>`<div style="font-size:10px;color:var(--t3);margin-top:1px">${(+v||0).toFixed(1).replace('.',',')}%</div>`;
+  const mcCell=(rs,pct,bold,share)=>`<td class="r"><span style="font-weight:${bold?700:600};color:${rs<0?'#f87171':'var(--t1)'}">${brl(rs)}</span><div style="font-size:9.5px;margin-top:1px">${mcPct(pct,1)}</div>${share!=null?`<div style="font-size:10px;color:var(--t3)">${(+share||0).toFixed(1).replace('.',',')}% da margem</div>`:''}</td>`;
+  const tacosCell=o=>{ if(!(o.fat>0)||!(o.adsInv>0)) return '<span style="color:var(--t3)">—</span>'; const t=100*o.adsInv/o.fat; const cor=o.mcpFinal!=null&&t>o.mcp?'#f87171':(t>=8?'#f59e0b':'var(--t1)'); return `<span style="color:${cor};font-weight:600">${t.toFixed(1).replace('.',',')}%</span>`; };
+  const ncol=9+(hasAds?4:0);
   let h=`<thead><tr><th onclick="gerPSort('tit')" style="cursor:pointer;user-select:none;${stk}" title="ordenar">${porAnuncio?'Anúncio':'SKU'}${scc('tit')}</th>`
     +th('rel','Rel.',0,'Relevância: curva de faturamento (Pareto A/B/C)')
-    +th('qtd','Qtd',1,'Unidades vendidas — passe o mouse p/ % do volume')
-    +th('fat','Faturamento',1,'Receita total do período — passe o mouse p/ % da operação')
+    +th('qtd','Qtd',1,'Unidades e a parte deste item no volume da operação')
+    +th('fat','Faturamento',1,'Receita e a parte deste item no faturamento da operação')
     +th('preco','Preço/un',1,'Preço médio de venda por unidade')
     +th('custo','Custo/un',1,'Custo do produto por unidade')
-    +th('mcun','Margem/un',1,'Margem de contribuição por unidade = preço − custo − taxas − imposto (antes do Ads)')
+    +th('mcun','Margem/un',1,'Margem de contribuição por unidade, antes do Ads')
     +(hasAds
-      ? th('mc','MC s/ Ads',1,'Margem de contribuição TOTAL, antes do Ads (lucro bruto) — com %')
-        +th('adsInv','− Ads',1,'Investimento total em Ads (margem sacrificada em mídia)')
-        +th('res','= MC final',1,'Margem final total, já descontado o Ads — com %')
-      : th('mc','MC total',1,'Margem de contribuição total do período — com %'))
-    +`<th style="${stk}" title="Veredito pela margem FINAL do produto">Situação</th></tr></thead><tbody>`;
+      ? th('mc','MC s/ Ads',1,'Lucro do item antes de descontar o Ads, e a parte dele na margem da operação')
+        +th('adsRec','Fat. Ads',1,'Receita que o relatório de Ads atribui a este anúncio')
+        +th('adsInv','Invest. Ads',1,'Quanto foi investido em Ads neste anúncio')
+        +th('tacos','TACOS',1,'Investimento em Ads ÷ faturamento do anúncio. Diferente do ACOS, que divide só pela receita atribuída ao Ads.')
+        +th('res','= MC final',1,'Lucro depois de descontar o Ads')
+      : th('mc','MC total',1,'Margem de contribuição do período e a parte deste item na margem da operação'))
+    +`<th style="${stk}" title="Veredito pela margem final do produto">Situação</th></tr></thead><tbody>`;
   lin.forEach(o=>{
     const s=situ(o), url=linkAnun(o);
     const precoUn=o.qtd?o.fat/o.qtd:0, custoUn=o.qtd?o.ctp/o.qtd:0, mcUn=o.qtd?o.mc/o.qtd:0;
     const idHtml=o.anuncio?(url?`<a href="${url}" target="_blank" rel="noopener" style="color:var(--a2);text-decoration:none">${esc(o.anuncio)} ↗</a>`:esc(o.anuncio)):'';
+    const shareFin=totMC?100*o.mcPosAds/totMC:0;
+    o.shareFin=shareFin; o._sitNome=s[0];
     h+=`<tr><td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(o.tit)}">${esc(o.tit||'—')}<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--t3)">${porAnuncio?idHtml:esc(o.sku||'')}${movMk(o)}${devMk(o)}</div></td>`
       +`<td>${relBadge(o.aF)}</td>`
-      +`<td class="r" title="${o.shareVol.toFixed(1)}% do volume da operação">${o.qtd.toLocaleString('pt-BR')}</td>`
-      +`<td class="r" title="${o.shareFat.toFixed(1)}% do faturamento da operação">${brl(o.fat)}</td>`
+      +`<td class="r">${o.qtd.toLocaleString('pt-BR')}${parte(o.shareVol)}</td>`
+      +`<td class="r">${brl(o.fat)}${parte(o.shareFat)}</td>`
       +`<td class="r" style="color:var(--t2)">${brl2(precoUn)}</td>`
       +`<td class="r" style="color:${custoUn>0?'var(--t2)':'var(--t3)'}" title="custo do produto por unidade">${custoUn>0?brl2(custoUn):'—'}</td>`
       +`<td class="r" style="color:${mcUn<0?'#f87171':'var(--t1)'}">${brl2(mcUn)}</td>`
       +(hasAds
-        ? mcCell(o.mc,o.mcp,false)
-          +`<td class="r" style="color:${o.adsInv>0?'#f87171':'var(--t3)'}" title="margem sacrificada em Ads">${o.adsInv>0?'− '+brl(o.adsInv):'—'}</td>`
-          +mcCell(o.mcPosAds,(o.mcpFinal!=null?o.mcpFinal:o.mcp),true)
-        : mcCell(o.mc,o.mcp,true))
+        ? mcCell(o.mc,o.mcp,false,o.shareMC)
+          +`<td class="r" style="color:var(--t2)">${o.adsRec>0?brl(o.adsRec):'—'}</td>`
+          +`<td class="r" style="color:${o.adsInv>0?'#f87171':'var(--t3)'}">${o.adsInv>0?brl(o.adsInv):'—'}</td>`
+          +`<td class="r">${tacosCell(o)}</td>`
+          +mcCell(o.mcPosAds,(o.mcpFinal!=null?o.mcpFinal:o.mcp),true,shareFin)
+        : mcCell(o.mc,o.mcp,true,o.shareMC))
       +`<td><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:100px;background:${s[1]}22;color:${s[1]}">${s[0]}</span></td></tr>`;
   });
+  if(lin.length){
+    const tQ=lin.reduce((s,o)=>s+o.qtd,0), tF=lin.reduce((s,o)=>s+o.fat,0), tMc=lin.reduce((s,o)=>s+o.mc,0);
+    const tRec=lin.reduce((s,o)=>s+(o.adsRec||0),0), tInv=lin.reduce((s,o)=>s+(o.adsInv||0),0), tFin=lin.reduce((s,o)=>s+(o.mcPosAds!=null?o.mcPosAds:o.mc),0);
+    const pQ=100*tQ/totQtd, pF=100*tF/totFat, pMc=totMC?100*tMc/totMC:0, pFin=totMC?100*tFin/totMC:0;
+    const tacT=tF>0&&tInv>0?(100*tInv/tF).toFixed(1).replace('.',',')+'%':'—';
+    h+=`<tr style="font-weight:700;background:var(--surf2);"><td>Total da visão</td><td></td>`
+      +`<td class="r">${tQ.toLocaleString('pt-BR')}${parte(pQ)}</td>`
+      +`<td class="r">${brl(tF)}${parte(pF)}</td><td></td><td></td><td></td>`
+      +(hasAds
+        ? `<td class="r">${brl(tMc)}${parte(pMc)}</td><td class="r">${tRec?brl(tRec):'—'}</td><td class="r" style="color:#f87171">${tInv?brl(tInv):'—'}</td><td class="r">${tacT}</td><td class="r">${brl(tFin)}${parte(pFin)}</td>`
+        : `<td class="r">${brl(tMc)}${parte(pMc)}</td>`)
+      +`<td></td></tr>`;
+  }
   if(!lin.length) h+=`<tr><td colspan="${ncol}" style="text-align:center;color:var(--t3);padding:24px">${_gpQuery?'Nada encontrado.':'Sem vendas no período para esta operação.'}</td></tr>`;
   h+='</tbody>'; tb.innerHTML=h;
+  _GP_LIN=lin; _GP_HASADS=hasAds; _GP_POR=porAnuncio;
   const leg=document.getElementById('gp-legenda');
-  if(leg) leg.innerHTML=`<b>Por unidade:</b> Preço − Custo = Margem/un. ${hasAds?`<b>No total:</b> Faturamento → <b>MC s/ Ads</b> (lucro bruto) <b>− Ads</b> = <b>MC final</b> — o % embaixo de cada uma. A diferença entre MC s/ Ads e MC final é o <b>impacto do Ads</b>. A <b>Situação</b> decide pela margem final. `:'<b>MC total</b> = lucro bruto do produto no período. '}${lin.length} ${porAnuncio?'anúncios':'SKUs'}.`;
+  if(leg) leg.innerHTML=`O número de baixo em <b>Qtd</b>, <b>Faturamento</b> e <b>Margem</b> é a parte deste ${porAnuncio?'anúncio':'SKU'} no total da operação. ${hasAds?'<b>Fat. Ads</b> é o que o relatório atribuiu à campanha · <b>Invest. Ads</b> é o gasto · <b>TACOS</b> = gasto ÷ faturamento do anúncio · <b>MC s/ Ads</b> é o lucro antes da mídia e <b>MC final</b> é o que sobra depois. A situação usa a margem final. ':'A visão por SKU não separa o Ads: o investimento vem por anúncio. '}${lin.length} ${porAnuncio?'anúncios':'SKUs'}.`;
+}
+let _GP_LIN=[], _GP_HASADS=false, _GP_POR=true;
+function exportGerProdutosCSV(){
+  const rows=_GP_LIN||[];
+  if(!rows.length){ alert('Nenhum anúncio na visão atual.'); return; }
+  const csvEsc=t=>{ const s=String(t==null?'':t); return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const n2=v=> (v==null||!isFinite(+v))?'':(+v).toFixed(2);
+  const cab=['Titulo',_GP_POR?'Anuncio':'SKU','Relevancia','Qtd','Part_volume_%','Faturamento','Part_faturamento_%','Preco_un','Custo_un','Margem_un','MC_antes_Ads','MC_antes_%','Part_margem_%'];
+  if(_GP_HASADS) cab.push('Faturamento_Ads','Investimento_Ads','TACOS_%','ACOS_%','MC_final','MC_final_%','Part_margem_final_%');
+  cab.push('Situacao');
+  const lin=rows.map(o=>{
+    const preco=o.qtd?o.fat/o.qtd:0, custo=o.qtd?o.ctp/o.qtd:0, mcUn=o.qtd?o.mc/o.qtd:0;
+    const base=[o.tit,_GP_POR?o.anuncio:o.sku,o.aF,o.qtd,n2(o.shareVol),n2(o.fat),n2(o.shareFat),n2(preco),n2(custo),n2(mcUn),n2(o.mc),n2(o.mcp),n2(o.shareMC)];
+    if(_GP_HASADS){
+      const tac=o.fat>0&&o.adsInv>0?100*o.adsInv/o.fat:'';
+      base.push(n2(o.adsRec),n2(o.adsInv),tac===''?'':n2(tac),isFinite(o.acos)?n2(o.acos):'',n2(o.mcPosAds),n2(o.mcpFinal),n2(o.shareFin));
+    }
+    base.push(o._sitNome||'');
+    return base.map(csvEsc).join(';');
+  });
+  const csv='﻿'+cab.join(';')+'\n'+lin.join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='Anuncios_'+(GER_OP||'operacao').replace(/\s+/g,'').replace(/\|\|/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
 }
 
 // ═══════════ PUBLICIDADE (Ads) ═══════════
@@ -3157,6 +3205,7 @@ function _renderGerPubCamp(arr,campOfficial,mkt,ch,tb,sub,ttl,soCamp,opMcp){
   });
   if(!lin.length) h+=`<tr><td colspan="13" style="text-align:center;color:var(--t3);padding:24px">Nenhuma campanha neste filtro.</td></tr>`;
   h+='</tbody>'; tb.innerHTML=h;
+  _GA_EXP={tipo:'camp', rows:lin};
 }
 
 // ── visão POR ANÚNCIO (agenda de ações + tabela) ──
@@ -3167,7 +3216,8 @@ function _renderGerPubAnuncio(arr,ch,tb,sub,ttl,afil,opMcp){
   if(ttl) ttl.textContent = afil?'📣 Afiliados · por produto':'📣 Anúncios patrocinados';
   if(sub) sub.textContent = afil
     ? ('Afiliados Shopee: comissão por produto. Margem por produto indisponível (relatório traz item_id, a venda traz SKU) — estimada pela MC% da operação = '+(opMcp>0?opMcp.toFixed(0)+'%':'—')+'.')
-    : 'ACOS × margem (MC%) define quem lucra e quem queima · break-even = MC% (ROAS alvo = 1/MC%).';
+    : 'ACOS × margem (MC%) define quem lucra e quem queima · break-even = MC% (ROAS alvo = 1/MC%). TACOS de cada anúncio está na aba Anúncios.'
+      +(arr.some(o=>(o.impr||0)>0||(o.cli||0)>0)?'':' Este relatório não traz impressões nem cliques — no TikTok o arquivo só vem com custo, pedidos e receita, então CTR, CVR e visitas ficam vazios.');
   const nome=o=>o.tit?esc(o.tit.slice(0,42)):(afil?idNum(o):o.mlb);
   const linhaItem=(o,extra)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--bdr);font-size:12px;">
     ${afil?`<span style="color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;" title="${esc(o.tit||idNum(o))}">${nome(o)}</span>`:`<a href="${linkA(o.mlb)}" target="_blank" rel="noopener" style="color:var(--t1);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;" title="${esc(o.tit||o.mlb)}">${nome(o)} ↗</a>`}
@@ -3194,7 +3244,7 @@ function _renderGerPubAnuncio(arr,ch,tb,sub,ttl,afil,opMcp){
   const chip=(v,l,cor)=>{const on=GER_AFILT===v;const n=v===''?arr.length:cnt[v];if(v!==''&&!n)return'';return `<span onclick="gerAFilt('${v}')" style="cursor:pointer;font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;border:1px solid ${on?cor:'var(--bdr2)'};background:${on?cor+'22':'transparent'};color:${on?cor:'var(--t2)'};white-space:nowrap;">${l} ${n}</span>`;};
   ch.innerHTML=chip('','Todos','var(--a)')+chip('queima','🔥 Queima','#f87171')+chip('semv','🕳️ Sem retorno','#dc2626')+chip('escala','🚀 Escale','#4f8ef7')+chip('lucra','✅ Lucra','#22c55e');
   let view=arr; if(GER_AFILT) view=view.filter(o=>o.vered===GER_AFILT);
-  const sv={tit:o=>o.tit||o.mlb,inv:o=>o.inv,rec:o=>o.recAds,acos:o=>isFinite(o.acos)?o.acos:9e9,mcp:o=>o.mcp,roas:o=>o.roas,res:o=>o.resultado,ctr:o=>o.ctr,cvr:o=>o.cvr,vis:o=>o.vis}[GER_ASORT.col]||(o=>o.inv);
+  const sv={tit:o=>o.tit||o.mlb,inv:o=>o.inv,rec:o=>o.recAds,acos:o=>isFinite(o.acos)?o.acos:9e9,mcp:o=>o.mcp,roas:o=>o.roas,res:o=>o.resultado,impr:o=>o.impr||0,cli:o=>o.cli||0,ctr:o=>o.ctr,cvr:o=>o.cvr,vis:o=>o.vis}[GER_ASORT.col]||(o=>o.inv);
   const lin=view.slice().sort((a,b)=>{const x=sv(a),y=sv(b);const c=(typeof x==='string')?String(x).localeCompare(String(y)):(x-y);return (c*GER_ASORT.dir)||(b.inv-a.inv);});
   const scc=c=>GER_ASORT.col===c?(GER_ASORT.dir<0?' ▾':' ▴'):'';
   const stk='position:sticky;top:0;background:var(--surf2);z-index:3;';
@@ -3204,7 +3254,8 @@ function _renderGerPubAnuncio(arr,ch,tb,sub,ttl,afil,opMcp){
     +th('inv','Invest','Investimento em Ads')+th('rec','Rec. Ads','Receita atribuída ao Ads')
     +th('acos','ACOS','Investimento ÷ receita-Ads')+th('mcp','MC%','Margem do anúncio (break-even do ACOS)')
     +th('roas','ROAS','Receita-Ads ÷ investimento')+th('res','Resultado','Margem gerada − investimento')
-    +th('ctr','CTR','Cliques ÷ impressões')+th('cvr','CVR','Vendas ÷ cliques')+th('vis','Visitas','Visitas únicas')
+    +th('impr','Impressões','Vezes que o anúncio apareceu')+th('cli','Cliques','Cliques no anúncio')
+    +th('ctr','CTR','Cliques ÷ impressões')+th('cvr','CVR','Vendas ÷ cliques')+th('vis','Visitas','Visitas únicas, quando o relatório traz')
     +`<th style="${stk}">Veredito</th></tr></thead><tbody>`;
   lin.forEach(o=>{
     const vd=_VERED[o.vered];
@@ -3215,13 +3266,36 @@ function _renderGerPubAnuncio(arr,ch,tb,sub,ttl,afil,opMcp){
       +`<td class="r"${o.est?' title="estimado pela MC% da operação (afiliados: sem margem por produto)"':''}>${o.fat>0?(o.est?'~':'')+mcPct(o.mcp,0):'<span style=\"color:var(--t3)\">—</span>'}</td>`
       +`<td class="r" style="color:var(--t2)">${o.roas>0?o.roas.toFixed(1):'—'}</td>`
       +`<td class="r" style="color:${o.resultado<0?'#f87171':'var(--t1)'}">${brl(o.resultado)}</td>`
+      +`<td class="r" style="color:var(--t2)">${o.impr?Math.round(o.impr).toLocaleString('pt-BR'):'—'}</td>`
+      +`<td class="r" style="color:var(--t2)">${o.cli?Math.round(o.cli).toLocaleString('pt-BR'):'—'}</td>`
       +`<td class="r" style="color:var(--t3)">${o.impr>0?o.ctr.toFixed(1)+'%':'—'}</td>`
       +`<td class="r" style="color:var(--t3)">${o.cli>0?o.cvr.toFixed(0)+'%':'—'}</td>`
       +`<td class="r" style="color:var(--t3)">${o.vis||'—'}</td>`
       +`<td><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:100px;background:${vd[1]}22;color:${vd[1]}">${vd[0]}</span></td></tr>`;
   });
-  if(!lin.length) h+=`<tr><td colspan="11" style="text-align:center;color:var(--t3);padding:24px">Nenhum anúncio neste filtro.</td></tr>`;
+  if(!lin.length) h+=`<tr><td colspan="13" style="text-align:center;color:var(--t3);padding:24px">Nenhum anúncio neste filtro.</td></tr>`;
   h+='</tbody>'; tb.innerHTML=h;
+  _GA_EXP={tipo:'anuncio', rows:lin, afil:!!afil};
+}
+let _GA_EXP={tipo:'', rows:[]};
+function exportGerPublicidadeCSV(){
+  const exp=_GA_EXP||{rows:[]};
+  const rows=exp.rows||[];
+  if(!rows.length){ alert('Nenhuma linha na visão atual.'); return; }
+  const csvEsc=t=>{ const s=String(t==null?'':t); return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const n2=v=>(v==null||!isFinite(+v))?'':(+v).toFixed(2);
+  let cab, lin;
+  if(exp.tipo==='camp'){
+    cab=['Campanha','Status','Orcamento_dia','Investimento','Receita_Ads','ACOS_%','ROAS','ROAS_objetivo','MC_%','MC_pos_Ads','Veredito','Acao','Vendas'];
+    lin=rows.map(r=>[r.nome,r.status,n2(r.orc),n2(r.inv),n2(r.rec),isFinite(r.acos)?n2(r.acos):'',n2(r.roas),r.obj?n2(r.obj):'',n2(r.mcp),n2(r.mcPos),(typeof _VERED!=='undefined'&&_VERED[r.vered]?_VERED[r.vered][0]:r.vered),(r.acao&&r.acao.t)||'',r.vatr||''].map(csvEsc).join(';'));
+  } else {
+    cab=['Anuncio','Id','Investimento','Receita_Ads','ACOS_%','MC_%','ROAS','Resultado','Impressoes','Cliques','CTR_%','CVR_%','Visitas','Veredito'];
+    lin=rows.map(o=>[o.tit||'',o.mlb||'',n2(o.inv),n2(o.recAds),isFinite(o.acos)?n2(o.acos):'',n2(o.mcp),n2(o.roas),n2(o.resultado),Math.round(o.impr||0),Math.round(o.cli||0),o.impr>0?n2(o.ctr):'',o.cli>0?n2(o.cvr):'',o.vis||'',(typeof _VERED!=='undefined'&&_VERED[o.vered]?_VERED[o.vered][0]:o.vered)].map(csvEsc).join(';'));
+  }
+  const csv='﻿'+cab.join(';')+'\n'+lin.join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='Publicidade_'+(GER_OP||'operacao').replace(/\s+/g,'').replace(/\|\|/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
 }
 
 // ÚNICA fonte de verdade da visibilidade dos painéis da Gerencial.
@@ -5683,6 +5757,34 @@ function _renderGerMetas(){
     <div class="kpi-eye" style="color:${c}">${eye}</div><div class="kpi-val" style="font-size:22px">${val}</div>
     <div class="kpi-pct" style="color:var(--t2)">${linha1}</div>${linha2?`<div class="kpi-sub">${linha2}</div>`:''}${r!=null?barra(r,c):''}<div class="kpi-accent" style="background:${c}"></div></div>`;
   const atFat=metaFatT?fatPT/metaFatT:0, atMc=metaMcT?mcRT/metaMcT:0, atTac=metaTacT?(tacRT<=metaTacT?1:metaTacT/tacRT):1, atBon=bonusMaxT?bonusPT/bonusMaxT:0;
+  if(metaFatT>0&&!fechado){
+    const opsKeys=new Set(ops.map(o=>o.l.operacao));
+    const iso=d=>_MET_MES+'-'+String(d).padStart(2,'0');
+    const diaHoje=Math.min(dm, Math.max(1,dd||1));
+    const dow=new Date(Date.UTC(yy,mm-1,diaHoje)).getUTCDay();
+    const seg=diaHoje-(dow===0?6:dow-1), dom=seg+6;
+    let pSem=0;
+    for(let i=Math.max(1,seg); i<=Math.min(dm,dom); i++) pSem+=pesoDia(i);
+    const totW=cumW[dm]||1;
+    const metaDia=metaFatT*pesoDia(diaHoje)/totW;
+    const metaSem=metaFatT*pSem/totW;
+    let fatHoje=0, fatSem=0;
+    const dA=iso(Math.max(1,seg)), dB=iso(Math.min(dm, Math.min(dom, diaHoje))), dH=iso(diaHoje);
+    for(const r of R0){
+      if(!r.date||!opsKeys.has((r.emp||'')+' · '+(r.mkt||''))) continue;
+      const f=+r.fat||0;
+      if(r.date===dH) fatHoje+=f;
+      if(r.date>=dA&&r.date<=dB) fatSem+=f;
+    }
+    const cardM=(olho,val,sub,c)=>`<div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:14px;padding:16px 18px;border-top:3px solid ${c};"><div style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:${c};">${olho}</div><div style="font-size:28px;font-weight:800;color:var(--t);margin-top:6px;line-height:1.1;">${val}</div><div style="font-size:13px;color:var(--t2);margin-top:6px;line-height:1.45;">${sub}</div></div>`;
+    const pDia=metaDia?Math.round(100*fatHoje/metaDia):0, pSemR=metaSem?Math.round(100*fatSem/metaSem):0, pMes=Math.round(100*fatRT/metaFatT);
+    h+=`<div class="sl" style="margin-top:16px;">Meta prática · ${escopo}</div>`
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">'
+      +cardM('Meta de hoje', bk(metaDia), 'já entrou '+bk(fatHoje)+' · '+pDia+'% do dia'+(parcial?' · o dia ainda não fechou':'')+'. O dia pesa pelo histórico de sábado e domingo.', '#4f8ef7')
+      +cardM('Meta da semana', bk(metaSem), 'de segunda a domingo, só os dias deste mês · já entrou '+bk(fatSem)+' · '+pSemR+'%.', '#a78bfa')
+      +cardM('Meta do mês', bk(metaFatT), 'até agora '+bk(fatRT)+' · '+pMes+'% · no ritmo fecha em '+bk(fatPT)+(resta?(' · faltam '+bk(Math.max(0,metaFatT-fatRT))+' em '+resta+' dias'):''), corAt(fatPT/metaFatT))
+      +'</div>';
+  }
   h+=`<div class="sl" style="margin-top:16px;">Progresso do mês · ${escopo}</div>`
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;">'
     +kpi((fechado?'💰 Bônus do mês':'💰 Bônus projetado')+qq('met_bonus'),bk(bonusPT),'#22c55e','de '+bk(bonusMaxT)+' possíveis ('+Math.round(100*atBon)+'%)',fechado?'':'se fechasse hoje: '+bk(bonusHojeT),atBon)
@@ -5946,6 +6048,34 @@ function _renderGerComissao(){
     db.innerHTML=hi;
   }
 }
+// forma_entrega e veio_de_ads não vêm no /api/detalhe (148k linhas: 16 campos a mais estouraram a memória).
+// A abertura é por operação. Antes só a aba Vendas pedia; o Panorama lia a base crua e desenhava
+// "não informado" em 100% e o orgânico × Ads caía no relatório de campanha.
+let _gerAbCache={};
+function _gerGaranteAbertura(emp,mkt){
+  if(!emp||!mkt||typeof authFetch!=='function'||typeof DETALHE==='undefined') return;
+  const key=emp+'||'+mkt;
+  if(_gerAbCache[key]) return;
+  _gerAbCache[key]='carregando';
+  authFetch('/api/abertura?emp='+encodeURIComponent(emp)+'&mkt='+encodeURIComponent(mkt),{cache:'no-store'})
+    .then(r=>r.ok?r.json():null)
+    .then(d=>{
+      if(!d||!d.abertura){ _gerAbCache[key]=0; return; }
+      const idx={}; d.abertura.forEach(a=>{ if(a&&a.k) idx[a.k]=a; });
+      let n=0;
+      DETALHE.forEach(r=>{
+        if(r.emp!==emp||r.mkt!==mkt) return;
+        const a=idx[(r.ped||'')+'|'+(r.sku||'')+'|'+r.date+'|'+(r.mkt||'')];
+        if(!a) return;
+        for(const c in a){ if(c!=='k') r[c]=a[c]; }
+        n++;
+      });
+      _gerAbCache[key]='ok';
+      if(typeof activePage!=='undefined'&&activePage==='gerencial'&&GER_OP===key){ try{ renderGerencial(); }catch(e){} }
+    })
+    .catch(()=>{ _gerAbCache[key]=0; });
+}
+window._gerGaranteAbertura=_gerGaranteAbertura;
 function renderGerencial(){
   const empSel=document.getElementById('ger-sel-emp'), vazio=document.getElementById('ger-empty');
   const kp=document.getElementById('ger-kpis'), al=document.getElementById('ger-alerts');
@@ -5994,6 +6124,7 @@ function renderGerencial(){
   if(!GER_OP){ vazio.style.display='block'; vazio.innerHTML='Escolha <b>empresa</b> e <b>marketplace</b> acima para ver a operação.<div style="margin-top:10px;font-size:12px;color:var(--t3)">Procurando o placar de tratativas ou a comissão dos gestores? Estão em <b>Acompanhamento</b>, acima — não dependem de escolher operação.</div>'; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); _gerPainel(); _gerSubHighlight(); return; }
   vazio.style.display='none'; corpo.style.display='block';
   const [emp,mkt]=GER_OP.split('||');
+  _gerGaranteAbertura(emp,mkt);
   const [ps,pe]=getR();
   const daOp=r=>r.emp===emp&&r.mkt===mkt;
   const noPer=(r,a,b)=>r.date>=a&&r.date<=b;
@@ -6069,32 +6200,60 @@ function renderGerencial(){
         y:{position:'left',ticks:{color:tc,font:{size:10},callback:v=>brlK?brlK(v):v},grid:{color:gc}},
         y1:{position:'right',ticks:{color:tc,font:{size:10},callback:v=>v.toFixed(0)+'%'},grid:{display:false}}}}});
 
-  const mixe={};
-  A.linhas.forEach(r=>{const k=(r.ent||'').trim()||'(não informado)';mixe[k]=(mixe[k]||0)+(+r.fat||0);});
-  const me=Object.entries(mixe).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const paleta=['#4f8ef7','#f59e0b','#22c55e','#a78bfa','#f472b6','#38bdf8'];
-  dc('c-ger-mod');charts['c-ger-mod']=new Chart(document.getElementById('c-ger-mod'),{type:'doughnut',
-    data:{labels:me.map(x=>x[0]),datasets:[{data:me.map(x=>x[1]),backgroundColor:paleta,borderWidth:2,borderColor:isDark?'#101520':'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'56%',animation:{duration:300},
-      plugins:{legend:{position:'right',labels:{color:tc,font:{family:'Inter',size:11},padding:8}},
-        tooltip:{callbacks:{label:c=>c.label+': '+brl(c.raw)+' ('+(A.fat?(100*c.raw/A.fat).toFixed(0):0)+'%)'}}}}});
+  const mixe={}; let comEnt=0;
+  A.linhas.forEach(r=>{ const raw=(r.ent||'').trim(); if(!raw) return; const k=envioLabel(raw); comEnt++; mixe[k]=(mixe[k]||0)+(+r.fat||0); });
+  const boxMod=document.getElementById('ger-mod-box');
+  const subMod=document.getElementById('ger-mod-sub');
+  dc('c-ger-mod');
+  if(!comEnt){
+    const ab=_gerAbCache[emp+'||'+mkt];
+    if(boxMod) boxMod.innerHTML='<div style="padding:26px;text-align:center;color:var(--t3);font-size:12.5px;line-height:1.6;font-family:\'Inter\',sans-serif;">'+(ab==='carregando'?'Carregando a modalidade de envio…':(ab==='ok'?'O relatório desta operação não traz a forma de envio de cada venda.':'A modalidade de envio entra com a abertura desta operação.'))+'</div>';
+    if(subMod) subMod.textContent=ab==='ok'?'Sem modalidade no relatório':'Como sai o faturamento da operação';
+  } else {
+    if(boxMod&&!document.getElementById('c-ger-mod')) boxMod.innerHTML='<div style="position:relative;height:230px;"><canvas id="c-ger-mod"></canvas></div>';
+    if(subMod) subMod.textContent='Como sai o faturamento da operação';
+    const me=Object.entries(mixe).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const paleta=['#4f8ef7','#f59e0b','#22c55e','#a78bfa','#f472b6','#38bdf8'];
+    charts['c-ger-mod']=new Chart(document.getElementById('c-ger-mod'),{type:'doughnut',
+      data:{labels:me.map(x=>x[0]),datasets:[{data:me.map(x=>x[1]),backgroundColor:paleta,borderWidth:2,borderColor:isDark?'#101520':'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'56%',animation:{duration:300},
+        plugins:{legend:{position:'right',labels:{color:tc,font:{family:'Inter',size:11},padding:8}},
+          tooltip:{callbacks:{label:c=>c.label+': '+brl(c.raw)+' ('+(A.fat?(100*c.raw/A.fat).toFixed(0):0)+'%)'}}}}});
+  }
 
-  // marcação por venda (sim/não) quando o relatório traz; senão, a receita atribuída ao Ads no próprio relatório de Ads
-  // (antes: ML com marcação vazia/"não" saía 100% orgânico mesmo com R$ 27 mil vindos de Ads em out/26)
-  const _marcaSim=A.linhas.some(r=>/^(sim|s|1|true)$/i.test(String(r.ads||'').trim()));
-  let _recAds=0; if(!_marcaSim){ try{ _recAds=Object.values(_adsIndex(emp,mkt,ps,pe)).reduce((s2,a)=>s2+(a.recAds||0),0)||Object.values(_adsCampList(emp,mkt,ps,pe)).reduce((s2,c)=>s2+(c.rec||0),0); }catch(e){} }
-  const temAds=_marcaSim||_recAds>0;
+  // Marcação venda a venda (Sim/Não) quando o coletor grava veio_de_ads — é o caso do Mercado Livre.
+  // Sem essa marca (TikTok e outros), a receita do relatório de campanha NÃO é orgânico × pago:
+  // no GMV Max o TikTok atribui quase todo o faturamento a "Receita bruta".
+  const _adsSim=s=>/^(sim|s|1|true)$/i.test(String(s||'').trim());
+  const _marcaSim=A.linhas.some(r=>_adsSim(r.ads));
+  const abAds=_gerAbCache[emp+'||'+mkt];
+  let _recAds=0;
+  if(!_marcaSim&&abAds!=='carregando'){ try{ _recAds=Object.values(_adsIndex(emp,mkt,ps,pe)).reduce((s2,a)=>s2+(a.recAds||0),0)||Object.values(_adsCampList(emp,mkt,ps,pe)).reduce((s2,c)=>s2+(c.rec||0),0); }catch(e){} }
   const boxAds=document.getElementById('ger-ads-box');
-  if(!temAds){
-    if(boxAds) boxAds.innerHTML='<div style="padding:26px;text-align:center;color:var(--t3);font-size:12.5px;font-family:\'Inter\',sans-serif;">Esta operação não tem marcação de origem (Ads) nos relatórios.</div>';
-    dc('c-ger-ads');
+  const subAds=document.getElementById('ger-ads-sub');
+  const nota=(txt)=>{ if(boxAds) boxAds.innerHTML='<div style="padding:22px 16px;text-align:center;color:var(--t3);font-size:12.5px;line-height:1.6;font-family:\'Inter\',sans-serif;">'+txt+'</div>'; dc('c-ger-ads'); };
+  if(abAds==='carregando'&&!_marcaSim){
+    nota('Carregando a origem de cada venda…');
+    if(subAds) subAds.textContent='Quanto do faturamento depende de mídia paga';
+  } else if(!_marcaSim&&!_recAds){
+    nota('Esta operação não marca cada venda como paga ou orgânica, e o relatório de Ads não trouxe receita atribuída no período.');
+    if(subAds) subAds.textContent='Sem origem por venda neste canal';
   } else {
     if(boxAds&&!document.getElementById('c-ger-ads')) boxAds.innerHTML='<div style="position:relative;height:230px;"><canvas id="c-ger-ads"></canvas></div>';
-    let pago=0,org=0;
-    if(_marcaSim) A.linhas.forEach(r=>{const v=+r.fat||0; if(/^(sim|s|1|true)$/i.test(String(r.ads||'').trim())) pago+=v; else org+=v;});
-    else { pago=Math.min(_recAds,A.fat); org=Math.max(0,A.fat-pago); }
+    let pago=0,org=0,labP='Via Ads',labO='Orgânico';
+    if(_marcaSim){
+      A.linhas.forEach(r=>{const v=+r.fat||0; if(_adsSim(r.ads)) pago+=v; else org+=v;});
+      if(subAds) subAds.textContent='Cada venda marcada no relatório como veio ou não de publicidade';
+    } else {
+      pago=Math.min(_recAds,A.fat); org=Math.max(0,A.fat-pago);
+      labP='Atribuído pelo Ads'; labO='Fora do relatório';
+      const tik=/tiktok/i.test(mkt||'');
+      if(subAds) subAds.textContent=tik
+        ? 'TikTok não marca a venda. A fatia laranja é a receita bruta do relatório de campanha — no GMV Max isso cobre quase todo pedido com contato de anúncio, não é orgânico contra pago.'
+        : 'Este canal não marca a venda. A fatia laranja é a receita que o relatório de Ads atribui à campanha, não a origem de cada pedido.';
+    }
     dc('c-ger-ads');charts['c-ger-ads']=new Chart(document.getElementById('c-ger-ads'),{type:'doughnut',
-      data:{labels:['Orgânico','Via Ads'],datasets:[{data:[org,pago],backgroundColor:['#00c2a8','#f59e0b'],borderWidth:2,borderColor:isDark?'#101520':'#fff'}]},
+      data:{labels:[labO,labP],datasets:[{data:[org,pago],backgroundColor:['#00c2a8','#f59e0b'],borderWidth:2,borderColor:isDark?'#101520':'#fff'}]},
       options:{responsive:true,maintainAspectRatio:false,cutout:'56%',animation:{duration:300},
         plugins:{legend:{position:'right',labels:{color:tc,font:{family:'Inter',size:11},padding:8}},
           tooltip:{callbacks:{label:c=>c.label+': '+brl(c.raw)+' ('+(A.fat?(100*c.raw/A.fat).toFixed(0):0)+'%)'}}}}});
@@ -10985,24 +11144,8 @@ renderAll();
   if (typeof _origGV === 'function') {
     window._renderGerVendas = function(rows, mkt){
       try{
-        if(rows && rows.length){
-          var emp = rows[0].emp, key = emp+'||'+mkt;
-          if(!_abCache[key]){
-            _abCache[key] = 1;   // marca ANTES do fetch: a aba re-renderiza várias vezes
-            authFetch('/api/abertura?emp='+encodeURIComponent(emp)+'&mkt='+encodeURIComponent(mkt),{cache:'no-store'})
-              .then(function(r){ return r.ok ? r.json() : null; })
-              .then(function(d){
-                if(!d || !d.abertura) return;
-                var idx={}; d.abertura.forEach(function(a){ idx[a.k]=a; });
-                // casa pela mesma chave do banco: pedido|sku|data|canal
-                DETALHE.forEach(function(r){
-                  var a = idx[(r.ped||'')+'|'+(r.sku||'')+'|'+r.date+'|'+(r.mkt||'')];
-                  if(a) for(var c in a){ if(c!=='k') r[c]=a[c]; }
-                });
-                if(typeof activePage!=='undefined' && activePage==='gerencial'){ try{ renderPageOnly('gerencial'); }catch(e){} }
-              })
-              .catch(function(e){ _abCache[key]=0; console.error('abertura',e); });
-          }
+        if(rows && rows.length && typeof window._gerGaranteAbertura==='function'){
+          window._gerGaranteAbertura(rows[0].emp, mkt);
         }
       }catch(e){}
       return _origGV.apply(this, arguments);
