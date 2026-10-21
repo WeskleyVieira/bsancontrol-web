@@ -3768,10 +3768,19 @@ ac2.go=function(n){
   ac2.render();
 };
 function ac2Trilha(){
+  const nomeFoco = ac2.foco==='tipo' ? ((AC2_TIPOS.find(t=>t.k===ac2.focoTipo)||{}).curto||'Tipo') : ((AC2_FOCO[ac2.foco]||{}).tit||'');
+  if(ac2.nivel==='coord' && ac2.foco){
+    const quem=[ac2.focoGes, ac2.focoOp].filter(Boolean).join(' · ');
+    const p=[`<button type="button" onclick="ac2.sairRec()">Coordenação</button>`];
+    if(quem){
+      p.push(`<button type="button" onclick="ac2.verFila('${ac2.foco}')">${ac2Esc(nomeFoco)}</button>`);
+      p.push(`<span class="aqui">${ac2Esc(quem)}</span>`);
+    } else p.push(`<span class="aqui">${ac2Esc(nomeFoco)}</span>`);
+    return `<div class="a2-trilha">${p.join('<span class="sep">›</span>')}</div>`;
+  }
   if(ac2.nivel!=='gestor' || !ac2.gestorSel || ac2.preso()) return '';
   const g=ac2.gestorSel, op=ac2.opSel, foco=ac2.foco;
   const nomeOp = op==='__todas__' ? 'Todas as operações' : (op||'');
-  const nomeFoco = foco==='tipo' ? ((AC2_TIPOS.find(t=>t.k===ac2.focoTipo)||{}).curto||'Tipo') : ((AC2_FOCO[foco]||{}).tit||'');
   const p=[];
   p.push(`<button type="button" onclick="ac2.goGes(null,'gestor')">Gestores</button>`);
   if(!nomeOp && !foco) p.push(`<span class="aqui">${ac2Esc(g)}</span>`);
@@ -3793,15 +3802,16 @@ ac2.render=function(){
     sb.innerHTML=[['tarefas','📋 Tarefas',nT,'margem, prejuízo, queima, devolução'],['promos','🏷️ Promos',nP,'promoções do Mercado Livre']]
       .map(x=>'<button class="a2-subb '+(ac2.sub===x[0]?'on':'')+'" onclick="ac2.setSub(\''+x[0]+'\')" title="'+x[3]+'">'+x[1]+' <span class="a2-subn">'+x[2]+'</span></button>').join('')
       +'<button class="a2-subb off" disabled title="em construção">📦 Anúncios <span class="a2-subn">em breve</span></button>'; }
+  const subCoord = (ac2.nivel==='coord' && ac2.foco) ? ac2Esc((ac2.foco==='tipo' ? ((AC2_TIPOS.find(t=>t.k===ac2.focoTipo)||{}).curto) : (AC2_FOCO[ac2.foco]||{}).tit) || 'fila') : 'a fila do dia';
   const subGestor = (!ac2.preso() && ac2.gestorSel) ? ac2Esc(ac2.gestorSel) : 'a lista dele';
-  lv.innerHTML=[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor',subGestor]].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('')
+  lv.innerHTML=[['direcao','Direção','o veredito'],['coord','Coordenação',subCoord],['gestor','Gestor',subGestor]].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('')
     +'<span class="a2-lvsep"></span>'
     +[['filtrar','🔎 Filtrar'],['comparar','📊 Comparar']].map(x=>`<button class="a2-lvb ${(ac2.cmp?'comparar':'filtrar')===x[0]?'on':''}" onclick="ac2.setCmp('${x[0]}')">${x[1]}</button>`).join('')
     +'<button class="a2-lvb" onclick="ac2Fotos()" title="Gera UMA imagem nítida com os indicadores do topo e o momento de cada gestor, pronta para colar no grupo">📷 Imagem p/ o grupo</button>';
   ac2RenderFiltros();
   const cmpMode=ac2.cmp && ac2.nivel!=='gestor';
   if(ac2.nivel==='direcao'){ kpi.innerHTML=ac2DirHero(); body.innerHTML=cmpMode?ac2Comparar():ac2DirScore(); }
-  else if(ac2.nivel==='coord'){ kpi.innerHTML=ac2TopoCoord(); body.innerHTML=cmpMode?ac2Comparar():(ac2.foco?ac2ListaFoco(ac2.filt(),ac2.foco):ac2Coord()); if(ac2.foco&&!cmpMode) ac2CarregaResumos(); }
+  else if(ac2.nivel==='coord'){ kpi.innerHTML=ac2Trilha()+ac2TopoCoord(); body.innerHTML=cmpMode?ac2Comparar():(ac2.foco?ac2ListaFoco(ac2.filt(),ac2.foco):ac2Coord()); if(ac2.foco&&!cmpMode) ac2CarregaResumos(); }
   else { kpi.innerHTML=ac2Trilha()+ac2TopoGestor(); body.innerHTML=ac2Gestor(); ac2CarregaResumos(); }
 };
 ac2.setModo=function(m){ ac2.modo=m; ac2.render(); };
@@ -4190,8 +4200,7 @@ function ac2ListaFoco(li, foco){
   const rec = ac2ItensFoco(base, foco);
   const quem = [ac2.focoGes, ac2.focoOp].filter(Boolean).join(' · ');
   const tinfo = foco==='tipo' ? (AC2_TIPOS.find(t=>t.k===ac2.focoTipo)||null) : null;
-  const topo = `<div class="a2-sh">${tinfo?tinfo.curto:meta.tit}${quem?' · '+ac2Esc(quem):''}<small>${cobra?meta.subC:meta.subG}</small></div>
-    <div style="margin:2px 0 8px"><button type="button" onclick="ac2.sairRec()" class="a2-btn-lin">← voltar</button></div>`;
+  const topo = `<div class="a2-sh">${tinfo?tinfo.curto:meta.tit}${quem?' · '+ac2Esc(quem):''}<small>${cobra?meta.subC:meta.subG}</small></div>`;
   if(!rec.length) return topo+`<div class="a2-vazio">Nada nesta fila para o recorte atual.</div>`;
   const modoItem = i => {
     if(cobra) return 'cobrar';
