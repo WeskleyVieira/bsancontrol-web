@@ -3308,6 +3308,11 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-lvb small{font-weight:500;font-size:11px;color:var(--c-mut);margin-left:4px}
 #ac2-root .a2-lvb.on{color:var(--c-ink);border-bottom-color:var(--c-acc)}
 #ac2-root .a2-lvsep{flex:0 0 auto;align-self:center;width:1px;height:20px;background:var(--c-ln);margin:0 10px}
+#ac2-root .a2-trilha{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+#ac2-root .a2-trilha button{font:inherit;font-size:12.5px;font-weight:700;color:var(--c-acc);background:transparent;border:1px solid var(--c-acc);border-radius:8px;padding:5px 10px;cursor:pointer}
+#ac2-root .a2-trilha button:hover{background:rgba(79,142,247,.12)}
+#ac2-root .a2-trilha .aqui{font-size:12.5px;font-weight:700;color:var(--c-ink)}
+#ac2-root .a2-trilha .sep{color:var(--c-mut)}
 #ac2-root .a2-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
 #ac2-root .a2-dd{position:relative}
 #ac2-root .a2-db{display:inline-flex;align-items:center;gap:6px;background:var(--c-s2);border:1px solid var(--c-ln);border-radius:9px;padding:6px 11px;font-size:12.5px;font-weight:600;color:var(--c-ink);cursor:pointer}
@@ -3753,7 +3758,29 @@ ac2.daSub=function(i){ return ac2.sub==='promos' ? AC2_ISPROMO(i) : !AC2_ISPROMO
 ac2.setSub=function(s){ if(ac2.sub===s) return; ac2.sub=s; AC2_TIPOS = s==='promos' ? AC2_TIPOS_PROMO : AC2_TIPOS_TAREFAS;
   AC2_TIPO_FILTRO=''; AC2_DIR_TIPO=''; ac2.opSel=null; ac2.render(); };
 ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risco:l.reduce((s,i)=>s+i.risco,0), prej:prej.length, riscoPrej:prej.reduce((s,i)=>s+i.risco,0), corr:l.length-prej.length}; };
-ac2.go=function(n){ ac2.nivel=n; ac2.foco=null; ac2.focoDe=null; ac2.focoGes=null; ac2.focoOp=null; ac2.focoTipo=''; if(n!=='gestor'){ac2.gestorSel=null;ac2.opSel=null;} ac2.render(); };
+ac2.preso=function(){ return typeof BCAUTH!=='undefined' && BCAUTH.user && BCAUTH.user.perfil==='gestor'; };
+ac2.go=function(n){
+  const mesmo = ac2.nivel===n;
+  ac2.nivel=n; ac2.foco=null; ac2.focoDe=null; ac2.focoGes=null; ac2.focoOp=null; ac2.focoTipo='';
+  if(n!=='gestor'){ ac2.gestorSel=null; ac2.opSel=null; }
+  else if(ac2.preso()){ ac2.gestorSel=(BCAUTH.user&&BCAUTH.user.gestor_ref)||ac2.gestorSel; }
+  else if(mesmo){ ac2.gestorSel=null; ac2.opSel=null; }
+  ac2.render();
+};
+function ac2Trilha(){
+  if(ac2.nivel!=='gestor' || !ac2.gestorSel || ac2.preso()) return '';
+  const g=ac2.gestorSel, op=ac2.opSel, foco=ac2.foco;
+  const nomeOp = op==='__todas__' ? 'Todas as operações' : (op||'');
+  const nomeFoco = foco==='tipo' ? ((AC2_TIPOS.find(t=>t.k===ac2.focoTipo)||{}).curto||'Tipo') : ((AC2_FOCO[foco]||{}).tit||'');
+  const p=[];
+  p.push(`<button type="button" onclick="ac2.goGes(null,'gestor')">Gestores</button>`);
+  if(!nomeOp && !foco) p.push(`<span class="aqui">${ac2Esc(g)}</span>`);
+  else p.push(`<button type="button" onclick="ac2.goOp(null)">${ac2Esc(g)}</button>`);
+  if(nomeOp && !foco) p.push(`<span class="aqui">${ac2Esc(nomeOp)}</span>`);
+  else if(nomeOp) p.push(`<button type="button" onclick="ac2.sairRec()">${ac2Esc(nomeOp)}</button>`);
+  if(foco && nomeFoco) p.push(`<span class="aqui">${ac2Esc(nomeFoco)}</span>`);
+  return `<div class="a2-trilha">${p.join('<span class="sep">›</span>')}</div>`;
+}
 // trocar de gestor zera a operação: a do gestor anterior não existe no novo
 ac2.goGes=function(g,from){ ac2.gestorSel=g||null; ac2.opSel=null; AC2_TIPO_FILTRO=''; ac2.foco=null; ac2.focoDe=null; ac2.focoGes=null; ac2.focoOp=null; ac2.focoTipo=''; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
 ac2.render=function(){
@@ -3766,7 +3793,8 @@ ac2.render=function(){
     sb.innerHTML=[['tarefas','📋 Tarefas',nT,'margem, prejuízo, queima, devolução'],['promos','🏷️ Promos',nP,'promoções do Mercado Livre']]
       .map(x=>'<button class="a2-subb '+(ac2.sub===x[0]?'on':'')+'" onclick="ac2.setSub(\''+x[0]+'\')" title="'+x[3]+'">'+x[1]+' <span class="a2-subn">'+x[2]+'</span></button>').join('')
       +'<button class="a2-subb off" disabled title="em construção">📦 Anúncios <span class="a2-subn">em breve</span></button>'; }
-  lv.innerHTML=[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor','a lista dele']].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('')
+  const subGestor = (!ac2.preso() && ac2.gestorSel) ? ac2Esc(ac2.gestorSel) : 'a lista dele';
+  lv.innerHTML=[['direcao','Direção','o veredito'],['coord','Coordenação','a fila do dia'],['gestor','Gestor',subGestor]].map(x=>`<button class="a2-lvb ${ac2.nivel===x[0]?'on':''}" onclick="ac2.go('${x[0]}')">${x[1]}<small>${x[2]}</small></button>`).join('')
     +'<span class="a2-lvsep"></span>'
     +[['filtrar','🔎 Filtrar'],['comparar','📊 Comparar']].map(x=>`<button class="a2-lvb ${(ac2.cmp?'comparar':'filtrar')===x[0]?'on':''}" onclick="ac2.setCmp('${x[0]}')">${x[1]}</button>`).join('')
     +'<button class="a2-lvb" onclick="ac2Fotos()" title="Gera UMA imagem nítida com os indicadores do topo e o momento de cada gestor, pronta para colar no grupo">📷 Imagem p/ o grupo</button>';
@@ -3774,7 +3802,7 @@ ac2.render=function(){
   const cmpMode=ac2.cmp && ac2.nivel!=='gestor';
   if(ac2.nivel==='direcao'){ kpi.innerHTML=ac2DirHero(); body.innerHTML=cmpMode?ac2Comparar():ac2DirScore(); }
   else if(ac2.nivel==='coord'){ kpi.innerHTML=ac2TopoCoord(); body.innerHTML=cmpMode?ac2Comparar():(ac2.foco?ac2ListaFoco(ac2.filt(),ac2.foco):ac2Coord()); if(ac2.foco&&!cmpMode) ac2CarregaResumos(); }
-  else { kpi.innerHTML=ac2TopoGestor(); body.innerHTML=ac2Gestor(); ac2CarregaResumos(); }
+  else { kpi.innerHTML=ac2Trilha()+ac2TopoGestor(); body.innerHTML=ac2Gestor(); ac2CarregaResumos(); }
 };
 ac2.setModo=function(m){ ac2.modo=m; ac2.render(); };
 
@@ -4322,7 +4350,7 @@ ac2.filtroTipo = function(k){ AC2_TIPO_FILTRO = (AC2_TIPO_FILTRO===k ? '' : k); 
 // OPERAÇÃO escolhida dentro do gestor. O gestor cuida de várias (ex.: Pesseguinho·ML, Mary Kase·ML,
 // Jowcase·Magalu); jogar as três numa lista só é o que fazia a fila parecer "sem pé nem cabeça".
 ac2.opSel = null;
-ac2.goOp = function(op){ ac2.opSel = op || null; AC2_TIPO_FILTRO=''; ac2.foco=null; ac2.focoDe=null; ac2.render(); };
+ac2.goOp = function(op){ ac2.opSel = op || null; AC2_TIPO_FILTRO=''; ac2.foco=null; ac2.focoDe=null; ac2.focoTipo=''; ac2.render(); };
 
 // ── "PARA ONDE FOI O DINHEIRO" — a análise dentro da própria tarefa ──────────────────────────
 // Mandar o gestor para o Raio-X repetia o sintoma: lá ele via "MC −15,3%" de novo, que é
@@ -4972,10 +5000,7 @@ function ac2Gestor(){
       <div class="gc-h"><b>Todas as operações</b></div>
       <div class="gc-v">${todasDoGestor.filter(i=>!ac2Registrada(i)).length}<small> de ${todasDoGestor.length} sem registro</small></div>
       <div class="gc-s">a lista inteira de ${g}, sem separar por operação</div></div>`;
-    const outro = [...new Set(l.map(i=>i.gestor))].filter(x=>x&&x!==g);
-    const trocar = outro.length ? `<button onclick="ac2.goGes(null,'gestor')" class="a2-btn-lin">trocar de gestor</button>` : '';
-    return `<div class="a2-sh">Operações de ${g}<small>escolha por onde começar${trocar?'':''}</small></div>
-      ${trocar?`<div style="margin:2px 0 8px">${trocar}</div>`:''}
+    return `<div class="a2-sh">Operações de ${g}<small>escolha por onde começar</small></div>
       <div class="a2-gcs">${cards}${tudo}</div>`;
   }
 
