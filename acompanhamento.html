@@ -3461,6 +3461,8 @@ function ac2injectCSS(){ if(document.getElementById('ac2-css'))return; const s=d
 #ac2-root .a2-tot td{border-top:2px solid var(--c-ln);background:var(--c-s2)}
 #ac2-root .a2-k.on{border-color:var(--c-acc);background:var(--c-accb)}
 #ac2-root .a2-k.nc{cursor:default}
+#ac2-root .a2-k.nc.rec,#ac2-root .a2-k.rec{cursor:pointer}
+#ac2-root .a2-k.rec:hover{border-color:#a855f7}
 /* posicao na fila: a coordenacao le de cima para baixo, entao o numero precisa estar visivel */
 #ac2-root .vd-reg-ck{font-size:12px;margin-top:3px}
 #ac2-root .dm-sec{display:flex;align-items:baseline;gap:10px;margin:16px 0 7px;padding-left:10px;border-left:4px solid var(--sc)}
@@ -3612,7 +3614,7 @@ ac2.spark=function(pts,cor){ if(!pts||pts.length<2) return '<span style="color:v
   const d=pts.map((v,i)=>(i*step).toFixed(1)+','+(h-((v-mn)/rng)*h).toFixed(1)).join(' '); return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="flex:0 0 auto"><polyline fill="none" stroke="${cor||'#4f8ef7'}" stroke-width="2" stroke-linejoin="round" points="${d}"/></svg>`; };
 ac2.reacLbl=function(h){ return h==null?null:(h<24?Math.round(h)+'h':(h/24).toFixed(1)+'d'); };
 ac2.toggleCmp=function(){ ac2.cmp=!ac2.cmp; ac2.render(); };
-ac2.setCmp=function(m){ ac2.cmp=(m==='comparar'); ac2.render(); };
+ac2.setCmp=function(m){ ac2.cmp=(m==='comparar'); if(ac2.cmp){ ac2.foco=null; ac2.focoDe=null; } ac2.render(); };
 /* ── métricas, desempenho e nota (portados do mockup "Acompanhamento de Contas") ── */
 ac2.aberto=function(i){ return !(i.funcionou===true); };
 ac2.reacF=function(h){ return h==null?'—':(h<24?Math.round(h)+'h':(h/24).toFixed(1).replace('.',',')+'d'); };
@@ -3733,9 +3735,9 @@ ac2.daSub=function(i){ return ac2.sub==='promos' ? AC2_ISPROMO(i) : !AC2_ISPROMO
 ac2.setSub=function(s){ if(ac2.sub===s) return; ac2.sub=s; AC2_TIPOS = s==='promos' ? AC2_TIPOS_PROMO : AC2_TIPOS_TAREFAS;
   AC2_TIPO_FILTRO=''; AC2_DIR_TIPO=''; ac2.opSel=null; ac2.render(); };
 ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risco:l.reduce((s,i)=>s+i.risco,0), prej:prej.length, riscoPrej:prej.reduce((s,i)=>s+i.risco,0), corr:l.length-prej.length}; };
-ac2.go=function(n){ ac2.nivel=n; if(n!=='gestor'){ac2.gestorSel=null;ac2.opSel=null;} ac2.render(); };
+ac2.go=function(n){ ac2.nivel=n; ac2.foco=null; ac2.focoDe=null; if(n!=='gestor'){ac2.gestorSel=null;ac2.opSel=null;} ac2.render(); };
 // trocar de gestor zera a operação: a do gestor anterior não existe no novo
-ac2.goGes=function(g,from){ ac2.gestorSel=g||null; ac2.opSel=null; AC2_TIPO_FILTRO=''; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
+ac2.goGes=function(g,from){ ac2.gestorSel=g||null; ac2.opSel=null; AC2_TIPO_FILTRO=''; ac2.foco=null; ac2.focoDe=null; ac2.voltar=from||'direcao'; ac2.nivel='gestor'; ac2.render(); };
 ac2.render=function(){
   ac2._vdMap={}; ac2._vdSeq=0;   // o mapa das quebras é por render: senão cresce a cada repintura
   const lv=document.getElementById('a2-lv'), kpi=document.getElementById('a2-kpi'), body=document.getElementById('a2-body'), bar=document.getElementById('a2-bar');
@@ -3753,7 +3755,7 @@ ac2.render=function(){
   ac2RenderFiltros();
   const cmpMode=ac2.cmp && ac2.nivel!=='gestor';
   if(ac2.nivel==='direcao'){ kpi.innerHTML=ac2DirHero(); body.innerHTML=cmpMode?ac2Comparar():ac2DirScore(); }
-  else if(ac2.nivel==='coord'){ kpi.innerHTML=ac2TopoCoord(); body.innerHTML=cmpMode?ac2Comparar():ac2Coord(); }
+  else if(ac2.nivel==='coord'){ kpi.innerHTML=ac2TopoCoord(); body.innerHTML=cmpMode?ac2Comparar():(ac2.foco==='recobrar'?ac2ListaRecobrar(ac2.filt(),'O que recobrar','quem registrou e por que não resolveu'):ac2Coord()); if(ac2.foco==='recobrar'&&!cmpMode) ac2CarregaResumos(); }
   else { kpi.innerHTML=ac2TopoGestor(); body.innerHTML=ac2Gestor(); ac2CarregaResumos(); }
 };
 ac2.setModo=function(m){ ac2.modo=m; ac2.render(); };
@@ -4107,17 +4109,50 @@ async function ac2CopiaCobranca(g, btn){
   if(btn){ const o=btn.textContent; btn.textContent='✓ Copiada'; setTimeout(()=>btn.textContent=o, 2200); }
 }
 
+// Lista do que precisa de nova ação. Na coordenação mostra todo mundo; no gestor, só o dele.
+function ac2ListaRecobrar(li, titulo, sub){
+  const rec = (li||[]).map(i=>({i, por:ac2Recobrar(i)})).filter(x=>x.por)
+    .sort((a,b)=>(+b.i.risco||0)-(+a.i.risco||0));
+  const voltarLbl = (ac2.focoDe==='coord' && ac2.nivel==='gestor') ? '← mesa da coordenação' : '← voltar';
+  const topo = `<div class="a2-sh">${titulo}<small>${sub}</small></div>
+    <div style="margin:2px 0 8px"><button type="button" onclick="ac2.sairRec()" class="a2-btn-lin">${voltarLbl}</button></div>`;
+  if(!rec.length) return topo+`<div class="a2-vazio">Nada para recobrar neste recorte.</div>`;
+  const bloco = arr => arr.map(x=>ac2DemRow(x.i,'recobrar')).join('');
+  const gs = [];
+  rec.forEach(x=>{ let o=gs.find(g=>g.g===x.i.gestor); if(!o) gs.push(o={g:x.i.gestor, arr:[]}); o.arr.push(x); });
+  gs.sort((a,b)=>b.arr.length-a.arr.length);
+  const corpo = gs.length<=1 ? bloco(rec) : gs.map(o=>{
+    const gesc=String(o.g).replace(/'/g,"\\'");
+    return `<div class="dm-sec" style="--sc:#a855f7"><b>${ac2Esc(o.g)} · ${o.arr.length}</b><button type="button" class="a2-btn-lin" onclick="ac2.verRecobrar('${gesc}')">só esta lista</button></div>${bloco(o.arr)}`;
+  }).join('');
+  return topo+`<div class="a2-nota">O motivo e a ação já registrada estão em cada linha. Uma nova ação tira a tarefa daqui até a próxima medição.</div>`+corpo;
+}
+ac2.verFilaRec=function(){
+  if(ac2.foco==='recobrar'){ ac2.foco=null; ac2.focoDe=null; ac2.render(); return; }
+  ac2.foco='recobrar'; ac2.focoDe=ac2.nivel; ac2.cmp=false; ac2.render();
+};
+ac2.verRecobrar=function(g){
+  ac2.foco='recobrar'; ac2.focoDe='coord'; ac2.gestorSel=g||null; ac2.opSel=null;
+  AC2_TIPO_FILTRO=''; ac2.voltar='coord'; ac2.nivel='gestor'; ac2.cmp=false; ac2.render();
+};
+ac2.sairRec=function(){
+  const de=ac2.focoDe, nivel=ac2.nivel;
+  ac2.foco=null; ac2.focoDe=null;
+  if(de==='coord' && nivel==='gestor'){ ac2.nivel='coord'; ac2.gestorSel=null; ac2.opSel=null; }
+  ac2.render();
+};
+
 function ac2TopoCoord(){
   const l = ac2.filt(), m = ac2Mesa(l);
   const reacs = l.filter(i=>i.reacaoH!=null).map(i=>i.reacaoH);
   const media = reacs.length ? reacs.reduce((a,b)=>a+b,0)/reacs.length : null;
   const gAtr = new Set(m.atr.map(i=>i.gestor)).size, medidas = l.filter(i=>i.resultado).length;
-  const card = (rot,val,sub,c) => `<div class="a2-k nc"><div class="a2-kr">${rot}</div>
+  const card = (rot,val,sub,c,click) => `<div class="a2-k nc${click?' rec':''}${click&&ac2.foco==='recobrar'?' on':''}"${click?` onclick="${click}"`:''}><div class="a2-kr">${rot}</div>
     <div class="a2-kv" style="color:${c||'var(--t1)'}">${val}</div><div class="a2-ks">${sub}</div></div>`;
   return ac2Selecao()+`<div class="a2-kpis">
     ${card('Atrasadas agora', m.atr.length, m.atr.length? gAtr+' gestor(es) · maior atraso '+ac2AtrLbl(m.maior) : 'ninguém atrasado', m.atr.length?'#dc2626':'#22c55e')}
     ${card('Vencem em 24h', m.v24.length, 'cobrar antes de atrasar', m.v24.length?'#f59e0b':'var(--t3)')}
-    ${card('Recobrar', m.rec.length, medidas ? 'registradas que não resolveram' : 'a 1ª leitura sai na 1ª venda depois do registro', m.rec.length?'#a855f7':'var(--t3)')}
+    ${card('Recobrar', m.rec.length, m.rec.length ? 'clique para ver o motivo de cada uma' : (medidas ? 'registradas que não resolveram' : 'a 1ª leitura sai na 1ª venda depois do registro'), m.rec.length?'#a855f7':'var(--t3)', m.rec.length?'ac2.verFilaRec()':'')}
     ${card('Parado nas atrasadas', AC2_BRLk(m.risco), 'margem presa no que já venceu', m.risco>0?'#f59e0b':'var(--t3)')}
     ${card('Tempo até registrar', media==null?'—':ac2.reacLbl(media), media==null?'ninguém registrou ainda':'média da equipe')}
   </div>`;
@@ -4143,7 +4178,7 @@ function ac2Coord(){
       <td><span class="a2-pos">${idx+1}</span><b>${o.g}</b></td>
       <td class="r">${num(o.m.atr.length,'#dc2626')}</td>
       <td class="r">${num(o.m.v24.length,'#f59e0b')}</td>
-      <td class="r">${num(o.m.rec.length,'#a855f7')}</td>
+      <td class="r"${o.m.rec.length?` onclick="event.stopPropagation();ac2.verRecobrar('${esc(o.g)}')" title="Abrir as ${o.m.rec.length} que precisam de nova ação" style="cursor:pointer;text-decoration:underline"`:''}>${num(o.m.rec.length,'#a855f7')}</td>
       <td class="r" style="color:${o.m.risco>0?'#f59e0b':'var(--t3)'}">${o.m.risco>0?AC2_BRLk(o.m.risco):'–'}</td>
       <td class="r" style="color:${o.m.maior==null?'var(--t3)':'#dc2626'}">${ac2AtrLbl(o.m.maior)}</td>
       <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)" title="${o.comece?String(o.comece.i.titulo||o.comece.i.sku).replace(/"/g,'')+' — '+o.comece.por:''}">${o.comece
@@ -4183,7 +4218,7 @@ function ac2Coord(){
         <div class="cc-s">${x.reg} de ${x.n} registrada(s)${x.atr?` · ${x.atr} atrasada(s)`:''}${x.risco>0?` · ${AC2_BRLk(x.risco)} parado`:''}</div></div>`; }).join('')}</div>`;
   };
 
-  return `<div class="a2-sh">Mesa de cobrança<small>de quem cobrar hoje · ordem = R$ parado × dias de atraso · <b>Recobrar</b> = registrou, mas a medição mostra que não resolveu · o botão copia a mensagem pronta para o WhatsApp</small></div>
+  return `<div class="a2-sh">Mesa de cobrança<small>de quem cobrar hoje · ordem = R$ parado × dias de atraso · <b>Recobrar</b> = registrou, mas a medição mostra que não resolveu · clique no número para abrir a lista · o botão copia a mensagem pronta para o WhatsApp</small></div>
     <div class="tbl-wrap"><table class="tbl a2-tbl"><thead><tr>
       <th>Gestor</th><th class="r">Atrasadas</th><th class="r">Vencem 24h</th><th class="r">Recobrar</th><th class="r">Parado</th>
       <th class="r">Maior atraso</th><th>Comece por esta</th><th class="r">Cobrança</th>
@@ -4205,7 +4240,7 @@ ac2.filtroTipo = function(k){ AC2_TIPO_FILTRO = (AC2_TIPO_FILTRO===k ? '' : k); 
 // OPERAÇÃO escolhida dentro do gestor. O gestor cuida de várias (ex.: Pesseguinho·ML, Mary Kase·ML,
 // Jowcase·Magalu); jogar as três numa lista só é o que fazia a fila parecer "sem pé nem cabeça".
 ac2.opSel = null;
-ac2.goOp = function(op){ ac2.opSel = op || null; AC2_TIPO_FILTRO=''; ac2.render(); };
+ac2.goOp = function(op){ ac2.opSel = op || null; AC2_TIPO_FILTRO=''; ac2.foco=null; ac2.focoDe=null; ac2.render(); };
 
 // ── "PARA ONDE FOI O DINHEIRO" — a análise dentro da própria tarefa ──────────────────────────
 // Mandar o gestor para o Raio-X repetia o sintoma: lá ele via "MC −15,3%" de novo, que é
@@ -4772,7 +4807,7 @@ function ac2TopoGestor(){
   const pA = sA.n ? Math.round(100*sA.ok/sA.n) : null, pB = sB.n ? Math.round(100*sB.ok/sB.n) : null;
   const seta = pA==null||pB==null ? '' : pB>pA ? ' <b style="color:#16a34a">↑</b>' : pB<pA ? ' <b style="color:#dc2626">↓</b>' : ' →';
   const pjT = ac2PrazoJanela(li, 0, agora+1);
-  const card = (rot,val,sub,c,extra) => `<div class="a2-k"><div class="a2-kr">${rot}</div>
+  const card = (rot,val,sub,c,extra,click) => `<div class="a2-k${click?' rec':''}${click&&ac2.foco==='recobrar'?' on':''}"${click?` onclick="${click}"`:''}><div class="a2-kr">${rot}</div>
     <div class="a2-kv" style="color:${c||'var(--t1)'}">${val}</div><div class="a2-ks">${sub}</div>${extra||''}</div>`;
   const tipos = AC2_TIPOS.filter(t=>li.some(i=>ac2TipoDe(i.tipo).k===t.k)).map(t=>{
     const lt=li.filter(i=>ac2TipoDe(i.tipo).k===t.k), n=lt.length, r=lt.filter(ac2Registrada).length, s=ac2SemFr(r,n), e=ac2Efeito(lt);
@@ -4782,7 +4817,7 @@ function ac2TopoGestor(){
   return `<div class="a2-shh">Para hoje</div><div class="a2-kpis">
     ${card('Atrasadas', m.atr.length, m.atr.length ? 'registre hoje · maior atraso '+ac2AtrLbl(m.maior) : 'nada atrasado', m.atr.length?'#dc2626':'#22c55e')}
     ${card('Vencem em 24h', m.v24.length, 'registre antes de atrasar', m.v24.length?'#f59e0b':'var(--t3)')}
-    ${card('Recobrar', rec.length, rec.length ? 'registrou, mas não resolveu — nova ação' : 'nada para refazer', rec.length?'#a855f7':'var(--t3)')}
+    ${card('Recobrar', rec.length, rec.length ? 'clique para ver o motivo e registrar outra ação' : 'nada para refazer', rec.length?'#a855f7':'var(--t3)', '', rec.length?'ac2.verFilaRec()':'')}
     ${card('Feitas, aguardando resultado', aguard.length, 'a medição sai na 1ª venda depois do registro')}
   </div>
   <div class="a2-shh">Como estou indo <small>mesma régua da Direção: &lt;70% Crítico · 70–89% Atenção · 90–99% Bom · 100% Ideal</small></div>
@@ -4816,6 +4851,10 @@ function ac2Gestor(){
 
   const g = ac2.gestorSel;
   const todasDoGestor = l.filter(i=>i.gestor===g);
+
+  if(ac2.foco==='recobrar'){
+    return ac2ListaRecobrar(todasDoGestor, ac2Esc(g)+' · o que precisa de nova ação', 'a medição ou a checagem mostraram que a ação anterior não resolveu');
+  }
 
   // ── gestor escolhido mas sem operação: mostra AS OPERAÇÕES DELE ──
   // Pedido do Weskley: "ao clicar abrir Mercado Livre Pesseguinho, Mercado Livre Mary Kase e
