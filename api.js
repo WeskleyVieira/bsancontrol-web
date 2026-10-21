@@ -61,6 +61,8 @@ const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa,
     lucroDiaAntes: r.r_la, lucroDiaDepois: r.r_ld, aplicou: r.r_aplicou || null, dias: r.r_dias, em: r.r_em, recuperado: r.recuperado || 0 } : null,
   // o preço que o comprador paga hoje no anúncio × o que o gestor informou (só ML por enquanto)
   checagem: r.c_sit ? { situacao: r.c_sit, praticado: r.c_prat == null ? null : +r.c_prat, tabela: r.c_tab == null ? null : +r.c_tab, promocao: r.c_promo || "", em: r.c_em } : null,
+  // tarefa de PROMOÇÃO: como o anúncio está HOJE no diagnóstico mais recente (o texto da causa é o de quando a tarefa nasceu)
+  hoje: r.pd_data ? { data: r.pd_data, acao: r.pd_acao || "", preco: r.pd_preco == null ? null : +r.pd_preco, mc: r.pd_mc == null ? null : +r.pd_mc, motivo: r.pd_motivo || "" } : null,
   // acerto do gestor: só veredito FECHADO conta. Leitura parcial (1–2 vendas), Pausado, Sem leitura e
   // Aguardando não entram (ainda não dá para julgar); Justificado conta a favor; Parou de vender, contra.
   funcionou: !r.desfecho || /Aguardando|Sem venda|Sem leitura|Pausado|parcial/.test(r.desfecho) ? null : /Resolvido|Progrediu|Justificado/.test(r.desfecho) });
@@ -82,7 +84,7 @@ async function rotaGET(u, user) {
     // painel nunca recebia o novo preço informado nem o detalhe da medição (vinham sempre vazios).
     let sql = `SELECT d.*, t.acao, t.t_causa, t.t_obs, t.t_em, t.t_gestor, t.t_n, t.reacao_h, t.t_preco, t.t_ate,
       r.desfecho, r.recuperado, r.mc_depois, r.r_mc_antes, r.r_pa, r.r_pd, r.r_la, r.r_ld, r.r_aplicou, r.r_dias, r.r_detalhe, r.r_em,
-      ck.c_sit, ck.c_prat, ck.c_tab, ck.c_promo, ck.c_em FROM demandas d
+      ck.c_sit, ck.c_prat, ck.c_tab, ck.c_promo, ck.c_em, pd.data AS pd_data, pd.acao AS pd_acao, pd.preco_atual AS pd_preco, pd.mc_atual AS pd_mc, pd.motivo AS pd_motivo FROM demandas d
       LEFT JOIN (SELECT t1.demanda_id, t1.acao, t1.causa AS t_causa, t1.obs AS t_obs, t1.registrado_em AS t_em, t1.gestor AS t_gestor, t1.preco_novo AS t_preco, t1.aguardar_ate AS t_ate,
           c.n AS t_n, c.reac1 AS reacao_h FROM tratativas t1
         JOIN (SELECT demanda_id, MAX(id) ult, COUNT(*) n, MIN(reacao_h) reac1 FROM tratativas GROUP BY demanda_id) c ON c.ult=t1.id) t ON t.demanda_id=d.id
@@ -90,7 +92,10 @@ async function rotaGET(u, user) {
           r1.lucro_dia_antes AS r_la, r1.lucro_dia_depois AS r_ld, r1.aplicou AS r_aplicou, r1.dias AS r_dias, r1.detalhe AS r_detalhe, r1.verificado_em AS r_em
         FROM resultados r1 JOIN (SELECT demanda_id, MAX(id) ult FROM resultados GROUP BY demanda_id) rr ON rr.ult=r1.id) r ON r.demanda_id=d.id
       LEFT JOIN (SELECT c1.demanda_id, c1.situacao AS c_sit, c1.preco_praticado AS c_prat, c1.preco_tabela AS c_tab, c1.promocao AS c_promo, c1.verificado_em AS c_em
-        FROM checagem_preco c1 JOIN (SELECT demanda_id, MAX(verificado_em) ult FROM checagem_preco GROUP BY demanda_id) cc ON cc.demanda_id=c1.demanda_id AND cc.ult=c1.verificado_em) ck ON ck.demanda_id=d.id`;
+        FROM checagem_preco c1 JOIN (SELECT demanda_id, MAX(verificado_em) ult FROM checagem_preco GROUP BY demanda_id) cc ON cc.demanda_id=c1.demanda_id AND cc.ult=c1.verificado_em) ck ON ck.demanda_id=d.id
+      LEFT JOIN (SELECT p1.empresa, p1.anuncio, p1.data, p1.acao, p1.preco_atual, p1.mc_atual, p1.motivo FROM promo_diagnostico p1
+        JOIN (SELECT empresa, MAX(data) m FROM promo_diagnostico GROUP BY empresa) pm ON pm.empresa=p1.empresa AND pm.m=p1.data) pd
+        ON d.id LIKE 'promo|%' AND pd.empresa=d.empresa AND pd.anuncio=d.anuncio_id`;
     const args = [], w = [];
     if (q.mes) { w.push("d.competencia=?"); args.push(q.mes); }   // ?mes opcional; sem ele devolve todos os meses — o painel filtra por período no cliente (segue o filtro do topo)
     if (user && user.perfil === "gestor") { w.push("d.gestor=?"); args.push(user.gestor_ref); }
@@ -279,6 +284,11 @@ async function garantePrecoNovo() { if (_colPreco) return; try { await dbx.exec(
   try { await dbx.exec("ALTER TABLE tratativas ADD COLUMN aguardar_ate TEXT"); } catch (e) { }
   // checagem do preço praticado (checar-preco.js) — a tabela tem de existir antes do JOIN do /api/demandas
   try { await dbx.exec("CREATE TABLE IF NOT EXISTS checagem_preco (demanda_id TEXT, verificado_em TEXT, preco_informado REAL, preco_praticado REAL, preco_tabela REAL, promocao TEXT, situacao TEXT, status_anuncio TEXT)"); } catch (e) { }   // "aguardando terceiro": até quando (16/10/2026)
+  // diagnóstico de promoções (ml-promos.js) — o /api/demandas lê a situação de HOJE das tarefas de promoção (mesmo schema do ml-promos)
+  try { await dbx.exec(`CREATE TABLE IF NOT EXISTS promo_diagnostico (data TEXT, empresa TEXT, anuncio TEXT, sku TEXT, produto TEXT, acao TEXT,
+      motivo TEXT, faixa TEXT, trajetoria TEXT, vende TEXT, preco_lista REAL, preco_atual REAL, mc_atual REAL, desconto REAL, preco_promo REAL,
+      mc_promo REAL, mc_pos_ads REAL, situacao TEXT, campanhas_ativas TEXT, campanhas_elegiveis TEXT, ajustar_preco TEXT, link TEXT,
+      PRIMARY KEY (data, empresa, anuncio))`); } catch (e) { }
   // colunas da verificação de efeito (verificar-tratativas.js) — mesmas garantias, mesma razão
   for (const c of ["preco_antes REAL", "preco_depois REAL", "lucro_dia_antes REAL", "lucro_dia_depois REAL", "un_dia_antes REAL", "un_dia_depois REAL", "aplicou TEXT", "dias INTEGER", "detalhe TEXT"])
     try { await dbx.exec("ALTER TABLE resultados ADD COLUMN " + c); } catch (e) { }
