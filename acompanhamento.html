@@ -4932,6 +4932,8 @@ function ac2DemRow(i, modo){
   const regraL = vv && vv.veredito!=='sem' && gg.em && vv.em && Date.parse(vv.em) > Date.parse(gg.em)
     ? '<div class="dm-l dm-lk"><span class="dm-k">Regra</span><div>'+(vv.veredito==='ok'
         ? '<span style="color:#16a34a;font-weight:600">✅ ação dentro da regra</span>'
+        : vv.veredito==='estrategia'   // "Mantive de propósito" com lucro, abaixo do piso: o robô respeita por 15 dias
+        ? '<span style="color:#d97706;font-weight:600">🟡 estratégia respeitada</span> — '+ac2Esc(vv.motivo)
         : '<span style="color:#a855f7;font-weight:600">🔁 ação fora da regra</span> — '+ac2Esc(vv.motivo)+(vv.sugestao?' · <b>o certo:</b> '+ac2Esc(vv.sugestao):''))+'</div></div>' : '';
   if(modo==='feita'){
     const r = i.registro||{}, rs = i.resultado, ck = ac2ChecagemTxt(i);
@@ -4942,7 +4944,7 @@ function ac2DemRow(i, modo){
       <span class="dm-chip" style="color:${chip[1]};border-color:${chip[1]}">${ac2Esc(chip[0])}</span>${rs&&rs.recuperado>0?` <b style="color:#16a34a">+${ac2Brl(rs.recuperado)}</b>`:''}</div></div>` + regraL + hojeL;
   } else {
     if(modo==='recobrar' || modo==='cobrar' && ac2Recobrar(i)) corpo += `<div class="dm-rec">🔁 <b>Recobrar:</b> ${ac2Esc(ac2Recobrar(i)||'')}${i.registro?` <span class="dm-mut">· ${modo==='cobrar'?'registrou':'você registrou'} "${ac2Esc(i.registro.acao)}"</span>`:''}</div>`;
-    corpo += (vv && vv.veredito==='ok' ? regraL : '') + hojeL + `<div class="dm-l dm-prob">${ac2Problema(i, null)}</div><div class="dm-res" data-res="${_vk}"><div class="dm-l dm-mut">analisando o histórico do anúncio…</div></div>`;
+    corpo += (vv && (vv.veredito==='ok' || vv.veredito==='estrategia') ? regraL : '') + hojeL + `<div class="dm-l dm-prob">${ac2Problema(i, null)}</div><div class="dm-res" data-res="${_vk}"><div class="dm-l dm-mut">analisando o histórico do anúncio…</div></div>`;
   }
   return `<div class="a2-dem ${modo==='cobrar'?(ac2Recobrar(i)?'recobrar':'fazer'):modo}" style="--tc:${t.cor}">
     <div class="dm-main">
