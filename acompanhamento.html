@@ -4187,6 +4187,10 @@ const ac2Vence24 = i => { const r = ac2Resta(i); return !ac2Registrada(i) && r!=
 function ac2Recobrar(i){
   if(!ac2Registrada(i)) return null;
   if(i.estado==='fora') return null;   // saiu da régua no recálculo: não se recobra (21/10/2026 — a checagem seguia cobrando o preço de uma tarefa já superada)
+  // REVALIDAÇÃO NA REGRA (21/10/2026): o diagnóstico seguinte confere a ação registrada (mínimo do fornecedor, desconto ≥ 5%, piso de
+  // margem) sem esperar venda. Fora da regra → volta já, com o porquê e o preço certo. Só vale a revalidação feita DEPOIS do último registro.
+  { const v=i.validacao, g=i.registro||{};
+    if(v && v.veredito==='fora' && g.em && v.em && Date.parse(v.em) > Date.parse(g.em)) return 'ação fora da regra — '+v.motivo+(v.sugestao?' · o certo: '+v.sugestao:''); }
   const r = i.resultado, g = i.registro || {};
   if(r && r.em && g.em && Date.parse(g.em) > Date.parse(r.em)) return null;          // já registrou de novo
   if(r && /Resolvido|Progrediu|Justificado/.test(r.desfecho||'')) return null;
@@ -4923,16 +4927,22 @@ function ac2DemRow(i, modo){
     return '<div class="dm-l dm-lk"><span class="dm-k">Hoje</span><div><span style="color:'+cor+';font-weight:600">'+ac2Esc(hj.acao||'')+'</span>'
       +(hj.preco!=null?' · no ar a '+ac2Brl(hj.preco):'')+(hj.mc!=null?' · margem '+(+hj.mc).toFixed(1).replace('.',',')+'%':'')
       +' <span class="dm-mut">· diagnóstico de '+dt+'</span></div></div>'; })() : '';
+  // veredito da revalidação do registro (só o feito depois do último registro)
+  const vv = i.validacao, gg = i.registro||{};
+  const regraL = vv && vv.veredito!=='sem' && gg.em && vv.em && Date.parse(vv.em) > Date.parse(gg.em)
+    ? '<div class="dm-l dm-lk"><span class="dm-k">Regra</span><div>'+(vv.veredito==='ok'
+        ? '<span style="color:#16a34a;font-weight:600">✅ ação dentro da regra</span>'
+        : '<span style="color:#a855f7;font-weight:600">🔁 ação fora da regra</span> — '+ac2Esc(vv.motivo)+(vv.sugestao?' · <b>o certo:</b> '+ac2Esc(vv.sugestao):''))+'</div></div>' : '';
   if(modo==='feita'){
     const r = i.registro||{}, rs = i.resultado, ck = ac2ChecagemTxt(i);
     const chip = ck && !ck.ok ? ['preço não está no anúncio','#dc2626']
       : rs && rs.desfecho ? [rs.desfecho, AC2_COR_DESF[rs.desfecho]||'#94a3b8']
       : ['aguardando a 1ª venda depois do registro','#94a3b8'];
     corpo = `<div class="dm-l dm-lk"><span class="dm-k">Você fez</span><div>${ac2Esc(r.acao||i.trat||'')}${r.precoNovo?' · novo preço '+ac2Brl(r.precoNovo):''}${r.em?' · '+ac2Dt(r.em):''}
-      <span class="dm-chip" style="color:${chip[1]};border-color:${chip[1]}">${ac2Esc(chip[0])}</span>${rs&&rs.recuperado>0?` <b style="color:#16a34a">+${ac2Brl(rs.recuperado)}</b>`:''}</div></div>` + hojeL;
+      <span class="dm-chip" style="color:${chip[1]};border-color:${chip[1]}">${ac2Esc(chip[0])}</span>${rs&&rs.recuperado>0?` <b style="color:#16a34a">+${ac2Brl(rs.recuperado)}</b>`:''}</div></div>` + regraL + hojeL;
   } else {
     if(modo==='recobrar' || modo==='cobrar' && ac2Recobrar(i)) corpo += `<div class="dm-rec">🔁 <b>Recobrar:</b> ${ac2Esc(ac2Recobrar(i)||'')}${i.registro?` <span class="dm-mut">· ${modo==='cobrar'?'registrou':'você registrou'} "${ac2Esc(i.registro.acao)}"</span>`:''}</div>`;
-    corpo += hojeL + `<div class="dm-l dm-prob">${ac2Problema(i, null)}</div><div class="dm-res" data-res="${_vk}"><div class="dm-l dm-mut">analisando o histórico do anúncio…</div></div>`;
+    corpo += (vv && vv.veredito==='ok' ? regraL : '') + hojeL + `<div class="dm-l dm-prob">${ac2Problema(i, null)}</div><div class="dm-res" data-res="${_vk}"><div class="dm-l dm-mut">analisando o histórico do anúncio…</div></div>`;
   }
   return `<div class="a2-dem ${modo==='cobrar'?(ac2Recobrar(i)?'recobrar':'fazer'):modo}" style="--tc:${t.cor}">
     <div class="dm-main">

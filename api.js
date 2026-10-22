@@ -63,6 +63,8 @@ const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa,
   checagem: r.c_sit ? { situacao: r.c_sit, praticado: r.c_prat == null ? null : +r.c_prat, tabela: r.c_tab == null ? null : +r.c_tab, promocao: r.c_promo || "", em: r.c_em } : null,
   // tarefa de PROMOÇÃO: como o anúncio está HOJE no diagnóstico mais recente (o texto da causa é o de quando a tarefa nasceu)
   hoje: r.pd_data ? { data: r.pd_data, acao: r.pd_acao || "", preco: r.pd_preco == null ? null : +r.pd_preco, mc: r.pd_mc == null ? null : +r.pd_mc, motivo: r.pd_motivo || "" } : null,
+  // revalidação do registro do gestor na regra (ml-promos → promo_validacao): ok · fora (com o porquê e o preço certo) · sem
+  validacao: r.pv_ver ? { veredito: r.pv_ver, motivo: r.pv_mot || "", sugestao: r.pv_sug || "", em: r.pv_em } : null,
   // acerto do gestor: só veredito FECHADO conta. Leitura parcial (1–2 vendas), Pausado, Sem leitura e
   // Aguardando não entram (ainda não dá para julgar); Justificado conta a favor; Parou de vender, contra.
   funcionou: !r.desfecho || /Aguardando|Sem venda|Sem leitura|Pausado|parcial/.test(r.desfecho) ? null : /Resolvido|Progrediu|Justificado/.test(r.desfecho) });
@@ -84,7 +86,8 @@ async function rotaGET(u, user) {
     // painel nunca recebia o novo preço informado nem o detalhe da medição (vinham sempre vazios).
     let sql = `SELECT d.*, t.acao, t.t_causa, t.t_obs, t.t_em, t.t_gestor, t.t_n, t.reacao_h, t.t_preco, t.t_ate,
       r.desfecho, r.recuperado, r.mc_depois, r.r_mc_antes, r.r_pa, r.r_pd, r.r_la, r.r_ld, r.r_aplicou, r.r_dias, r.r_detalhe, r.r_em,
-      ck.c_sit, ck.c_prat, ck.c_tab, ck.c_promo, ck.c_em, pd.data AS pd_data, pd.acao AS pd_acao, pd.preco_atual AS pd_preco, pd.mc_atual AS pd_mc, pd.motivo AS pd_motivo FROM demandas d
+      ck.c_sit, ck.c_prat, ck.c_tab, ck.c_promo, ck.c_em, pd.data AS pd_data, pd.acao AS pd_acao, pd.preco_atual AS pd_preco, pd.mc_atual AS pd_mc, pd.motivo AS pd_motivo,
+      pv.veredito AS pv_ver, pv.motivo AS pv_mot, pv.sugestao AS pv_sug, pv.em AS pv_em FROM demandas d
       LEFT JOIN (SELECT t1.demanda_id, t1.acao, t1.causa AS t_causa, t1.obs AS t_obs, t1.registrado_em AS t_em, t1.gestor AS t_gestor, t1.preco_novo AS t_preco, t1.aguardar_ate AS t_ate,
           c.n AS t_n, c.reac1 AS reacao_h FROM tratativas t1
         JOIN (SELECT demanda_id, MAX(id) ult, COUNT(*) n, MIN(reacao_h) reac1 FROM tratativas GROUP BY demanda_id) c ON c.ult=t1.id) t ON t.demanda_id=d.id
@@ -95,7 +98,8 @@ async function rotaGET(u, user) {
         FROM checagem_preco c1 JOIN (SELECT demanda_id, MAX(verificado_em) ult FROM checagem_preco GROUP BY demanda_id) cc ON cc.demanda_id=c1.demanda_id AND cc.ult=c1.verificado_em) ck ON ck.demanda_id=d.id
       LEFT JOIN (SELECT p1.empresa, p1.anuncio, p1.data, p1.acao, p1.preco_atual, p1.mc_atual, p1.motivo FROM promo_diagnostico p1
         JOIN (SELECT empresa, MAX(data) m FROM promo_diagnostico GROUP BY empresa) pm ON pm.empresa=p1.empresa AND pm.m=p1.data) pd
-        ON d.id LIKE 'promo|%' AND pd.empresa=d.empresa AND pd.anuncio=d.anuncio_id`;
+        ON d.id LIKE 'promo|%' AND pd.empresa=d.empresa AND pd.anuncio=d.anuncio_id
+      LEFT JOIN promo_validacao pv ON pv.demanda_id=d.id`;
     const args = [], w = [];
     if (q.mes) { w.push("d.competencia=?"); args.push(q.mes); }   // ?mes opcional; sem ele devolve todos os meses — o painel filtra por período no cliente (segue o filtro do topo)
     if (user && user.perfil === "gestor") { w.push("d.gestor=?"); args.push(user.gestor_ref); }
@@ -289,6 +293,8 @@ async function garantePrecoNovo() { if (_colPreco) return; try { await dbx.exec(
       motivo TEXT, faixa TEXT, trajetoria TEXT, vende TEXT, preco_lista REAL, preco_atual REAL, mc_atual REAL, desconto REAL, preco_promo REAL,
       mc_promo REAL, mc_pos_ads REAL, situacao TEXT, campanhas_ativas TEXT, campanhas_elegiveis TEXT, ajustar_preco TEXT, link TEXT,
       PRIMARY KEY (data, empresa, anuncio))`); } catch (e) { }
+  try { await dbx.exec(`CREATE TABLE IF NOT EXISTS promo_validacao (demanda_id TEXT PRIMARY KEY, data TEXT, em TEXT, empresa TEXT, anuncio TEXT, acao TEXT,
+      preco_informado REAL, veredito TEXT, motivo TEXT, sugestao TEXT, mc_atual REAL, piso REAL)`); } catch (e) { }
   // colunas da verificação de efeito (verificar-tratativas.js) — mesmas garantias, mesma razão
   for (const c of ["preco_antes REAL", "preco_depois REAL", "lucro_dia_antes REAL", "lucro_dia_depois REAL", "un_dia_antes REAL", "un_dia_depois REAL", "aplicou TEXT", "dias INTEGER", "detalhe TEXT"])
     try { await dbx.exec("ALTER TABLE resultados ADD COLUMN " + c); } catch (e) { }
