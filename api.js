@@ -268,6 +268,10 @@ async function rotaGET(u, user) {
       if (got.ads) got.ads = got.ads.filter(porOp);
       if (got.adsCamp) got.adsCamp = got.adsCamp.filter(porOp);
       if (got.adsDia) got.adsDia = got.adsDia.filter(porOp);
+      if (got.fullRel && got.fullRel.contas) {   // relação do Full: chave "empresa|canal" → só as operações do ponto dele
+        const c = {}; for (const k in got.fullRel.contas) if (pts.has(opm[k])) c[k] = got.fullRel.contas[k];
+        got.fullRel = { ...got.fullRel, contas: c };
+      }
       if (got.estoque) got.estoque = got.estoque.filter(r => pts.has(r.ponto));
       if (got.produtos) got.produtos = got.produtos.filter(r => pts.has(r.ponto));
       if (got.envios) { const empm = {}; (await dbx.all("SELECT empresa, ponto, COUNT(*) n FROM vendas GROUP BY empresa, ponto ORDER BY n DESC")).forEach(r => { if (!(r.empresa in empm)) empm[r.empresa] = r.ponto; }); got.envios = got.envios.filter(r => pts.has(empm[r.empresa])); }
