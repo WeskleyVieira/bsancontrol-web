@@ -6093,11 +6093,10 @@ function _gerGaranteAbertura(emp,mkt){
     .catch(()=>{ _gerAbCache[key]=0; });
 }
 window._gerGaranteAbertura=_gerGaranteAbertura;
-let _gfQ='', _gfVis='envio', _gfH='semana', _gfDia='';
+let _gfQ='', _gfVis='envio';
 function _gfEsc(s){ return String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 function _gfNum(v){ if(v===''||v==null) return '—'; const n=Number(v); return isFinite(n)?n.toLocaleString('pt-BR'):_gfEsc(v); }
 function _gfChave(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
-function _gfISO(d){ const z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); }
 function _gfBR(iso){ return String(iso||'').slice(0,10).split('-').reverse().join('/'); }
 function _gfBarra(need, multi){
   if(multi==null || multi==='') return '<span style="color:var(--t3)">sem leitura</span>';
@@ -6117,16 +6116,9 @@ function _renderGerFull(emp, mkt){
   const ej=s=>String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const chama=`_renderGerFull('${ej(emp)}','${ej(mkt)}')`;
   const on=v=>`border-color:${_gfVis===v?'var(--a)':'var(--bdr2)'};color:${_gfVis===v?'var(--a)':'var(--t2)'};background:${_gfVis===v?'var(--a3)':'transparent'};`;
-  const hon=v=>`border-color:${_gfH===v?'var(--a)':'var(--bdr2)'};color:${_gfH===v?'var(--a)':'var(--t2)'};background:${_gfH===v?'var(--a3)':'transparent'};`;
-  let maxD=(FULL_REL&&FULL_REL.dia)||'';
-  if(typeof DETALHE!=='undefined'&&Array.isArray(DETALHE)) DETALHE.forEach(r=>{ if(r.emp===emp&&r.mkt===mkt&&r.date&&r.date>maxD) maxD=String(r.date).slice(0,10); });
-  if(!maxD) maxD='2026-10-22';
-  let ini=maxD, fim=maxD, rot='';
-  if(_gfH==='dia'){ const d=_gfDia||maxD; ini=fim=d; rot=_gfBR(d); }
-  else if(_gfH==='mes'){ ini=maxD.slice(0,7)+'-01'; fim=maxD; rot=_gfBR(ini)+' a '+_gfBR(fim); }
-  else {
-    const dt=new Date(maxD+'T12:00:00'); dt.setDate(dt.getDate()-6); ini=_gfISO(dt); fim=maxD; rot=_gfBR(ini)+' a '+_gfBR(fim);
-  }
+  const per=(typeof getR==='function')?getR():['',''];
+  const ini=String(per[0]||'').slice(0,10), fim=String(per[1]||ini).slice(0,10);
+  const rot=(ini&&fim)?(ini===fim?_gfBR(ini):_gfBR(ini)+' a '+_gfBR(fim)):'o período do cabeçalho';
   const porChave=new Map();
   (rel.envio||[]).forEach(r=>{
     if(String(r.pri).indexOf('mesmo estoque')>=0) return;
@@ -6186,14 +6178,6 @@ function _renderGerFull(emp, mkt){
     corpo=`${busca}<div class="cc" style="margin-top:14px;"><div class="cc-hdr"><div><div class="cc-title">Pendências</div><div class="cc-sub">${pd.length} itens para cadastrar, reativar ou conferir saldo</div></div></div><div class="tbl-wrap" style="overflow:auto;max-height:60vh;margin-top:8px;"><table class="tbl">${th(['Ação','SKU','MLB','Detalhe'])}${linhasPd}</table></div></div>`;
   } else {
     corpo=`
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px;">
-      <button class="dshort" style="${hon('semana')}" onclick="_gfH='semana';${chama}">Esta semana</button>
-      <button class="dshort" style="${hon('mes')}" onclick="_gfH='mes';${chama}">Este mês</button>
-      <label style="display:flex;align-items:center;gap:8px;color:var(--t2);font-size:12px;font-family:'Inter',sans-serif;">Um dia
-        <input id="gf-dia" type="date" value="${_gfEsc(_gfDia||'')}" onchange="_gfDia=this.value;_gfH='dia';${chama}" style="background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);font-family:'Inter',sans-serif;font-size:12px;padding:6px 10px;">
-      </label>
-      <span class="cc-sub">${_gfEsc(rot)}</span>
-    </div>
     <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px;">
       <div class="kpi"><div class="kpi-eye">A enviar</div><div class="kpi-val">${un.toLocaleString('pt-BR')}</div><div class="kpi-sub">unidades no intervalo</div></div>
       <div class="kpi"><div class="kpi-eye">SKUs</div><div class="kpi-val">${ev.filter(r=>r.env>0).length}</div><div class="kpi-sub">com quantidade acima de zero</div></div>
