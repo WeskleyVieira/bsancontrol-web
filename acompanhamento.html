@@ -2443,20 +2443,21 @@ function _adsDiaSeries(emp,mkt,ps,pe){
 // ═══ ADS POR DIA × OPERAÇÃO — para o gestor ver a margem DEPOIS do Ads (19/10/2026) ═══
 // Olhar a margem antes do Ads dá falsa sensação de lucro (Bsan ML out/26: 22,2% antes × 16,4% depois).
 // Ads do mês da operação = o MAIOR entre os grãos anúncio e campanha (mesmo gasto, nunca somar) — mesma regra do comissao.js.
-// AFILIADO fica de fora: já está descontado na margem (vem no líquido); subtrair de novo contaria duas vezes.
+// Fica de fora o que já saiu no líquido do pedido: afiliado, e o Ads do TikTok (GMV Max + anúncio da loja).
+// Subtrair o relatório de novo contaria duas vezes. A aba Publicidade continua mostrando o gasto.
 // Rateio por dia: série diária da plataforma (AdsDia, ML) quando existe; senão, pelo faturamento de cada dia do mês.
 let _ADSD=null;
 function _adsDiaMap(){
   const R0=(typeof ROWS!=='undefined'&&Array.isArray(ROWS))?ROWS:[];
   const sig=ADS.length+'|'+ADS_CAMP.length+'|'+ADS_DIA.length+'|'+R0.length;
   if(_ADSD&&_ADSD.sig===sig) return _ADSD;
-  const afi=x=>/afiliad/i.test(String(x.fonte||'')+' '+String(x.campanha||''));
+  const jaNoLiquido=x=>/afiliad/i.test(String(x.fonte||'')+' '+String(x.campanha||''))||/tik\s*tok/i.test(String(x.mkt||''));
   const add=(o,k,m,v)=>{ (o[k]=o[k]||{})[m]=(o[k][m]||0)+v; };
   const serie=(o,k,d,v)=>{ const m=d.slice(0,7); const x=(o[k]=o[k]||{}); const y=(x[m]=x[m]||{tot:0,d:{}}); y.tot+=v; y.d[d]=(y.d[d]||0)+v; };
   const perAd={},camp={},dia={},fat={};
-  ADS.forEach(a=>{ if(afi(a))return; add(perAd,a.emp+'||'+a.mkt,String(a.comp).slice(0,7),+a.inv||0); });
-  ADS_CAMP.forEach(a=>{ if(afi(a))return; add(camp,a.emp+'||'+a.mkt,String(a.comp).slice(0,7),+a.inv||0); });
-  ADS_DIA.forEach(a=>{ if(afi(a))return; serie(dia,a.emp+'||'+a.mkt,String(a.data).slice(0,10),+a.inv||0); });
+  ADS.forEach(a=>{ if(jaNoLiquido(a))return; add(perAd,a.emp+'||'+a.mkt,String(a.comp).slice(0,7),+a.inv||0); });
+  ADS_CAMP.forEach(a=>{ if(jaNoLiquido(a))return; add(camp,a.emp+'||'+a.mkt,String(a.comp).slice(0,7),+a.inv||0); });
+  ADS_DIA.forEach(a=>{ if(jaNoLiquido(a))return; serie(dia,a.emp+'||'+a.mkt,String(a.data).slice(0,10),+a.inv||0); });
   R0.forEach(r=>{ if(r.date) serie(fat,r.emp+'||'+r.mkt,r.date,+r.fat||0); });
   const porDia={}, mesInv={};
   new Set([...Object.keys(perAd),...Object.keys(camp)]).forEach(k=>{
