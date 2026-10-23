@@ -6094,103 +6094,188 @@ function _gerGaranteAbertura(emp,mkt){
     .catch(()=>{ _gerAbCache[key]=0; });
 }
 window._gerGaranteAbertura=_gerGaranteAbertura;
-let _gfQ='', _gfVis='envio';
-function _gfEsc(s){ return String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+// ── ABA FULL (Gerencial) — relação de envio ao Full por anúncio. Dados: FULL_REL (full-relacao.js → /api/extras).
+// O gestor lê: o que mandar, o que não repor e por quê, o que está parado no Full e o que tem de resolver.
+let _gfQ='', _gfVis='envio', _gfH='regra', _gfTipo='';
+const _GF_COR={'P1':'#ef4444','Estrela':'#eab308','Ruptura':'#f97316','Sazonal':'#a855f7','Novo trator':'#10b981','Em alta':'#22c55e','Levar ao Full':'#8b5cf6','Novo com tração':'#14b8a6','Teste':'#06b6d4','Reposição':'#64748b','Não repor':'#94a3b8','Coberto':'#94a3b8'};
+const _GF_DICA={'P1':'Lista P1 — não pode zerar','Estrela':'Produto estrela do Mercado Livre — manter abastecido','Ruptura':'Vai zerar (ou já zerou) e tem venda comprovada','Sazonal':'Temporada — a cobertura vai só até o fim da data','Novo trator':'Começou a vender forte agora','Em alta':'Vendas subindo nas últimas semanas','Levar ao Full':'Vende pelo nosso estoque e ainda não está no Full — cadastrar e mandar','Novo com tração':'Anúncio novo que já vendeu — 4 un para tracionar no Full','Teste':'Tem visitas e nenhuma venda — 2 un para testar no Full','Reposição':'Reposição normal'};
+const _GF_ORD=['P1','Estrela','Ruptura','Sazonal','Novo trator','Em alta','Levar ao Full','Novo com tração','Teste','Reposição'];
+function _gfEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function _gfNum(v){ if(v===''||v==null) return '—'; const n=Number(v); return isFinite(n)?n.toLocaleString('pt-BR'):_gfEsc(v); }
-function _gfChave(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+function _gfChave(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
 function _gfBR(iso){ return String(iso||'').slice(0,10).split('-').reverse().join('/'); }
-function _gfBarra(need, multi){
-  if(multi==null || multi==='') return '<span style="color:var(--t3)">sem leitura</span>';
-  const m=Number(multi), n=Number(need)||0;
-  const pct=n>0 ? Math.max(4, Math.round(100*Math.min(Math.max(m,0), n)/n)) : 100;
-  const cor=n>0 && m<n ? '#f59e0b' : '#34d399';
-  return `<div style="min-width:148px"><div style="height:8px;border-radius:99px;background:var(--surf2);overflow:hidden"><div style="width:${pct}%;height:100%;background:${cor}"></div></div><div style="font-size:11px;color:var(--t3);margin-top:3px">${_gfNum(m)} no multiempresa</div></div>`;
+function _gfCSS(){
+  if(document.getElementById('gf-css')) return;
+  const s=document.createElement('style'); s.id='gf-css'; s.textContent=`
+#gf-root .gf-sub{display:flex;gap:6px;flex-wrap:wrap}
+#gf-root .gf-subb{border:1px solid var(--bdr2);background:transparent;color:var(--t3);border-radius:999px;padding:6px 14px;font-weight:700;font-size:13px;cursor:pointer}
+#gf-root .gf-subb.on{background:#4f8ef7;border-color:#4f8ef7;color:#fff}
+#gf-root .gf-subn{display:inline-block;margin-left:4px;padding:0 7px;border-radius:999px;background:rgba(127,127,127,.18);font-size:11px}
+#gf-root .gf-subb.on .gf-subn{background:rgba(255,255,255,.25)}
+#gf-root .gf-pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent);border:1px solid color-mix(in srgb,var(--c) 35%,transparent);white-space:nowrap}
+#gf-root .gf-chip{border:1px solid var(--bdr2);background:transparent;color:var(--t2);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
+#gf-root .gf-chip.on{border-color:var(--a);color:var(--a);background:var(--a3)}
+#gf-root .gf-mini{font-size:11px;color:var(--t3);margin-top:2px}
+#gf-root .gf-mini a{color:var(--a)}
+#gf-root .gf-prod{font-weight:600;max-width:300px;white-space:normal;line-height:1.3}
+#gf-root .gf-pq{max-width:280px;white-space:normal;line-height:1.35;font-size:12px;color:var(--t2)}
+#gf-root .gf-big{font-size:18px;font-weight:800}
+#gf-root .gf-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:12px}
+@media(max-width:900px){#gf-root .gf-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#gf-root .gf-bar{height:6px;border-radius:99px;background:var(--surf2);overflow:hidden;margin-top:4px;min-width:110px}
+#gf-root .gf-bar>div{height:100%}
+#gf-root table.tbl td{vertical-align:top}`;
+  document.head.appendChild(s);
+}
+const _gfPill=c=>`<span class="gf-pill" style="--c:${_GF_COR[c]||'#64748b'}" title="${_gfEsc(_GF_DICA[c]||'')}">${_gfEsc(c)}</span>`;
+function _gfAnuncio(L){
+  const link='https://produto.mercadolivre.com.br/MLB-'+String(L.mlb).replace(/^MLB/i,'');
+  const ir=(L.irmaos||[]).length;
+  return `<div class="gf-prod">${_gfEsc(L.prod)}</div><div class="gf-mini"><a href="${link}" target="_blank" rel="noopener">${_gfEsc(L.mlb)}</a> · ${_gfEsc(L.sku)}${ir?` · <span title="${_gfEsc(L.irmaos.join(', '))}">+${ir} anúncio(s) no mesmo estoque</span>`:''}${L.status&&L.status!=='active'?` · <b style="color:#f59e0b">${_gfEsc(L.status)}</b>`:''}</div>`;
+}
+function _gfVendas(L, per){
+  const fp=L.fullPct==null?'':(L.fullPct+'% pelo Full');
+  return `<b>${_gfNum(L.un31)}</b> <span style="color:var(--t3)">/ ${_gfNum(L.un16)} / ${_gfNum(L.un8)}</span><div class="gf-mini">${_gfEsc(L.tendencia||'')}${fp?' · '+fp:''}${per!=null?' · período: '+_gfNum(per):''}</div>`;
+}
+function _gfNoFull(L){
+  const d=+L.dias; const z=!(L.un31>0)?'sem venda':(d>=999?'sem giro':(d<1?'zerado':`zera em ${Math.round(d)} d`));
+  const cor=(L.un31>0&&d<7)?'#ef4444':((L.un31>0&&d<14)?'#f59e0b':'var(--t3)');
+  return `${_gfNum(L.aptas)}${L.cam?` <span class="gf-mini">+${_gfNum(L.cam)} a caminho</span>`:''}<div class="gf-mini" style="color:${cor}">${z}</div>`;
+}
+function _gfExp(L){
+  if(!L.exp) return '<span style="color:var(--t3)">—</span>';
+  const cor=/green/i.test(L.expCor||'')?'#22c55e':(/red/i.test(L.expCor||'')?'#ef4444':(/gray/i.test(L.expCor||'')?'#94a3b8':'#f59e0b'));
+  return `<span class="gf-pill" style="--c:${cor}" title="${_gfEsc(L.expMotivo||'')}">${_gfEsc(L.exp)}</span>${L.expMotivo&&!/green/i.test(L.expCor||'')?`<div class="gf-mini" style="max-width:200px;white-space:normal">${_gfEsc(L.expMotivo)}</div>`:''}`;
+}
+function _gfOlist(L, q){
+  if(L.olist==null) return '<span class="gf-mini">sem leitura</span>';
+  const pool=Math.max(0,+L.olistAloc||0), cobre=q<=pool;
+  const pct=q>0?Math.max(4,Math.round(100*Math.min(pool,q)/q)):100;
+  return `${_gfNum(L.olist)} <span class="gf-mini">no ponto</span><div class="gf-bar" title="disponível ${L.olist} · 10% fica para a venda direta · alocável ${pool}"><div style="width:${pct}%;background:${cobre?'#34d399':'#f59e0b'}"></div></div>`;
+}
+function _gfPorque(L){
+  const p=[]; if(_GF_DICA[L.classe]&&L.classe!=='Reposição') p.push(_GF_DICA[L.classe]);
+  String(L.obs||'').split(' · ').filter(Boolean).forEach(x=>{ if(!/^P1 |margem não apurada/.test(x)) p.push(x); });
+  return `<div class="gf-pq" title="${_gfEsc((L.obs||'').replace(/ · /g,'\n'))}">${_gfEsc(p.slice(0,3).join(' · ')||'—')}</div>`;
+}
+function _gfVendasPeriodo(emp, mkt){
+  const per=(typeof getR==='function')?getR():['',''];
+  const ini=String(per[0]||'').slice(0,10), fim=String(per[1]||ini).slice(0,10);
+  const m=new Map(); if(!ini||typeof DETALHE==='undefined'||!Array.isArray(DETALHE)) return {m,rot:''};
+  DETALHE.forEach(r=>{
+    if(r.emp!==emp||r.mkt!==mkt) return;
+    if(typeof _gVenda==='function'&&!_gVenda(r.stat)) return;
+    const d=String(r.date||'').slice(0,10); if(d<ini||d>fim) return;
+    const c=_gfChave(r.sku); if(c) m.set(c,(m.get(c)||0)+(+r.qtd||0));
+  });
+  return {m, rot: ini===fim?_gfBR(ini):_gfBR(ini)+' a '+_gfBR(fim)};
+}
+function _gfLinhasEnvio(rel){
+  return (rel.linhas||[]).filter(L=>!L.corte&&((L.needH||{})[_gfH]>0)).sort((a,b)=>(_GF_ORD.indexOf(a.classe)-_GF_ORD.indexOf(b.classe))||(a.dias-b.dias));
+}
+function exportGerFullCSV(emp, mkt){
+  const rel=(FULL_REL&&FULL_REL.contas)?FULL_REL.contas[emp+'|'+mkt]:null; if(!rel) return;
+  const csvEsc=t=>{ const s=String(t==null?'':t); return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const cab=['Prioridade','MLB que recebe','SKU','Produto','QTD A ENVIAR','Precisava','Tendencia','Vd 31d','Vd 16d','Vd 8d','% Full','Aptas','A caminho','Dias p/ zerar','Experiencia','Olist (ponto)','Por que'];
+  const lin=[];
+  _gfLinhasEnvio(rel).forEach(L=>{
+    lin.push([L.classe,L.mlb,L.sku,L.prod,(L.aloc||{})[_gfH],(L.needH||{})[_gfH],L.tendencia,L.un31,L.un16,L.un8,L.fullPct,L.aptas,L.cam,L.dias,L.exp||'',L.olist,L.obs].map(csvEsc).join(';'));
+    (L.irmaos||[]).forEach(m=>lin.push(['↳ mesmo estoque do MLB acima',m,L.sku,'','—'].map(csvEsc).join(';')));
+  });
+  const blob=new Blob(['﻿'+cab.join(';')+'\n'+lin.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='Full_'+emp.replace(/\s+/g,'')+'_'+(_gfH==='regra'?'regra':_gfH+'d')+'_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
 }
 function _renderGerFull(emp, mkt){
-  const root=document.getElementById('gf-root');
-  if(!root) return;
+  const root=document.getElementById('gf-root'); if(!root) return;
+  _gfCSS();
   const rel=(typeof FULL_REL!=='undefined'&&FULL_REL&&FULL_REL.contas)?FULL_REL.contas[emp+'|'+mkt]:null;
   if(!rel){
-    root.innerHTML=`<div class="cc"><div class="cc-title">Full</div><div class="cc-sub" style="margin-top:6px;">A leitura de estoque Full está pronta para <b>Jowcase</b> e <b>Bsan Shop</b> no Mercado Livre. Esta operação ainda não entra. Nada aqui cria envio.</div></div>`;
-    return;
+    const msg=(typeof FULL_REL==='undefined'||!FULL_REL)?'Carregando a relação do Full…':'A relação do Full cobre as contas do Mercado Livre (pontos Bsan e Powerfull). Esta operação ainda não entra.';
+    root.innerHTML=`<div class="cc"><div class="cc-title">Full</div><div class="cc-sub" style="margin-top:6px;">${msg} Nada aqui cria envio.</div></div>`; return;
   }
   const ej=s=>String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const chama=`_renderGerFull('${ej(emp)}','${ej(mkt)}')`;
-  const on=v=>`border-color:${_gfVis===v?'var(--a)':'var(--bdr2)'};color:${_gfVis===v?'var(--a)':'var(--t2)'};background:${_gfVis===v?'var(--a3)':'transparent'};`;
-  const per=(typeof getR==='function')?getR():['',''];
-  const ini=String(per[0]||'').slice(0,10), fim=String(per[1]||ini).slice(0,10);
-  const rot=(ini&&fim)?(ini===fim?_gfBR(ini):_gfBR(ini)+' a '+_gfBR(fim)):'o período do cabeçalho';
-  const porChave=new Map();
-  (rel.envio||[]).forEach(r=>{
-    if(String(r.pri).indexOf('mesmo estoque')>=0) return;
-    const chaves=String(r.sku||'').split(' + ').map(p=>_gfChave(p.replace(/\s*\([^)]*\)\s*$/,''))).filter(Boolean);
-    const rec={chaves, aptas:+r.aptas||0, cam:+r.cam||0, multi:(r.multi===''||r.multi==null)?null:+r.multi, prod:r.prod||'', mlb:r.mlb||'', sku:r.sku, vend:0};
-    chaves.forEach(c=>{ if(!porChave.has(c)) porChave.set(c, rec); });
-  });
-  (rel.remover||[]).forEach(r=>{
-    const c=_gfChave(r.sku); if(!c||porChave.has(c)) return;
-    porChave.set(c, {chaves:[c], aptas:+r.aptas||0, cam:0, multi:null, prod:'', mlb:r.mlb||'', sku:r.sku, vend:0});
-  });
-  const orfaos=new Map();
-  if(typeof DETALHE!=='undefined'&&Array.isArray(DETALHE)){
-    DETALHE.forEach(r=>{
-      if(r.emp!==emp||r.mkt!==mkt) return;
-      if(typeof noPonto==='function'&&!noPonto(r)) return;
-      if(typeof _gVenda==='function'&&!_gVenda(r.stat)) return;
-      const d=String(r.date||'').slice(0,10); if(d<ini||d>fim) return;
-      const c=_gfChave(r.sku); if(!c) return;
-      const rec=porChave.get(c);
-      if(rec) rec.vend+=+r.qtd||0;
-      else {
-        const o=orfaos.get(c)||{sku:r.sku, prod:r.tit||'', vend:0, aptas:null, cam:null, multi:null, mlb:r.anuncio||''};
-        o.vend+=+r.qtd||0; if(!o.prod&&r.tit) o.prod=r.tit; orfaos.set(c,o);
-      }
-    });
-  }
-  const vistos=new Set();
-  const linhas=[];
-  porChave.forEach(rec=>{ if(vistos.has(rec)||!(rec.vend>0)) return; vistos.add(rec); const env=Math.max(0, Math.round(rec.vend-rec.aptas-(rec.cam||0))); linhas.push({sku:rec.sku, prod:rec.prod, mlb:rec.mlb, vend:rec.vend, aptas:rec.aptas, cam:rec.cam, multi:rec.multi, env}); });
-  orfaos.forEach(o=>{ if(!(o.vend>0)) return; linhas.push({sku:o.sku, prod:o.prod, mlb:o.mlb, vend:o.vend, aptas:null, cam:null, multi:null, env:Math.round(o.vend)}); });
   const q=(_gfQ||'').toLowerCase();
-  const bate=r=>!q||(String(r.sku||'')+' '+String(r.prod||'')+' '+String(r.mlb||'')+' '+String(r.det||'')+' '+String(r.motivo||'')+' '+String(r.acao||'')).toLowerCase().indexOf(q)>=0;
-  const ev=linhas.filter(bate).sort((a,b)=>b.env-a.env||b.vend-a.vend);
-  const un=ev.reduce((s,r)=>s+r.env,0);
-  const acima=ev.filter(r=>r.multi!=null && r.env>r.multi).length;
-  const rm=(rel.remover||[]).filter(bate), pd=(rel.pend||[]).filter(bate);
+  const bate=r=>!q||[r.sku,r.prod,r.mlb,r.motivo,r.acao,r.detalhe,r.obs].join(' ').toLowerCase().indexOf(q)>=0;
+  const lin=rel.linhas||[];
+  // saúde da conta
+  const aptas=lin.reduce((s,L)=>s+(+L.aptas||0),0), cam=lin.reduce((s,L)=>s+(+L.cam||0),0);
+  const v31=lin.reduce((s,L)=>s+(+L.un31||0),0), v31f=lin.reduce((s,L)=>s+(L.fullPct==null?0:(+L.un31||0)*L.fullPct/100),0);
+  const rupt=lin.filter(L=>!L.semPosicao&&L.un31>=6&&+L.dias<7&&L.classe!=='Não repor').length;
+  const par=rel.parado||[], parUn=par.reduce((s,r)=>s+(+r.aptas||0),0);
+  const env=_gfLinhasEnvio(rel), envUn=env.reduce((s,L)=>s+((L.aloc||{})[_gfH]||0),0), falta=env.filter(L=>((L.aloc||{})[_gfH]||0)<(L.needH||{})[_gfH]).length;
+  const nr=lin.filter(L=>L.classe==='Não repor'&&(L.un31>0||L.aptas>0));
+  const pd=rel.pend||[];
+  const kpi=(eye,val,sub,cor)=>`<div class="kpi"><div class="kpi-eye">${eye}</div><div class="kpi-val"${cor?` style="color:${cor}"`:''}>${val}</div><div class="kpi-sub">${sub}</div></div>`;
+  const saude=`<div class="gf-kpis">
+    ${kpi('No Full', _gfNum(aptas), cam?`+ ${_gfNum(cam)} a caminho`:'peças aptas')}
+    ${kpi('Vendas pelo Full', v31?Math.round(100*v31f/v31)+'%':'—', 'das peças vendidas em 31 dias')}
+    ${kpi('Em ruptura', rupt, 'zeram em menos de 7 dias', rupt?'#ef4444':'')}
+    ${kpi('Parado no Full', _gfNum(parUn), par.length+' anúncios sem giro', par.length?'#f59e0b':'')}
+    ${kpi('Enviar', _gfNum(envUn), env.length+' anúncios'+(falta?` · ${falta} sem saldo cheio`:''), '#4f8ef7')}
+  </div>`;
+  const graf=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:10px;">
+    <div class="kpi"><div class="kpi-eye">Onde saem as vendas (31 dias)</div><div style="position:relative;height:170px;margin-top:6px;"><canvas id="gf-c-canal"></canvas></div></div>
+    <div class="kpi"><div class="kpi-eye">O que enviar, por tipo (unidades)</div><div style="position:relative;height:170px;margin-top:6px;"><canvas id="gf-c-tipo"></canvas></div></div>
+    <div class="kpi"><div class="kpi-eye">Quanto dura o estoque no Full</div><div style="position:relative;height:170px;margin-top:6px;"><canvas id="gf-c-cob"></canvas></div></div>
+  </div>`;
+  const sub=(id,txt,nn)=>`<button class="gf-subb${_gfVis===id?' on':''}" onclick="_gfVis='${id}';_gfTipo='';${chama}">${txt}<span class="gf-subn">${nn}</span></button>`;
+  const abas=`<div class="gf-sub" style="margin-top:14px;">${sub('envio','O que enviar',env.length)}${sub('nao','Não repor',nr.length)}${sub('parado','Parado no Full',par.length)}${sub('pend','Pendências',pd.length)}</div>`;
+  const busca=`<input id="gf-q" value="${_gfEsc(_gfQ||'')}" placeholder="Buscar produto, SKU ou MLB…" oninput="_gfQ=this.value;var p=this.selectionStart;${chama};var n=document.getElementById('gf-q');if(n){n.focus();try{n.setSelectionRange(p,p);}catch(e){}}" style="width:100%;max-width:360px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);font-family:'Inter',sans-serif;font-size:12px;padding:7px 12px;outline:none;">`;
   const th=cols=>'<tr>'+cols.map(c=>`<th style="text-align:left;white-space:nowrap;">${c}</th>`).join('')+'</tr>';
-  const td=(v,extra)=>`<td style="white-space:nowrap;${extra||''}">${v}</td>`;
-  const linhasEnv=ev.map(r=>'<tr>'+[
-    td(_gfEsc(r.sku),'font-weight:600;'), td(_gfEsc(r.prod),'white-space:normal;max-width:280px;'),
-    td(_gfNum(Math.round(r.vend)),'text-align:right;'), td(r.aptas==null?'—':_gfNum(r.aptas),'text-align:right;'), td(r.cam==null?'—':_gfNum(r.cam),'text-align:right;'),
-    td(_gfNum(r.env),'text-align:right;font-weight:700;'), td(_gfBarra(r.env, r.multi),'white-space:normal;')
-  ].join('')+'</tr>').join('')||'<tr><td colspan="7" style="color:var(--t3);">Nenhuma venda neste intervalo.</td></tr>';
-  const linhasRem=rm.map(r=>'<tr>'+[td(_gfEsc(r.sku),'font-weight:600;'),td(_gfEsc(r.mlb),'font-family:ui-monospace,monospace;font-size:11px;'),td(_gfNum(r.aptas),'text-align:right;'),td(_gfNum(r.un31),'text-align:right;'),td(_gfEsc(r.motivo),'white-space:normal;')].join('')+'</tr>').join('')||'<tr><td colspan="5" style="color:var(--t3);">Nada a tirar.</td></tr>';
-  const linhasPd=pd.map(r=>'<tr>'+[td(_gfEsc(r.acao),'font-weight:700;'),td(_gfEsc(r.sku),'font-weight:600;'),td(_gfEsc(r.mlb),'font-family:ui-monospace,monospace;font-size:11px;'),td(_gfEsc(r.det),'white-space:normal;')].join('')+'</tr>').join('')||'<tr><td colspan="4" style="color:var(--t3);">Sem pendência.</td></tr>';
-  const busca=`<input id="gf-q" value="${_gfEsc(_gfQ||'')}" placeholder="Buscar SKU ou anúncio…" oninput="_gfQ=this.value;var p=this.selectionStart;${chama};var n=document.getElementById('gf-q');if(n){n.focus();try{n.setSelectionRange(p,p);}catch(e){}}" style="margin-top:12px;width:100%;max-width:420px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);font-family:'Inter',sans-serif;font-size:12px;padding:8px 12px;outline:none;">`;
-  const abas=`<div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="dshort" style="${on('envio')}" onclick="_gfVis='envio';${chama}">Enviar</button>
-      <button class="dshort" style="${on('tirar')}" onclick="_gfVis='tirar';${chama}">Tirar do Full</button>
-      <button class="dshort" style="${on('pend')}" onclick="_gfVis='pend';${chama}">Pendências</button>
-    </div>`;
+  const td=(v,x)=>`<td style="${x||''}">${v}</td>`;
+  const tabela=(cols,rows,vazio)=>`<div class="tbl-wrap" style="overflow:auto;max-height:62vh;margin-top:10px;"><table class="tbl">${th(cols)}${rows||`<tr><td colspan="${cols.length}" style="color:var(--t3);">${vazio}</td></tr>`}</table></div>`;
   let corpo='';
-  if(_gfVis==='tirar'){
-    corpo=`${busca}<div class="cc" style="margin-top:14px;"><div class="cc-hdr"><div><div class="cc-title">Tirar do Full</div><div class="cc-sub">${rm.length} posições com peça apta parada em ${FULL_REL.dia?_gfBR(FULL_REL.dia):'22/10'}</div></div></div><div class="tbl-wrap" style="overflow:auto;max-height:60vh;margin-top:8px;"><table class="tbl">${th(['SKU','MLB','Aptas','Vendas 31d','Motivo'])}${linhasRem}</table></div></div>`;
-  } else if(_gfVis==='pend'){
-    corpo=`${busca}<div class="cc" style="margin-top:14px;"><div class="cc-hdr"><div><div class="cc-title">Pendências</div><div class="cc-sub">${pd.length} itens para cadastrar, reativar ou conferir saldo</div></div></div><div class="tbl-wrap" style="overflow:auto;max-height:60vh;margin-top:8px;"><table class="tbl">${th(['Ação','SKU','MLB','Detalhe'])}${linhasPd}</table></div></div>`;
+  if(_gfVis==='envio'){
+    const {m:perM, rot}=_gfVendasPeriodo(emp,mkt);
+    const hz=[['regra','Regra'],[7,'7 dias'],[15,'15 dias'],[30,'30 dias'],[60,'60 dias']];
+    const chipsH=hz.map(([h,t])=>`<button class="gf-chip${String(_gfH)===String(h)?' on':''}" onclick="_gfH=${typeof h==='number'?h:"'regra'"};${chama}">${t}</button>`).join(' ');
+    const cont={}; env.forEach(L=>{cont[L.classe]=(cont[L.classe]||0)+1;});
+    const chipsT=`<button class="gf-chip${!_gfTipo?' on':''}" onclick="_gfTipo='';${chama}">Todos</button> `+_GF_ORD.filter(c=>cont[c]).map(c=>`<button class="gf-chip${_gfTipo===c?' on':''}" style="${_gfTipo===c?`border-color:${_GF_COR[c]};color:${_GF_COR[c]}`:''}" onclick="_gfTipo='${c}';${chama}">${c} ${cont[c]}</button>`).join(' ');
+    const ls=env.filter(L=>(!_gfTipo||L.classe===_gfTipo)&&bate(L));
+    const rows=ls.map(L=>{
+      const a=(L.aloc||{})[_gfH]||0, need=(L.needH||{})[_gfH]||0;
+      const env2=`<span class="gf-big"${a<need?' style="color:#f59e0b"':''}>${_gfNum(a)}</span>${a<need?`<div class="gf-mini">precisava ${_gfNum(need)}${a===0?' · sem saldo na Olist':' · saldo dividido entre as contas'}</div>`:''}`;
+      return '<tr>'+[td(_gfPill(L.classe)),td(_gfAnuncio(L)),td(env2,'text-align:right;'),td(_gfPorque(L)),td(_gfVendas(L,rot?(perM.get(L.chave)||0):null)),td(_gfNoFull(L)),td(_gfExp(L)),td(_gfOlist(L,need))].join('')+'</tr>';
+    }).join('');
+    corpo=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px;"><span class="cc-sub" style="margin:0">Cobrir:</span>${chipsH}<span class="gf-mini" style="margin-left:4px">${_gfH==='regra'?'regra do perfil: 45 a 90 dias conforme a tendência; sazonal até o fim da data':'velocidade × '+_gfH+' dias − o que já está no Full e a caminho'}</span></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${chipsT}</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;">${busca}<button class="dshort" onclick="exportGerFullCSV('${ej(emp)}','${ej(mkt)}')">Exportar CSV (galpão)</button></div>
+      ${tabela(['Tipo','Anúncio','Enviar','Por quê','Vendas 31 / 16 / 8 d','No Full','Experiência','Olist'],rows,'Nada a enviar nesta cobertura.')}
+      <div class="cc-sub" style="margin-top:8px;">A Olist é dividida entre as contas do mesmo ponto: 10% fica para a venda direta, e quem vende mais com melhor margem recebe primeiro. Nada aqui cria envio no Mercado Livre.</div>`;
+  } else if(_gfVis==='nao'){
+    const rows=nr.filter(bate).sort((a,b)=>(b.aptas-a.aptas)||(b.un31-a.un31)).map(L=>'<tr>'+[td(`<b>${_gfEsc(L.motivo)}</b>`,'max-width:260px;white-space:normal;'),td(_gfAnuncio(L)),td(_gfVendas(L,null)),td(_gfNoFull(L)),td(_gfExp(L))].join('')+'</tr>').join('');
+    corpo=`<div style="margin-top:14px;">${busca}</div>${tabela(['Por que não repor','Anúncio','Vendas 31 / 16 / 8 d','No Full','Experiência'],rows,'Nenhum anúncio com venda ou estoque fora da reposição.')}`;
+  } else if(_gfVis==='parado'){
+    const rows=par.filter(bate).sort((a,b)=>b.aptas-a.aptas).map(r=>'<tr>'+[td(`<span class="gf-big">${_gfNum(r.aptas)}</span>`,'text-align:right;'),td(_gfAnuncio(r)),td(`<b>${_gfEsc(r.motivo)}</b>${r.aging?'<div class="gf-mini">tem isenção de estoque antigo do ML</div>':''}`,'max-width:280px;white-space:normal;'),td(_gfNum(r.un31),'text-align:right;'),td(r.un31>0?`${Math.round(+r.dias)} dias`:'sem venda'),td(r.un31>0?'Promoção para girar':'Retirar do Full ou promoção forte','white-space:normal;max-width:180px;')].join('')+'</tr>').join('');
+    corpo=`<div class="cc-sub" style="margin-top:14px;">Peças paradas no Full antes de virarem estoque antigo e gerarem custo. Itens de temporada não entram aqui.</div><div style="margin-top:10px;">${busca}</div>${tabela(['Peças paradas','Anúncio','Motivo','Vd 31d','Estoque dura','O que fazer'],rows,'Nada parado no Full.')}`;
   } else {
-    corpo=`
-    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px;">
-      <div class="kpi"><div class="kpi-eye">A enviar</div><div class="kpi-val">${un.toLocaleString('pt-BR')}</div><div class="kpi-sub">unidades no intervalo</div></div>
-      <div class="kpi"><div class="kpi-eye">SKUs</div><div class="kpi-val">${ev.filter(r=>r.env>0).length}</div><div class="kpi-sub">com quantidade acima de zero</div></div>
-      <div class="kpi"><div class="kpi-eye">Acima do saldo</div><div class="kpi-val">${acima}</div><div class="kpi-sub">a barra fica curta</div></div>
-    </div>
-    <div class="cc-sub" style="margin-top:10px;">A enviar é o que vendeu em ${_gfEsc(rot)}, menos o que já está apto ou a caminho no Full. A barra é o saldo multiempresa e não altera a quantidade. Nada aqui cria envio.</div>
-    ${busca}
-    <div class="cc" style="margin-top:14px;">
-      <div class="tbl-wrap" style="overflow:auto;max-height:58vh;"><table class="tbl">${th(['SKU','Produto','Vendeu','No Full','A caminho','A enviar','Disponibilidade'])}${linhasEnv}</table></div>
-    </div>`;
+    const ordA=['Resolver experiência','Reativar anúncio','Cadastrar no Full','Corrigir SKU','Sem saldo na Olist','Melhorar experiência'];
+    const rows=pd.filter(bate).sort((a,b)=>ordA.indexOf(a.acao)-ordA.indexOf(b.acao)).map(r=>'<tr>'+[td(`<b>${_gfEsc(r.acao)}</b>`,'white-space:nowrap;'),td(`<div class="gf-prod">${_gfEsc(r.sku)}</div><div class="gf-mini"><a href="https://produto.mercadolivre.com.br/MLB-${_gfEsc(String(r.mlb).replace(/^MLB/i,''))}" target="_blank" rel="noopener">${_gfEsc(r.mlb)}</a></div>`),td(_gfEsc(r.detalhe),'white-space:normal;max-width:460px;')].join('')+'</tr>').join('');
+    corpo=`<div style="margin-top:14px;">${busca}</div>${tabela(['O que fazer','SKU / anúncio','Detalhe'],rows,'Sem pendência.')}`;
   }
-  root.innerHTML=abas+corpo;
+  root.innerHTML=`<div class="cc"><div class="cc-hdr"><div><div class="cc-title">Full · ${_gfEsc(emp)}</div><div class="cc-sub">Ponto ${_gfEsc(rel.ponto||'')} · vendas até ${_gfBR(rel.ancora)} · relação de ${_gfBR(FULL_REL.dia)}</div></div></div>${saude}${graf}${abas}${corpo}</div>`;
+  if(typeof Chart==='undefined') return;
+  const dk=(typeof isDark!=='undefined')&&isDark, tc=dk?'#8891a8':'#556070', gc=dk?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)';
+  const fonte={family:'Inter',size:11};
+  dc('gf-c-canal'); charts['gf-c-canal']=new Chart(document.getElementById('gf-c-canal'),{type:'doughnut',
+    data:{labels:['Pelo Full','Fora do Full'],datasets:[{data:[Math.round(v31f),Math.round(v31-v31f)],backgroundColor:['#4f8ef7','#94a3b8'],borderWidth:2,borderColor:dk?'#101520':'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'58%',animation:{duration:250},plugins:{legend:{position:'right',labels:{color:tc,font:fonte,padding:8}},
+      tooltip:{callbacks:{label:c=>c.label+': '+c.raw+' un ('+(v31?Math.round(100*c.raw/v31):0)+'%)'}}}}});
+  const porT=_GF_ORD.map(c=>env.filter(L=>L.classe===c).reduce((s,L)=>s+((L.aloc||{})[_gfH]||0),0));
+  const tIdx=_GF_ORD.map((c,i)=>i).filter(i=>porT[i]>0);
+  dc('gf-c-tipo'); charts['gf-c-tipo']=new Chart(document.getElementById('gf-c-tipo'),{type:'bar',
+    data:{labels:tIdx.map(i=>_GF_ORD[i]),datasets:[{data:tIdx.map(i=>porT[i]),backgroundColor:tIdx.map(i=>_GF_COR[_GF_ORD[i]]),borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:{duration:250},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' un'}}},
+      onClick:(e,el)=>{ if(el&&el.length){ _gfVis='envio'; _gfTipo=_GF_ORD[tIdx[el[0].index]]; _renderGerFull(emp,mkt); } },
+      scales:{x:{ticks:{color:tc,font:fonte},grid:{color:gc}},y:{ticks:{color:tc,font:fonte,autoSkip:false},grid:{display:false}}}}});
+  const faixas=[['< 7 d',0,7,'#ef4444'],['7–14 d',7,14,'#f97316'],['14–30 d',14,30,'#eab308'],['30–60 d',30,60,'#22c55e'],['60–90 d',60,90,'#4f8ef7'],['> 90 d',90,1e9,'#94a3b8']];
+  const vend=lin.filter(L=>L.un31>0&&!L.semPosicao);   // só quem tem posição no Full
+  dc('gf-c-cob'); charts['gf-c-cob']=new Chart(document.getElementById('gf-c-cob'),{type:'bar',
+    data:{labels:faixas.map(f=>f[0]),datasets:[{data:faixas.map(f=>vend.filter(L=>+L.dias>=f[1]&&+L.dias<f[2]).length),backgroundColor:faixas.map(f=>f[3]),borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:250},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' anúncios com venda'}}},
+      scales:{x:{ticks:{color:tc,font:fonte},grid:{display:false}},y:{ticks:{color:tc,font:fonte,precision:0},grid:{color:gc}}}}});
 }
 function renderGerencial(){
   const empSel=document.getElementById('ger-sel-emp'), vazio=document.getElementById('ger-empty');
