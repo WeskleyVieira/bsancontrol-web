@@ -6245,7 +6245,7 @@ function _renderGerComissao(){
     tr('(−) Outros'+chipF(d.OutrosCustos_fonte), outros, 'neg');
     tr('= Margem da comissão', margem, 'tot');
     dre+='</tbody></table>';
-    if(!temDre) dre+='<div style="font-size:11px;color:var(--t3);margin-top:6px;">Comissão do canal, imposto, CMV e frete aparecem quando este mês for recalculado. A margem e o bônus já são os da comissão.</div>';
+    if(!temDre) dre+='<div style="font-size:11px;color:var(--t3);margin-top:6px;">Comissão do canal, imposto, CMV e frete não estão nesta foto do mês. A margem e o bônus já são os da comissão.</div>';
     const afil=+d.Afiliados||+linha.afiliados||0;
     dre+='<div style="font-size:11px;color:var(--t3);margin-top:6px;">Afiliados '+brl(afil)+chipF(d.Afiliados_fonte)+' · entram no TACOS e já estão na margem.</div>';
     const hist=R.filter(x=>x.operacao===_COM_OP).sort((a,b)=>a.mes<b.mes?-1:a.mes>b.mes?1:0);
