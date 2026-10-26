@@ -6268,7 +6268,7 @@ function _gfCSS(){
 #gf-root .gf-prod{font-weight:600;max-width:300px;white-space:normal;line-height:1.3}
 #gf-root .gf-pq{max-width:280px;white-space:normal;line-height:1.35;font-size:12px;color:var(--t2)}
 #gf-root .gf-big{font-size:18px;font-weight:800}
-#gf-root .gf-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:12px}
+#gf-root .gf-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:12px}
 @media(max-width:900px){#gf-root .gf-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 #gf-root .gf-bar{height:6px;border-radius:99px;background:var(--surf2);overflow:hidden;margin-top:4px;min-width:110px}
 #gf-root .gf-bar>div{height:100%}
@@ -6368,6 +6368,7 @@ function _renderGerFull(emp, mkt){
   const v31=lin.reduce((s,L)=>s+(+L.un31||0),0), v31f=lin.reduce((s,L)=>s+(L.fullPct==null?0:(+L.un31||0)*L.fullPct/100),0);
   const rupt=lin.filter(L=>!L.semPosicao&&L.un31>=6&&+L.dias<7&&L.classe!=='Não repor').length;
   const par=rel.parado||[], parUn=par.reduce((s,r)=>s+(+r.aptas||0),0);
+  const ant=rel.antigo||null, antIt=(ant&&ant.itens)||[], antUn=antIt.reduce((s,r)=>s+(+r.un||0),0);
   const env=_gfLinhasEnvio(rel), envUn=env.reduce((s,L)=>s+((L.aloc||{})[_gfH]||0),0), falta=env.filter(L=>((L.aloc||{})[_gfH]||0)<(L.needH||{})[_gfH]).length;
   const nr=lin.filter(L=>L.classe==='Não repor'&&(L.un31>0||L.aptas>0));
   const pd=rel.pend||[];
@@ -6377,6 +6378,7 @@ function _renderGerFull(emp, mkt){
     ${kpi('Vendas pelo Full', v31?Math.round(100*v31f/v31)+'%':'—', 'das peças vendidas em 31 dias')}
     ${kpi('Em ruptura', rupt, 'zeram em menos de 7 dias', rupt?'#ef4444':'')}
     ${kpi('Parado no Full', _gfNum(parUn), par.length+' anúncios sem giro', par.length?'#f59e0b':'')}
+    ${ant?kpi('Estoque antigo', brl(ant.previsto), _gfNum(antUn)+' peças · fatura de '+_gfBR(ant.vence), ant.previsto>0?'#ef4444':''):kpi('Estoque antigo','—','exporte do Seller Central','')}
     ${kpi('Enviar', _gfNum(envUn), env.length+' anúncios'+(falta?` · ${falta} sem saldo cheio`:''), '#4f8ef7')}
   </div>`;
   const graf=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:10px;">
@@ -6385,7 +6387,7 @@ function _renderGerFull(emp, mkt){
     <div class="kpi"><div class="kpi-eye">Quanto dura o estoque no Full</div><div style="position:relative;height:170px;margin-top:6px;"><canvas id="gf-c-cob"></canvas></div></div>
   </div>`;
   const sub=(id,txt,nn)=>`<button class="gf-subb${_gfVis===id?' on':''}" onclick="_gfVis='${id}';_gfTipo='';${chama}">${txt}<span class="gf-subn">${nn}</span></button>`;
-  const abas=`<div class="gf-sub" style="margin-top:14px;">${sub('envio','O que enviar',env.length)}${sub('nao','Não repor',nr.length)}${sub('parado','Parado no Full',par.length)}${sub('pend','Pendências',pd.length)}</div>`;
+  const abas=`<div class="gf-sub" style="margin-top:14px;">${sub('envio','O que enviar',env.length)}${sub('nao','Não repor',nr.length)}${sub('parado','Parado no Full',par.length)}${sub('antigo','Estoque antigo',antIt.length)}${sub('desemp','Desempenho do Full',rel.desemp?(rel.desemp.pctTempo+'%'):'—')}${sub('pend','Pendências',pd.length)}</div>`;
   const busca=`<input id="gf-q" value="${_gfEsc(_gfQ||'')}" placeholder="Buscar produto, SKU ou MLB…" oninput="_gfQ=this.value;var p=this.selectionStart;${chama};var n=document.getElementById('gf-q');if(n){n.focus();try{n.setSelectionRange(p,p);}catch(e){}}" style="width:100%;max-width:360px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);font-family:'Inter',sans-serif;font-size:12px;padding:7px 12px;outline:none;">`;
   const th=cols=>'<tr>'+cols.map(c=>`<th style="text-align:left;white-space:nowrap;">${c}</th>`).join('')+'</tr>';
   const td=(v,x)=>`<td style="${x||''}">${v}</td>`;
@@ -6411,11 +6413,44 @@ function _renderGerFull(emp, mkt){
   } else if(_gfVis==='nao'){
     const rows=nr.filter(bate).sort((a,b)=>(b.aptas-a.aptas)||(b.un31-a.un31)).map(L=>'<tr>'+[td(`<b>${_gfEsc(L.motivo)}</b>`,'max-width:260px;white-space:normal;'),td(_gfAnuncio(L)),td(_gfVendas(L,null)),td(_gfNoFull(L)),td(_gfExp(L)),td(_gfOport(L,0))].join('')+'</tr>').join('');
     corpo=`<div style="margin-top:14px;">${busca}</div>${tabela(['Por que não repor','Anúncio','Vendas 31 / 16 / 8 d','No Full','Experiência / qualidade','Oportunidade ML'],rows,'Nenhum anúncio com venda ou estoque fora da reposição.')}`;
+  } else if(_gfVis==='desemp'){
+    // DESEMPENHO DO FULL (Relatório geral de estoque do Seller Central, lido pelo full-relacao.js — 26/10/2026). Tempo de estoque
+    // e fora de venda são absolutos (conferidos com a tela do ML); vendas por m³ e rotatividade o ML compara com outros vendedores.
+    const d=rel.desemp;
+    if(!d){ corpo=`<div class="cc-sub" style="margin-top:14px;">Sem o Relatório geral de estoque desta conta. No Seller Central: Gestão de estoque Full › Controle de estoque › Baixar relatórios de estoque › <b>Relatório geral de estoque</b> (e o de custos pelo serviço de armazenamento, para as medidas). Salve em "1 - Gestão de Dados/Downloads/Full_Relatorios".</div>`; }
+    else {
+      const envUn2=env.reduce((s,L)=>s+((L.aloc||{})[_gfH]||0),0), comEnv=d.armazenadas+envUn2, pctDep=comEnv?100*d.antigo/comEnv:0;
+      const fx=p=>p<4?30:p<6?23:p<8?15:p<10?8:0, pc2=v=>(+v).toFixed(1).replace('.',',')+'%';
+      const card=(eye,val,s,cor)=>`<div class="kpi"><div class="kpi-eye">${eye}</div><div class="kpi-val"${cor?` style="color:${cor}"`:''}>${val}</div><div class="kpi-sub">${s}</div></div>`;
+      const cards=`<div class="gf-kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">`
+        +card('Tempo de estoque · '+d.ptsTempo+'/30',pc2(d.pctTempo),_gfNum(d.antigo)+' de '+_gfNum(d.armazenadas)+' peças com 8+ semanas (estrela não conta)'+(d.tirarPara4>0?' · tirar '+d.tirarPara4+' para ficar abaixo de 4% (30 pts)':''),d.ptsTempo>=30?'#22c55e':(d.ptsTempo>=23?'#f59e0b':'#ef4444'))
+        +card('Fora de venda · '+d.ptsFora+'/10',pc2(d.pctFora),_gfNum(d.fora)+' peças em anúncio pausado ou não aptas',d.ptsFora>=10?'#22c55e':'#ef4444')
+        +card('Rotatividade (30 dias)',d.rot30==null?'—':String(d.rot30).replace('.',',')+'×',_gfNum(d.vend30)+' vendidas ÷ '+_gfNum(d.med30)+' de estoque médio · o ML compara com outros vendedores','')
+        +card('Vendas por m³ (30 dias)',d.rsPorM3?brl(d.rsPorM3):'—','R$ '+_gfNum(d.rs30)+' ÷ '+String(d.m3Medio).replace('.',',')+' m³ de estoque médio · comparativo','')+`</div>`;
+      const proj=`<div class="cc-sub" style="margin-top:10px;">Com o envio desta relação (${_gfNum(envUn2)} peças), a base vai a ~${_gfNum(comEnv)} e o tempo de estoque cai para <b>~${pc2(pctDep)}</b> (${fx(pctDep)} pts), se nenhuma peça nova passar de 8 semanas até lá. Nota de <b>15/nov</b> define o espaço de dezembro (≥ 70 = estendido). Relatório: ${_gfEsc(d.atualizado)}</div>`;
+      const rA=(d.antigos||[]).filter(r=>bate({sku:r.sku,prod:r.prod,mlb:r.mlb})).map(r=>'<tr>'+[td(`<span class="gf-big">${_gfNum(r.antigo)}</span><div class="gf-mini">de ${_gfNum(r.arm)}</div>`,'text-align:right;'),td(`<div class="gf-prod">${_gfEsc(r.prod)}</div><div class="gf-mini">${_gfEsc(r.sku)} · ${_gfEsc(r.inv)} · ${_gfEsc(r.tam)}</div>`),td(_gfNum(r.v30),'text-align:right;'),td(_gfEsc(r.esgota||'—')),td(`<b>${r.v30>0?'Promover para girar':'Retirar ou liquidar'}</b>`)].join('')+'</tr>').join('');
+      const rG=(d.giroBaixo||[]).filter(r=>bate({sku:r.sku,prod:r.prod,mlb:r.mlb})).map(r=>'<tr>'+[td(`<div class="gf-prod">${_gfEsc(r.prod)}</div><div class="gf-mini">${_gfEsc(r.sku)} · ${_gfEsc(r.tam)}</div>`),td(_gfNum(r.med30),'text-align:right;'),td(_gfNum(r.v30),'text-align:right;'),td(String(r.rot).replace('.',',')+'×','text-align:right;'),td(r.rsM3?brl(r.rsM3):'—','text-align:right;')].join('')+'</tr>').join('');
+      corpo=cards+proj+`<div style="margin-top:12px;">${busca}</div>`
+        +`<div class="cc-title" style="margin-top:14px;font-size:14px;">Peças com tempo de estoque (8+ semanas) — o que tirar primeiro</div>`+tabela(['Peças antigas','Anúncio','Vendas 30 d','Esgota em','O que fazer'],rA,'Nenhuma peça com tempo de estoque.')
+        +`<div class="cc-title" style="margin-top:18px;font-size:14px;">Giro baixo — pesam na rotatividade e nas vendas por m³ (não repor até girar)</div>`+tabela(['Anúncio','Estoque médio 30 d','Vendas 30 d','Giro','R$ por m³'],rG,'Nenhum anúncio de giro baixo.');
+    }
+  } else if(_gfVis==='antigo'){
+    // CUSTOS POR ESTOQUE ANTIGO (exportação do Seller Central lida pelo full-relacao.js, 26/10/2026). Custo a partir de 4 meses
+    // (supermercado 2): Pequeno R$1/12/28 · Médio 2/15,90/35 · Grande 6/40/92 · Extragrande 8/52/145 (4–6 / 6–12 / 12+ meses).
+    const v31=new Map(lin.map(L=>[_gfChave(L.sku),L]));
+    const rows=antIt.filter(r=>bate({sku:r.sku,prod:r.prod,mlb:r.inv})).sort((a,b)=>b.custo-a.custo).map(r=>{ const L=v31.get(_gfChave(r.sku));
+      const faixas=Object.entries(r.faixas||{}).map(([k,v])=>v+' un '+k.toLowerCase()).join(' · ');
+      const vende=L&&L.un31>0, fazer=vende?'Vende '+L.un31+'/mês: promover para girar antes da fatura':'Sem venda: retirar do Full ou liquidar';
+      return '<tr>'+[td(`<span class="gf-big">${_gfNum(r.un)}</span>`,'text-align:right;'),td(`<div class="gf-prod">${_gfEsc(r.prod)}</div><div class="gf-mini">${_gfEsc(r.sku)} · ${_gfEsc(r.inv)} · ${_gfEsc(r.tam||'')}</div>`),
+        td(`${_gfNum(r.dias)} dias<div class="gf-mini">${_gfEsc(faixas)}</div>`),td(`<b style="color:${r.custo>0?'#ef4444':'var(--t3)'}">${brl(r.custo)}</b>`,'text-align:right;'),
+        td(L?_gfVendas(L,null):'<span class="gf-mini">sem venda na relação</span>'),td(`<b>${fazer}</b>`,'max-width:240px;white-space:normal;')].join('')+'</tr>'; }).join('');
+    corpo=ant?`<div class="cc-sub" style="margin-top:14px;">Peças que vão pagar estoque antigo na fatura de ${_gfBR(ant.vence)} (previsto ${brl(ant.previsto)}), pela exportação do Seller Central de ${_gfBR(ant.dia)}. Venda ou retire antes do fechamento. Para a nota do Full, o tempo de estoque já conta a partir de 8 semanas.</div><div style="margin-top:10px;">${busca}</div>${tabela(['Peças','Anúncio','Idade no Full','Custo previsto','Vendas 31 / 16 / 8 d','O que fazer'],rows,'Nenhuma peça com custo de estoque antigo.')}`
+      :`<div class="cc-sub" style="margin-top:14px;">Sem a exportação de estoque antigo desta conta. No Seller Central: Anúncios › Gestão de estoque Full › Custos por estoque antigo › baixar, e salve em "1 - Gestão de Dados/Downloads/Full_EstoqueAntigo". A API do Mercado Livre não entrega a idade das peças.</div>`;
   } else if(_gfVis==='parado'){
     const rows=par.filter(bate).sort((a,b)=>b.aptas-a.aptas).map(r=>'<tr>'+[td(`<span class="gf-big">${_gfNum(r.aptas)}</span>`,'text-align:right;'),td(_gfAnuncio(r)),td(`<b>${_gfEsc(r.motivo)}</b>${r.aging?'<div class="gf-mini">tem isenção de estoque antigo do ML</div>':''}`,'max-width:280px;white-space:normal;'),td(_gfNum(r.un31),'text-align:right;'),td(r.un31>0?`${Math.round(+r.dias)} dias`:'sem venda'),td(r.un31>0?'Promoção para girar':'Retirar do Full ou promoção forte','white-space:normal;max-width:180px;')].join('')+'</tr>').join('');
     corpo=`<div class="cc-sub" style="margin-top:14px;">Peças paradas no Full antes de virarem estoque antigo e gerarem custo. Itens de temporada não entram aqui.</div><div style="margin-top:10px;">${busca}</div>${tabela(['Peças paradas','Anúncio','Motivo','Vd 31d','Estoque dura','O que fazer'],rows,'Nada parado no Full.')}`;
   } else {
-    const ordA=['Resolver experiência','Reativar anúncio','Cadastrar no Full','Corrigir SKU','Cadastro duplicado na Olist','Sem saldo na Olist','Melhorar experiência'];
+    const ordA=['Resolver experiência','Reativar anúncio','Cadastrar no Full','Corrigir SKU','Cadastro duplicado na Olist','Estoque antigo','Sem saldo na Olist','Melhorar experiência'];
     const rows=pd.filter(bate).sort((a,b)=>ordA.indexOf(a.acao)-ordA.indexOf(b.acao)).map(r=>'<tr>'+[td(`<b>${_gfEsc(r.acao)}</b>`,'white-space:nowrap;'),td(`<div class="gf-prod">${_gfEsc(r.sku)}</div><div class="gf-mini"><a href="https://produto.mercadolivre.com.br/MLB-${_gfEsc(String(r.mlb).replace(/^MLB/i,''))}" target="_blank" rel="noopener">${_gfEsc(r.mlb)}</a></div>`),td(_gfEsc(r.detalhe),'white-space:normal;max-width:460px;')].join('')+'</tr>').join('');
     corpo=`<div style="margin-top:14px;">${busca}</div>${tabela(['O que fazer','SKU / anúncio','Detalhe'],rows,'Sem pendência.')}`;
   }
