@@ -6241,7 +6241,7 @@ function _renderGerComissao(){
     tr(adsLbl, adsNa, 'neg');
     tr('(−) Full'+chipF(d.CustoFull_fonte), full, 'neg');
     tr('(−) Minha página'+chipF(d.MinhaPagina_fonte), mpg, 'neg');
-    tr('(−) Pica-pinha'+chipF(d.Picapinha_fonte), pica, 'neg');
+    tr('(−) <span title="Gasolina e pedágios para o motorista levar o envio Full até o CD do Mercado Livre">Custos de deslocamento para envios Full</span>'+chipF(d.Picapinha_fonte), pica, 'neg');
     tr('(−) Outros'+chipF(d.OutrosCustos_fonte), outros, 'neg');
     tr('= Margem da comissão', margem, 'tot');
     dre+='</tbody></table>';
@@ -6310,7 +6310,7 @@ function _renderGerComissao(){
       const AZUL='#4f8ef7', VERM='#ef5350', VERDE='#22c55e', AMAR='#f59e0b';
       if(temDre){ total('Faturam.', fat, AZUL); drop('−Comissão', +d.DreComissao, VERM); drop('−Impostos', +d.DreImposto, VERM); drop('−CMV', +d.DreCmv, VERM); drop('−Frete', +d.DreFrete, VERM); drop('Devoluções', -(+d.DreDevolucao||0), (+d.DreDevolucao||0)>=0?VERDE:VERM); }
       total('Margem bruta', mc, VERDE);
-      drop('−Ads', adsNa, AMAR); drop('−Full', full, VERM); drop('−Minha pág.', mpg, VERM); drop('−Pica-pinha', pica, VERM); drop('−Outros', outros, VERM);
+      drop('−Ads', adsNa, AMAR); drop('−Full', full, VERM); drop('−Minha pág.', mpg, VERM); drop('−Desloc. Full', pica, VERM); drop('−Outros', outros, VERM);
       total('Margem', margem, margem>=0?VERDE:VERM);
       const bonus=+d.BonusFinal_rs||0; total('Bônus', bonus, bonus>=0?'#34d399':'#f87171');
       const tc=(typeof isDark!=='undefined'&&isDark)?'#8891a8':'#556070';
