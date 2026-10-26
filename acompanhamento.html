@@ -3055,6 +3055,8 @@ function gerCSort(c){ if(GER_CSORT.col===c) GER_CSORT.dir*=-1; else GER_CSORT={c
 function gerCFilt(v){ GER_CFILT=(GER_CFILT===v)?'':v; renderGerencial(); }
 
 function _renderGerPublicidade(A,emp,mkt,ps,pe){
+  // TikTok: o Ads e o afiliado já vêm por venda no demonstrativo → visão própria por SKU (24/10/2026)
+  if(/tik\s*tok/i.test(mkt)) return _renderGerPubTikTok(A,emp,mkt,ps,pe);
   const kp=document.getElementById('ga-kpis'), ag=document.getElementById('ga-agenda'), tb=document.getElementById('ga-tbl'), ch=document.getElementById('ga-chips'), sub=document.getElementById('ga-sub'), tgl=document.getElementById('ga-toggle'), chartBox=document.getElementById('ga-chart-box'), ttl=document.getElementById('ga-tbl-title');
   const esc=_adsEsc;
   // AFILIADOS + ADS juntos (Shopee: o shopee-ads.js grava os dois): a lista de anúncios fica só com o Ads pago e o
@@ -3152,6 +3154,149 @@ function _renderGerPublicidade(A,emp,mkt,ps,pe){
 
   if((soCamp || GER_APUB==='campanha') && nCamp){ ag.style.display='none'; _renderGerPubCamp(arr,temCamp,mkt,ch,tb,sub,ttl,soCamp,opMcp); }
   else { ag.style.display='block'; _renderGerPubAnuncio(arr,ch,tb,sub,ttl,semJoin,opMcp); }
+}
+
+// ── TikTok Shop: Publicidade pelo DEMONSTRATIVO, por SKU (24/10/2026) ──
+// GMV Max e anúncio da loja são cobrados venda a venda e já saem no líquido (campo publicidade, negativo); o afiliado
+// também (campo afiliados). Então o custo de Ads aqui é o real de cada venda e a margem final (mc) já vem com tudo
+// descontado — nada é tirado de novo. O relatório de Ads fica só como conferência: o "Product data" chaveia pelo ID do
+// produto e a venda pelo ID do SKU, não casa.
+// Veredito: ACOS × margem ANTES do Ads (é ela que paga o Ads) · equilíbrio: ROAS = 1 ÷ margem antes do Ads.
+const _VERED_TT={queima:['✂️ Cortar','#f87171'],escala:['🚀 Escalar','#4f8ef7'],lucra:['✅ Manter','#22c55e'],afil:['🤝 Só afiliado','#f472b6']};
+function _renderGerPubTikTok(A,emp,mkt,ps,pe){
+  const kp=document.getElementById('ga-kpis'), ag=document.getElementById('ga-agenda'), tb=document.getElementById('ga-tbl'), ch=document.getElementById('ga-chips'), sub=document.getElementById('ga-sub'), tgl=document.getElementById('ga-toggle'), chartBox=document.getElementById('ga-chart-box'), ttl=document.getElementById('ga-tbl-title');
+  const esc=_adsEsc, pc1=v=>(isFinite(v)?v.toFixed(1).replace('.',','):'∞')+'%';
+  const by={}, dia={}; let nEst=0, fatLiq=0, pubLiq=0, fatNaoLiq=0; const pedsAds=new Set();
+  (A.linhas||[]).filter(r=>_gVenda(r.stat)).forEach(r=>{
+    const k=r.sku||r.tit||'(sem SKU)';
+    const o=by[k]||(by[k]={sku:r.sku||'',tit:r.tit||'',qtd:0,fat:0,liq:0,mc:0,ads:0,afil:0,fatAds:0,liqAds:0,mcAds:0,qtdAds:0,fatAfil:0,est:0});
+    const ads=-(+r.pub||0), af=-(+r.afil||0), fat=+r.fat||0;
+    o.qtd+=+r.qtd||0; o.fat+=fat; o.liq+=+r.liq||0; o.mc+=+r.mc||0; o.ads+=ads; o.afil+=af;
+    if(ads>0){ o.fatAds+=fat; o.liqAds+=+r.liq||0; o.mcAds+=+r.mc||0; o.qtdAds+=+r.qtd||0; if(r.ped) pedsAds.add(r.ped); }
+    if(af>0) o.fatAfil+=fat;
+    if(r.fonte&&r.fonte!=='liquidado_plataforma'){ o.est++; nEst++; fatNaoLiq+=fat; } else { fatLiq+=fat; pubLiq+=ads; }
+    if(r.date){ const d=dia[r.date]||(dia[r.date]={date:r.date,inv:0,rec:0}); d.inv+=ads; if(ads>0) d.rec+=fat; }
+  });
+  const arr=Object.values(by).filter(o=>o.ads>0.005||o.afil>0.005).map(o=>{
+    const b=mcBase(mkt,o.fatAds,o.liqAds);
+    const mcp=b>0?100*(o.mcAds+o.ads)/b:0;              // margem das vendas com Ads, antes do Ads
+    const acos=o.fatAds>0?100*o.ads/o.fatAds:(o.ads>0?Infinity:0);
+    const roas=o.ads>0?o.fatAds/o.ads:0, eq=mcp>0?100/mcp:0, sug=_roasObjSug(mcp);
+    const afTx=o.fatAfil>0?100*o.afil/o.fatAfil:0;
+    const bF=mcBase(mkt,o.fat,o.liq||o.fat), mcpF=bF>0?100*o.mc/bF:0;
+    let vered, acao;
+    if(!(o.ads>0.005)){ vered='afil'; acao=o.mc<0?{ic:'💰',t:'Comissão do criador ('+pc1(afTx)+') leva a margem — rever a taxa',c:'#dc2626'}:{ic:'🤝',t:'Afiliado vendendo com margem — manter',c:'#f472b6'}; }
+    else if(mcp<=0||acos>mcp){ vered='queima';
+      acao=(mcp>0&&mcp<ADS_TH.mcFina)?{ic:'💰',t:'Corrigir preço/custo — antes do Ads a margem é só '+pc1(mcp),c:'#dc2626'}
+        :{ic:'✂️',t:'Tirar do GMV Max ou subir o ROI-alvo p/ ~'+(sug?String(sug).replace('.',',')+'x':'—')+' (equilíbrio '+(eq?eq.toFixed(1).replace('.',',')+'x':'—')+')',c:'#f87171'}; }
+    else if(acos<=mcp*ADS_TH.escalaFolga){ vered='escala'; acao={ic:'🚀',t:'Dar mais verba / baixar o ROI-alvo p/ ~'+(sug?String(sug).replace('.',',')+'x':'—')+' — ACOS '+pc1(acos)+' « margem '+pc1(mcp),c:'#4f8ef7'}; }
+    else { vered='lucra'; acao={ic:'✅',t:'Manter — o Ads se paga com folga curta',c:'#22c55e'}; }
+    return {...o,mcp,acos,roas,eq,afTx,mcpF,vered,acao,resultado:o.mcAds};
+  });
+  // ── totais ──
+  const T=Object.values(by).reduce((t,o)=>{ t.fat+=o.fat; t.mc+=o.mc; t.ads+=o.ads; t.afil+=o.afil; t.fatAds+=o.fatAds; t.liqAds+=o.liqAds; t.mcAds+=o.mcAds; t.fatAfil+=o.fatAfil; return t; },{fat:0,mc:0,ads:0,afil:0,fatAds:0,liqAds:0,mcAds:0,fatAfil:0});
+  const rel=_adsInvOper(emp,mkt,ps,pe);                   // relatório de Ads (gasto da conta), só conferência
+  const acosT=T.fatAds>0?100*T.ads/T.fatAds:0, roasT=T.ads>0?T.fatAds/T.ads:0;
+  const bA=mcBase(mkt,T.fatAds,T.liqAds), mcpPreT=bA>0?100*(T.mcAds+T.ads)/bA:0, eqT=mcpPreT>0?100/mcpPreT:0;
+  // venda não liquidada ainda não traz o GMV Max: estimado pela taxa das liquidadas — a mesma conta da comissão
+  const adsEst=fatLiq>0?pubLiq/fatLiq*fatNaoLiq:0;
+  const tacos=T.fat>0?100*(T.ads+adsEst+T.afil)/T.fat:0, mcpT=T.fat>0?100*T.mc/T.fat:0;
+  const mes=ps.slice(0,7)===pe.slice(0,7)?ps.slice(0,7):'';
+  const det=mes?(Array.isArray(COMISSAO_DET)?COMISSAO_DET:[]).find(x=>x.mes===mes&&x.operacao===emp+' · '+mkt):null;
+  const teto=det?100*(+det.TACOS_obj||0):0;
+  if(!arr.length&&!(rel>0)){
+    kp.innerHTML=''; ch.innerHTML=''; tb.innerHTML=''; tgl.innerHTML=''; if(chartBox)chartBox.style.display='none'; dc('c-ga-dia');
+    ag.style.display='block';
+    ag.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3);font-size:13px;line-height:1.7;">Nenhuma venda com Ads ou afiliado em <b>${esc(emp)} · ${esc(mkt)}</b> neste período.</div>`;
+    return;
+  }
+  const kc=(rot,val,s,cor)=>`<div class="kpi"><div class="kpi-glow" style="background:${cor}"></div><div class="kpi-eye">${rot}</div><div class="kpi-val">${val}</div><div class="kpi-pct" style="color:var(--t3);font-weight:400">${s}</div><div class="kpi-accent" style="background:linear-gradient(90deg,${cor},${cor}44)"></div></div>`;
+  const tacCor=teto?(tacos<=teto?'#22c55e':'#f87171'):'var(--t1)';
+  kp.innerHTML=
+    kc('Investimento em Ads',brl(T.ads+adsEst),'GMV Max + anúncio da loja, cobrado venda a venda'+(adsEst>0.005?' ('+brl(T.ads)+' cobrado + ~'+brl(adsEst)+' estimado nas não liquidadas)':'')+(rel>0?' · relatório de Ads (validação): '+brl(rel):''),'#a855f7')+
+    kc('Venda com Ads',brl(T.fatAds),pedsAds.size+' pedidos · '+pc1(T.fat>0?100*T.fatAds/T.fat:0)+' do faturamento','#4f8ef7')+
+    kc('ACOS',T.fatAds>0?pc1(acosT):'—','ROAS '+roasT.toFixed(1).replace('.',',')+'x · equilíbrio '+(eqT?eqT.toFixed(1).replace('.',',')+'x':'—')+' (margem antes do Ads '+pc1(mcpPreT)+')','#f59e0b')+
+    kc('Afiliados',brl(T.afil),'comissão de '+pc1(T.fatAfil>0?100*T.afil/T.fatAfil:0)+' sobre '+brl(T.fatAfil)+' de venda','#f472b6')+
+    kc('TACOS',`<span style="color:${tacCor}">${pc1(tacos)}</span>`,'(Ads + afiliados) ÷ faturamento'+(teto?' · teto da meta '+pc1(teto)+(tacos<=teto?' ✓':' — acima'):'')+(det?' · na comissão: '+pc1(100*(+det.TACOS_real||0)):''),tacCor==='var(--t1)'?'#8891a8':tacCor)+
+    kc('MC final','<span style="color:'+(T.mc>=0?'#22c55e':'#dc2626')+'">'+brl(T.mc)+'</span>',pc1(mcpT)+' · Ads e afiliados já descontados · antes da mídia '+brl(T.mc+T.ads+T.afil),T.mc>=0?'#22c55e':'#dc2626');
+  // ── gráfico diário: Ads cobrado e venda com Ads, pela data da venda ──
+  const serie=Object.values(dia).filter(d=>d.inv||d.rec).sort((a,b)=>a.date<b.date?-1:1);
+  if(chartBox) chartBox.style.display=serie.length?'block':'none';
+  dc('c-ga-dia');
+  if(serie.length){
+    const tc=isDark?'#8891a8':'#556070', gc=isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)';
+    const dm=d=>d.slice(8)+'/'+d.slice(5,7);
+    charts['c-ga-dia']=new Chart(document.getElementById('c-ga-dia'),{
+      data:{labels:serie.map(s=>dm(s.date)),datasets:[
+        {type:'bar',label:'Venda com Ads',data:serie.map(s=>+s.rec.toFixed(2)),backgroundColor:(MKT_C[mkt]||'#4f8ef7')+'cc',borderWidth:0,yAxisID:'y',order:3},
+        {type:'bar',label:'Ads cobrado',data:serie.map(s=>+s.inv.toFixed(2)),backgroundColor:'#a855f7cc',borderWidth:0,yAxisID:'y',order:2},
+        {type:'line',label:'ROAS',data:serie.map(s=>s.inv>0?+(s.rec/s.inv).toFixed(2):0),borderColor:'#22c55e',backgroundColor:'transparent',tension:.3,pointRadius:0,borderWidth:2,yAxisID:'y1',order:1}]},
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},interaction:{mode:'index',intersect:false},
+        plugins:{legend:{position:'bottom',labels:{color:tc,font:{family:'Inter',size:11},padding:10}},
+          tooltip:{callbacks:{label:c=>c.dataset.label==='ROAS'?('ROAS: '+c.raw.toFixed(2)+'x'):(c.dataset.label+': '+brl(c.raw))}}},
+        scales:{x:{ticks:{color:tc,font:{size:9},maxTicksLimit:16},grid:{display:false}},
+          y:{position:'left',ticks:{color:tc,font:{size:10},callback:v=>brlK?brlK(v):v},grid:{color:gc}},
+          y1:{position:'right',beginAtZero:true,ticks:{color:tc,font:{size:10},callback:v=>v.toFixed(0)+'x'},grid:{display:false}}}}});
+  }
+  tgl.innerHTML='';
+  // ── agenda ──
+  const nome=o=>esc((o.tit||o.sku).slice(0,42));
+  const card=(v,tit,s,itens,fmt)=>{ if(!itens.length) return ''; const [lb,cor]=_VERED_TT[v];
+    return `<div class="cc" style="border-left:3px solid ${cor};"><div class="cc-hdr"><div><div class="cc-title" style="font-size:14px;">${lb.split(' ')[0]} ${tit} <span style="color:${cor}">(${itens.length})</span></div><div class="cc-sub">${s}</div></div></div>
+      <div style="margin-top:4px;">${itens.slice(0,6).map(o=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--bdr);font-size:12px;"><span style="color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;" title="${esc(o.tit)} · ${esc(o.sku)}">${nome(o)}</span><span style="color:var(--t2);white-space:nowrap;font-family:'DM Mono',monospace;">${fmt(o)}</span></div>`).join('')}</div>
+      ${itens.length>6?`<div style="margin-top:8px;"><span onclick="gerAFilt('${v}')" style="cursor:pointer;color:${cor};font-size:12px;font-weight:600;">ver os ${itens.length} na tabela →</span></div>`:''}</div>`; };
+  const de=v=>arr.filter(o=>o.vered===v);
+  const avisos=[];
+  if(nEst) avisos.push(`<b>${nEst} vendas ainda estimadas</b> (pedido não liquidado): o GMV Max delas só aparece no demonstrativo liquidado, então o Ads e o ACOS deste período ainda vão subir. Baixe o demonstrativo mais novo.`);
+  else if(rel>0&&T.ads>0&&Math.abs(rel-T.ads)/rel>0.15) avisos.push(`O demonstrativo cobrou <b>${brl(T.ads)}</b> e o relatório de Ads mostra <b>${brl(rel)}</b>. O relatório conta o gasto pelo dia do clique, o demonstrativo pela venda; diferença grande indica relatório de outro período.`);
+  ag.style.display='block';
+  ag.innerHTML=(avisos.length?`<div class="cc" style="border-left:3px solid #f59e0b;margin-bottom:16px;font-size:12.5px;line-height:1.6;color:var(--t2);">⚠️ ${avisos.join('<br>')}</div>`:'')
+    +`<div class="cc-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+    ${card('queima','Cortar','ACOS acima da margem antes do Ads — cada venda com Ads sai no prejuízo.',de('queima').sort((a,b)=>a.resultado-b.resultado),o=>'ACOS '+pc1(o.acos)+' > '+pc1(o.mcp)+' · '+brl(o.resultado))}
+    ${card('escala','Escalar','ACOS bem abaixo da margem — sobra folga para investir mais.',de('escala').sort((a,b)=>b.resultado-a.resultado),o=>'ACOS '+pc1(o.acos)+' « '+pc1(o.mcp)+' · +'+brl(o.resultado))}
+    ${card('lucra','Manter','O Ads se paga, com folga curta.',de('lucra').sort((a,b)=>b.resultado-a.resultado),o=>'ACOS '+pc1(o.acos)+' · '+brl(o.resultado))}
+    ${card('afil','Só afiliado','Vende só por criador (sem Ads). A comissão já está na margem.',de('afil').sort((a,b)=>b.afil-a.afil),o=>pc1(o.afTx)+' · MC '+brl(o.mc))}
+  </div>`;
+  // ── chips + tabela ──
+  if(ttl) ttl.textContent='📣 Ads e afiliados · por SKU';
+  if(sub) sub.textContent='Custo real de cada venda, do demonstrativo do TikTok. Veredito: ACOS × margem antes do Ads (equilíbrio = 1 ÷ margem). A margem final já vem com Ads e afiliados descontados.';
+  const cnt={}; arr.forEach(o=>cnt[o.vered]=(cnt[o.vered]||0)+1);
+  const chip=(v,l,cor)=>{const on=GER_AFILT===v;const n=v===''?arr.length:(cnt[v]||0);if(v!==''&&!n)return'';return `<span onclick="gerAFilt('${v}')" style="cursor:pointer;font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;border:1px solid ${on?cor:'var(--bdr2)'};background:${on?cor+'22':'transparent'};color:${on?cor:'var(--t2)'};white-space:nowrap;">${l} ${n}</span>`;};
+  ch.innerHTML=chip('','Todos','var(--a)')+Object.keys(_VERED_TT).map(v=>chip(v,_VERED_TT[v][0],_VERED_TT[v][1])).join('');
+  let view=arr; if(GER_AFILT) view=view.filter(o=>o.vered===GER_AFILT);
+  const sv={tit:o=>o.tit||o.sku,qtd:o=>o.qtd,fat:o=>o.fat,rec:o=>o.fatAds,inv:o=>o.ads,acos:o=>isFinite(o.acos)?o.acos:9e9,mcp:o=>o.mcp,roas:o=>o.roas,afil:o=>o.afil,mc:o=>o.mc,res:o=>o.resultado}[GER_ASORT.col]||(o=>o.ads);
+  const lin=view.slice().sort((a,b)=>{const x=sv(a),y=sv(b);const c=(typeof x==='string')?String(x).localeCompare(String(y)):(x-y);return (c*GER_ASORT.dir)||(b.ads-a.ads);});
+  const scc=c=>GER_ASORT.col===c?(GER_ASORT.dir<0?' ▾':' ▴'):'';
+  const stk='position:sticky;top:0;background:var(--surf2);z-index:3;';
+  const th=(c,l,t)=>`<th onclick="gerASort('${c}')" style="cursor:pointer;user-select:none;text-align:right;${stk}"${t?' title="'+t+'"':''}>${l}${scc(c)}</th>`;
+  const mut=s=>`<div style="font-size:10px;color:var(--t3)">${s}</div>`;
+  let h=`<thead><tr><th onclick="gerASort('tit')" style="cursor:pointer;user-select:none;${stk}">Produto${scc('tit')}</th>`
+    +th('qtd','Vendas','Unidades vendidas no período')+th('fat','Faturamento','Venda do SKU no período')
+    +th('rec','Venda c/ Ads','Venda dos pedidos em que o TikTok cobrou Ads (embaixo: parte do faturamento do SKU)')
+    +th('inv','Ads','GMV Max + anúncio da loja cobrados nessas vendas')+th('acos','ACOS','Ads ÷ venda com Ads')
+    +th('mcp','Margem antes do Ads','Margem das vendas com Ads antes de pagar o Ads — o break-even do ACOS')
+    +th('roas','ROAS','Venda com Ads ÷ Ads (embaixo: o ROAS de equilíbrio = 1 ÷ margem antes do Ads)')
+    +th('afil','Afiliados','Comissão de criador (embaixo: taxa sobre a venda com afiliado)')
+    +th('mc','MC final','Margem do SKU com Ads e afiliados já descontados')
+    +`<th style="${stk}">Veredito</th><th style="min-width:230px;${stk}">Ação recomendada</th></tr></thead><tbody>`;
+  lin.forEach(o=>{
+    const [lb,cor]=_VERED_TT[o.vered], ac=o.acao, temAds=o.ads>0.005;
+    h+=`<tr><td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(o.tit)}"><span style="color:var(--t1)">${esc(o.tit||'—')}</span><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--t3)">${esc(o.sku)}${o.est?' · '+o.est+' estimada'+(o.est>1?'s':''):''}</div></td>`
+      +`<td class="r">${Math.round(o.qtd)}</td>`
+      +`<td class="r">${brl(o.fat)}</td>`
+      +`<td class="r" style="color:var(--t2)">${temAds?brl(o.fatAds)+mut(pc1(o.fat>0?100*o.fatAds/o.fat:0)):'—'}</td>`
+      +`<td class="r">${temAds?brl(o.ads):'—'}</td>`
+      +`<td class="r">${temAds?`<span style="color:${cor};font-weight:600">${pc1(o.acos)}</span>`:'—'}</td>`
+      +`<td class="r">${temAds?mcPct(o.mcp,1):'—'}</td>`
+      +`<td class="r" style="color:var(--t2)">${temAds?o.roas.toFixed(1).replace('.',',')+'x'+mut('equilíbrio '+(o.eq?o.eq.toFixed(1).replace('.',',')+'x':'—')):'—'}</td>`
+      +`<td class="r" style="color:var(--t2)">${o.afil>0.005?brl(o.afil)+mut(pc1(o.afTx)):'—'}</td>`
+      +`<td class="r" style="color:${o.mc<0?'#f87171':'var(--t1)'}">${brl(o.mc)}${mut(pc1(o.mcpF))}</td>`
+      +`<td><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:100px;background:${cor}22;color:${cor}">${lb}</span></td>`
+      +`<td style="max-width:250px;white-space:normal;font-size:11.5px;color:${ac.c}">${ac.ic} ${esc(ac.t)}</td></tr>`;
+  });
+  if(!lin.length) h+=`<tr><td colspan="12" style="text-align:center;color:var(--t3);padding:24px">Nenhum SKU neste filtro.</td></tr>`;
+  h+='</tbody>'; tb.innerHTML=h;
+  _GA_EXP={tipo:'tiktok', rows:lin};
 }
 
 // ── visão POR CAMPANHA (métricas oficiais do ML + margem cruzada + diagnóstico ML) ──
@@ -3291,7 +3436,10 @@ function exportGerPublicidadeCSV(){
   const csvEsc=t=>{ const s=String(t==null?'':t); return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
   const n2=v=>(v==null||!isFinite(+v))?'':(+v).toFixed(2);
   let cab, lin;
-  if(exp.tipo==='camp'){
+  if(exp.tipo==='tiktok'){
+    cab=['Produto','SKU','Unidades','Faturamento','Venda_com_Ads','Ads','ACOS_%','Margem_antes_Ads_%','ROAS','ROAS_equilibrio','Afiliados','Taxa_afiliado_%','MC_final','MC_final_%','Veredito','Acao'];
+    lin=rows.map(o=>[o.tit||'',o.sku||'',Math.round(o.qtd||0),n2(o.fat),n2(o.fatAds),n2(o.ads),isFinite(o.acos)?n2(o.acos):'',n2(o.mcp),n2(o.roas),n2(o.eq),n2(o.afil),n2(o.afTx),n2(o.mc),n2(o.mcpF),(_VERED_TT[o.vered]||[o.vered])[0],(o.acao&&o.acao.t)||''].map(csvEsc).join(';'));
+  } else if(exp.tipo==='camp'){
     cab=['Campanha','Status','Orcamento_dia','Investimento','Receita_Ads','ACOS_%','ROAS','ROAS_objetivo','MC_%','MC_pos_Ads','Veredito','Acao','Vendas'];
     lin=rows.map(r=>[r.nome,r.status,n2(r.orc),n2(r.inv),n2(r.rec),isFinite(r.acos)?n2(r.acos):'',n2(r.roas),r.obj?n2(r.obj):'',n2(r.mcp),n2(r.mcPos),(typeof _VERED!=='undefined'&&_VERED[r.vered]?_VERED[r.vered][0]:r.vered),(r.acao&&r.acao.t)||'',r.vatr||''].map(csvEsc).join(';'));
   } else {
@@ -6097,9 +6245,9 @@ window._gerGaranteAbertura=_gerGaranteAbertura;
 // ── ABA FULL (Gerencial) — relação de envio ao Full por anúncio. Dados: FULL_REL (full-relacao.js → /api/extras).
 // O gestor lê: o que mandar, o que não repor e por quê, o que está parado no Full e o que tem de resolver.
 let _gfQ='', _gfVis='envio', _gfH='regra', _gfTipo='';
-const _GF_COR={'P1':'#ef4444','Estrela':'#eab308','Ruptura':'#f97316','Sazonal':'#a855f7','Novo trator':'#10b981','Em alta':'#22c55e','Levar ao Full':'#8b5cf6','Novo com tração':'#14b8a6','Teste':'#06b6d4','Reposição':'#64748b','Não repor':'#94a3b8','Coberto':'#94a3b8'};
-const _GF_DICA={'P1':'Lista P1 — não pode zerar','Estrela':'Produto estrela do Mercado Livre — manter abastecido','Ruptura':'Vai zerar (ou já zerou) e tem venda comprovada','Sazonal':'Temporada — a cobertura vai só até o fim da data','Novo trator':'Começou a vender forte agora','Em alta':'Vendas subindo nas últimas semanas','Levar ao Full':'Vende pelo nosso estoque e ainda não está no Full — cadastrar e mandar','Novo com tração':'Anúncio novo que já vendeu — 4 un para tracionar no Full','Teste':'Tem visitas e nenhuma venda — 2 un para testar no Full','Reposição':'Reposição normal'};
-const _GF_ORD=['P1','Estrela','Ruptura','Sazonal','Novo trator','Em alta','Levar ao Full','Novo com tração','Teste','Reposição'];
+const _GF_COR={'Não pode faltar':'#ef4444','Estrela':'#eab308','Ruptura':'#f97316','Sazonal':'#a855f7','Novo trator':'#10b981','Em alta':'#22c55e','Levar ao Full':'#8b5cf6','Novo com tração':'#14b8a6','Teste':'#06b6d4','Reposição':'#64748b','Não repor':'#94a3b8','Coberto':'#94a3b8'};
+const _GF_DICA={'Não pode faltar':'Lista de produtos que não podem zerar no Full','Estrela':'Produto estrela do Mercado Livre — manter abastecido','Ruptura':'Vai zerar (ou já zerou) e tem venda comprovada','Sazonal':'Temporada — a cobertura vai só até o fim da data','Novo trator':'Começou a vender forte agora','Em alta':'Vendas subindo nas últimas semanas','Levar ao Full':'Vende pelo nosso estoque e ainda não está no Full — cadastrar e mandar','Novo com tração':'Anúncio novo que já vendeu — 4 un para tracionar no Full','Teste':'Tem visitas e nenhuma venda — 2 un para testar no Full','Reposição':'Reposição normal'};
+const _GF_ORD=['Não pode faltar','Estrela','Ruptura','Sazonal','Novo trator','Em alta','Levar ao Full','Novo com tração','Teste','Reposição'];
 function _gfEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function _gfNum(v){ if(v===''||v==null) return '—'; const n=Number(v); return isFinite(n)?n.toLocaleString('pt-BR'):_gfEsc(v); }
 function _gfChave(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
@@ -6140,12 +6288,27 @@ function _gfVendas(L, per){
 function _gfNoFull(L){
   const d=+L.dias; const z=!(L.un31>0)?'sem venda':(d>=999?'sem giro':(d<1?'zerado':`zera em ${Math.round(d)} d`));
   const cor=(L.un31>0&&d<7)?'#ef4444':((L.un31>0&&d<14)?'#f59e0b':'var(--t3)');
-  return `${_gfNum(L.aptas)}${L.cam?` <span class="gf-mini">+${_gfNum(L.cam)} a caminho</span>`:''}<div class="gf-mini" style="color:${cor}">${z}</div>`;
+  return `${_gfNum(L.aptas)}${L.cam?` <span class="gf-mini" title="Não conta como estoque até chegar: o envio pode ter sido criado só para segurar a data">+${_gfNum(L.cam)} a caminho (não conta)</span>`:''}<div class="gf-mini" style="color:${cor}">${z}</div>`;
+}
+function _gfQual(L){
+  if(L.qual!=null){ const c=L.qual>=80?'#22c55e':(L.qual>=60?'#f59e0b':'#ef4444'); return `<div class="gf-mini" title="Qualidade do anúncio ${_gfEsc(L.qualMlb||'')}${L.qualFaltam?' · '+L.qualFaltam+' objetivo(s) a alcançar':''}">Qualidade <b style="color:${c}">${L.qual}</b>${L.qualFaltam?' · '+L.qualFaltam+' a melhorar':''}</div>`; }
+  return L.qualNivel==='catálogo'?'<div class="gf-mini" title="O ML não calcula a qualidade de anúncio de catálogo pela API">Qualidade: catálogo</div>':'';
 }
 function _gfExp(L){
-  if(!L.exp) return '<span style="color:var(--t3)">—</span>';
+  if(!L.exp) return '<span style="color:var(--t3)">—</span>'+_gfQual(L);
   const cor=/green/i.test(L.expCor||'')?'#22c55e':(/red/i.test(L.expCor||'')?'#ef4444':(/gray/i.test(L.expCor||'')?'#94a3b8':'#f59e0b'));
-  return `<span class="gf-pill" style="--c:${cor}" title="${_gfEsc(L.expMotivo||'')}">${_gfEsc(L.exp)}</span>${L.expMotivo&&!/green/i.test(L.expCor||'')?`<div class="gf-mini" style="max-width:200px;white-space:normal">${_gfEsc(L.expMotivo)}</div>`:''}`;
+  return `<span class="gf-pill" style="--c:${cor}" title="${_gfEsc(L.expMotivo||'')}">${_gfEsc(L.exp)}${L.expVal!=null?' · '+L.expVal:''}</span>${L.expMotivo&&!/green/i.test(L.expCor||'')?`<div class="gf-mini" style="max-width:200px;white-space:normal">${_gfEsc(L.expMotivo)}</div>`:''}${_gfQual(L)}`;
+}
+// Oportunidade do ML (tela "Planeje seu envio"): envio rápido pelo país com Full + a caminho ≥ mínimo; isenção de
+// estoque antigo, no anúncio elegível, ao mandar ≥ a sugestão. Serve para decidir mandar MAIS que a regra. 26/10/2026.
+const _GF_URG={URGENT:['Urgente','#ef4444'],THIS_WEEK:['Esta semana','#f97316'],NEXT_WEEK:['Próxima semana','#f59e0b'],IN_TWO_WEEKS:['Em 2 semanas','#eab308'],NO_URGENCY:['Sem urgência','#94a3b8'],EXCEDENT:['Excesso','#94a3b8']};
+function _gfOport(L, envio){
+  const p=[];
+  const u=_GF_URG[L.urg]; if(u) p.push(`<span style="color:${u[1]};font-weight:600">ML: ${u[0]}</span>${L.sugML>0?' · sugere '+_gfNum(L.sugML):''}`);
+  if(L.minML>0){ const tem=(+L.aptas||0)+(+L.cam||0)+(+envio||0), falta=L.minML-tem;
+    p.push(falta<=0?`<span title="Full + a caminho${envio?' + este envio':''} = ${tem} ≥ mínimo ${L.minML}">⚡ envio rápido pelo país ✓</span>`:`<span style="color:#f59e0b" title="mínimo do ML: ${L.minML} · tem ${tem}">⚡ envio rápido: faltam ${_gfNum(falta)}</span>`); }
+  if(L.isencaoML&&L.sugML>0) p.push(+envio>=L.sugML?'<span style="color:#22c55e">🏷️ isenção de estoque antigo ✓</span>':`<span style="color:#a855f7" title="O ML dá isenção do custo de estoque antigo enviando ao menos a sugestão">🏷️ isenção enviando ≥ ${_gfNum(L.sugML)}${envio>0?' (+'+_gfNum(L.sugML-envio)+')':''}</span>`);
+  return p.length?'<div class="gf-mini" style="line-height:1.6;white-space:nowrap">'+p.join('<br>')+'</div>':'<span style="color:var(--t3)">—</span>';
 }
 function _gfOlist(L, q){
   if(L.olist==null) return '<span class="gf-mini">sem leitura</span>';
@@ -6155,7 +6318,7 @@ function _gfOlist(L, q){
 }
 function _gfPorque(L){
   const p=[]; if(_GF_DICA[L.classe]&&L.classe!=='Reposição') p.push(_GF_DICA[L.classe]);
-  String(L.obs||'').split(' · ').filter(Boolean).forEach(x=>{ if(!/^P1 |margem não apurada/.test(x)) p.push(x); });
+  String(L.obs||'').split(' · ').filter(Boolean).forEach(x=>{ if(!/^P1 |^Não pode faltar:|margem não apurada/.test(x)) p.push(x); });
   return `<div class="gf-pq" title="${_gfEsc((L.obs||'').replace(/ · /g,'\n'))}">${_gfEsc(p.slice(0,3).join(' · ')||'—')}</div>`;
 }
 function _gfVendasPeriodo(emp, mkt){
@@ -6199,6 +6362,7 @@ function _renderGerFull(emp, mkt){
   const q=(_gfQ||'').toLowerCase();
   const bate=r=>!q||[r.sku,r.prod,r.mlb,r.motivo,r.acao,r.detalhe,r.obs].join(' ').toLowerCase().indexOf(q)>=0;
   const lin=rel.linhas||[];
+  lin.forEach(L=>{ if(L.classe==='P1') L.classe='Não pode faltar'; });   // relação gerada antes de 26/10 ainda diz "P1"
   // saúde da conta
   const aptas=lin.reduce((s,L)=>s+(+L.aptas||0),0), cam=lin.reduce((s,L)=>s+(+L.cam||0),0);
   const v31=lin.reduce((s,L)=>s+(+L.un31||0),0), v31f=lin.reduce((s,L)=>s+(L.fullPct==null?0:(+L.un31||0)*L.fullPct/100),0);
@@ -6237,21 +6401,21 @@ function _renderGerFull(emp, mkt){
     const rows=ls.map(L=>{
       const a=(L.aloc||{})[_gfH]||0, need=(L.needH||{})[_gfH]||0;
       const env2=`<span class="gf-big"${a<need?' style="color:#f59e0b"':''}>${_gfNum(a)}</span>${a<need?`<div class="gf-mini">precisava ${_gfNum(need)}${a===0?' · sem saldo na Olist':' · saldo dividido entre as contas'}</div>`:''}`;
-      return '<tr>'+[td(_gfPill(L.classe)),td(_gfAnuncio(L)),td(env2,'text-align:right;'),td(_gfPorque(L)),td(_gfVendas(L,rot?(perM.get(L.chave)||0):null)),td(_gfNoFull(L)),td(_gfExp(L)),td(_gfOlist(L,need))].join('')+'</tr>';
+      return '<tr>'+[td(_gfPill(L.classe)),td(_gfAnuncio(L)),td(env2,'text-align:right;'),td(_gfPorque(L)),td(_gfVendas(L,rot?(perM.get(L.chave)||0):null)),td(_gfNoFull(L)),td(_gfExp(L)),td(_gfOport(L,a)),td(_gfOlist(L,need))].join('')+'</tr>';
     }).join('');
     corpo=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px;"><span class="cc-sub" style="margin:0">Cobrir:</span>${chipsH}<span class="gf-mini" style="margin-left:4px">${_gfH==='regra'?'regra do perfil: 45 a 90 dias conforme a tendência; sazonal até o fim da data':'velocidade × '+_gfH+' dias − o que já está no Full e a caminho'}</span></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${chipsT}</div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;">${busca}<button class="dshort" onclick="exportGerFullCSV('${ej(emp)}','${ej(mkt)}')">Exportar CSV (galpão)</button></div>
-      ${tabela(['Tipo','Anúncio','Enviar','Por quê','Vendas 31 / 16 / 8 d','No Full','Experiência','Olist'],rows,'Nada a enviar nesta cobertura.')}
+      ${tabela(['Tipo','Anúncio','Enviar','Por quê','Vendas 31 / 16 / 8 d','No Full','Experiência / qualidade','Oportunidade ML','Olist'],rows,'Nada a enviar nesta cobertura.')}
       <div class="cc-sub" style="margin-top:8px;">A Olist é dividida entre as contas do mesmo ponto: 10% fica para a venda direta, e quem vende mais com melhor margem recebe primeiro. Nada aqui cria envio no Mercado Livre.</div>`;
   } else if(_gfVis==='nao'){
-    const rows=nr.filter(bate).sort((a,b)=>(b.aptas-a.aptas)||(b.un31-a.un31)).map(L=>'<tr>'+[td(`<b>${_gfEsc(L.motivo)}</b>`,'max-width:260px;white-space:normal;'),td(_gfAnuncio(L)),td(_gfVendas(L,null)),td(_gfNoFull(L)),td(_gfExp(L))].join('')+'</tr>').join('');
-    corpo=`<div style="margin-top:14px;">${busca}</div>${tabela(['Por que não repor','Anúncio','Vendas 31 / 16 / 8 d','No Full','Experiência'],rows,'Nenhum anúncio com venda ou estoque fora da reposição.')}`;
+    const rows=nr.filter(bate).sort((a,b)=>(b.aptas-a.aptas)||(b.un31-a.un31)).map(L=>'<tr>'+[td(`<b>${_gfEsc(L.motivo)}</b>`,'max-width:260px;white-space:normal;'),td(_gfAnuncio(L)),td(_gfVendas(L,null)),td(_gfNoFull(L)),td(_gfExp(L)),td(_gfOport(L,0))].join('')+'</tr>').join('');
+    corpo=`<div style="margin-top:14px;">${busca}</div>${tabela(['Por que não repor','Anúncio','Vendas 31 / 16 / 8 d','No Full','Experiência / qualidade','Oportunidade ML'],rows,'Nenhum anúncio com venda ou estoque fora da reposição.')}`;
   } else if(_gfVis==='parado'){
     const rows=par.filter(bate).sort((a,b)=>b.aptas-a.aptas).map(r=>'<tr>'+[td(`<span class="gf-big">${_gfNum(r.aptas)}</span>`,'text-align:right;'),td(_gfAnuncio(r)),td(`<b>${_gfEsc(r.motivo)}</b>${r.aging?'<div class="gf-mini">tem isenção de estoque antigo do ML</div>':''}`,'max-width:280px;white-space:normal;'),td(_gfNum(r.un31),'text-align:right;'),td(r.un31>0?`${Math.round(+r.dias)} dias`:'sem venda'),td(r.un31>0?'Promoção para girar':'Retirar do Full ou promoção forte','white-space:normal;max-width:180px;')].join('')+'</tr>').join('');
     corpo=`<div class="cc-sub" style="margin-top:14px;">Peças paradas no Full antes de virarem estoque antigo e gerarem custo. Itens de temporada não entram aqui.</div><div style="margin-top:10px;">${busca}</div>${tabela(['Peças paradas','Anúncio','Motivo','Vd 31d','Estoque dura','O que fazer'],rows,'Nada parado no Full.')}`;
   } else {
-    const ordA=['Resolver experiência','Reativar anúncio','Cadastrar no Full','Corrigir SKU','Sem saldo na Olist','Melhorar experiência'];
+    const ordA=['Resolver experiência','Reativar anúncio','Cadastrar no Full','Corrigir SKU','Cadastro duplicado na Olist','Sem saldo na Olist','Melhorar experiência'];
     const rows=pd.filter(bate).sort((a,b)=>ordA.indexOf(a.acao)-ordA.indexOf(b.acao)).map(r=>'<tr>'+[td(`<b>${_gfEsc(r.acao)}</b>`,'white-space:nowrap;'),td(`<div class="gf-prod">${_gfEsc(r.sku)}</div><div class="gf-mini"><a href="https://produto.mercadolivre.com.br/MLB-${_gfEsc(String(r.mlb).replace(/^MLB/i,''))}" target="_blank" rel="noopener">${_gfEsc(r.mlb)}</a></div>`),td(_gfEsc(r.detalhe),'white-space:normal;max-width:460px;')].join('')+'</tr>').join('');
     corpo=`<div style="margin-top:14px;">${busca}</div>${tabela(['O que fazer','SKU / anúncio','Detalhe'],rows,'Sem pendência.')}`;
   }
