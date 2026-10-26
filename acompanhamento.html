@@ -6144,6 +6144,7 @@ function _renderGerMetas(){
 function comMes(v){ _COM_MES=v; _COM_OP=''; renderGerencial(); }
 function comOp(op){ _COM_OP=(_COM_OP===op?'':op); renderGerencial(); }
 function _renderGerComissao(){
+  if(typeof dc==='function') dc('c-com-dre');
   const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   const brl=v=>'R$ '+(Math.round((+v||0)*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   const brlK=v=>{v=+v||0;return v>=1000?'R$ '+(v/1000).toFixed(1).replace('.',',')+'k':brl(v);};
@@ -6160,7 +6161,7 @@ function _renderGerComissao(){
   ctrl.innerHTML='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">'
     +'<span style="font-size:12px;color:var(--t2)">Mês:</span>'
     +'<select class="abc-select" onchange="comMes(this.value)">'+meses.map(s=>`<option value="${s}"${s===_COM_MES?' selected':''}>${esc(s)}</option>`).join('')+'</select>'
-    +'<span style="font-size:11px;color:var(--t3)">bônus = Progresso das metas × teto · sobre a Margem Cont. (pós-Ads e custos do gestor)</span></div>';
+    +'<span style="font-size:11px;color:var(--t3)">bônus = Progresso das metas × teto · sobre a Margem da comissão. Clique na operação para a DRE do mês.</span></div>';
   const rows=R.filter(r=>r.mes===_COM_MES);
   const totBonus=rows.reduce((s,r)=>s+(+r.bonus_final_rs||0),0);
   const progMed=rows.length?rows.reduce((s,r)=>s+(+r.progresso_metas||0),0)/rows.length:0;
@@ -6188,30 +6189,137 @@ function _renderGerComissao(){
       +`<td style="text-align:right;white-space:nowrap;font-weight:700;color:#22c55e;">${brl(r.bonus_final_rs)}</td></tr>`;
   });
   h+='</tbody></table></div></div>';
-  h+='<div style="font-size:11px;color:var(--t3);margin-top:8px;">Clique numa operação para ver o detalhe das metas.</div>';
+  h+='<div style="font-size:11px;color:var(--t3);margin-top:8px;">Clique numa operação para ver a DRE do mês e as metas.</div>';
   tb.innerHTML=h;
-  // drill de metas
+  if(!document.getElementById('com-dre-css')){
+    const st=document.createElement('style'); st.id='com-dre-css';
+    st.textContent='#com-det .com-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(260px,.85fr);gap:14px;align-items:start}'
+      +'@media(max-width:900px){#com-det .com-grid{grid-template-columns:1fr}}'
+      +'#com-det .com-mom{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}'
+      +'#com-det .com-chip{background:var(--surf2);border:1px solid var(--bdr2);border-radius:10px;padding:8px 10px;min-width:128px}';
+    document.head.appendChild(st);
+  }
+  // DRE da operação no mês + metas. Os números são os da comissão; a fórmula do bônus não muda aqui.
   if(db){
-    if(!_COM_OP){ db.innerHTML='<div style="padding:16px;text-align:center;color:var(--t3);font-size:12px;">Selecione uma operação acima para ver o detalhe das metas.</div>'; return; }
+    if(!_COM_OP){ db.innerHTML='<div style="padding:16px;text-align:center;color:var(--t3);font-size:12px;">Selecione uma operação acima para ver a DRE do mês e as metas.</div>'; return; }
     const d=(COMISSAO_DET||[]).find(r=>r.mes===_COM_MES&&r.operacao===_COM_OP);
-    if(!d){ db.innerHTML=''; return; }
-    const pctv=v=>(100*(+v||0)).toFixed(1)+'%'; const rs=v=>brl(v);
+    const linha=rows.find(r=>r.operacao===_COM_OP);
+    if(!d||!linha){ db.innerHTML=''; return; }
+    const pctv=v=>(100*(+v||0)).toFixed(1).replace('.',',')+'%';
+    const temDre=d.DreMc!=null&&d.DreMc!=='';
+    const fat=temDre?+d.DreFat:(+linha.faturamento||0);
+    const mc=temDre?+d.DreMc:+linha.mc_bruto;
+    const margem=temDre?+d.DreMargem:+linha.margem_cont;
+    const full=+d.CustoFull||0, mpg=+d.MinhaPagina||0, pica=+d.Picapinha||0, outros=+d.OutrosCustos||0;
+    const tik=/tik\s*tok/i.test(linha.operacao||'');
+    const adsNa=temDre?+d.AdsNaMargem:(tik?0:+linha.ads||0);
+    const chipF=s=>{ const t=String(s||''); if(!t||t==='—') return ''; const manual=/manual/i.test(t); const cor=manual?'#f59e0b':'#22c55e';
+      return ' <span title="'+esc(t)+'" style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;color:'+cor+';border:1px solid '+cor+'">'+(manual?'manual':'API')+'</span>'; };
+    const pctOf=v=>fat?(100*v/fat).toFixed(1).replace('.',',')+'%':'—';
+    let dre='<table class="tbl" style="width:100%"><thead><tr><th style="text-align:left">Conta</th><th style="text-align:right">R$</th><th style="text-align:right">%</th></tr></thead><tbody>';
+    const tr=(lbl,val,kind)=>{
+      val=+val||0; const bold=kind==='tot'; let show, cor='';
+      if(kind==='neg'){ if(val<0){ show='+ '+brl(Math.abs(val)); cor='#22c55e'; } else { show=(val?'− ':'')+brl(val); cor='#f87171'; } }
+      else { show=brl(val); if(val<0) cor='#f87171'; }
+      dre+='<tr style="'+(bold?'font-weight:800;background:var(--surf2);':'')+'"><td style="text-align:left">'+lbl+'</td><td style="text-align:right;white-space:nowrap;'+(cor?'color:'+cor:'')+'">'+show+'</td><td style="text-align:right;color:var(--t3)">'+pctOf(val)+'</td></tr>';
+    };
+    tr('Faturamento', fat, 'tot');
+    if(temDre){
+      tr('(−) Comissão e tarifas do canal', +d.DreComissao, 'neg');
+      tr('= Líquido recebido', +d.DreLiquido, '');
+      tr('(−) Impostos', +d.DreImposto, 'neg');
+      tr('(−) Custo do produto (CMV)', +d.DreCmv, 'neg');
+      tr('(−) Frete e demais', +d.DreFrete, 'neg');
+      const dev=+d.DreDevolucao||0;
+      tr((dev<0?'(−) ':'(+) ')+'Devoluções concluídas', dev, dev<0?'neg':'');
+    }
+    tr('= Margem bruta', mc, 'tot');
+    let adsLbl='(−) Ads';
+    if(d.AdsNota) adsLbl+=' <span style="font-weight:500;color:var(--t3);font-size:11px">· '+esc(d.AdsNota)+'</span>';
+    else if(tik&&(+linha.ads||0)>0) adsLbl+=' <span style="font-weight:500;color:var(--t3);font-size:11px">· já saiu no repasse</span>';
+    adsLbl+=chipF(d.Ads_fonte);
+    tr(adsLbl, adsNa, 'neg');
+    tr('(−) Full'+chipF(d.CustoFull_fonte), full, 'neg');
+    tr('(−) Minha página'+chipF(d.MinhaPagina_fonte), mpg, 'neg');
+    tr('(−) Pica-pinha'+chipF(d.Picapinha_fonte), pica, 'neg');
+    tr('(−) Outros'+chipF(d.OutrosCustos_fonte), outros, 'neg');
+    tr('= Margem da comissão', margem, 'tot');
+    dre+='</tbody></table>';
+    if(!temDre) dre+='<div style="font-size:11px;color:var(--t3);margin-top:6px;">Comissão do canal, imposto, CMV e frete aparecem quando este mês for recalculado. A margem e o bônus já são os da comissão.</div>';
+    const afil=+d.Afiliados||+linha.afiliados||0;
+    dre+='<div style="font-size:11px;color:var(--t3);margin-top:6px;">Afiliados '+brl(afil)+chipF(d.Afiliados_fonte)+' · entram no TACOS e já estão na margem.</div>';
+    const hist=R.filter(x=>x.operacao===_COM_OP).sort((a,b)=>a.mes<b.mes?-1:a.mes>b.mes?1:0);
+    const ix=hist.findIndex(x=>x.mes===_COM_MES);
+    const prev=ix>0?hist[ix-1]:null;
+    const mom=(lbl,cur,ant,menor,fmt)=>{
+      if(!prev) return '';
+      const dif=(+cur||0)-(+ant||0); const neutro=Math.abs(dif)<0.005; const bom=menor?dif<=0:dif>=0;
+      const cor=neutro?'var(--t3)':(bom?'#22c55e':'#f87171'); const seta=neutro?'·':(dif>0?'▲':'▼');
+      return '<div class="com-chip"><div style="font-size:10px;color:var(--t3)">'+lbl+'</div><div style="font-size:13px;font-weight:700;color:'+cor+'">'+seta+' '+fmt(Math.abs(dif))+'</div><div style="font-size:10px;color:var(--t3)">vs '+esc(prev.mes)+'</div></div>';
+    };
+    const pp=v=>v.toFixed(1).replace('.',',')+' p.p.';
+    let moms='';
+    if(prev) moms='<div class="com-mom">'
+      +mom('Faturamento', linha.faturamento, prev.faturamento, false, brl)
+      +mom('Margem da comissão', linha.margem_cont, prev.margem_cont, false, brl)
+      +mom('TACOS', linha.tacos_pct, prev.tacos_pct, true, pp)
+      +mom('Bônus', linha.bonus_final_rs, prev.bonus_final_rs, false, brl)
+      +'</div>';
+    const alerta=d.Alerta||(linha.sem_ads==='sim'&&(+d.Ads_real||0)>0?'Gastou em Ads ou afiliados e esta operação não concorre nessas metas.':'');
+    const pesoDe=(k,fb)=>d[k]!=null&&d[k]!==''?+d[k]:fb;
     const metas=[
-      ['Faturamento',rs(d.Faturamento_obj),rs(d.Faturamento_real),1,d.Faturamento_bonus],
-      ['Gasto Ads+Afil',rs(d.Ads_obj),rs(d.Ads_real),1,d.Ads_bonus],
-      ['TACOS',pctv(d.TACOS_obj),pctv(d.TACOS_real),2,d.TACOS_bonus],
-      ['Margem Contrib.',pctv(d.MC_obj),pctv(d.MC_real),d.MC_peso,d.MC_bonus]
+      ['Faturamento', brl(d.Faturamento_obj), brl(d.Faturamento_real), pesoDe('Faturamento_peso',1), +d.Faturamento_bonus||0, 'maior', true, +d.Faturamento_obj, +d.Faturamento_real],
+      ['Gasto Ads+Afil', brl(d.Ads_obj), brl(d.Ads_real), pesoDe('Ads_peso',1), +d.Ads_bonus||0, 'custo', true, +d.Ads_obj, +d.Ads_real],
+      ['TACOS', pctv(d.TACOS_obj), pctv(d.TACOS_real), pesoDe('TACOS_peso',2), +d.TACOS_bonus||0, 'custo', false, +d.TACOS_obj, +d.TACOS_real],
+      ['Margem de contribuição', pctv(d.MC_obj), pctv(d.MC_real), pesoDe('MC_peso',6), +d.MC_bonus||0, 'maior', false, +d.MC_obj, +d.MC_real]
     ];
-    if(d.Obsoletos_obj!=='(sem)'&&d.Obsoletos_obj!==''&&d.Obsoletos_obj!=null) metas.push(['Obsoletos',pctv(d.Obsoletos_obj),pctv(d.Obsoletos_real),1,d.Obsoletos_bonus]);
-    let hi='<div class="cc" style="padding:14px 16px;"><div class="cc-title" style="margin-bottom:2px;">💰 '+esc(_COM_OP)+'</div>'
-      +'<div class="cc-sub" style="margin-bottom:10px;">'+esc(_COM_MES)+' — metas · Progresso '+(100*(+d.Progresso||0)).toFixed(1)+'% × teto '+(100*(+d.Teto||0)).toFixed(2)+'% = <b style="color:#22c55e">'+brl(d.BonusFinal_rs)+'</b></div>'
-      +'<div class="tbl-wrap" style="overflow:auto;"><table class="tbl"><thead><tr>'
-      +['Meta','Objetivo','Realizado','Peso','Bônus (de peso)'].map((c,i)=>`<th style="${i===0?'text-align:left':'text-align:right'};white-space:nowrap;">${c}</th>`).join('')
+    if(d.Obsoletos_obj!=='(sem)'&&d.Obsoletos_obj!==''&&d.Obsoletos_obj!=null) metas.push(['Obsoletos', pctv(d.Obsoletos_obj), pctv(d.Obsoletos_real), 1, +d.Obsoletos_bonus||0, 'maior', false, +d.Obsoletos_obj, +d.Obsoletos_real]);
+    const falta=(tipo,obj,real,dinheiro,peso)=>{
+      if(!(+obj>0)||!peso) return '<span style="color:var(--t3)">fora do bônus</span>';
+      const gap=tipo==='custo'?(+real-+obj):(+obj-+real);
+      if(gap<=0.0000001) return '<span style="color:#22c55e">'+(tipo==='custo'?'dentro':'bateu')+'</span>';
+      const txt=dinheiro?brl(gap):((gap*100).toFixed(1).replace('.',',')+' p.p.');
+      return '<span style="color:'+(tipo==='custo'?'#f87171':'var(--t2)')+'">'+(tipo==='custo'?'acima ':'faltam ')+txt+'</span>';
+    };
+    const barraMeta=(bonus,peso)=>{
+      const rat=peso?bonus/peso:0; const t=Math.max(0,Math.min(100,rat*100));
+      const cor=!peso?'transparent':rat>=0.999?'#22c55e':rat>=0.6?'#f59e0b':'#f87171';
+      return '<div style="height:6px;background:var(--bdr2);border-radius:3px;overflow:hidden;min-width:72px;"><div style="height:100%;width:'+t+'%;background:'+cor+';"></div></div>';
+    };
+    let hi='<div class="cc" style="padding:14px 16px;"><div class="cc-title" style="margin-bottom:2px;">'+esc(_COM_OP)+'</div>'
+      +'<div class="cc-sub" style="margin-bottom:10px;">'+esc(_COM_MES)+' · progresso '+(100*(+d.Progresso||0)).toFixed(1).replace('.',',')+'% × teto '+(100*(+d.Teto||0)).toFixed(2).replace('.',',')+'% = <b style="color:#22c55e">'+brl(d.BonusFinal_rs)+'</b></div>'
+      +moms
+      +(alerta?'<div style="margin:0 0 12px;padding:8px 10px;border-radius:8px;background:rgba(245,158,11,.12);color:#f59e0b;font-size:12px;">'+esc(alerta)+'</div>':'')
+      +'<div class="com-grid"><div>'+dre+'</div><div><div style="font-size:12px;color:var(--t2);margin-bottom:6px;">'+(temDre?'Do faturamento ao bônus':'Da margem bruta ao bônus')+'</div><div style="position:relative;height:260px;"><canvas id="c-com-dre"></canvas></div></div></div>'
+      +'<div class="tbl-wrap" style="overflow:auto;margin-top:14px;"><table class="tbl"><thead><tr>'
+      +['Meta','Objetivo','Realizado','Andamento','Situação','Peso','Bônus'].map((c,i)=>'<th style="'+(i===0?'text-align:left':'text-align:right')+';white-space:nowrap;">'+c+'</th>').join('')
       +'</tr></thead><tbody>';
-    metas.forEach(m=>{ const rat=m[3]?(m[4]/m[3]):0; const cor=rat>=0.999?'#22c55e':rat>=0.6?'#f59e0b':'#f87171';
-      hi+=`<tr><td style="text-align:left;">${esc(m[0])}</td><td style="text-align:right;white-space:nowrap;">${esc(m[1])}</td><td style="text-align:right;white-space:nowrap;">${esc(m[2])}</td><td style="text-align:right;color:var(--t3);">${m[3]}</td><td style="text-align:right;white-space:nowrap;color:${cor};font-weight:600;">${(+m[4]).toFixed(2)} / ${m[3]}</td></tr>`; });
+    metas.forEach(m=>{
+      const rat=m[3]?(m[4]/m[3]):0; const cor=!m[3]?'var(--t3)':rat>=0.999?'#22c55e':rat>=0.6?'#f59e0b':'#f87171';
+      hi+='<tr><td style="text-align:left;">'+esc(m[0])+'</td><td style="text-align:right;white-space:nowrap;">'+m[1]+'</td><td style="text-align:right;white-space:nowrap;">'+m[2]+'</td>'
+        +'<td style="min-width:90px;">'+barraMeta(m[4],m[3])+'</td><td style="text-align:right;white-space:nowrap;">'+falta(m[5],m[7],m[8],m[6],m[3])+'</td>'
+        +'<td style="text-align:right;color:var(--t3);">'+m[3]+'</td><td style="text-align:right;white-space:nowrap;color:'+cor+';font-weight:600;">'+(m[3]?(m[4].toFixed(2)+' / '+m[3]):'—')+'</td></tr>';
+    });
     hi+='</tbody></table></div></div>';
     db.innerHTML=hi;
+    const cv=document.getElementById('c-com-dre');
+    if(cv&&typeof Chart==='function'){
+      const steps=[]; let run=0;
+      const total=(lbl,val,cor)=>{ val=+val||0; steps.push([lbl,Math.min(0,val),Math.max(0,val),cor]); run=val; };
+      const drop=(lbl,val,cor)=>{ val=+val||0; if(Math.abs(val)<0.005) return; const lo=val>=0?run-val:run; const hiB=val>=0?run:run-val; steps.push([lbl,lo,hiB,cor]); run-=val; };
+      const AZUL='#4f8ef7', VERM='#ef5350', VERDE='#22c55e', AMAR='#f59e0b';
+      if(temDre){ total('Faturam.', fat, AZUL); drop('−Comissão', +d.DreComissao, VERM); drop('−Impostos', +d.DreImposto, VERM); drop('−CMV', +d.DreCmv, VERM); drop('−Frete', +d.DreFrete, VERM); drop('Devoluções', -(+d.DreDevolucao||0), (+d.DreDevolucao||0)>=0?VERDE:VERM); }
+      total('Margem bruta', mc, VERDE);
+      drop('−Ads', adsNa, AMAR); drop('−Full', full, VERM); drop('−Minha pág.', mpg, VERM); drop('−Pica-pinha', pica, VERM); drop('−Outros', outros, VERM);
+      total('Margem', margem, margem>=0?VERDE:VERM);
+      const bonus=+d.BonusFinal_rs||0; total('Bônus', bonus, bonus>=0?'#34d399':'#f87171');
+      const tc=(typeof isDark!=='undefined'&&isDark)?'#8891a8':'#556070';
+      const gc=(typeof isDark!=='undefined'&&isDark)?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)';
+      dc('c-com-dre');
+      charts['c-com-dre']=new Chart(cv,{type:'bar',data:{labels:steps.map(x=>x[0]),datasets:[{data:steps.map(x=>[x[1],x[2]]),backgroundColor:steps.map(x=>x[3]),borderWidth:0,borderRadius:3}]},
+        options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>brl(Array.isArray(c.raw)?Math.abs(c.raw[1]-c.raw[0]):c.raw)}}},
+          scales:{x:{ticks:{color:tc,font:{family:'Inter',size:10},maxRotation:0,autoSkip:false},grid:{display:false}},y:{ticks:{color:tc,callback:v=>brlK(v),font:{size:10}},grid:{color:gc}}}}});
+    }
   }
 }
 // forma_entrega e veio_de_ads não vêm no /api/detalhe (148k linhas: 16 campos a mais estouraram a memória).
@@ -6387,7 +6495,7 @@ function _renderGerFull(emp, mkt){
     <div class="kpi"><div class="kpi-eye">Quanto dura o estoque no Full</div><div style="position:relative;height:170px;margin-top:6px;"><canvas id="gf-c-cob"></canvas></div></div>
   </div>`;
   const sub=(id,txt,nn)=>`<button class="gf-subb${_gfVis===id?' on':''}" onclick="_gfVis='${id}';_gfTipo='';${chama}">${txt}<span class="gf-subn">${nn}</span></button>`;
-  const abas=`<div class="gf-sub" style="margin-top:14px;">${sub('envio','O que enviar',env.length)}${sub('nao','Não repor',nr.length)}${sub('parado','Parado no Full',par.length)}${sub('antigo','Estoque antigo',antIt.length)}${sub('desemp','Desempenho do Full',rel.desemp?(rel.desemp.pctTempo+'%'):'—')}${sub('pend','Pendências',pd.length)}</div>`;
+  const abas=`<div class="gf-sub" style="margin-top:14px;">${sub('envio','O que enviar',env.length)}${sub('nao','Não repor',nr.length)}${sub('parado','Parado no Full',par.length)}${sub('antigo','Estoque antigo',antIt.length)}${sub('desemp','Desempenho do Full',(rel.desempApi||rel.desemp)?((rel.desempApi||rel.desemp).pctTempo+'%'):'—')}${sub('pend','Pendências',pd.length)}</div>`;
   const busca=`<input id="gf-q" value="${_gfEsc(_gfQ||'')}" placeholder="Buscar produto, SKU ou MLB…" oninput="_gfQ=this.value;var p=this.selectionStart;${chama};var n=document.getElementById('gf-q');if(n){n.focus();try{n.setSelectionRange(p,p);}catch(e){}}" style="width:100%;max-width:360px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);font-family:'Inter',sans-serif;font-size:12px;padding:7px 12px;outline:none;">`;
   const th=cols=>'<tr>'+cols.map(c=>`<th style="text-align:left;white-space:nowrap;">${c}</th>`).join('')+'</tr>';
   const td=(v,x)=>`<td style="${x||''}">${v}</td>`;
@@ -6416,23 +6524,25 @@ function _renderGerFull(emp, mkt){
   } else if(_gfVis==='desemp'){
     // DESEMPENHO DO FULL (Relatório geral de estoque do Seller Central, lido pelo full-relacao.js — 26/10/2026). Tempo de estoque
     // e fora de venda são absolutos (conferidos com a tela do ML); vendas por m³ e rotatividade o ML compara com outros vendedores.
-    const d=rel.desemp;
+    // a API (histórico de operações, toda noite) é a fonte; o Relatório geral do Seller Central, quando baixado, é o gabarito
+    const d=rel.desempApi||rel.desemp, dM=rel.desempApi?rel.desemp:null, api=!!rel.desempApi;
     if(!d){ corpo=`<div class="cc-sub" style="margin-top:14px;">Sem o Relatório geral de estoque desta conta. No Seller Central: Gestão de estoque Full › Controle de estoque › Baixar relatórios de estoque › <b>Relatório geral de estoque</b> (e o de custos pelo serviço de armazenamento, para as medidas). Salve em "1 - Gestão de Dados/Downloads/Full_Relatorios".</div>`; }
     else {
       const envUn2=env.reduce((s,L)=>s+((L.aloc||{})[_gfH]||0),0), comEnv=d.armazenadas+envUn2, pctDep=comEnv?100*d.antigo/comEnv:0;
       const fx=p=>p<4?30:p<6?23:p<8?15:p<10?8:0, pc2=v=>(+v).toFixed(1).replace('.',',')+'%';
       const card=(eye,val,s,cor)=>`<div class="kpi"><div class="kpi-eye">${eye}</div><div class="kpi-val"${cor?` style="color:${cor}"`:''}>${val}</div><div class="kpi-sub">${s}</div></div>`;
+      const dias=api?60:30, vend=api?d.vend60:d.vend30, med=api?d.med60:d.med30, rot=api?d.rot60:d.rot30, rs=api?d.rs60:d.rs30;
       const cards=`<div class="gf-kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">`
         +card('Tempo de estoque · '+d.ptsTempo+'/30',pc2(d.pctTempo),_gfNum(d.antigo)+' de '+_gfNum(d.armazenadas)+' peças com 8+ semanas (estrela não conta)'+(d.tirarPara4>0?' · tirar '+d.tirarPara4+' para ficar abaixo de 4% (30 pts)':''),d.ptsTempo>=30?'#22c55e':(d.ptsTempo>=23?'#f59e0b':'#ef4444'))
         +card('Fora de venda · '+d.ptsFora+'/10',pc2(d.pctFora),_gfNum(d.fora)+' peças em anúncio pausado ou não aptas',d.ptsFora>=10?'#22c55e':'#ef4444')
-        +card('Rotatividade (30 dias)',d.rot30==null?'—':String(d.rot30).replace('.',',')+'×',_gfNum(d.vend30)+' vendidas ÷ '+_gfNum(d.med30)+' de estoque médio · o ML compara com outros vendedores','')
-        +card('Vendas por m³ (30 dias)',d.rsPorM3?brl(d.rsPorM3):'—','R$ '+_gfNum(d.rs30)+' ÷ '+String(d.m3Medio).replace('.',',')+' m³ de estoque médio · comparativo','')+`</div>`;
-      const proj=`<div class="cc-sub" style="margin-top:10px;">Com o envio desta relação (${_gfNum(envUn2)} peças), a base vai a ~${_gfNum(comEnv)} e o tempo de estoque cai para <b>~${pc2(pctDep)}</b> (${fx(pctDep)} pts), se nenhuma peça nova passar de 8 semanas até lá. Nota de <b>15/nov</b> define o espaço de dezembro (≥ 70 = estendido). Relatório: ${_gfEsc(d.atualizado)}</div>`;
-      const rA=(d.antigos||[]).filter(r=>bate({sku:r.sku,prod:r.prod,mlb:r.mlb})).map(r=>'<tr>'+[td(`<span class="gf-big">${_gfNum(r.antigo)}</span><div class="gf-mini">de ${_gfNum(r.arm)}</div>`,'text-align:right;'),td(`<div class="gf-prod">${_gfEsc(r.prod)}</div><div class="gf-mini">${_gfEsc(r.sku)} · ${_gfEsc(r.inv)} · ${_gfEsc(r.tam)}</div>`),td(_gfNum(r.v30),'text-align:right;'),td(_gfEsc(r.esgota||'—')),td(`<b>${r.v30>0?'Promover para girar':'Retirar ou liquidar'}</b>`)].join('')+'</tr>').join('');
-      const rG=(d.giroBaixo||[]).filter(r=>bate({sku:r.sku,prod:r.prod,mlb:r.mlb})).map(r=>'<tr>'+[td(`<div class="gf-prod">${_gfEsc(r.prod)}</div><div class="gf-mini">${_gfEsc(r.sku)} · ${_gfEsc(r.tam)}</div>`),td(_gfNum(r.med30),'text-align:right;'),td(_gfNum(r.v30),'text-align:right;'),td(String(r.rot).replace('.',',')+'×','text-align:right;'),td(r.rsM3?brl(r.rsM3):'—','text-align:right;')].join('')+'</tr>').join('');
+        +card('Rotatividade ('+dias+' dias)',rot==null?'—':String(rot).replace('.',',')+'×',_gfNum(vend)+' vendidas ÷ '+_gfNum(med)+' de estoque médio (sem estrela) · o ML compara com outros vendedores','')
+        +card('Vendas por m³ ('+dias+' dias)',d.rsPorM3?brl(d.rsPorM3):'—','R$ '+_gfNum(rs)+' ÷ '+String(d.m3Medio).replace('.',',')+' m³ de estoque médio · comparativo','')+`</div>`;
+      const proj=`<div class="cc-sub" style="margin-top:10px;">Com o envio desta relação (${_gfNum(envUn2)} peças), a base vai a ~${_gfNum(comEnv)} e o tempo de estoque cai para <b>~${pc2(pctDep)}</b> (${fx(pctDep)} pts), se nenhuma peça nova passar de 8 semanas até lá. Nota de <b>15/nov</b> define o espaço de dezembro (≥ 70 = estendido). ${api?`Calculado pela API em ${_gfBR(String(d.calculado).slice(0,10))} (${_gfNum(d.inventarios)} inventários${d.semResposta?' · '+d.semResposta+' sem resposta da cota do ML':''})`:`Relatório: ${_gfEsc(d.atualizado)}`}${dM?` · <b>Gabarito do ML</b> (${_gfEsc(dM.atualizado)}): tempo de estoque ${pc2(dM.pctTempo)} · fora de venda ${pc2(dM.pctFora)}`:''}</div>`;
+      const rA=(d.antigos||[]).filter(r=>bate({sku:r.sku,prod:r.prod,mlb:r.mlb})).map(r=>'<tr>'+[td(`<span class="gf-big">${_gfNum(r.antigo)}</span><div class="gf-mini">de ${_gfNum(r.arm)}</div>`,'text-align:right;'),td(`<div class="gf-prod">${_gfEsc(r.prod)}</div><div class="gf-mini">${_gfEsc(r.sku)} · ${_gfEsc(r.inv)} · ${_gfEsc(r.tam)}</div>`),td(_gfNum(api?r.v60:r.v30),'text-align:right;'),td(_gfEsc(api?(r.ultEntrada?'última entrada '+_gfBR(r.ultEntrada):'sem entrada recente'):(r.esgota||'—'))),td(`<b>${(api?r.v60:r.v30)>0?'Promover para girar':'Retirar ou liquidar'}</b>`)].join('')+'</tr>').join('');
+      const rG=(d.giroBaixo||[]).filter(r=>bate({sku:r.sku,prod:r.prod,mlb:r.mlb})).map(r=>'<tr>'+[td(`<div class="gf-prod">${_gfEsc(r.prod)}</div><div class="gf-mini">${_gfEsc(r.sku)} · ${_gfEsc(r.tam)}</div>`),td(_gfNum(api?r.med60:r.med30),'text-align:right;'),td(_gfNum(api?r.v60:r.v30),'text-align:right;'),td(String(r.rot).replace('.',',')+'×','text-align:right;'),td(r.rsM3?brl(r.rsM3):'—','text-align:right;')].join('')+'</tr>').join('');
       corpo=cards+proj+`<div style="margin-top:12px;">${busca}</div>`
-        +`<div class="cc-title" style="margin-top:14px;font-size:14px;">Peças com tempo de estoque (8+ semanas) — o que tirar primeiro</div>`+tabela(['Peças antigas','Anúncio','Vendas 30 d','Esgota em','O que fazer'],rA,'Nenhuma peça com tempo de estoque.')
-        +`<div class="cc-title" style="margin-top:18px;font-size:14px;">Giro baixo — pesam na rotatividade e nas vendas por m³ (não repor até girar)</div>`+tabela(['Anúncio','Estoque médio 30 d','Vendas 30 d','Giro','R$ por m³'],rG,'Nenhum anúncio de giro baixo.');
+        +`<div class="cc-title" style="margin-top:14px;font-size:14px;">Peças com tempo de estoque (8+ semanas) — o que tirar primeiro</div>`+tabela(['Peças antigas','Anúncio',api?'Vendas 60 d':'Vendas 30 d',api?'Entrada':'Esgota em','O que fazer'],rA,'Nenhuma peça com tempo de estoque.')
+        +`<div class="cc-title" style="margin-top:18px;font-size:14px;">Giro baixo — pesam na rotatividade e nas vendas por m³ (não repor até girar)</div>`+tabela(['Anúncio','Estoque médio '+dias+' d','Vendas '+dias+' d','Giro','R$ por m³'],rG,'Nenhum anúncio de giro baixo.');
     }
   } else if(_gfVis==='antigo'){
     // CUSTOS POR ESTOQUE ANTIGO (exportação do Seller Central lida pelo full-relacao.js, 26/10/2026). Custo a partir de 4 meses
