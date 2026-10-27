@@ -357,7 +357,9 @@ const server = http.createServer(async (req, res) => {
       const precoNovo = o.preco_novo != null && o.preco_novo !== "" ? +String(o.preco_novo).replace(",", ".") : null;
       if (/ajustei o pre/i.test(o.acao || "") && !(precoNovo > 0)) return J(res, { ok: false, erro: "Informe o novo preço de venda." }, 400);
       // "aguardando terceiro": a data que o gestor dá é quando a coordenação recobra (sem data: 3 dias)
-      const ate = /^d{4}-d{2}-d{2}$/.test(String(o.aguardar_ate || "")) ? String(o.aguardar_ate) : null;
+      const ateBruta = String(o.aguardar_ate || "");
+      const ateData = new Date(ateBruta + "T12:00:00Z");
+      const ate = /^\d{4}-\d{2}-\d{2}$/.test(ateBruta) && !Number.isNaN(ateData.getTime()) && ateData.toISOString().slice(0, 10) === ateBruta ? ateBruta : null;
       await garantePrecoNovo();
       await dbx.run("INSERT INTO tratativas(demanda_id,gestor,acao,causa,obs,estado,registrado_em,reacao_h,preco_novo,aguardar_ate) VALUES(?,?,?,?,?,?,?,?,?,?)",
         [o.demanda_id, (user && user.gestor_ref) || o.gestor || "", o.acao || "", o.causa || "", o.obs || "", o.estado || "trat", agora, reacaoH, precoNovo, ate]);

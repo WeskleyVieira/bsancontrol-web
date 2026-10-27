@@ -727,14 +727,19 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
   <div class="guide-box">
     <div class="guide-title">📖 Como usar o Bsan Control</div>
     <div class="guide-sub">Guia rápido para cada área do painel</div>
-    <div class="guide-item"><div class="guide-icon">🏠</div><div class="guide-body"><div class="guide-name">Visão Geral</div><div class="guide-desc">Resumo do período: faturamento, volume e margem. Use os atalhos <strong>Março / Abril</strong> para ver cada mês.</div><div class="guide-tip">💡 Olhe primeiro os Diagnósticos — eles já dizem o que está errado.</div></div></div>
-    <div class="guide-item"><div class="guide-icon">💰</div><div class="guide-body"><div class="guide-name">Custos &amp; Margens</div><div class="guide-desc">Mostra como o dinheiro é dividido: de cada R$100 vendidos, quanto vai para produto (CTP), impostos, taxas da plataforma e o que sobra (MC).</div><div class="guide-tip">💡 MC% abaixo de 15% é sinal de alerta.</div></div></div>
-    <div class="guide-item"><div class="guide-icon">🏆</div><div class="guide-body"><div class="guide-name">Rankings</div><div class="guide-desc">Os produtos que mais vendem e mais faturam. Use para decidir quais priorizar em estoque e anúncios.</div><div class="guide-tip">💡 Produto que vende muito com MC% baixo pode estar com preço errado.</div></div></div>
-    <div class="guide-item"><div class="guide-icon">🛒</div><div class="guide-body"><div class="guide-name">Marketplaces</div><div class="guide-desc">Performance de cada canal de venda. Compare Março vs Abril para ver tendência.</div><div class="guide-tip">💡 Canal com MC% muito baixo pode não compensar as taxas cobradas.</div></div></div>
-    <div class="guide-item"><div class="guide-icon">📈</div><div class="guide-body"><div class="guide-name">Performance</div><div class="guide-desc">Ranking de qual Marketplace + Empresa performou melhor, com score que combina faturamento, margem e volume.</div><div class="guide-tip">💡 Use para saber qual gestor e canal têm o melhor resultado.</div></div></div>
-    <div class="guide-item"><div class="guide-icon">🔮</div><div class="guide-body"><div class="guide-name">Projeção</div><div class="guide-desc">Estima o resultado dos próximos 45 dias e sugere quantas unidades comprar por produto.</div><div class="guide-tip">💡 Tendência de QUEDA → reduza o pedido. Tendência de ALTA → compre mais.</div></div></div>
-    <div class="guide-item"><div class="guide-icon">↩️</div><div class="guide-body"><div class="guide-name">Devoluções</div><div class="guide-desc">Quanto cada canal devolveu. Valores negativos = dinheiro que saiu da empresa.</div><div class="guide-tip">💡 Canal com devoluções crescentes pode ter problema de qualidade ou descrição errada.</div></div></div>
-    <div class="guide-item"><div class="guide-icon">📦</div><div class="guide-body"><div class="guide-name">Obsoletos</div><div class="guide-desc">Produtos parados no estoque sendo liquidados. Mostra quanto caixa foi recuperado e se a margem está sendo preservada.</div><div class="guide-tip">💡 MC% muito negativo = vendendo abaixo do custo.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">🏠</div><div class="guide-body"><div class="guide-name">Visão Geral</div><div class="guide-desc">Resumo do período escolhido no topo: faturamento, volume, margem e diagnóstico.</div><div class="guide-tip">Sem venda no recorte, o painel avisa. Não trata zero como crise.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">🧾</div><div class="guide-body"><div class="guide-name">Vendas</div><div class="guide-desc">Pedido a pedido. Os cartões separam finalizadas, pendentes, canceladas, devoluções e extravios.</div><div class="guide-tip">A devolução da Visão Geral é o mesmo cartão Devoluções desta aba.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">🔬</div><div class="guide-body"><div class="guide-name">Raio-X</div><div class="guide-desc">Um SKU: preço, margem, canal e o que aconteceu com ele no período.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">📅</div><div class="guide-body"><div class="guide-name">Diário</div><div class="guide-desc">O dia da operação: faturamento, pedidos e margem contra o dia anterior.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">🚚</div><div class="guide-body"><div class="guide-name">Envios</div><div class="guide-desc">Coleta, Flex e Full por empresa e canal, no período do topo.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">🎯</div><div class="guide-body"><div class="guide-name">Gerencial</div><div class="guide-desc">A operação escolhida: panorama, vendas, diagnóstico, anúncios, Full e publicidade. Metas e Comissão estão nos botões da própria barra e não pedem operação.</div><div class="guide-tip">A linha do panorama é a margem depois do Ads. A comissão ainda desconta Full, Minha página, deslocamento e outros.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">📋</div><div class="guide-body"><div class="guide-name">Acompanhamento</div><div class="guide-desc">Tratativas: o que foi registrado, o que está atrasado e o que espera terceiro.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">📦</div><div class="guide-body"><div class="guide-name">Estoque</div><div class="guide-desc">Saldo, reposição, negativo e excesso por SKU.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">🛒</div><div class="guide-body"><div class="guide-name">Marketplaces</div><div class="guide-desc">Faturamento e margem de cada canal no período.</div><div class="guide-tip">Canal com margem muito baixa pode não pagar as taxas.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">📊</div><div class="guide-body"><div class="guide-name">Curva ABC</div><div class="guide-desc">Quais SKUs concentram o faturamento e a margem.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">🔮</div><div class="guide-body"><div class="guide-name">Projeção</div><div class="guide-desc">Ritmo do período e sugestão de compra para 45 dias. Sem venda no recorte, não inventa tendência.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">🏁</div><div class="guide-body"><div class="guide-name">Forecast</div><div class="guide-desc">Meta do mês contra o realizado e a projeção do ritmo.</div></div></div>
+    <div class="guide-item"><div class="guide-icon">💰</div><div class="guide-body"><div class="guide-name">DRE</div><div class="guide-desc">Resultado do grupo, do faturamento até o que sobra depois de Ads e custos. A Box Wyl entra no cartão e na cascata juntos.</div></div></div>
     <button class="guide-close-btn" onclick="closeGuide()">Entendi, fechar guia</button>
   </div>
 </div>
@@ -859,7 +864,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
           <div class="diag-body">
             <div class="diag-label diag-warn">Margem Abaixo do Ideal</div>
             <div class="diag-text">MC% em <strong>20.0%</strong>. A operação está lucrando, mas há espaço para melhorar — o ideal é acima de 20%.</div>
-            <span class="diag-action diag-warn">→ Ação recomendada: analise canais e produtos com menor margem na aba Custos &amp; Margens.</span>
+            <span class="diag-action diag-warn">→ Ação recomendada: analise canais na aba Marketplaces e o produto no Raio-X.</span>
           </div>
         </div>
         <div class="diag-item diag-bad">
@@ -991,7 +996,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
     <div class="cc" style="margin-top:16px;">
       <div class="cc-hdr"><div>
         <div class="cc-title">📈 Faturamento e margem por dia</div>
-        <div class="cc-sub">Barras = faturamento do dia · linha = margem % depois do Ads (a mesma base da comissão)</div>
+        <div class="cc-sub">Barras = faturamento do dia · linha = margem % depois do Ads. A comissão ainda desconta Full, Minha página, deslocamento e outros.</div>
       </div></div>
       <div style="position:relative;height:300px;margin-top:8px;"><canvas id="c-ger-dia"></canvas></div>
     </div>
@@ -1791,6 +1796,13 @@ function activeMeses(){
   return result;
 }
 function filterDev(){const ms=activeMeses();return DEV_DATA.filter(d=>ms.has(MES_NAME_TO_NUM[d.mes]));}
+function painelOnline(){ return typeof window.bcCarregaDataset==='function'; }
+function devNoPeriodo(s,e){
+  if(painelOnline() && !window._detLoaded) return null;
+  if(!Array.isArray(DETALHE) || !DETALHE.length) return { n:0, v:0 };
+  const rows=DETALHE.filter(r=>r.date>=s && r.date<=e && r.stat==='devolvida' && noPonto(r));
+  return { n:rows.length, v:rows.reduce((a,r)=>a+(+r.fat||0),0) };
+}
 function filterObs(){const ms=activeMeses();return OBS_DATA.filter(d=>ms.has(d.mes));}
 // ═══ DELTA ARROW HELPER ═══
 // Returns a colored arrow span based on % change
@@ -1883,10 +1895,19 @@ function buildKPIRow(tot,d,cmpTot){
 
 // ═══════════ OVERVIEW ═══════════
 function renderOverview(){
-  const[s,e]=getR();const rows=fr(s,e);const tot=agg(rows);const d=days(s,e);
+  const[s,e]=getR();const rows=fr(s,e);
+  document.getElementById('hdr-period').textContent=fmtR(s,e);
+  if(!rows.length){
+    document.getElementById('d-info').textContent='0d com vendas · 0 reg.';
+    document.getElementById('kpi-row').innerHTML='<div style="padding:28px;text-align:center;color:var(--t2);font-family:Inter,sans-serif">Sem venda neste recorte.</div>';
+    const diag=document.getElementById('diag-panel'); if(diag) diag.innerHTML='<div class="diag-panel"><div class="diag-subtitle" style="padding:16px">Sem venda neste recorte.</div></div>';
+    const ins=document.getElementById('insights'); if(ins) ins.innerHTML='';
+    ['c-emp-fat','c-mkt-pie','c-daily','c-mc-emp','c-ov-trend'].forEach(function(id){ try{ dc(id); }catch(err){} });
+    return;
+  }
+  const tot=agg(rows);const d=days(s,e);
   // Médias "/dia" usam dias COM DADOS (não dias corridos) — mês em andamento não distorce
   const dData=new Set(rows.map(r=>r.date)).size||1;
-  document.getElementById('hdr-period').textContent=fmtR(s,e);
   document.getElementById('d-info').textContent=dData+'d com vendas · '+rows.length+' reg.';
   const cmpTot=cmpMode?agg(fr(...getR2())):null;
   const metaCard = buildMetaKpiCard(tot);
@@ -1900,11 +1921,8 @@ function renderOverview(){
   const bestMkt=[...mktArr].sort((a,b)=>b[1].fat-a[1].fat)[0];
   const worstMC=[...mktArr].sort((a,b)=>(a[1].mc/a[1].fat)-(b[1].mc/b[1].fat))[0];
   const bestMC=[...mktArr].sort((a,b)=>(b[1].mc/b[1].fat)-(a[1].mc/a[1].fat))[0];
-  // Devoluções: respeita o período selecionado e monta o rótulo pelos meses reais
-  const devFiltered=filterDev();
-  const totalDev=devFiltered.reduce((s,d)=>s+d.valor,0);
-  const devMeses=[...new Set(devFiltered.map(d=>d.mes))].sort((a,b)=>MES_NAME_TO_NUM[a]-MES_NAME_TO_NUM[b]);
-  const devLbl=devMeses.length?(devMeses.length>1?devMeses[0].slice(0,3)+'–'+devMeses[devMeses.length-1].slice(0,3):devMeses[0]):'sem registros';
+  const dev=devNoPeriodo(s,e);
+  const devBody=dev==null?'Carregando devoluções.':(!dev.n?'Nenhuma devolução neste recorte.':`<strong>${dev.n.toLocaleString('pt-BR')}</strong> devoluções · <strong style="color:var(--neg)">${brl2(dev.v)}</strong>. O mesmo número do cartão Devoluções, na aba Vendas.`);
   const skuMap=bySku(fsk(s,e));const top1=Object.entries(skuMap).sort((a,b)=>b[1].qtd-a[1].qtd)[0];
   renderDiagnosis(rows,tot,d);
   document.getElementById('insights').innerHTML=[
@@ -1913,7 +1931,7 @@ function renderOverview(){
     {icon:'🛒',t:'Canal Líder',b:`<strong style="color:var(--a2)">${bestMkt?.[0]||'–'}</strong> — ${brlK(bestMkt?.[1].fat||0)} (${pct(bestMkt?.[1].fat||0,tot.fat)} do total). MC: ${pct(bestMkt?.[1].mc||0,bestMkt?.[1].fat||1)}.`},
     {icon:'⚠️',t:'Canal de Maior Risco',b:`<strong style="color:var(--neg)">${worstMC?.[0]||'–'}</strong> tem a menor margem: <strong>${pct(worstMC?.[1].mc||0,worstMC?.[1].fat||1)}</strong> de MC (${brlK(worstMC?.[1].mc||0)}). Avalie rentabilidade.`},
     {icon:'💎',t:'Canal Mais Rentável',b:`<strong style="color:var(--pos)">${bestMC?.[0]||'–'}</strong> tem a maior margem: <strong>${pct(bestMC?.[1].mc||0,bestMC?.[1].fat||1)}</strong> de MC (${brlK(bestMC?.[1].mc||0)}).`},
-    {icon:'↩️',t:'Devoluções no Período',b:`Total ${devLbl}: <strong style="color:${totalDev<0?'var(--neg)':'var(--pos)'}">${brlK(abs(totalDev))}</strong>. ${totalDev<0?'Impacto negativo no resultado.':'Resultado positivo.'}`}
+    {icon:'↩️',t:'Devoluções no Período',b:devBody}
   ].map(i=>`<div class="insight-card"><div class="insight-icon">${i.icon}</div><div class="insight-title">${i.t}</div><div class="insight-body">${i.b}</div></div>`).join('');
 
   const empNames=Object.keys(EMP_C).filter(e=>byEmp[e]);
@@ -2118,9 +2136,13 @@ function renderDRE(){
     ['(−) Custos operacionais fixos',X.cop,true,false],
     ['= RESULTADO',X.res,false,true],
   ];};
-  const pv=passos(V), pb=bench?passos(bench):null;
+  let pv=passos(V), pb=bench?passos(bench):null;
+  if(!sel && bwData){
+    pv.splice(pv.length-1, 0, ['(+) Resultado Box Wyl', bwRes, false, false]);
+    pv[pv.length-1][1]=resTotal;
+  }
   let hg='<thead><tr><th style="text-align:left;padding:8px 12px;">Conta</th><th style="text-align:right;padding:8px 12px;">R$</th><th style="text-align:right;padding:8px 12px;">%</th>'+(bench?'<th style="text-align:right;padding:8px 12px;">% grupo</th>':'')+'</tr></thead><tbody>';
-  pv.forEach((p,i)=>{const[l,v,neg,bold]=p;const pct=V.fat?100*v/V.fat:0;
+  pv.forEach((p,i)=>{const[l,v,neg,bold]=p;const baseFat=(!sel&&bwData&&i===pv.length-1)?fatTotal:V.fat;const pct=baseFat?100*v/baseFat:0;
     let bcell='';
     if(bench){const bpct=bench.fat?100*pb[i][1]/bench.fat:0;const dif=pct-bpct;
       const alerta=neg&&Math.abs(dif)>=3; // custo fora da curva (>3pp) chama atenção
@@ -2147,7 +2169,7 @@ function renderDRE(){
     ht+=`<tr style="font-weight:800;background:var(--surf2);"><td style="padding:8px 12px;">TOTAL${bwData?' (com Box Wyl)':''}</td><td style="padding:8px 12px;text-align:right;">${brl(fatTotal)}</td><td style="padding:8px 12px;text-align:right;">${brl(G.mc+bwFat)}</td><td style="padding:8px 12px;text-align:right;">${brl(G.inv)}</td><td style="padding:8px 12px;text-align:right;">${brl(G.cop+linhas.filter(l=>l.servico).reduce((a,l)=>a+l.cop,0))}</td><td style="padding:8px 12px;text-align:right;color:${resTotal>=0?'#22c55e':'#f87171'};">${brl(resTotal)}</td><td style="padding:8px 12px;text-align:right;">${fatTotal?(100*resTotal/fatTotal).toFixed(1):'0'}%</td></tr></tbody>`;
   }
   tbl.innerHTML=ht;
-  if(semCustos){const st=document.getElementById('dre-custos-status');if(st){st.textContent='⚠ sem custos — carregue custos_2026.xlsx p/ o resultado completo';st.style.color='#f59e0b';}}
+  {const st=document.getElementById('dre-custos-status');if(st){ if(semCustos){ st.textContent=painelOnline()?'Custos operacionais ainda não chegaram.':'sem custos — carregue custos_2026.xlsx p/ o resultado completo'; st.style.color='#f59e0b'; } else { st.textContent=''; } }}
 
   // ── gráficos ──
   const tc=isDark?'#8891a8':'#556070', gc=isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)';
@@ -2157,7 +2179,9 @@ function renderDRE(){
   const drop=(lbl,val,cor)=>{const lo=run-val;steps.push([lbl,[lo,run],cor]);run=lo;};
   drop('−Comissão',comisV,VERM);drop('−Impostos',V.imp,VERM);drop('−CMV',V.ctp,VERM);drop('−Frete',outrosV,VERM);
   steps.push(['MC',[0,V.mc],VERDE]);run=V.mc;drop('−Ads',V.inv,AMAR);drop('−Custos op.',V.cop,VERM);
-  steps.push(['Resultado',[0,V.res],V.res>=0?VERDE:VERM]);
+  if(!sel && bwData){ const lo=run; run=run+bwRes; steps.push(['+Box Wyl',[lo,run],AZUL]); }
+  const resFim=(!sel && bwData)?resTotal:V.res;
+  steps.push(['Resultado',[0,resFim],resFim>=0?VERDE:VERM]);
   dc('c-dre-wf');charts['c-dre-wf']=new Chart(document.getElementById('c-dre-wf'),{type:'bar',data:{labels:steps.map(x=>x[0]),datasets:[{data:steps.map(x=>x[1]),backgroundColor:steps.map(x=>x[2]),borderWidth:0,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>brl(Array.isArray(c.raw)?Math.abs(c.raw[1]-c.raw[0]):c.raw)}}},scales:{x:{ticks:{color:tc,font:{family:'Inter',size:10}},grid:{display:false}},y:{ticks:{color:tc,callback:v=>brlK(v),font:{size:10}},grid:{color:gc}}}}});
 
   const comp=[['Custo produto',V.ctp,'#8b5cf6'],['Comissão mkt',comisV,'#ef5350'],['Impostos',V.imp,'#f59e0b'],['Frete',outrosV,'#64748b'],['Ads',V.inv,'#eab308'],['Custos op.',V.cop,'#0ea5e9'],['Resultado',Math.max(0,V.res),'#22c55e']];
@@ -6607,7 +6631,7 @@ function renderGerencial(){
   // mesmo sem dado a barra do MODO precisa ser pintada — senão, antes de carregar/logar, os botões
   // Gestão/Acompanhamento ficam congelados e o seletor de operação aparece onde não se aplica.
   // (era o último caminho de saída que ainda não repintava; o de "sem operação" já foi corrigido)
-  if(!base.length){ vazio.style.display='block'; vazio.innerHTML='Carregue os dados de vendas para usar o Gerencial.'; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); _gerPainel(); _gerSubHighlight(); return; }
+  if(!base.length){ const msg=painelOnline()?(window._detLoaded?'Sem venda neste recorte.':'Carregando as vendas da operação.'):'Carregue os dados de vendas para usar o Gerencial.'; vazio.style.display='block'; vazio.innerHTML=msg; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); _gerPainel(); _gerSubHighlight(); return; }
   // Acompanhamento é visão de COORDENADOR (todas as operações) — não depende de escolher operação
   if(GER_SUB==='acomp'){
     vazio.style.display='none'; corpo.style.display='none';
@@ -6631,7 +6655,7 @@ function renderGerencial(){
   }
   // sem operação escolhida o render para aqui — mas a barra do modo PRECISA ser pintada mesmo assim,
   // senão os botões Gestão/Acompanhamento ficam congelados no estado anterior.
-  if(!GER_OP){ vazio.style.display='block'; vazio.innerHTML='Escolha <b>empresa</b> e <b>marketplace</b> acima para ver a operação.<div style="margin-top:10px;font-size:12px;color:var(--t3)">Procurando o placar de tratativas ou a comissão dos gestores? Estão em <b>Acompanhamento</b>, acima — não dependem de escolher operação.</div>'; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); _gerPainel(); _gerSubHighlight(); return; }
+  if(!GER_OP){ vazio.style.display='block'; vazio.innerHTML='Escolha <b>empresa</b> e <b>marketplace</b> acima para ver a operação.<div style="margin-top:10px;font-size:12px;color:var(--t3)">Comissão e Metas estão nos botões desta barra e não pedem operação. As tratativas ficam na aba <b>Acompanhamento</b>.</div>'; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); _gerPainel(); _gerSubHighlight(); return; }
   vazio.style.display='none'; corpo.style.display='block';
   const [emp,mkt]=GER_OP.split('||');
   _gerGaranteAbertura(emp,mkt);
@@ -6785,7 +6809,8 @@ function renderVendas(){
   const pager=document.getElementById('vnd-pager');
   if(!DETALHE.length){
     kpiEl.innerHTML='';
-    tbl.innerHTML='<tbody><tr><td style="padding:30px;text-align:center;color:var(--t2)">Carregue a base Consolidada (botão <strong>Atualizar Dados</strong>) para ver as vendas uma a uma.</td></tr></tbody>';
+    const msg=painelOnline()?(window._detLoaded?'Sem venda neste recorte.':'Carregando as vendas.'):'Carregue a base Consolidada (botão <strong>Atualizar Dados</strong>) para ver as vendas uma a uma.';
+    tbl.innerHTML='<tbody><tr><td style="padding:30px;text-align:center;color:var(--t2)">'+msg+'</td></tr></tbody>';
     pager.innerHTML='';return;
   }
   const base=vndBase();
@@ -7398,6 +7423,20 @@ function renderMktContent(){
 // ═══════════ PROJEÇÃO ═══════════
 function renderProjecao(){
   const[s,e]=getR();
+  if(!fr(s,e).length){
+    window._projCache=null;
+    try{ projAllRows=[]; }catch(err){}
+    const alertEl0=document.getElementById('proj-alert');
+    if(alertEl0){ alertEl0.textContent='Sem venda neste recorte.'; alertEl0.className='alert mb'; }
+    const pk=document.getElementById('proj-kpis'); if(pk) pk.innerHTML='';
+    const mt=document.getElementById('mkt-trends'); if(mt) mt.innerHTML='';
+    const rn=document.getElementById('repos-note'); if(rn) rn.innerHTML='';
+    const tb=document.getElementById('tbl-proj'); if(tb) tb.innerHTML='';
+    const pi=document.getElementById('proj-page-info'); if(pi) pi.textContent='';
+    const sc=document.getElementById('sku-count'); if(sc) sc.textContent='';
+    ['c-trend','c-proj-sku','c-proj-mkt'].forEach(function(id){ try{ dc(id); }catch(err){} });
+    return;
+  }
   // Cache key: if period hasn't changed, skip full rebuild (just re-render table)
   const cacheKey = s+'|'+e+'|cmp'+cmpMode;
   if(window._projCache === cacheKey && projAllRows.length > 0){
@@ -8526,6 +8565,11 @@ document.addEventListener('click', e=>{
 // DIAGNOSIS ENGINE
 // ═══════════════════════════════════════════════════════════════
 function renderDiagnosis(rows, tot, d){
+  if(!tot || !(+tot.fat>0)){
+    const vazio=document.getElementById('diag-panel');
+    if(vazio) vazio.innerHTML='<div class="diag-panel"><div class="diag-subtitle" style="padding:16px">Sem venda neste recorte.</div></div>';
+    return;
+  }
   const byMkt = by(rows,'mkt');
   const byEmp = by(rows,'emp');
   const mktArr = Object.entries(byMkt).filter(([,g])=>g.fat>0);
@@ -8542,7 +8586,7 @@ function renderDiagnosis(rows, tot, d){
   } else if(mcPct < 20){
     items.push({t:'warn', icon:'⚠️', label:'Margem Abaixo do Ideal',
       text:`MC% em <strong>${mcPct.toFixed(1)}%</strong>. A operação está lucrando, mas há espaço para melhorar — o ideal é acima de 20%.`,
-      action:'Ação recomendada: analise canais e produtos com menor margem na aba Custos & Margens.'});
+      action:'Ação recomendada: analise os canais na aba Marketplaces e o produto no Raio-X.'});
   } else {
     items.push({t:'ok', icon:'✅', label:'Margem de Contribuição Saudável',
       text:`MC% em <strong>${mcPct.toFixed(1)}%</strong> — acima do benchmark de 20%. A operação está gerando resultado positivo.`,
@@ -8572,12 +8616,13 @@ function renderDiagnosis(rows, tot, d){
       action:'Revise o tipo de anúncio (clássico vs premium) e o plano de cada marketplace.'});
   }
 
-  // 5. Devoluções relevantes (respeita o período selecionado)
-  const totalDev = filterDev().reduce((s,d)=>s+d.valor,0);
-  if(totalDev < -1000){
-    items.push({t:'warn', icon:'↩️', label:`Devoluções Acumuladas: ${brlK(Math.abs(totalDev))}`,
-      text:`Foram registradas devoluções de <strong>${brlK(Math.abs(totalDev))}</strong> no período. Este valor impacta diretamente o fluxo de caixa.`,
-      action:'Identifique os canais com mais devoluções na aba Devoluções e verifique causas (qualidade, descrição, prazo).'});
+  // 5. Devoluções do detalhe (o mesmo cartão da aba Vendas)
+  const [ds,de]=getR();
+  const devDiag = devNoPeriodo(ds,de);
+  if(devDiag && devDiag.v >= 1000){
+    items.push({t:'warn', icon:'↩️', label:`Devoluções no período: ${devDiag.n.toLocaleString('pt-BR')}`,
+      text:`Há <strong>${devDiag.n.toLocaleString('pt-BR')}</strong> linhas devolvidas, somando <strong>${brl2(devDiag.v)}</strong> de faturamento. É o mesmo recorte do cartão Devoluções na aba Vendas.`,
+      action:'Abra a aba Vendas e o cartão Devoluções para ver os pedidos. Confira qualidade, descrição e prazo.'});
   }
 
   // 6. Volume caindo (regression check)
@@ -8605,7 +8650,7 @@ function renderDiagnosis(rows, tot, d){
     const empMC = worstEmp[1].mc/worstEmp[1].fat*100;
     items.push({t:'warn', icon:'🏢', label:`${worstEmp[0]}: Menor Margem do Grupo (${empMC.toFixed(1)}%)`,
       text:`A empresa ${worstEmp[0]} tem a menor MC% do grupo: <strong>${empMC.toFixed(1)}%</strong>. Pode indicar problemas de precificação ou mix de produtos inadequado.`,
-      action:`Compare ${worstEmp[0]} com as demais na aba Performance para entender a diferença.`});
+      action:`Compare ${worstEmp[0]} com as demais na DRE, na tabela por empresa.`});
   }
 
   // Render
@@ -8642,7 +8687,14 @@ function renderDiagnosis(rows, tot, d){
 // EXECUTIVE MODE
 // ═══════════════════════════════════════════════════════════════
 function openExec(){
-  const[s,e]=getR(); const rows=fr(s,e); const tot=agg(rows);
+  const[s,e]=getR(); const rows=fr(s,e);
+  if(!rows.length){
+    document.getElementById('exec-period').textContent=fmtR(s,e);
+    document.getElementById('exec-content').innerHTML='<div style="padding:28px;text-align:center;color:var(--t2)">Sem venda neste recorte.</div>';
+    document.getElementById('exec-overlay').classList.add('show');
+    return;
+  }
+  const tot=agg(rows);
   const d=new Set(rows.map(r=>r.date)).size||1; // dias com dados
   const byMkt=by(rows,'mkt'); const byEmp=by(rows,'emp');
   const mcPct=tot.fat>0?tot.mc/tot.fat*100:0;
@@ -11643,8 +11695,8 @@ renderAll();
       var r=await authFetch('/api/detalhe?meses=24',{cache:'no-cache'});
       if(!r.ok) return;
       var d=await r.json();
-      DETALHE = d.detalhe||[]; _detLoaded=true;
-      if(typeof activePage!=='undefined' && (activePage==='rx'||activePage==='gerencial')){ try{ renderPageOnly(activePage); }catch(e){} }
+      DETALHE = d.detalhe||[]; _detLoaded=true; window._detLoaded=true;
+      if(typeof activePage!=='undefined' && (activePage==='overview'||activePage==='vendas'||activePage==='raiox'||activePage==='gerencial')){ try{ renderPageOnly(activePage); }catch(e){} }
     }catch(e){ console.error('detalhe',e); }
   }
   window.bcCarregaDetalhe = bcCarregaDetalhe;
@@ -11693,7 +11745,7 @@ renderAll();
       var r=await authFetch('/api/health',{cache:'no-store'});   // health não é cacheado → carimbo real do banco
       var d=await r.json();
       if(d && d._sync){
-        if(_syncAtual && d._sync!==_syncAtual){ _detLoaded=false; _extLoaded=false; bcCarrega(true); }   // dado novo → recarrega silencioso
+        if(_syncAtual && d._sync!==_syncAtual){ _detLoaded=false; window._detLoaded=false; _extLoaded=false; bcCarrega(true); }   // dado novo → recarrega silencioso
         else if(!_syncAtual){ _syncAtual=d._sync; }
       }
     }catch(e){}
