@@ -140,7 +140,8 @@ async function rotaGET(u, user) {
     const c = consultaVendas(q);
     const fat = "COALESCE(receita_n,receita)";
     const par = (n, v) => ({ n: +n || 0, v: Math.round((+v || 0) * 100) / 100 });
-    const kpiRow = await dbx.get(`SELECT COUNT(*) n,
+    const [kpiRow, linhas] = await Promise.all([
+      dbx.get(`SELECT COUNT(*) n,
         SUM(CASE WHEN status IN ('venda','venda_com_troca') THEN 1 ELSE 0 END) n_fin,
         SUM(CASE WHEN status='pendente' THEN 1 ELSE 0 END) n_pen,
         SUM(CASE WHEN status='cancelada' THEN 1 ELSE 0 END) n_can,
@@ -152,19 +153,19 @@ async function rotaGET(u, user) {
         SUM(CASE WHEN status='cancelada' THEN ${fat} ELSE 0 END) fat_can,
         SUM(CASE WHEN status='devolvida' THEN ${fat} ELSE 0 END) fat_dev,
         SUM(CASE WHEN status='extravio' THEN ${fat} ELSE 0 END) fat_ext
-      FROM vendas WHERE ${c.base}`, c.baseArgs);
-    const tot = await dbx.get(`SELECT COUNT(*) n, SUM(${fat}) fat FROM vendas WHERE ${c.where}`, c.args);
-    const linhas = (await dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto, sku, anuncio_id AS anuncio, titulo AS tit, pedido AS ped,
+      FROM vendas WHERE ${c.base}`, c.baseArgs),
+      dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto, sku, anuncio_id AS anuncio, titulo AS tit, pedido AS ped,
         qtd, ${fat} AS fat, COALESCE(liquido_n,liquido) AS liq, COALESCE(ctp_n,ctp) AS ctp, COALESCE(imposto_n,imposto) AS imp,
         COALESCE(mc_comissao_n,mc_comissao) AS mc, fonte_liquido AS fonte, status AS stat
-      FROM vendas WHERE ${c.where} ORDER BY ${c.order} LIMIT ? OFFSET ?`, c.args.concat([c.limite, c.offset]))).map(o => {
+      FROM vendas WHERE ${c.where} ORDER BY ${c.order} LIMIT ? OFFSET ?`, c.args.concat([c.limite, c.offset]))
+    ]);
+    linhas.forEach(o => {
       o.date = String(o.date || "").slice(0, 10);
       for (const k of ["qtd", "fat", "liq", "ctp", "imp", "mc"]) o[k] = Math.round((+o[k] || 0) * 100) / 100;
-      return o;
     });
-    const emps = await dbx.all(`SELECT DISTINCT empresa e FROM vendas WHERE ${c.base} AND empresa IS NOT NULL ORDER BY empresa`, c.baseArgs);
-    const mkts = await dbx.all(`SELECT DISTINCT canal m FROM vendas WHERE ${c.base} AND canal IS NOT NULL ORDER BY canal`, c.baseArgs);
-    const n = +tot.n || 0;
+    const faixa = { finalizadas: ["n_fin", "fat_fin"], pendente: ["n_pen", "fat_pen"], cancelada: ["n_can", "fat_can"], devolvida: ["n_dev", "fat_dev"], extravio: ["n_ext", "fat_ext"] }[q.status];
+    const n = faixa ? (+kpiRow[faixa[0]] || 0) : (+kpiRow.n || 0);
+    const fatFiltrado = faixa ? kpiRow[faixa[1]] : kpiRow.fat;
     return {
       periodo: [q.de || null, q.ate || null], ms: Date.now() - t0,
       kpi: {
@@ -172,8 +173,8 @@ async function rotaGET(u, user) {
         pendente: par(kpiRow.n_pen, kpiRow.fat_pen), cancelada: par(kpiRow.n_can, kpiRow.fat_can),
         devolvida: par(kpiRow.n_dev, kpiRow.fat_dev), extravio: par(kpiRow.n_ext, kpiRow.fat_ext)
       },
-      total: n, fat: par(0, tot.fat).v, paginas: Math.max(1, Math.ceil(n / c.limite)), pagina: c.pagina, limite: c.limite,
-      empresas: emps.map(r => r.e).filter(Boolean), canais: mkts.map(r => r.m).filter(Boolean), linhas
+      total: n, fat: par(0, fatFiltrado).v, paginas: Math.max(1, Math.ceil(n / c.limite)), pagina: c.pagina, limite: c.limite,
+      linhas
     };
   }
   // ── /api/dataset — datasets do painel (ROWS/DETALHE/agregados) escopados por PONTO, janela de meses ──

@@ -7264,8 +7264,9 @@ function renderVendas(){
   if(srv) window._vndPageData=null;
   const empSel=document.getElementById('vnd-sel-emp');
   const mktSel=document.getElementById('vnd-sel-mkt');
-  const opcoesEmp=srv?(srv.empresas||[]):[...new Set((DETALHE||[]).filter(noPonto).map(r=>r.emp))].filter(Boolean).sort();
-  const opcoesMkt=srv?(srv.canais||[]):[...new Set((DETALHE||[]).filter(noPonto).map(r=>r.mkt))].filter(Boolean).sort();
+  const daBase=campo=>[...new Set((ROWS||[]).filter(noPonto).map(r=>r[campo]))].filter(Boolean).sort();
+  const opcoesEmp=srv?(srv.empresas&&srv.empresas.length?srv.empresas:daBase('emp')):[...new Set((DETALHE||[]).filter(noPonto).map(r=>r.emp))].filter(Boolean).sort();
+  const opcoesMkt=srv?(srv.canais&&srv.canais.length?srv.canais:daBase('mkt')):[...new Set((DETALHE||[]).filter(noPonto).map(r=>r.mkt))].filter(Boolean).sort();
   if(empSel && empSel.options.length<=1){
     opcoesEmp.forEach(x=>{const o=document.createElement('option');o.value=x;o.textContent=x;empSel.appendChild(o);});
   }
@@ -7363,26 +7364,45 @@ function renderVendas(){
       +`<button onclick="_vndPage=Math.min(${totPag-1},_vndPage+1);renderVendas()" ${_vndPage>=totPag-1?'disabled':''} style="background:var(--surf2);border:1px solid var(--bdr2);border-radius:6px;color:var(--t1);padding:5px 12px;cursor:pointer;">Próxima ›</button>`;
   } else pager.innerHTML=`<span>${nLista.toLocaleString('pt-BR')} venda(s)</span>`;
 }
-let _vndTok=0, _vndDeb=0;
+let _vndTok=0, _vndDeb=0, _vndVoo={};
+function vndParams(){
+  const [s,e]=getR();
+  const p=new URLSearchParams();
+  p.set('de',s); p.set('ate',e); p.set('pagina',String(_vndPage||0));
+  p.set('sort',_vndSort.col||'date'); p.set('dir',String(_vndSort.dir||-1));
+  const emp=document.getElementById('vnd-sel-emp'); if(emp&&emp.value) p.set('emp',emp.value);
+  const mkt=document.getElementById('vnd-sel-mkt'); if(mkt&&mkt.value) p.set('mkt',mkt.value);
+  const q=document.getElementById('vnd-busca'); if(q&&q.value.trim()) p.set('q',q.value.trim());
+  if(_vndStatus) p.set('status',_vndStatus);
+  if(_vndNeg) p.set('neg','1');
+  if(typeof PONTO_SEL!=='undefined' && PONTO_SEL) p.set('ponto',PONTO_SEL);
+  return p;
+}
+function bcBuscaVendas(p){
+  const key=p.toString();
+  const ger=window._vndGer||0;
+  window._vndCache=window._vndCache||{};
+  window._vndVoo=window._vndVoo||{};
+  if(window._vndCache[key]) return Promise.resolve(window._vndCache[key]);
+  if(window._vndVoo[key]) return window._vndVoo[key];
+  window._vndVoo[key]=authFetch('/api/vendas?'+key,{cache:'no-cache'}).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(d){
+    delete window._vndVoo[key];
+    if((window._vndGer||0)===ger) (window._vndCache=window._vndCache||{})[key]=d;
+    return d;
+  }, function(e){ delete window._vndVoo[key]; throw e; });
+  return window._vndVoo[key];
+}
+window.bcBuscaVendas=bcBuscaVendas;
 function renderVendasOnline(){
   const tok=++_vndTok;
+  const busca=document.activeElement&&document.activeElement.id==='vnd-busca';
   clearTimeout(_vndDeb);
-  _vndDeb=setTimeout(async function(){
+  const disparar=async function(){
     try{
-      const [s,e]=getR();
-      const p=new URLSearchParams();
-      p.set('de',s); p.set('ate',e); p.set('pagina',String(_vndPage||0));
-      p.set('sort',_vndSort.col||'date'); p.set('dir',String(_vndSort.dir||-1));
-      const emp=document.getElementById('vnd-sel-emp'); if(emp&&emp.value) p.set('emp',emp.value);
-      const mkt=document.getElementById('vnd-sel-mkt'); if(mkt&&mkt.value) p.set('mkt',mkt.value);
-      const q=document.getElementById('vnd-busca'); if(q&&q.value.trim()) p.set('q',q.value.trim());
-      if(_vndStatus) p.set('status',_vndStatus);
-      if(_vndNeg) p.set('neg','1');
-      if(typeof PONTO_SEL!=='undefined' && PONTO_SEL) p.set('ponto',PONTO_SEL);
-      const r=await authFetch('/api/vendas?'+p.toString(),{cache:'no-cache'});
-      if(tok!==_vndTok) return;
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      const d=await r.json();
+      const d=await bcBuscaVendas(vndParams());
       if(tok!==_vndTok) return;
       window._vndUltima=d; window._vndPageData=d; renderVendas();
     }catch(err){
@@ -7390,7 +7410,8 @@ function renderVendasOnline(){
       const tbl=document.getElementById('tbl-vendas');
       if(tbl) tbl.innerHTML='<tbody><tr><td style="padding:30px;text-align:center;color:var(--t2)">Não foi possível carregar as vendas.</td></tr></tbody>';
     }
-  },160);
+  };
+  if(busca) _vndDeb=setTimeout(disparar,220); else disparar();
 }
 function exportVendasCSV(){
   const online=typeof painelOnline==='function'&&painelOnline();
@@ -12221,6 +12242,7 @@ renderAll();
     if(op.render!==false){ try{ renderAll(); }catch(err){ console.error('renderAll',err); } }
     try{ updateScopeChip(); }catch(_){}
     try{ updateDataFreshness(); }catch(_){}
+    try{ if(typeof vndParams==='function' && typeof window.bcBuscaVendas==='function') window.bcBuscaVendas(vndParams()); }catch(_){}
   }
   function bcVisibilidade(){
     var u=(typeof BCAUTH!=='undefined'?BCAUTH.user:null);
@@ -12231,6 +12253,7 @@ renderAll();
     if(u && u.perfil==='direcao'){ var ab=document.getElementById('btn-admin'); if(ab)ab.style.display='inline-block'; }   // admin de usuários só p/ Direção
   }
   async function bcCarrega(silencioso){
+    window._vndGer=(window._vndGer||0)+1; window._vndCache=null; window._vndVoo={};
     var el=document.getElementById('bc-dataload');
     try{
       if(el && !silencioso) el.style.display='flex';
