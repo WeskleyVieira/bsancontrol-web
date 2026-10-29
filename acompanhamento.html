@@ -828,6 +828,47 @@ body.light #met-root .met-page{--met-muted:#4b5563;--met-ok:#065f46;--met-danger
 @media(max-width:900px){#met-root .met-rota-resumo{grid-template-columns:1fr 1fr}#met-root .met-rota-resumo .met-card:last-child{grid-column:1/-1}}
 @media(max-width:580px){#met-root .met-rota-resumo{grid-template-columns:1fr}#met-root .met-rota-resumo .met-card:last-child{grid-column:auto}#met-root .met-ref{width:100%}#met-root .met-retomada{padding:14px}#met-root .met-rota .met-chart-area{height:280px}}
 
+/* Consulta diária: objetivo primeiro, configuração e conciliação no detalhe. */
+#met-root .met-page{gap:16px}
+#met-root .met-heading h2{margin-bottom:2px}
+#met-root .met-stamp{font-size:13px;color:var(--met-muted);line-height:1.6;margin:0}
+#met-root .met-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+#met-root .met-quick-card{min-width:0;background:var(--surf);border:1px solid var(--bdr2);border-top:3px solid var(--met-pending);border-radius:10px;padding:16px 18px}
+#met-root .met-quick-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+#met-root .met-quick-title h3{font-size:17px}
+#met-root .met-quick-title span,#met-root .met-quick-label{font-size:13px;color:var(--met-muted)}
+#met-root .met-quick-value{display:block;font-size:30px;line-height:1.3;font-variant-numeric:tabular-nums;margin:6px 0 12px;overflow-wrap:anywhere}
+#met-root .met-quick-card dl{margin:0}
+#met-root .met-quick-card dl div{display:flex;justify-content:space-between;gap:12px;margin:7px 0;font-size:14px}
+#met-root .met-quick-card dt{color:var(--met-muted)}
+#met-root .met-quick-card dd{margin:0;font-weight:600;text-align:right}
+#met-root .met-quick-note{font-size:12px;line-height:1.5;color:var(--met-muted);margin-top:10px}
+#met-root .met-planejamento{margin:0;background:var(--surf);border:1px solid var(--bdr2);border-radius:8px;padding:0 14px}
+#met-root .met-planejamento summary{cursor:pointer;padding:12px 0;font-size:14px;min-height:44px}
+#met-root .met-planejamento .met-regra{margin:0 0 12px;padding:12px}
+#met-root .met-resumo{grid-template-columns:repeat(4,minmax(0,1fr))}
+#met-root .met-card{padding:18px}
+#met-root .met-value{font-size:30px}
+#met-root .met-rota .met-section-heading p{margin-top:4px;font-size:13px}
+#met-root .met-rota-metricas{margin:12px 0}
+#met-root .met-comparacao{padding:16px}
+#met-root .met-medida{padding:10px 0}
+#met-root .met-fontes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:14px;margin:12px 0}
+#met-root .met-fonte-card{background:var(--surf);border:1px solid var(--bdr2);border-radius:8px;padding:16px;min-width:0}
+#met-root .met-fonte-card h4{font-size:15px;margin-bottom:10px;overflow-wrap:anywhere}
+#met-root .met-fonte-card dl{margin:0;font-size:14px}
+#met-root .met-fonte-card dl div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:8px 0;border-bottom:1px solid var(--bdr2)}
+#met-root .met-fonte-card dt{color:var(--met-muted);overflow-wrap:anywhere}
+#met-root .met-fonte-card dd{margin:0;font-weight:600}
+#met-root .met-fonte-card p{font-size:13px;line-height:1.6;margin-top:12px;color:var(--met-muted)}
+#met-root .met-tabela-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px;font-size:14px}
+#met-root .met-daily-table th,#met-root .met-daily-table td,#met-root .met-compact-table th,#met-root .met-compact-table td{min-width:0;white-space:normal;font-size:14px}
+#met-root .met-daily-table th:first-child{min-width:70px}
+#met-root .met-daily-table td:last-child{min-width:0;white-space:nowrap}
+@media(max-width:1100px){#met-root .met-resumo{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:800px){#met-root .met-quick{grid-template-columns:1fr}#met-root .met-quick-card{padding:14px 16px}#met-root .met-quick-note{margin-top:6px}}
+@media(max-width:580px){#met-root .met-resumo{grid-template-columns:1fr}#met-root .met-quick-value{font-size:28px}#met-root .met-daily-table th,#met-root .met-daily-table td{padding:10px 7px;font-size:13px}}
+
 </style>
 </head>
 <body><div id="bc-dataload" style="position:fixed;inset:0;z-index:9990;background:#0d1119;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:Inter,system-ui,sans-serif;color:#8891a8"><div class="sp"></div><div id="bc-dataload-txt">Carregando…</div></div>
@@ -5983,6 +6024,27 @@ function _renderGerAcomp(){
 let _MET_MES='', _MET_GES='', _MET_OP='', _MET_AJUDA=false, _MET_OPEN='', _MET_ALL=false;
 const _MET_SECOES=new Set();
 let _MET_MODEL=null;
+const _MET_UI=new Map();let _MET_UI_SCOPE='',_MET_KEEP_POSITION=false,_MET_RENDER_ID=0,_MET_TABLE_MODE='diario';
+function _metCaptureUI(root){
+ const scope=root.dataset.metScope;if(!scope)return;
+ const previous=_MET_UI.get(scope);const state={open:{...previous?.open},scroll:{...previous?.scroll}};
+ root.querySelectorAll('details[data-met-persist]').forEach(el=>state.open[el.dataset.metPersist]=el.open);
+ root.querySelectorAll('[data-met-scroll]').forEach(el=>state.scroll[el.dataset.metScroll]={left:el.scrollLeft,top:el.scrollTop});
+ _MET_UI.set(scope,state);
+}
+function _metDetails(key,title,body,cls='met-expande'){
+ const open=_MET_UI.get(_MET_UI_SCOPE)?.open[key]===true;
+ return '<details class="'+cls+'" data-met-persist="'+_metEsc(key)+'"'+(open?' open':'')+'><summary>'+title+'</summary>'+body+'</details>';
+}
+function _metMount(root,html,foco,scroll){
+ root.innerHTML=html;root.dataset.metScope=_MET_UI_SCOPE;
+ const state=_MET_UI.get(_MET_UI_SCOPE);root.querySelectorAll('[data-met-scroll]').forEach(el=>{const p=state?.scroll[el.dataset.metScroll];if(p){el.scrollLeft=p.left;el.scrollTop=p.top;}});
+ if(foco&&/^met-/.test(foco))document.getElementById(foco)?.focus({preventScroll:true});
+ const revision=++_MET_RENDER_ID;
+ if(scroll&&typeof requestAnimationFrame==='function')requestAnimationFrame(()=>{if(revision===_MET_RENDER_ID)window.scrollTo({top:scroll.top,left:scroll.left,behavior:'instant'});});
+}
+function _metExplore(){_MET_KEEP_POSITION=true;_renderGerMetas();}
+function metTabela(v){if(!['diario','acumulado'].includes(v))return;_MET_TABLE_MODE=v;_metExplore();}
 const _metNum=(v,f=0)=>v!==null&&v!==''&&v!==undefined&&Number.isFinite(+v)?+v:f;
 const _metEsc=v=>String(v==null?'':v).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 const _metBRL=v=>Number.isFinite(v)?(Math.round(v)===0?0:v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}):'—';
@@ -5997,11 +6059,11 @@ function metOp(v){_MET_OP=v;_MET_OPEN=v;_renderGerMetas();}
 function metAjuda(){_MET_AJUDA=!_MET_AJUDA;_renderGerMetas();}
 function metTodas(){_MET_ALL=!_MET_ALL;_renderGerMetas();}
 function metAbrir(v){_MET_OPEN=_MET_OPEN===v?'':v;_renderGerMetas();const e=document.getElementById('met-operacao');if(e){e.focus();e.scrollIntoView({behavior:'smooth',block:'start'});}}
-function metAnalise(el){if(el.open)_MET_SECOES.add(el.dataset.metSection);else _MET_SECOES.delete(el.dataset.metSection);if(el.open&&typeof requestAnimationFrame==='function')requestAnimationFrame(()=>Object.keys(charts).filter(k=>k.startsWith('c-met-')).forEach(k=>charts[k].resize&&charts[k].resize()));}
+function metAnalise(el){if(!el.isConnected)return;if(el.open)_MET_SECOES.add(el.dataset.metSection);else _MET_SECOES.delete(el.dataset.metSection);if(el.open&&typeof requestAnimationFrame==='function')requestAnimationFrame(()=>Object.keys(charts).filter(k=>k.startsWith('c-met-')).forEach(k=>charts[k].resize&&charts[k].resize()));}
 
 function _metToday(M){
  if(!M||M.fechado||M.futuro||M.congelado)return null;
- const dia=+M.hoje.slice(8,10),meta=M.metaFatT>0?M.metaFatT*M.pesoDia(dia)/M.cumW[M.dm]:null;
+ const dia=+M.hoje.slice(8,10),meta=M.ops.length&&M.ops.every(o=>o.metaFat>0)?M.metaFatT*M.pesoDia(dia)/M.cumW[M.dm]:null;
  const temHoje=M.ultima===M.hoje&&M.ops.length>0&&M.ops.every(o=>o.concilia);
  const realizado=temHoje?M.ops.reduce((s,o)=>s+o.fatD[dia-1],0):null;
  return {dia:M.hoje,meta,realizado,falta:meta!==null&&realizado!==null?Math.max(0,meta-realizado):null,progresso:meta>0&&realizado!==null?realizado/meta:null};
@@ -6011,6 +6073,26 @@ function _metTodayHTML(M,stamp){
  const E=_metEsc,B=_metBRL,P=_metPct;
  const andamento=d.meta===null?'Meta diária não calculada: confira os objetivos do mês.':d.progresso===null?'Valores de hoje ainda não disponíveis nesta base.':d.progresso>=1?'✓ Meta de faturamento do dia alcançada · '+P(d.progresso):P(d.progresso)+' da meta de hoje, conforme a última base carregada';
  return `<section class="met-hoje" aria-labelledby="met-hoje-titulo"><div class="met-section-heading"><h3 id="met-hoje-titulo">Seu objetivo de hoje</h3><span>${_metDia(d.dia)}</span></div><div class="met-dia-grid"><div class="met-dia-item met-dia-meta"><span class="met-dia-label">Meta de faturamento de hoje</span><strong class="met-dia-numero" id="met-hoje-meta">${B(d.meta)}</strong></div><div class="met-dia-item"><span class="met-dia-label">Realizado no dia</span><strong class="met-dia-numero" id="met-hoje-realizado">${B(d.realizado)}</strong></div><div class="met-dia-item"><span class="met-dia-label">Falta para a meta de hoje</span><strong class="met-dia-numero" id="met-hoje-falta">${B(d.falta)}</strong></div></div>${d.progresso===null?'':`<div class="met-dia-track" role="progressbar" aria-label="Faturamento realizado em relação à meta de hoje" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(Math.max(0,Math.min(100,100*d.progresso)))}" aria-valuetext="${P(d.progresso)} da meta de hoje"><div class="met-dia-fill" style="width:${Math.max(0,Math.min(100,100*d.progresso))}%"></div></div>`}<p class="met-dia-status">${andamento}</p><p class="met-dia-fonte">Parcela planejada da meta mensal · referência: ${E(_metRegraNome(M))}.${d.meta===null?' Confira os objetivos do mês para calcular a meta diária.':''}<br>${E(stamp)}. Os valores realizados representam os dados carregados, e podem estar parciais.</p></section>`;
+}
+
+function _metWeek(M){
+ if(!M||M.fechado||M.futuro||M.congelado)return null;
+ const day=+M.hoje.slice(8,10),dow=new Date(M.hoje+'T12:00:00Z').getUTCDay(),monday=day-(dow+6)%7,inicio=Math.max(1,monday),fim=Math.min(M.dm,monday+6),ate=Math.min(day,M.dd);
+ let peso=0;for(let i=inicio;i<=fim;i++)peso+=M.pesoDia(i);
+ const meta=M.ops.length&&M.ops.every(o=>o.metaFat>0)?M.metaFatT*peso/M.cumW[M.dm]:null;
+ const realizado=ate>=inicio&&M.ops.length&&M.ops.every(o=>o.concilia)?M.ops.reduce((s,o)=>s+o.fatD.slice(inicio-1,ate).reduce((n,v)=>n+v,0),0):null;
+ const date=i=>M.mes+'-'+String(i).padStart(2,'0');
+ return {inicio:date(inicio),fim:date(fim),ate:ate>=inicio?date(ate):null,meta,realizado,falta:meta!==null&&realizado!==null?Math.max(0,meta-realizado):null};
+}
+function _metQuickHTML(M){
+ const B=_metBRL,E=_metEsc,day=_metToday(M),week=_metWeek(M),known=M.ops.length&&M.ops.every(o=>o.concilia),cut=M.fechado?M.dm:M.ddP,date=M.mes+'-'+String(cut).padStart(2,'0'),hasMeta=M.ops.length&&M.ops.every(o=>o.metaFat>0);
+ const actual=M.fechado?M.fatRT:known&&cut>0?M.ops.reduce((s,o)=>s+o.fatD.slice(0,cut).reduce((a,b)=>a+b,0),0):null,expected=hasMeta&&cut>0?M.metaFatT*M.cumW[cut]/M.cumW[M.dm]:null,delta=actual!==null&&expected!==null?actual-expected:null;
+ const card=(id,title,period,label,value,body)=>'<article class="met-quick-card" id="'+id+'"><div class="met-quick-title"><h3>'+title+'</h3><span>'+E(period)+'</span></div><p class="met-quick-label">'+label+'</p><strong class="met-quick-value">'+B(value)+'</strong>'+body+'</article>';
+ let h='<section class="met-quick" aria-label="Hoje, semana e posição do mês">';
+ if(day)h+=card('met-quick-hoje','Hoje',_metDia(day.dia),'Meta do dia',day.meta,'<dl><div><dt>Informado · parcial</dt><dd>'+B(day.realizado)+'</dd></div><div><dt>Falta para hoje</dt><dd>'+B(day.falta)+'</dd></div></dl><p class="met-quick-note">'+(day.realizado===null?'Aguardando os valores de hoje.':'Conforme a última atualização da base.')+'</p>');
+ if(week)h+=card('met-quick-semana','Semana',_metDia(week.inicio)+'–'+_metDia(week.fim),'Meta da semana neste mês',week.meta,'<dl><div><dt>Informado'+(week.ate?' até '+_metDia(week.ate):'')+'</dt><dd>'+B(week.realizado)+'</dd></div><div><dt>Falta na semana</dt><dd>'+B(week.falta)+'</dd></div></dl><p class="met-quick-note">'+(week.realizado===null?'Aguardando valores desta semana.':'Inclui valores parciais; considera apenas dias deste mês.')+'</p>');
+ h+=card('met-quick-mes',M.fechado?'Resultado do mês':'Posição do mês',M.fechado?M.mes.slice(5)+'/'+M.mes.slice(0,4):cut>0?'Até '+_metDia(date):'Sem dia completo',M.futuro?'Meta mensal':M.fechado?'Realizado no mês':cut>0?'Realizado até '+_metDia(date):'Realizado',M.futuro?M.metaFatT:actual,'<dl><div><dt>'+(M.fechado?'Meta do mês':'Deveria estar')+'</dt><dd>'+B(expected)+'</dd></div><div><dt>'+(delta===null?'Diferença':delta>=0?'Acima do plano':'Abaixo do plano')+'</dt><dd class="'+(delta===null?'':delta>=0?'met-ok':'met-atencao')+'">'+B(delta===null?null:Math.abs(delta))+'</dd></div></dl><p class="met-quick-note">Meta mensal: '+B(hasMeta?M.metaFatT:null)+'. '+(M.fechado?'Período encerrado.':M.futuro?'O mês ainda não começou.':actual===null?'Histórico diário pendente.':'O último dia da base fica separado, por precaução.')+'</p>');
+ return h+'</section>';
 }
 
 // Modelo independente do DOM. Nenhum filtro amplia os dados autorizados pelo servidor.
@@ -6097,10 +6179,10 @@ function _metModel(L,D,R,sales,opts={}){
 
 let _MET_VIEW='rota',_MET_DAY=0,_MET_METRIC='fat',_MET_CHART_MODE='diario',_MET_REGRA='fixa';
 function metVisao(v){_MET_VIEW=v;_renderGerMetas();}
-function metReferencia(v){if(String(v).includes('-'))v=String(v).slice(8,10);_MET_DAY=+v||0;_renderGerMetas();document.getElementById('met-ref-dia')?.focus();}
-function metRegra(v){if(v!=='fixa'&&v!=='historico')return;_MET_REGRA=v;_renderGerMetas();document.getElementById('met-regra-'+v)?.focus();}
-function metGrafico(v){if(v!=='diario'&&v!=='acumulado')return;_MET_CHART_MODE=v;_renderGerMetas();}
-function metIndicador(v){_MET_METRIC=v;_renderGerMetas();}
+function metReferencia(v){if(String(v).includes('-'))v=String(v).slice(8,10);_MET_DAY=+v||0;_metExplore();}
+function metRegra(v){if(v!=='fixa'&&v!=='historico')return;_MET_REGRA=v;_metExplore();}
+function metGrafico(v){if(v!=='diario'&&v!=='acumulado')return;_MET_CHART_MODE=v;_metExplore();}
+function metIndicador(v){_MET_METRIC=v;_metExplore();}
 const _MET_METRICAS={fat:{nome:'Faturamento',unidade:'R$',tipo:'maior'},margem:{nome:'Margem final (%)',unidade:'%',tipo:'maior'},mc:{nome:'Lucro final estimado',unidade:'R$',tipo:'maior'},ads:{nome:'Ads e afiliados',unidade:'R$',tipo:'custo'},tacos:{nome:'Publicidade sobre vendas (TACOS)',unidade:'%',tipo:'custo'}};
 
 // Concilia a campanha com Ads; afiliados mensais não viram gastos diários inventados.
@@ -6209,9 +6291,12 @@ function _metPainelHTML(M,metric){
 function _metAdsFontesHTML(R){
  if(!R.adsFontes.length)return '<p class="met-nota">Não há metas de publicidade para as operações selecionadas.</p>';
  const E=_metEsc,B=_metBRL;
- let h='<details class="met-expande" open><summary>Ads e afiliados · disponibilidade por operação</summary><p class="met-nota">Afiliados informados no mês podem conter estimativas. Cobranças do billing e pagamentos são conferidos separadamente; não substituem a estimativa diária. Sem essa abertura, o TACOS diário completo permanece indisponível. Valores mensais não são distribuídos artificialmente pelos dias.</p><div class="met-table-wrap"><table class="met-table"><caption>Fontes de publicidade · mensal carregado versus corte de '+_metDia(R.M.mes+'-'+String(R.cut).padStart(2,'0'))+'</caption><thead><tr><th>Operação</th><th>Orçamento mensal</th><th>Product Ads no mês</th><th>Afiliados informados no mês</th><th>Total informado no mês</th><th>Product Ads até o corte</th><th>Estimativa de afiliados até o corte</th><th>Situação da abertura diária</th></tr></thead><tbody>';
- for(const a of R.adsFontes)h+='<tr><th>'+E(a.op)+'</th><td>'+B(a.meta)+'</td><td>'+B(a.ads)+'</td><td>'+B(a.afil)+'</td><td>'+B(a.total)+'</td><td>'+B(a.noCorte)+'</td><td>'+B(a.afiliadosNoCorte)+'</td><td style="white-space:normal;min-width:230px">'+E(a.motivo)+'</td></tr>';
- return h+'</tbody></table></div></details>';
+ const date=_metDia(R.M.mes+'-'+String(R.cut).padStart(2,'0')),pair=(label,v)=>'<div><dt>'+label+'</dt><dd>'+B(v)+'</dd></div>';
+ let h='<p class="met-nota">Total mensal informado e histórico até '+date+' têm períodos diferentes. Afiliados mensais podem conter estimativas; pagamento e cobrança são apurados separadamente.</p><div class="met-fontes-grid">';
+ for(const a of R.adsFontes){const status=a.completa?'Valores diários disponíveis.':a.serieValida?'Product Ads diário disponível. Afiliados diários pendentes.':'Valores diários pendentes; consulte os totais mensais.';
+  h+='<article class="met-fonte-card"><h4>'+E(a.op)+'</h4><dl>'+pair('Orçamento mensal',a.meta)+pair('Product Ads no mês',a.ads)+pair('Afiliados informados no mês',a.afil)+pair('Product Ads até '+date,a.noCorte)+pair('Afiliados diários até '+date,a.afiliadosNoCorte)+'</dl><p><strong>'+status+'</strong><br>Total mensal informado: '+B(a.total)+'.</p>'+_metDetails('origem-'+a.op,'Origem e conferência','<p>'+E(a.motivo)+'</p><p>As fontes podem ter datas de atualização diferentes. Estimativa mensal não é distribuída pelos dias.</p>')+'</article>';
+ }
+ return _metDetails('publicidade','Publicidade por operação · valores e atualização',h+'</div>');
 }
 
 function _metRoute(M,adsDia=[],ref=0,afiliados={}){
@@ -6253,17 +6338,30 @@ function _metEsforcoHTML(R,k){
  else if(e.dias===0)h+='<p>Período encerrado: '+(atingida?'objetivo alcançado.':'diferença final de '+_metBRL(Math.max(0,meta-R.pos.acumReal[k]))+' para o objetivo.')+'</p>';
  return h+'<p class="met-nota">Projeção pelo ritmo histórico quando disponível; sem garantia de fechamento.'+(k==='mc'?' O lucro diário inclui rateio estimado dos custos mensais.':' Preserve também a margem-alvo nas vendas restantes.')+'</p>';
 }
+function _metOrientacaoHTML(R,k){
+ const rec=R.recovery[k],actual=R.pos.acumReal[k],expected=R.pos.acumPlan[k],gap=actual===null||expected===null?null:actual-expected,B=_metBRL,proximo=R.next?_metDia(R.M.mes+'-'+String(R.next).padStart(2,'0')):'',alvo=k==='fat'?'faturamento':'lucro final estimado';
+ let h='';
+ if(rec.remaining===0)h='<p><strong>Meta mensal '+(k==='fat'?'de faturamento':'de lucro')+' já alcançada no período.</strong> '+(R.next?'O plano original de '+proximo+' continua em <strong>'+B(rec.planNext)+'</strong>.':'Período encerrado.')+' Preserve a margem e a qualidade das vendas.</p>';
+ else if(rec.next===null)h='<p>O mês terminou ou faltam dados para calcular o próximo dia.</p>';
+ else if(gap!==null&&gap>=0)h='<p>Plano original de '+proximo+': <strong>'+B(rec.planNext)+'</strong> de '+alvo+'.</p><p>Você está '+B(gap)+' acima do plano até '+_metDia(R.pos.date)+'. Mantenha o desempenho e a margem.</p>';
+ else h='<p>Ritmo para recuperar a meta em '+proximo+': <strong>'+B(rec.next)+'</strong> de '+alvo+'.</p><p>Plano original: '+B(rec.planNext)+'. Ainda faltam '+B(rec.remaining)+' para a meta mensal.</p>';
+ let detalhe=_metEsforcoHTML(R,k);
+ if(gap!==null&&gap>=0&&rec.remaining>0&&rec.next!==null)detalhe+='<p>Mínimo matemático para '+proximo+': '+B(rec.next)+'. Esse valor distribui o saldo restante e não recomenda reduzir o plano original.</p>';
+ if(k==='mc')detalhe+='<p>Lucro diário estimado com rateio de custos mensais. A margem percentual também precisa alcançar o objetivo.</p>';
+ return h+_metDetails('projecao','Ver projeção e cálculo do ritmo',detalhe);
+}
 function _metRitmoOperacoesHTML(R,k){
  if(!R.pos||R.M.ops.length<2||!['fat','mc'].includes(k))return '';
  const M=R.M,E=_metEsc,B=_metBRL,P=_metPct;
- let h='<details class="met-expande"><summary>Ritmo necessário por operação</summary><p class="met-nota">Mesmo corte de '+_metDia(R.pos.date)+'. Cada operação mantém sua própria meta; o adiantamento de uma não apaga o saldo de outra.</p><div class="met-table-wrap"><table class="met-table"><caption>'+_MET_METRICAS[k].nome+' · objetivos e esforço por operação</caption><thead><tr><th>Operação / gestor</th><th>Meta mensal</th><th>Informado no corte</th><th>Saldo da meta</th><th>Plano original do próximo dia</th><th>Necessário no próximo dia</th><th>Margem no corte / alvo</th></tr></thead><tbody>';
+ let h='<p class="met-nota">Valores até '+_metDia(R.pos.date)+'. Cada operação mantém sua própria meta.</p><div class="met-table-wrap" data-met-scroll="operacoes"><table class="met-table met-compact-table"><caption>'+_MET_METRICAS[k].nome+' · ritmo por operação</caption><thead><tr><th>Operação</th><th>No período / meta mensal</th><th>Próximo dia</th><th>Saldo do mês / margem</th></tr></thead><tbody>';
  for(const o of M.ops){
   const f=o.fatD.slice(0,R.cut).reduce((s,v)=>s+v,0),c=o.mcD.slice(0,R.cut).reduce((s,v)=>s+v,0),real=k==='fat'?f:c;
   const meta=k==='fat'?(o.metaFat>0?o.metaFat:null):(o.metaFat>0&&o.metaMc>0?o.metaFat*o.metaMc:null),saldo=meta===null?null:Math.max(0,meta-real),peso=M.cumW[M.dm]-M.cumW[R.cut];
   const plano=R.next&&meta!==null?meta*M.pesoDia(R.next)/M.cumW[M.dm]:null,necessario=R.next&&saldo!==null&&peso>0?saldo*M.pesoDia(R.next)/peso:null;
-  h+='<tr><th>'+E(o.l.operacao)+'<small>'+E(o.ges)+'</small></th><td>'+B(meta)+'</td><td>'+B(real)+'</td><td>'+B(saldo)+'</td><td>'+B(plano)+'</td><td>'+(saldo===0?'Meta mensal alcançada':B(necessario))+'</td><td>'+P(f>0?c/f:null)+' / '+P(o.metaMc>0?o.metaMc:null)+'</td></tr>';
+  const atrasada=meta!==null&&real<meta*M.cumW[R.cut]/M.cumW[M.dm];
+  h+='<tr><th>'+E(o.l.operacao)+'<small>'+E(o.ges)+'</small></th><td>'+B(real)+'<small>Meta: '+B(meta)+'</small></td><td>'+(saldo===0?'Meta mensal alcançada':atrasada?'Recuperar: '+B(necessario):'Manter plano: '+B(plano))+'<small>Plano original: '+B(plano)+'</small></td><td>'+B(saldo)+'<small>Margem: '+P(f>0?c/f:null)+' / alvo '+P(o.metaMc>0?o.metaMc:null)+'</small></td></tr>';
  }
- return h+'</tbody></table></div></details>';
+ return _metDetails('ritmo-operacoes','Ritmo necessário por operação',h+'</tbody></table></div>');
 }
 
 function _metComparacao(R,k,acumulado=false){
@@ -6291,31 +6389,36 @@ function _metComparacoesHTML(R,k){
  return h+'</div>';
 }
 
+function _metDemonstrativoHTML(R,k){
+ const info=_MET_METRICAS[k],acumulado=_MET_TABLE_MODE==='acumulado',label=acumulado?'acumulado':'do dia',E=_metEsc;
+ const fmt=v=>v===null?'—':info.unidade==='%'?(100*v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':_metBRL2(v),delta=v=>info.unidade==='%'?(100*v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' p.p.':_metBRL2(v);
+ let h='<div class="met-tabela-tools" role="group" aria-label="Modo do demonstrativo"><span>Mostrar:</span>'+[['diario','Diário'],['acumulado','Acumulado']].map(([v,n])=>'<button id="met-tabela-'+v+'" class="met-btn" aria-pressed="'+(_MET_TABLE_MODE===v)+'" onclick="metTabela(\''+v+'\')">'+n+'</button>').join('')+'</div><div class="met-table-wrap" data-met-scroll="demonstrativo"><table class="met-table met-daily-table"><caption>'+E(info.nome)+' · '+(acumulado?'acumulado desde 01/'+R.M.mes.slice(5):'valores de cada dia')+' · dados disponíveis até '+_metDia(R.M.mes+'-'+String(R.limite).padStart(2,'0'))+'</caption><thead><tr><th scope="col">Data</th><th scope="col">Plano '+label+'</th><th scope="col">Informado '+label+'</th><th scope="col">Desvio '+label+'</th></tr></thead><tbody>';
+ for(const row of R.rows){const a=(acumulado?row.acumReal:row.real)[k],p=(acumulado?row.acumPlan:row.plan)[k];h+='<tr'+(row.dia===R.cut?' class="met-selected-row"':'')+'><th scope="row">'+_metDia(row.date)+(row.estado==='base'?'':'<small>'+(row.estado==='futuro'?'Futuro':row.estado==='fora_corte'?'Parcial / fora do histórico':'Sem dados')+'</small>')+'</th><td>'+fmt(p)+'</td><td>'+fmt(a)+'</td><td>'+(a===null||p===null?'—':delta(a-p))+'</td></tr>';}
+ h+='</tbody></table></div><p class="met-nota">Dias parciais, futuros ou sem valores completos não recebem julgamento de desempenho.</p>';
+ return _metDetails('demonstrativo','Demonstrativo diário · plano, realizado e desvio',h);
+}
 function _metRotaHTML(R,metric){
  const M=R.M,E=_metEsc,B=_metBRL,P=_metPct,k=_MET_METRICAS[metric]?metric:'fat',info=_MET_METRICAS[k],fmt=v=>v===null||v===undefined?'—':info.unidade==='%'?P(v):B(v),gapFmt=v=>info.unidade==='%'?(100*v).toLocaleString('pt-BR',{maximumFractionDigits:2})+' p.p.':B(v);
- const painel=_metPainelHTML(M,k);
+ const painel=_metDetails('objetivos','Totais mensais · vendas informadas até '+_metDia(M.ultima),_metPainelHTML(M,k));
  if(!R.pos)return painel+`<section class="met-rota"><h3>Rota do mês</h3><p class="met-nota">${M.congelado?'Este mês tem uma fotografia de comissão congelada, sem uma série diária dessa fotografia. O resultado mensal continua na visão mensal.':M.futuro?'O período ainda não começou. Consulte os objetivos na visão mensal.':'Não há uma base diária conciliada suficiente para comparar a rota. Consulte a visão mensal e a atualização da base.'}</p></section>`;
  if((k==='ads'||k==='tacos')&&!M.comAds.length)return painel+'<section class="met-rota"><h3>Publicidade</h3><p>As operações selecionadas não concorrem em metas de Ads e TACOS. Os objetivos de faturamento e margem continuam disponíveis.</p></section>';
  const p=R.pos,actual=p.acumReal[k],expected=p.acumPlan[k],gap=actual===null||expected===null?null:actual-expected;
  const estado=gap===null?(k==='ads'||k==='tacos'?R.adsReportValid?'Ads de campanha conciliado; afiliados sem abertura diária':'Abertura diária não conciliada; metas e totais mensais disponíveis acima':'Conferir a abertura dos dados'):k==='ads'?(gap>0?'Gasto acima da referência de orçamento':'Gasto dentro da referência; avalie também vendas e margem'):k==='tacos'?(gap>0?'Publicidade acima do teto':'Publicidade dentro do teto'):k==='margem'?(gap>=0?'Margem dentro do objetivo':'Margem abaixo do objetivo'):gap>=0?'Acima do planejado até esta data':'Abaixo do planejado até esta data';
- let h=painel+`<section class="met-rota"><div class="met-section-heading"><div><h3>Sua rota do mês</h3><p>Compare os dias anteriores ao último dia da base. O dia em andamento fica separado.</p></div><label class="met-ref">Analisar até<input id="met-ref-dia" type="date" min="${M.mes}-01" max="${M.mes}-${String(R.limite).padStart(2,'0')}" value="${p.date}" onchange="metReferencia(this.value)"></label></div><div class="met-rota-metricas" role="group" aria-label="Indicador da rota">`;
- h+=`<button class="met-btn" aria-pressed="${k==='mc'}" onclick="metIndicador('mc')">Lucro final estimado</button>`;
- h+='</div>'+_metReferenciasHTML(R,k)+_metComparacoesHTML(R,k);
+ let h=`<section class="met-rota"><div class="met-section-heading"><div><h3>Histórico até ${_metDia(p.date)}</h3><p>Os painéis abaixo usam esta data. Hoje e semana, no resumo acima, acompanham a atualização mais recente.</p></div><label class="met-ref">Analisar até<input id="met-ref-dia" type="date" min="${M.mes}-01" max="${M.mes}-${String(R.limite).padStart(2,'0')}" value="${p.date}" onchange="metReferencia(this.value)"></label></div><div class="met-rota-metricas" role="group" aria-label="Indicador da rota">`;
+ h+=['fat','margem','ads','tacos','mc'].map(v=>'<button id="met-indicador-'+v+'" class="met-btn" aria-pressed="'+(k===v)+'" onclick="metIndicador(\''+v+'\')">'+E(_MET_METRICAS[v].nome)+'</button>').join('');
+ h+='</div>'+_metComparacoesHTML(R,k);
  const margem=p.acumReal.fat>0?p.acumReal.mc/p.acumReal.fat:null;
  if(margem!==null&&M.metaMcT>0)h+=`<div class="${margem<M.metaMcT?'met-alerta':'met-nota'}"><strong>Margem final estimada no corte: ${P(margem)} · meta ${P(M.metaMcT)}.</strong> ${margem<M.metaMcT?'O ritmo de faturamento precisa vir acompanhado da margem-alvo; volume adiantado não compensa automaticamente uma margem abaixo do objetivo.':'Acompanhe também a qualidade das vendas ao recuperar o volume.'}</div>`;
  const rec=R.recovery[k],proximo=R.next?M.mes+'-'+String(R.next).padStart(2,'0'):'';
- h+='<div class="met-retomada"><h4>'+(info.tipo==='custo'?'Controle do limite até o fechamento':gap!==null&&gap<0?'Ritmo de recuperação':'Mantenha o desempenho')+'</h4>';
- if(k==='fat'||k==='mc'){h+=rec.remaining===0?`<p><strong>${k==='fat'?'Meta mensal de faturamento já alcançada':'Meta mensal de lucro já alcançada'} no corte.</strong> ${R.next?'O plano original de '+_metDia(proximo)+' continua em '+B(rec.planNext)+'.':'O período está encerrado.'} Acompanhe margem, eficiência e qualidade das vendas.</p>`:rec.next===null?'<p>O mês terminou, ou a meta e a base precisam de conferência para calcular a recuperação.</p>':`<p>Para ${_metDia(proximo)}: <strong>${B(rec.next)}</strong> de ${k==='fat'?'faturamento':'lucro final estimado'} como mínimo para atingir a meta mensal após ${_metDia(p.date)}.</p><p>O plano original desse dia é ${B(rec.planNext)}. Restam ${B(rec.remaining)} para o ${k==='fat'?'faturamento mensal':'lucro planejado do mês'}.</p>`;if(gap!==null&&gap>=0&&rec.remaining>0)h+='<p><strong>Você está adiantado em relação ao plano. Mantenha o desempenho e a margem.</strong> O plano original do próximo dia continua sendo a referência; o mínimo restante não recomenda desacelerar.</p>';h+=_metEsforcoHTML(R,k);if(k==='mc')h+='<p>O lucro planejado combina faturamento-meta e margem-alvo. A margem percentual da operação também precisa ser acompanhada; esta conta não substitui a regra da comissão.</p>';}
+ h+='<div class="met-retomada"><h4>'+(info.tipo==='custo'?'Controle do limite até o fechamento':gap===null?'Conferir os objetivos':gap<0?'Ritmo de recuperação':'Mantenha o desempenho')+'</h4>';
+ if(k==='fat'||k==='mc')h+=_metOrientacaoHTML(R,k);
  else if(k==='margem')h+=`<p>Margem final estimada no corte: <strong>${P(actual)}</strong>, para objetivo de ${P(expected)}. ${gap===null?'Confira a base diária.':gap<0?'Diferença de '+gapFmt(-gap)+' para alcançar o percentual-alvo.':'Mantenha a margem-alvo junto com o ritmo de faturamento.'}</p><p>Lucro estimado no corte: ${B(p.acumReal.mc)}. Percentuais diários não são somados.</p>`;
  else if(k==='ads')h+=rec.remaining===null?`<p>${R.adsReportValid?'O Ads de campanha está conciliado. Os afiliados estão disponíveis apenas no total mensal; não calculamos um saldo diário do indicador completo.':'A abertura diária ou a meta de Ads precisa de conferência.'} O relatório mensal carregado informa ${B(M.comAds.reduce((s,o)=>s+o.adsR,0))}, para orçamento de ${B(R.month.ads)}. Esses totais mensais não representam, necessariamente, o corte diário selecionado.</p>`:actual>R.month.ads?`<p><strong>Limite mensal excedido em ${B(actual-R.month.ads)} no corte selecionado.</strong> Orçamento mensal: ${B(R.month.ads)}.</p>`:`<p>Saldo informado do orçamento: <strong>${B(rec.remaining)}</strong>. ${R.next?'Referência máxima por dia restante: '+B(rec.next)+'.':'Período encerrado.'} Orçamento não utilizado não é ganho por si só: confira receita e margem.</p>`;
  else h+=actual===null?`<p>${R.adsReportValid?'O Ads de campanha está conciliado, mas os afiliados só têm total mensal. Não atribuímos esse gasto a dias sem uma fonte diária.':'Não calculamos uma taxa diária com gastos que não conciliam.'} No relatório mensal carregado, o TACOS é ${P(M.tacRT)}, para teto ${P(M.metaTacT)}. Confira a abertura de Ads e afiliados.</p>`:`<p>TACOS acumulado ${P(actual)}, teto ${P(M.metaTacT)}. Mantenha o gasto proporcional às vendas dentro desse teto. Não somamos percentuais diários nem tratamos uma taxa baixa, isoladamente, como bom desempenho.</p>`;
  if(k==='ads'||k==='tacos')h+=_metAdsFontesHTML(R);
- h+='</div>'+_metRitmoOperacoesHTML(R,k)+'<article class="met-chart"><div class="met-ampliar-cabecalho"><h4>Resultado diário e posição acumulada</h4>'+_metBotaoAmpliar('c-met-rota','Histórico de '+info.nome)+'</div><div class="met-rota-metricas" role="group" aria-label="Leitura do gráfico"><button class="met-btn" aria-pressed="'+(_MET_CHART_MODE==='diario')+'" data-periodo="diario" onclick="metGrafico(this.dataset.periodo)">Diário</button><button class="met-btn" aria-pressed="'+(_MET_CHART_MODE==='acumulado')+'" data-periodo="acumulado" onclick="metGrafico(this.dataset.periodo)">Acumulado</button></div><p>'+(_MET_CHART_MODE==='diario'?'Cada barra mostra o realizado de um dia; a linha mostra seu plano original.':'As linhas mostram os valores acumulados desde o início do mês.')+' Eixo horizontal: dia do mês · vertical: '+E(info.unidade)+'. Clique em um dia da base para rever a posição. A simulação de recuperação só aparece na leitura acumulada, quando há atraso.</p><div class="met-chart-area"><canvas id="c-met-rota" role="img" aria-label="'+(_MET_CHART_MODE==='diario'?'Histórico diário de ':'Histórico acumulado de ')+E(info.nome)+'"></canvas></div></article><div class="met-calendario" role="group" aria-label="Selecionar dia de análise">';
- for(const row of R.rows){const future=row.date>M.hoje,enabled=row.dia<=R.limite,a=row.real[k],t=row.plan[k],known=enabled&&a!==null&&t!==null,fora=known&&(info.tipo==='custo'?a>t:a<t),sinal=!known?'·':fora?'!':info.tipo==='custo'?'·':'✓',qual=!known?'sem comparação':fora?info.tipo==='custo'?'acima do limite':'abaixo do plano':info.tipo==='custo'?'dentro do limite':'no plano ou acima',label=enabled?row.dia+' · analisar · '+qual:future?row.dia+' · futuro':row.dia+' · fora do corte';h+=`<button class="met-dia-chip${row.dia===R.cut?' met-active':''}${fora?' met-ritmo-atencao':known&&info.tipo!=='custo'?' met-ritmo-ok':''}" ${enabled?`onclick="metReferencia(${row.dia})"`:'disabled'} aria-label="${label}" aria-pressed="${row.dia===R.cut}">${row.dia}<small aria-hidden="true">${sinal}</small></button>`;}
- h+='</div><p class="met-nota">'+(info.tipo==='custo'?'! acima do limite · ponto indica referência atendida ou comparação indisponível; confira a abertura.':'✓ dia no plano ou acima · ! abaixo do plano · ponto indica dia fora da comparação.')+'</p><details class="met-expande"><summary>Demonstrativo diário · plano, realizado e desvio</summary><div class="met-table-wrap"><table class="met-table"><caption>'+E(info.nome)+' · valores da base atual; dias fora do corte ficam sem julgamento</caption><thead><tr><th>Data</th><th>Plano do dia</th><th>Informado no dia</th><th>Desvio do dia</th><th>Plano acumulado</th><th>Informado acumulado</th><th>Desvio acumulado</th></tr></thead><tbody>';
- const tableFmt=v=>v===null?'—':info.unidade==='%'?(v*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':_metBRL2(v),tableGap=v=>info.unidade==='%'?(100*v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' p.p.':_metBRL2(v);
- for(const row of R.rows){const a=row.real[k],t=row.plan[k],ar=row.acumReal[k],ap=row.acumPlan[k];h+=`<tr${row.dia===R.cut?' class="met-selected-row"':''}><th>${_metDia(row.date)}${row.estado==='base'?'':`<small>${row.estado==='futuro'?'Futuro':row.estado==='fora_corte'?'Fora do corte / parcial':'Sem valores no corte'}</small>`}</th><td>${tableFmt(t)}</td><td>${tableFmt(a)}</td><td>${a===null||t===null?'—':tableGap(a-t)}</td><td>${tableFmt(ap)}</td><td>${tableFmt(ar)}</td><td>${ar===null||ap===null?'—':tableGap(ar-ap)}</td></tr>`;}
- h+='</tbody></table></div></details><p class="met-nota">Metas originais preservadas. Mínimo restante recalculado para os dias seguintes conforme a regra escolhida. O histórico usa a base atual; não representa fotografias diárias imutáveis. Lucro diário inclui rateio de custos. Dias sem confirmação de cobertura podem mudar após uma nova coleta.</p></section>';
+ h+='</div>'+_metRitmoOperacoesHTML(R,k)+'<article class="met-chart"><div class="met-ampliar-cabecalho"><h4>Resultado diário e posição acumulada</h4>'+_metBotaoAmpliar('c-met-rota','Histórico de '+info.nome)+'</div><div class="met-rota-metricas" role="group" aria-label="Leitura do gráfico"><button class="met-btn" aria-pressed="'+(_MET_CHART_MODE==='diario')+'" id="met-grafico-diario" data-periodo="diario" onclick="metGrafico(this.dataset.periodo)">Diário</button><button class="met-btn" aria-pressed="'+(_MET_CHART_MODE==='acumulado')+'" id="met-grafico-acumulado" data-periodo="acumulado" onclick="metGrafico(this.dataset.periodo)">Acumulado</button></div><p>'+(_MET_CHART_MODE==='diario'?'Cada barra mostra o realizado de um dia; a linha mostra seu plano original.':'As linhas mostram os valores acumulados desde o início do mês.')+' Eixo horizontal: dia do mês · vertical: '+E(info.unidade)+'. Clique em um dia da base para rever a posição. A simulação de recuperação só aparece na leitura acumulada, quando há atraso.</p><div class="met-chart-area"><canvas id="c-met-rota" role="img" aria-label="'+(_MET_CHART_MODE==='diario'?'Histórico diário de ':'Histórico acumulado de ')+E(info.nome)+'"></canvas></div></article><div class="met-calendario" role="group" aria-label="Selecionar dia de análise">';
+ for(const row of R.rows){const future=row.date>M.hoje,enabled=row.dia<=R.limite,a=row.real[k],t=row.plan[k],known=enabled&&a!==null&&t!==null,fora=known&&(info.tipo==='custo'?a>t:a<t),sinal=!known?'·':fora?'!':info.tipo==='custo'?'·':'✓',qual=!known?'sem comparação':fora?info.tipo==='custo'?'acima do limite':'abaixo do plano':info.tipo==='custo'?'dentro do limite':'no plano ou acima',label=enabled?row.dia+' · analisar · '+qual:future?row.dia+' · futuro':row.dia+' · fora do corte';h+=`<button id="met-dia-${row.dia}" class="met-dia-chip${row.dia===R.cut?' met-active':''}${fora?' met-ritmo-atencao':known&&info.tipo!=='custo'?' met-ritmo-ok':''}" ${enabled?`onclick="metReferencia(${row.dia})"`:'disabled'} aria-label="${label}" aria-pressed="${row.dia===R.cut}">${row.dia}<small aria-hidden="true">${sinal}</small></button>`;}
+ h+='</div><p class="met-nota">'+(info.tipo==='custo'?'! acima do limite · confira os valores disponíveis.':'✓ no plano ou acima · ! abaixo do plano.')+'</p>'+_metDemonstrativoHTML(R,k)+_metDetails('notas','Como ler os dados deste histórico','<p>O histórico é reconstruído com a base atual, não com fotografias diárias imutáveis. Lucro e margem diários incluem rateio dos custos mensais. Dias parciais ficam separados.</p>')+'</section>'+painel;
  return h;
 }
 
@@ -6334,12 +6437,17 @@ function _metRouteChart(R,k,modo='acumulado'){
 
 function _renderGerMetas(){
  const root=document.getElementById('met-root');if(!root)return;
+ _metCaptureUI(root);
+ const keepPosition=_MET_KEEP_POSITION;_MET_KEEP_POSITION=false;const previousScope=root.dataset.metScope;
+ const previousScroll=keepPosition?{top:window.scrollY,left:window.scrollX}:null;
  metFecharAmpliado(false);
  const foco=document.activeElement?.id;
  Object.keys(charts).filter(k=>k.startsWith('c-met-')).forEach(k=>{charts[k].destroy();delete charts[k];});
  const M=_metModel(COMISSAO,COMISSAO_DET,ROWS,typeof DETALHE==='undefined'?[]:DETALHE,{mes:_MET_MES,ges:_MET_GES,op:_MET_OP,gestores:(typeof METAS_GESTORES!=='undefined'&&METAS_GESTORES)||AC2_GESTOR,regra:_MET_REGRA});
  _MET_MODEL=M;
  if(!M){root.innerHTML='<div class="cc">As metas ainda não estão disponíveis para esta base. Aguarde a atualização ou selecione uma base com metas registradas.</div>';return;}
+ _MET_UI_SCOPE=M.mes+'|'+M.ges+'|'+M.op;
+ const restoreScroll=previousScope===_MET_UI_SCOPE?previousScroll:null;
  _MET_MES=M.mes;_MET_GES=M.ges;_MET_OP=M.op;
  if(!M.ops.some(o=>o.l.operacao===_MET_OPEN))_MET_OPEN=M.op;
  const E=_metEsc,B=_metBRL,P=_metPct,dt=d=>_metDia(d),rotMes=m=>new Date(m+'-02T12:00:00Z').toLocaleDateString('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'});
@@ -6356,24 +6464,23 @@ function _renderGerMetas(){
  const statusMes=M.futuro?'Período futuro':M.fechado?'Mês encerrado no calendário':'Mês em andamento';
  let h=`<div class="met-page"><header class="met-heading"><div><div class="met-eyebrow">GERENCIAL / METAS</div><h2>Metas do mês</h2><p>${E(escopo)}</p></div><button class="met-btn" onclick="metAjuda()" aria-expanded="${_MET_AJUDA}">Entenda as metas</button></header>
  <div class="met-filtros"><label for="met-mes">Mês<select id="met-mes" onchange="metMes(this.value)">${opt(M.meses.map(m=>[m,rotMes(m)]),M.mes)}</select></label>${M.gestores.length>1?`<label for="met-gestor">Gestor<select id="met-gestor" onchange="metGes(this.value)">${opt([['','Todos os disponíveis'],...M.gestores.map(g=>[g,g])],M.ges)}</select></label>`:''}<label for="met-op">Operação<select id="met-op" onchange="metOp(this.value)">${opt([['','Todas as disponíveis'],...M.opcoes.map(o=>[o,o])],M.op)}</select></label></div>
- <details class="met-context"><summary>${statusMes}${!M.fechado&&!M.futuro&&M.ddP?' · previsão com base até '+dt(M.mes+'-'+String(M.ddP).padStart(2,'0')):''} · ver atualização</summary><div class="met-context-body"><span>${M.congelado?'Comissão congelada':M.ops.some(o=>o.congelado)?'Há comissões congeladas na seleção':'Comissão não congelada'}</span><span>${E(stamp)}</span><span>Último dia na base: ${M.ultima?dt(M.ultima)+'/'+M.mes.slice(0,4):'não disponível'} · Hoje: ${dt(M.hoje)}</span>${!M.fechado&&!M.futuro?'<p>Excluímos o último dia presente na base por precaução. A base não confirma a cobertura completa de cada conta. A simulação mantém a margem realizada.</p>':''}</div></details>`;
- h+=_metRegraHTML(M);
- const visoes=[['rota','Rota e histórico'],['hoje','Hoje · parcial'],['mensal','Visão mensal']];
+ <p class="met-stamp">${E(stamp)} · ${M.fechado?'Mês encerrado':M.futuro?'Período futuro':'Hoje é parcial; o histórico considera até '+(M.ddP?dt(M.mes+'-'+String(M.ddP).padStart(2,'0')):'o último dia completo disponível')+'.'}</p>`;
+ if(_MET_AJUDA)h+=`<section class="met-ajuda"><h3>Como ler esta tela</h3><p><b>Realizado</b> é o resultado informado no mês. <b>Projeção</b> estima o fechamento pelo ritmo de vendas, com pesos por dia da semana. Não é uma promessa.</p><p><b>Margem final</b> é o que sobra após produto, impostos, tarifas, frete, Ads e custos da operação. <b>TACOS</b> é Ads + afiliados dividido pelo faturamento.</p><p><b>Bônus</b> = pontuação das metas × teto da operação × lucro final positivo. Pesos usuais: faturamento 1, margem 6, TACOS 2 e orçamento 1; sem Ads, faturamento 4 e margem 6. O detalhe exibe os pesos efetivos, inclusive obsoletos.</p><p>Metas automáticas usam histórico, série e sazonalidade. A origem e os objetivos efetivos ficam no detalhe. Mês encerrado no calendário não significa comissão congelada.</p></section>`;
+ h+=_metQuickHTML(M);
+ const route=_metRoute(M,typeof ADS_DIA==='undefined'?[]:ADS_DIA,_MET_DAY);
+ const visoes=[['rota','Rota e histórico'],['mensal','Visão mensal']];
  if(!visoes.some(([v])=>v===_MET_VIEW))_MET_VIEW='rota';
  h+='<nav class="met-views" aria-label="Leituras das metas">'+visoes.map(([v,n])=>`<button class="met-btn${_MET_VIEW===v?' met-active':''}" aria-pressed="${_MET_VIEW===v}" onclick="metVisao('${v}')">${n}</button>`).join('')+'</nav>';
+ h+=_metDetails('planejamento','Planejamento e referências · '+E(_metRegraNome(M)),_metRegraHTML(M)+_metReferenciasHTML(route,_MET_METRIC)+'<div class="met-context-body"><p>'+E(statusMes)+'. '+(M.congelado?'Comissão congelada.':'A atualização pode conter valores parciais. O último dia da base fica separado por precaução.')+'</p><p>Último dia informado: '+E(M.ultima?dt(M.ultima)+'/'+M.mes.slice(0,4):'não disponível')+'. Cada operação pode ter seu próprio momento de atualização.</p></div>','met-planejamento');
  if(_MET_VIEW!=='mensal'){
-  const route=_metRoute(M,typeof ADS_DIA==='undefined'?[]:ADS_DIA,_MET_DAY);
-  if(_MET_VIEW==='rota')h+=_metRotaHTML(route,_MET_METRIC);
-  else h+='<p class="met-alerta">Hoje é uma posição parcial, dependente das atualizações da base. Use “Rota e histórico” para avaliar o resultado até o corte conservador.</p>'+(_metTodayHTML(M,stamp)||'<p>O objetivo de hoje não se aplica a este período. Consulte a visão mensal.</p>');
-  root.innerHTML=h+'</div>';
-  if(foco&&/^met-(mes|gestor|op)$/.test(foco))document.getElementById(foco)?.focus();
-  if(_MET_VIEW==='rota')_metRouteChart(route,_MET_METRIC,_MET_CHART_MODE);
+  h+=_metRotaHTML(route,_MET_METRIC);
+  _metMount(root,h+'</div>',foco,restoreScroll);
+  _metRouteChart(route,_MET_METRIC,_MET_CHART_MODE);
   return;
  }
- h+=_metTodayHTML(M,stamp);
  const pend=M.ops.filter(o=>o.status==='pendente');
  if(pend.length)h+=`<div class="met-alerta" role="status"><strong>${pend.length} ${pend.length>1?'operações precisam':'operação precisa'} de conferência.</strong> Veja a pendência na situação das metas por operação. O bônus é uma estimativa.</div>`;
- if(_MET_AJUDA)h+=`<section class="met-ajuda"><h3>Como ler esta tela</h3><p><b>Realizado</b> é o resultado informado no mês. <b>Projeção</b> estima o fechamento pelo ritmo de vendas, com pesos por dia da semana. Não é uma promessa.</p><p><b>Margem final</b> é o que sobra após produto, impostos, tarifas, frete, Ads e custos da operação. <b>TACOS</b> é Ads + afiliados dividido pelo faturamento.</p><p><b>Bônus</b> = pontuação das metas × teto da operação × lucro final positivo. Pesos usuais: faturamento 1, margem 6, TACOS 2 e orçamento 1; sem Ads, faturamento 4 e margem 6. O detalhe exibe os pesos efetivos, inclusive obsoletos.</p><p>Metas automáticas usam histórico, série e sazonalidade. A origem e os objetivos efetivos ficam no detalhe. Mês encerrado no calendário não significa comissão congelada.</p></section>`;
+
  let cardIndex=0;
  const card=(label,value,sub,foot,cls='')=>{const id='met-kpi-mensal-'+cardIndex++;return `<article id="${id}" class="met-card ${cls}"><h3>${label}</h3><div class="met-value">${value}</div><p>${sub}</p><div class="met-foot">${foot}</div></article>`;};
  h+=`<section aria-labelledby="met-resumo"><div class="met-section-heading"><h3 id="met-resumo">Como está o mês</h3><span>${E(rotMes(M.mes))}</span></div><div class="met-resumo">`
@@ -6406,8 +6513,7 @@ function _renderGerMetas(){
  h+=section('ritmo','Margem diária e evolução da previsão',diarioOk&&!M.futuro?'<div class="met-chart-grid">'+box('c-met-mcdia','Margem final diária estimada','Dia do mês × margem (%) · custos mensais rateados pelo faturamento. O acumulado reconcilia com o cartão.')+(!M.fechado?box('c-met-evol','Evolução da previsão de faturamento','Dia de base × R$ no fechamento · cada ponto usa somente os dias anteriores ao último dia observado.'):'')+'</div>':'<p>Abertura diária indisponível para esta seleção; consulte os indicadores mensais.</p>');
  if(!M.futuro)h+=section('comparar','Comparar operações e entender o resultado','<div class="met-chart-grid">'+box('c-met-ating','Atingimento por operação','Operação × % da meta · faturamento e margem final.')+box('c-met-bonus','Bônus por operação','Operação × R$ · resultado das metas e valor com 100%, mantido o mesmo lucro.')+(M.comAds.length?box('c-met-tacos','Publicidade sobre vendas por operação','Operação × TACOS (%) · realizado e teto.'):'')+box('c-met-ponte','Composição da diferença de lucro','Etapa × R$ · volume, margem/custos e Ads; decomposição indicativa, não prova de causa.')+'</div>');
  if(M.histo.length)h+=section('historico','Histórico e placar do ano','<div class="met-chart-grid">'+box('c-met-hfat','Faturamento por mês','Mês × R$ · realizado e meta, sem misturar previsão com realizado.')+box('c-met-hmc','Margem final por mês','Mês × margem (%) · realizada e meta ponderada pelo faturamento-meta.')+'</div>'+_metPlacar(M,COMISSAO,COMISSAO_DET));
- h+='</section></div>';root.innerHTML=h;
- if(foco&&/^met-(mes|gestor|op)$/.test(foco))document.getElementById(foco)?.focus();
+ h+='</section></div>';_metMount(root,h,foco,restoreScroll);
  if(typeof Chart!=='undefined')_metCharts(M,diarioOk);
 }
 
