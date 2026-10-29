@@ -1218,8 +1218,8 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
   <div class="sl">Visão por Canal</div>
   <div class="g4 mb" id="mkt-kpis"></div>
   <div class="g2">
-    <div class="cc"><div class="cc-hdr"><div><div class="cc-title" id="mkt-bar-title">Faturamento por Período</div><div class="cc-sub" id="mkt-bar-sub">Comparativo mensal</div></div></div><canvas id="c-mkt-bar" height="220"></canvas></div>
-    <div class="cc"><div class="cc-hdr"><div><div class="cc-title" id="mkt-mc-title">MC% por Período</div></div></div><canvas id="c-mkt-mc" height="220"></canvas></div>
+    <div class="cc"><div class="cc-hdr"><div><div class="cc-title" id="mkt-bar-title">Faturamento por Período</div><div class="cc-sub" id="mkt-bar-sub">Comparativo mensal</div></div></div><div style="position:relative;height:300px"><canvas id="c-mkt-bar"></canvas></div></div>
+    <div class="cc"><div class="cc-hdr"><div><div class="cc-title" id="mkt-mc-title">MC% por Período</div><div class="cc-sub" id="mkt-mc-sub">Comparativo mensal</div></div></div><div style="position:relative;height:300px"><canvas id="c-mkt-mc"></canvas></div></div>
   </div>
   <div class="sl">Top 10 por operação</div>
   <div class="champ-grid" id="champ-grid"></div>
@@ -7300,12 +7300,8 @@ function renderMktContent(){
     <div class="kpi-accent" style="background:linear-gradient(90deg,${MKT_C[m]},${MKT_C[m]}44)"></div></div>`;
   }).join('');
 
-  // ── Comparison charts: one dataset per selected month ──
-  // Colors for months: cycle through palette
+  // Até 6 meses: uma cor por mês, barras por canal. Acima disso o eixo vira o mês e cada canal é uma linha.
   const monthColors=['#00c2a8','#4f8ef7','#a78bfa','#f472b6','#fb923c','#facc15'];
-  // cmpMths already set above from availInPeriod
-
-  // Per-month data filtered by empresa and mkt
   const mthData = cmpMths.map(m=>{
     const[y,mo]=m.split('-');
     const lastDay=new Date(+y,+mo,0).getDate();
@@ -7313,57 +7309,58 @@ function renderMktContent(){
     const mRows=fr(mStart,mEnd).filter(r=>(!_empVal||r.emp===_empVal)&&(!_mktVal||r.mkt===_mktVal));
     return {m, rows:mRows, byMkt:by(mRows,'mkt')};
   });
-
-  const [y0,mo0]=cmpMths[0]?.split('-')||['',''];
-  const [y1,mo1]=cmpMths[1]?.split('-')||['',''];
-  const lbl0=cmpMths[0]?(PT_MONTHS_MAP[mo0]+' '+y0):'P1';
-  const lbl1=cmpMths[1]?(PT_MONTHS_MAP[mo1]+' '+y1):'P2';
-
-  // Update chart titles
+  const mesCurto=m=>{ const[y,mo]=String(m||'').split('-'); return mo?PT_MONTHS_MAP[mo]+'/'+y.slice(2):''; };
+  const faixa=cmpMths.length<=1?mesCurto(cmpMths[0]):(cmpMths.length<=3?cmpMths.map(mesCurto).join(' · '):mesCurto(cmpMths[0])+' → '+mesCurto(cmpMths[cmpMths.length-1]));
+  const longo=cmpMths.length>6;
+  const cmpLabel=cmpMode?(()=>{const[s2,e2]=getR2();return ` · vs ${s2.slice(0,7).replace('-','/')}`;})():'';
   const barTitle=document.getElementById('mkt-bar-title');
   const mcTitle=document.getElementById('mkt-mc-title');
-  const periodLabel=cmpMths.map(m=>{const[y,mo]=m.split('-');return PT_MONTHS_MAP[mo]+' '+y;}).join(' vs ');
-  const cmpLabel=cmpMode?(()=>{const[s2,e2]=getR2();return ` · vs ${s2.slice(0,7).replace('-','/')}`;})():'';
-  if(barTitle) barTitle.textContent=`Faturamento · ${periodLabel}${cmpLabel}`;
-  if(mcTitle)  mcTitle.textContent=`MC% · ${periodLabel}${cmpLabel}`;
+  const modoTxt=longo?'Uma linha por canal, mês a mês':'Barras lado a lado, um mês por cor';
+  if(barTitle) barTitle.textContent=`Faturamento · ${faixa}${cmpLabel}`;
+  if(mcTitle) mcTitle.textContent=`MC% · ${faixa}${cmpLabel}`;
+  const barSub=document.getElementById('mkt-bar-sub'); if(barSub) barSub.textContent=modoTxt;
+  const mcSub=document.getElementById('mkt-mc-sub'); if(mcSub) mcSub.textContent=modoTxt;
 
-  // Build chart datasets: one per month in period, plus compare period if active
-  const buildDatasets = (valFn) => {
-    const sets = mthData.map((md,i)=>({
-      label: (()=>{const[y,mo]=(cmpMths[i]||'').split('-');return mo?(PT_MONTHS_MAP[mo]+' '+y):'P'+(i+1);})(),
-      data: activeMkts.map(m=>valFn(md.byMkt[m])),
-      backgroundColor: monthColors[i]+'88',
-      borderRadius:6
-    }));
-    if(cmpMode && Object.keys(cmpByMkt).length>0){
-      sets.push({
-        label:'◀ Período anterior',
-        data: activeMkts.map(m=>valFn(cmpByMkt[m])),
-        backgroundColor:'rgba(255,255,255,0.15)',
-        borderRadius:6,
-        borderWidth:1,
-        borderColor:'rgba(255,255,255,0.3)'
-      });
-    }
-    return sets;
+  const tc=isDark?'#8891a8':'#556070', gc=isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)', lc=isDark?'#3d4760':'#9aa3b0';
+  const drawMkt=(id,type,labels,datasets,yCb)=>{
+    dc(id);
+    const el=document.getElementById(id); if(!el) return;
+    charts[id]=new Chart(el,{type,data:{labels,datasets},
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{position:'bottom',labels:{color:tc,font:{family:'Inter',size:11},padding:8,boxWidth:10}},
+          tooltip:{callbacks:{label:c=>{const y=c.parsed.y; return c.dataset.label+': '+(y==null?'—':yCb(y));}}}
+        },
+        scales:{
+          x:{ticks:{color:lc,font:{family:'Inter',size:10},maxTicksLimit:longo?10:20,maxRotation:0,autoSkip:true},grid:{display:false}},
+          y:{beginAtZero:true,ticks:{color:lc,font:{family:'Inter',size:10},callback:v=>yCb(v)},grid:{color:gc}}
+        }}});
   };
-
-  dc('c-mkt-bar');
-  charts['c-mkt-bar']=new Chart(document.getElementById('c-mkt-bar'),{
-    type:'bar',
-    data:{labels:activeMkts, datasets:buildDatasets(g=>g?.fat||0)},
-    options:mkOpts(v=>brlK(v))
-  });
-
-  dc('c-mkt-mc');
-  charts['c-mkt-mc']=new Chart(document.getElementById('c-mkt-mc'),{
-    type:'bar',
-    data:{labels:activeMkts, datasets:buildDatasets(g=>g?+pctN(g.mc,g.fat).toFixed(2):0)},
-    options:{...mkOpts(v=>v+'%'),scales:{
-      x:{ticks:{color:(isDark?'#3d4760':'#9aa3b0'),font:{family:'Inter',size:11}},grid:{color:(isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)')}},
-      y:{ticks:{color:(isDark?'#3d4760':'#9aa3b0'),callback:v=>v+'%'},grid:{color:(isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)')}}
-    }}
-  });
+  if(longo){
+    const linhas=valFn=>activeMkts.map(m=>({
+      label:m, data:mthData.map(md=>valFn(md.byMkt[m])),
+      borderColor:MKT_C[m]||'#94a3b8', backgroundColor:'transparent',
+      tension:0.25, pointRadius:cmpMths.length>16?0:2, borderWidth:2, spanGaps:false
+    }));
+    drawMkt('c-mkt-bar','line',cmpMths.map(mesCurto),linhas(g=>g&&g.fat?+g.fat:0),v=>brlK(v));
+    drawMkt('c-mkt-mc','line',cmpMths.map(mesCurto),linhas(g=>g&&g.fat?+pctN(g.mc,g.fat).toFixed(2):null),v=>v+'%');
+  } else {
+    const barras=valFn=>{
+      const sets=mthData.map((md,i)=>({
+        label:mesCurto(cmpMths[i])||('M'+(i+1)),
+        data:activeMkts.map(m=>valFn(md.byMkt[m])),
+        backgroundColor:monthColors[i%monthColors.length]+'cc',
+        borderRadius:4
+      }));
+      if(cmpMode && Object.keys(cmpByMkt).length>0){
+        sets.push({label:'Período anterior',data:activeMkts.map(m=>valFn(cmpByMkt[m])),backgroundColor:'rgba(255,255,255,0.15)',borderRadius:4,borderWidth:1,borderColor:'rgba(255,255,255,0.3)'});
+      }
+      return sets;
+    };
+    drawMkt('c-mkt-bar','bar',activeMkts,barras(g=>g?.fat||0),v=>brlK(v));
+    drawMkt('c-mkt-mc','bar',activeMkts,barras(g=>g&&g.fat?+pctN(g.mc,g.fat).toFixed(2):0),v=>v+'%');
+  }
 
   // ── Top 10 real por operação (empresa · canal), a partir do detalhe do período ──
   const champOps=top10PorOperacao(s,e,_empVal,_mktVal);
