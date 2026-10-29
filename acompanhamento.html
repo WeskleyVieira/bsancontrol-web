@@ -867,7 +867,7 @@ body.light #met-root .met-page{--met-muted:#4b5563;--met-ok:#065f46;--met-danger
 #met-root .met-daily-table td:last-child{min-width:0;white-space:nowrap}
 #met-root .met-objetivos-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:14px}
 #met-root .met-objetivo{display:flex;flex-direction:column;gap:10px;min-width:0;text-align:left;color:var(--t1);font:inherit;cursor:pointer;border:2px solid var(--bdr2);border-radius:10px;background:var(--surf);padding:16px}
-#met-root .met-objetivo:hover,#met-root .met-objetivo:focus-visible{border-color:var(--met-pending);outline:2px solid var(--met-pending);outline-offset:2px}
+#met-root .met-objetivo:hover,#met-root .met-objetivo:focus-visible{outline:2px solid var(--met-pending);outline-offset:2px}
 #met-root .met-objetivo[aria-pressed="true"]{border-color:var(--met-pending)}
 #met-root .met-objetivo-titulo{font-size:15px;font-weight:700;line-height:1.5}
 #met-root .met-objetivo .met-value{display:block;font-size:23px;line-height:1.4;overflow-wrap:anywhere;margin:0}
@@ -4228,6 +4228,9 @@ const AC2_TIPOS_PROMO = [
   { k:'promo_execucao',  curto:'Execução falhou', cor:'#0ea5e9', re:/promo · execução falhou/i, ajuda:'O robô tentou e não conseguiu manter o anúncio na campanha (preço novo, antigo, teto e a rodada seguinte). Clique em Reaplicar — o robô tenta de novo em até 15 min — e, se não der, faça à mão pelo passo a passo.' },
 ];
 let AC2_TIPOS = AC2_TIPOS_TAREFAS;   // troca com a sub-aba (ac2.setSub)
+// botão "Reaplicar" (fila de comandos): DESLIGADO até o pipeline ir para a nuvem — hoje quem executa seria o PC (fila-comandos.js)
+// e, sem ele rodando, o pedido ficaria parado. Na migração o servidor executa na hora e isto vira true. (Weskley, 29/10/2026)
+const AC2_REAPLICAR = false;
 const AC2_ISPROMO = i => /^promo\|/.test(String(i&&i.id||'')) || /^promo ·/i.test(String(i&&i.tipo||''));
 const ac2TipoDe = t => (AC2_TIPOS.find(x => x.re.test(String(t||''))) || { k:'outro', curto:'Outro', cor:'#8891a8', ajuda:'' });
 // conta quantas de cada tipo há numa lista
@@ -5351,7 +5354,7 @@ function ac2DemRow(i, modo){
   const online = (ac2._fonte||'').indexOf('API')>=0;
   const btn = online && i.id && modo!=='feita' && modo!=='cobrar' ? `<button class="dm-reg" onclick="event.stopPropagation();ac2.tratar(this.dataset.id)" data-id="${encodeURIComponent(i.id)}">${modo==='recobrar'?'Registrar nova ação':'Registrar'}</button>` : '';
   // REAPLICAR (29/10/2026): tarefa "Execução falhou" → o gestor pede e o robô tenta de novo no PC (fila-comandos.js, até 15 min)
-  const cmdBtn = online && t.k==='promo_execucao' && modo!=='feita' ? `<button class="dm-reg" style="background:#0ea5e9;margin-bottom:4px" onclick="event.stopPropagation();ac2.reaplicar(this.dataset.id)" data-id="${encodeURIComponent(i.id)}" title="O robô tenta recolocar o anúncio na campanha (em até 15 min)">🔁 Reaplicar</button>` : '';
+  const cmdBtn = AC2_REAPLICAR && online && t.k==='promo_execucao' && modo!=='feita' ? `<button class="dm-reg" style="background:#0ea5e9;margin-bottom:4px" onclick="event.stopPropagation();ac2.reaplicar(this.dataset.id)" data-id="${encodeURIComponent(i.id)}" title="O robô tenta recolocar o anúncio na campanha (em até 15 min)">🔁 Reaplicar</button>` : '';
   const cmd = (ac2.CMD||{})[i.id];
   const cmdL = cmd ? (()=>{ const quando = (s=>s?String(new Date(s).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})):'')(cmd.atualizado_em||cmd.criado_em);
       const cor = cmd.estado==='ok' ? '#16a34a' : cmd.estado==='falhou'||cmd.estado==='recusado' ? '#dc2626' : '#0ea5e9';
