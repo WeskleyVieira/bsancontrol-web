@@ -146,9 +146,10 @@ async function rotaGET(u, user) {
     const rows = mapMoney(await dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto,
         SUM(receita) AS fat, SUM(liquido) AS liq, SUM(ctp) AS ctp, SUM(imposto) AS imp,
         SUM(mc_comissao) AS mc, SUM(mc_real) AS "mcReal", SUM(qtd) AS qtd, COUNT(*) AS ped,
+        SUM(COALESCE(publicidade,0)) AS pub, SUM(COALESCE(afiliados,0)) AS afil,
         SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' THEN receita ELSE 0 END AS DOUBLE PRECISION)) AS "fatMetas",
         SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' OR LOWER(TRIM(status))='devolvida' THEN COALESCE(mc_comissao,mc_real,0) ELSE 0 END AS DOUBLE PRECISION)) AS "mcMetas"
-      FROM vendas ${W} GROUP BY data, empresa, canal, ponto`, args), ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd", "fatMetas", "mcMetas"]);
+      FROM vendas ${W} GROUP BY data, empresa, canal, ponto`, args), ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd", "fatMetas", "mcMetas", "pub", "afil"]);
     rows.forEach(o => { o.ped = +o.ped; });
     const skuMon = mapMoney(await dbx.all(`SELECT competencia AS mes, sku AS "SKU", SUM(receita) AS fat, SUM(liquido) AS liq,
         SUM(ctp) AS ctp, SUM(imposto) AS imp, SUM(mc_real) AS mc, SUM(qtd) AS qtd FROM vendas ${W} GROUP BY competencia, sku`, args), ["fat", "liq", "ctp", "imp", "mc", "qtd"]);
