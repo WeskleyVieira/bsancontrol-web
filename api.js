@@ -44,6 +44,13 @@ async function pontosDoGestor(gestorRef) {
   const rs = await dbx.all("SELECT DISTINCT v.ponto p FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=?", [gestorRef]);
   return rs.map(r => r.p).filter(Boolean);
 }
+async function restringePontos(user, where, args) {
+  if (!user || user.perfil !== "gestor") return;
+  const pts = await pontosDoGestor(user.gestor_ref);
+  if (!pts.length) { where.push("1=0"); return; } // sem carteira nunca significa acesso a toda a base
+  where.push("ponto IN (" + pts.map(() => "?").join(",") + ")");
+  args.push(...pts);
+}
 const body = req => new Promise(r => { let b = ""; req.on("data", c => b += c); req.on("end", () => { try { r(JSON.parse(b || "{}")); } catch (e) { r({}); } }); });
 const userDe = req => { const h = req.headers["authorization"] || ""; return verificaToken(h.replace(/^Bearer\s+/i, "")); };
 
@@ -109,8 +116,11 @@ async function rotaGET(u, user) {
   }
   if (u.pathname === "/api/vendas-agregado") {
     const de = q.de || "0000-00-00", ate = q.ate || "9999-99-99", t0 = Date.now();
-    const kpi = await dbx.get("SELECT COUNT(*) n, ROUND(SUM(receita)) fat, ROUND(SUM(mc_comissao)) mc FROM vendas WHERE data>=? AND data<=? AND status LIKE '%venda%'", [de, ate]);
-    const porOp = await dbx.all("SELECT empresa, canal, ROUND(SUM(receita)) fat, ROUND(SUM(mc_comissao)) mc, COUNT(*) n FROM vendas WHERE data>=? AND data<=? AND status LIKE '%venda%' GROUP BY empresa, canal ORDER BY mc DESC", [de, ate]);
+    const w = ["data>=?", "data<=?", "status LIKE '%venda%'"], args = [de, ate];
+    await restringePontos(user, w, args);
+    const W = " WHERE " + w.join(" AND ");
+    const kpi = await dbx.get("SELECT COUNT(*) n, ROUND(SUM(receita)) fat, ROUND(SUM(mc_comissao)) mc FROM vendas" + W, args);
+    const porOp = await dbx.all("SELECT empresa, canal, ROUND(SUM(receita)) fat, ROUND(SUM(mc_comissao)) mc, COUNT(*) n FROM vendas" + W + " GROUP BY empresa, canal ORDER BY mc DESC", args);
     return { periodo: [de, ate], ms: Date.now() - t0, kpi, por_operacao: porOp };
   }
   // ── /api/dataset — datasets do painel (ROWS/DETALHE/agregados) escopados por PONTO, janela de meses ──
@@ -127,7 +137,7 @@ async function rotaGET(u, user) {
       de = de || dt.toISOString().slice(0, 10);
     }
     const w = ["data>=?", "data<=?"]; const args = [de, ate];
-    if (user && user.perfil === "gestor") { const pts = await pontosDoGestor(user.gestor_ref); if (pts.length) { w.push("ponto IN (" + pts.map(() => "?").join(",") + ")"); args.push(...pts); } }
+    await restringePontos(user, w, args);
     const W = "WHERE " + w.join(" AND ");
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const mapMoney = (a, campos) => a.map(o => { for (const c of campos) o[c] = r2(o[c]); return o; });
@@ -135,8 +145,10 @@ async function rotaGET(u, user) {
     // O DETALHE (linha a linha, pesado) é lazy: /api/detalhe, só quando Raio-X/Panorama precisam.
     const rows = mapMoney(await dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto,
         SUM(receita) AS fat, SUM(liquido) AS liq, SUM(ctp) AS ctp, SUM(imposto) AS imp,
-        SUM(mc_comissao) AS mc, SUM(mc_real) AS "mcReal", SUM(qtd) AS qtd, COUNT(*) AS ped
-      FROM vendas ${W} GROUP BY data, empresa, canal, ponto`, args), ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd"]);
+        SUM(mc_comissao) AS mc, SUM(mc_real) AS "mcReal", SUM(qtd) AS qtd, COUNT(*) AS ped,
+        SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' THEN receita ELSE 0 END AS DOUBLE PRECISION)) AS "fatMetas",
+        SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' OR LOWER(TRIM(status))='devolvida' THEN COALESCE(mc_comissao,mc_real,0) ELSE 0 END AS DOUBLE PRECISION)) AS "mcMetas"
+      FROM vendas ${W} GROUP BY data, empresa, canal, ponto`, args), ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd", "fatMetas", "mcMetas"]);
     rows.forEach(o => { o.ped = +o.ped; });
     const skuMon = mapMoney(await dbx.all(`SELECT competencia AS mes, sku AS "SKU", SUM(receita) AS fat, SUM(liquido) AS liq,
         SUM(ctp) AS ctp, SUM(imposto) AS imp, SUM(mc_real) AS mc, SUM(qtd) AS qtd FROM vendas ${W} GROUP BY competencia, sku`, args), ["fat", "liq", "ctp", "imp", "mc", "qtd"]);
@@ -161,7 +173,7 @@ async function rotaGET(u, user) {
       de = de || dt.toISOString().slice(0, 10);
     }
     const w = ["data>=?", "data<=?"]; const args = [de, ate];
-    if (user && user.perfil === "gestor") { const pts = await pontosDoGestor(user.gestor_ref); if (pts.length) { w.push("ponto IN (" + pts.map(() => "?").join(",") + ")"); args.push(...pts); } }
+    await restringePontos(user, w, args);
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     // ⚠ NÃO acrescentar colunas aqui. Este endpoint devolve a base INTEIRA (148k linhas em out/2026);
     // cada campo a mais é multiplicado por isso. Medido: 16 campos de abertura levavam o pico de
@@ -260,6 +272,10 @@ async function rotaGET(u, user) {
     const dsr = await dbx.all("SELECT nome, json FROM datasets");
     const got = {};
     for (const r of dsr) { try { got[r.nome] = JSON.parse(r.json); } catch (e) {} }
+    // Metas usa o vínculo atual do servidor, em vez do mapa estático da página.
+    got.operacoes = await dbx.all("SELECT empresa, marketplace, gestor FROM operacoes" +
+      (user && user.perfil === "gestor" ? " WHERE gestor=?" : ""),
+      user && user.perfil === "gestor" ? [user.gestor_ref] : []);
     if (user && user.perfil === "gestor") {   // gestor: dados do(s) ponto(s) dele; comissão só das operações dele
       const pts = new Set(await pontosDoGestor(user.gestor_ref));
       const opm = {};   // op (emp|mkt) → ponto dominante
@@ -276,6 +292,9 @@ async function rotaGET(u, user) {
       if (got.produtos) got.produtos = got.produtos.filter(r => pts.has(r.ponto));
       if (got.envios) { const empm = {}; (await dbx.all("SELECT empresa, ponto, COUNT(*) n FROM vendas GROUP BY empresa, ponto ORDER BY n DESC")).forEach(r => { if (!(r.empresa in empm)) empm[r.empresa] = r.ponto; }); got.envios = got.envios.filter(r => pts.has(empm[r.empresa])); }
       const opGestor = {}; (await dbx.all("SELECT empresa, marketplace, gestor FROM operacoes")).forEach(o => { opGestor[o.empresa + " · " + o.marketplace] = o.gestor; });
+      const afProprio = r => opGestor[r.emp + " · " + r.mkt] === user.gestor_ref;
+      if (got.afiliadosDia) got.afiliadosDia = got.afiliadosDia.filter(afProprio);
+      if (got.afiliadosFonte) got.afiliadosFonte = got.afiliadosFonte.filter(afProprio);
       if (got.comissao) got.comissao = got.comissao.filter(r => opGestor[r.operacao] === user.gestor_ref);
       if (got.comissaoDet) got.comissaoDet = got.comissaoDet.filter(r => opGestor[r.operacao] === user.gestor_ref);
       delete got.custos;   // custos/DRE é financeiro — gestor não vê

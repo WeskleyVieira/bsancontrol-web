@@ -684,6 +684,150 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
 .pc-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:14px;}
 .pc-range{font-family:'DM Mono',monospace;font-size:12px;color:var(--t2);}
 .pc-apply{background:var(--a);border:none;border-radius:8px;color:#04120f;font-weight:700;font-size:12px;padding:7px 18px;cursor:pointer;}
+/* Metas: estilos locais; a identidade e as demais abas permanecem no tema existente. */
+#met-root .met-page{--met-muted:#aeb8cd;--met-ok:#6ee7b7;--met-danger:#fca5a5;--met-warning:#fde68a;--met-pending:#c4b5fd;color:var(--t1);padding:12px 0 32px;display:flex;flex-direction:column;gap:24px;min-width:0}
+body.light #met-root .met-page{--met-muted:#4b5563;--met-ok:#065f46;--met-danger:#991b1b;--met-warning:#854d0e;--met-pending:#5b21b6}
+#met-root .met-heading,#met-root .met-section-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+#met-root .met-heading h2{font-size:22px;letter-spacing:-.4px;line-height:1.3;margin:4px 0 6px}
+#met-root .met-heading p,#met-root .met-section-heading p{color:var(--met-muted);font-size:13px}
+#met-root .met-eyebrow{font-size:11px;letter-spacing:.08em;font-weight:700;color:var(--met-muted)}
+#met-root .met-section-heading{margin-bottom:12px}
+#met-root .met-section-heading h3{font-size:17px;line-height:1.4}
+#met-root .met-section-heading>span{font-size:12px;color:var(--met-muted)}
+#met-root .met-filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px}
+#met-root .met-filtros label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--met-muted);min-width:0}
+#met-root .met-filtros select{font:inherit;font-size:14px;min-height:44px;border-radius:8px;border:1px solid var(--bdr2);padding:9px 12px;background:var(--surf);color:var(--t1);max-width:100%;width:100%}
+#met-root .met-btn{font:inherit;font-size:13px;font-weight:600;min-height:44px;cursor:pointer;padding:9px 14px;background:var(--surf2);border:1px solid var(--bdr2);color:var(--t1);border-radius:8px;text-align:center}
+#met-root .met-btn:hover{background:var(--surf3)}
+#met-root :is(button,select,summary):focus-visible{outline:2px solid var(--met-pending);outline-offset:3px}
+#met-root .met-context{font-size:12px;color:var(--met-muted);padding:0 14px;background:var(--surf2);border-radius:8px;line-height:1.6}
+#met-root .met-context summary{cursor:pointer;min-height:44px;padding:12px 0}
+#met-root .met-context-body{display:flex;flex-direction:column;gap:8px;padding:4px 0 14px}
+#met-root .met-todas{margin-top:12px}
+#met-root .met-nota{font-size:13px;line-height:1.7;color:var(--met-muted)}
+#met-root .met-alerta{border-left:3px solid var(--met-pending);padding:12px 16px;background:var(--surf2);font-size:13px;line-height:1.65;color:var(--t1)}
+#met-root .met-resumo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+#met-root .met-card{background:var(--surf);border:1px solid var(--bdr2);border-radius:10px;padding:22px;min-width:0}
+#met-root .met-card h3{font-size:16px;font-weight:600;color:var(--met-muted)}
+#met-root .met-value{font-size:36px;font-weight:700;letter-spacing:-.7px;margin:12px 0 8px;line-height:1.3;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+#met-root .met-card p,#met-root .met-foot{font-size:14px;line-height:1.7;color:var(--met-muted)}
+#met-root .met-hoje{background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:24px}
+#met-root .met-hoje .met-section-heading h3{font-size:22px}
+#met-root .met-hoje .met-section-heading>span{font-size:16px;color:var(--t1)}
+#met-root .met-dia-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:28px;align-items:center;margin:20px 0}
+#met-root .met-dia-item{min-width:0}
+#met-root .met-dia-label{display:block;font-size:16px;color:var(--met-muted);line-height:1.5}
+#met-root .met-dia-numero{display:block;font-size:36px;font-weight:700;letter-spacing:-.8px;line-height:1.3;margin-top:8px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#met-root .met-dia-meta .met-dia-numero{font-size:clamp(40px,4.4vw,56px);letter-spacing:-1.4px}
+#met-root .met-dia-track{height:12px;border-radius:6px;background:var(--surf3);overflow:hidden;margin:12px 0}
+#met-root .met-dia-fill{height:100%;background:var(--met-ok);border-radius:6px}
+#met-root .met-dia-status{font-size:16px;font-weight:600;line-height:1.5}
+#met-root .met-dia-fonte{font-size:14px;color:var(--met-muted);line-height:1.7;margin-top:14px}
+@media(max-width:900px){#met-root .met-dia-grid{grid-template-columns:1fr 1fr;gap:20px}#met-root .met-dia-meta{grid-column:1/-1}}
+@media(max-width:580px){#met-root .met-resumo{grid-template-columns:1fr}#met-root .met-card{padding:18px}#met-root .met-hoje{padding:18px}#met-root .met-hoje .met-section-heading h3{font-size:20px}#met-root .met-dia-numero{font-size:30px}#met-root .met-dia-label{font-size:14px}#met-root .met-dia-grid{gap:16px}#met-root .met-dia-meta .met-dia-label{font-size:16px}}
+#met-root .met-foot{margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr2)}
+#met-root .met-foot b{color:var(--t1);font-weight:600}
+#met-root .met-critical .met-value{color:var(--met-danger)}
+#met-root .met-prioridades{border:1px solid var(--bdr2);border-radius:10px;overflow:hidden}
+#met-root .met-prioridade{display:grid;grid-template-columns:minmax(190px,.9fr) minmax(220px,1fr) minmax(240px,1.3fr);align-items:start;gap:20px;padding:18px;background:var(--surf)}
+#met-root .met-prioridade+.met-prioridade{border-top:1px solid var(--bdr2)}
+#met-root .met-prioridade p{font-size:14px;line-height:1.6;margin-top:7px;color:var(--met-muted)}
+#met-root .met-op-nome{display:flex;flex-direction:column;gap:6px;overflow-wrap:anywhere}
+#met-root .met-op-nome strong{font-size:16px}
+#met-root .met-op-nome span{font-size:12px;color:var(--met-muted)}
+#met-root .met-proximo .met-btn{margin-top:12px}
+#met-root .met-status{display:inline-flex;align-items:center;font-size:12px;font-weight:700;line-height:1.6}
+#met-root .met-critico{color:var(--met-danger)}
+#met-root .met-pendente{color:var(--met-pending)}
+#met-root .met-atencao{color:var(--met-warning)}
+#met-root .met-ok{color:var(--met-ok)}
+#met-root .met-futuro{color:var(--met-muted)}
+#met-root .met-detalhe{background:var(--surf);border:1px solid var(--bdr2);border-radius:10px;padding:20px;scroll-margin-top:160px}
+#met-root .met-detalhe:focus{outline:none}
+#met-root .met-diagnostico{font-size:14px;line-height:1.7;margin:12px 0 18px}
+#met-root .met-table-wrap{overflow-x:auto;max-width:100%;margin:14px 0}
+#met-root .met-table{border-collapse:collapse;width:100%;font-size:13px}
+#met-root .met-table caption{text-align:left;font-size:12px;color:var(--met-muted);padding:0 0 12px}
+#met-root .met-table th,#met-root .met-table td{padding:12px;text-align:right;border-bottom:1px solid var(--bdr2);white-space:nowrap;vertical-align:top}
+#met-root .met-table th:first-child{text-align:left;white-space:normal;min-width:160px}
+#met-root .met-table thead th{font-size:12px;color:var(--met-muted);font-weight:600}
+#met-root .met-table small{display:block;color:var(--met-muted);font-size:11px;font-weight:400}
+#met-root .met-ritmo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:18px;margin:20px 0}
+#met-root .met-ritmo strong{font-size:13px}
+#met-root .met-ritmo p{font-size:13px;line-height:1.7;color:var(--met-muted);margin-top:6px}
+#met-root .met-expande{border-top:1px solid var(--bdr2);margin-top:14px}
+#met-root .met-expande summary{cursor:pointer;min-height:48px;padding:14px 0;font-size:14px;font-weight:600;line-height:1.6}
+#met-root .met-expande-body{padding:8px 0 18px;line-height:1.7;font-size:13px}
+#met-root .met-expande-body p{color:var(--met-muted);margin-bottom:10px}
+#met-root .met-chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,390px),1fr));gap:18px}
+#met-root .met-chart{min-width:0;border:1px solid var(--bdr2);border-radius:10px;background:var(--surf);padding:18px;margin:12px 0}
+#met-root .met-chart h4{font-size:14px}
+#met-root .met-chart p{font-size:12px;color:var(--met-muted);line-height:1.6;margin:6px 0 12px}
+#met-root .met-chart-area{position:relative;height:300px}
+#met-root .met-ajuda{padding:18px;background:var(--surf2);border-radius:10px;line-height:1.75;font-size:13px}
+#met-root .met-ajuda h3{font-size:15px;margin-bottom:12px}
+#met-root .met-ajuda p+p{margin-top:10px}
+#met-root .met-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:960px){#met-root .met-prioridade{grid-template-columns:1fr 1fr}#met-root .met-proximo{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:16px}#met-root .met-proximo .met-btn{flex-shrink:0;margin-top:0}}
+@media(max-width:580px){#met-root .met-page{gap:18px}#met-root .met-filtros{grid-template-columns:1fr 1fr}#met-root .met-filtros label:last-child{grid-column:1/-1}#met-root .met-prioridade{grid-template-columns:1fr;gap:12px}#met-root .met-proximo{display:block}#met-root .met-proximo .met-btn{margin-top:12px}#met-root .met-heading h2{font-size:20px}#met-root .met-detalhe{padding:14px}#met-root .met-chart{padding:12px}#met-root .met-chart-area{height:260px}}
+
+#met-root .met-views,#met-root .met-rota-metricas{display:flex;flex-wrap:wrap;gap:8px}
+#met-root .met-active{border-color:var(--met-pending);background:var(--surf3);color:var(--t1)}
+#met-root .met-rota h3{font-size:22px}
+#met-root .met-rota .met-section-heading p{font-size:14px;color:var(--met-muted);line-height:1.7;max-width:760px;margin-top:8px}
+#met-root .met-ref{display:flex;flex-direction:column;gap:6px;color:var(--met-muted);font-size:14px}
+#met-root .met-ref input{font:inherit;background:var(--surf);color:var(--t1);border:1px solid var(--bdr2);border-radius:8px;min-height:44px;padding:10px 12px;max-width:100%;min-width:0}
+#met-root .met-rota-metricas{margin:16px 0}
+
+#met-root .met-ampliar-cabecalho{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:8px}
+#met-root .met-ampliar-btn{font-size:12px;white-space:nowrap;flex-shrink:0}
+.met-ampliado{box-sizing:border-box;position:fixed;inset:0;margin:0;width:100vw;height:100dvh;max-width:none;max-height:none;border:0;border-radius:0;padding:22px;background:var(--bg,#0b0f17);color:var(--t1,#e8edf5)}
+.met-ampliado[open]{display:flex;flex-direction:column;gap:16px}
+.met-ampliado::backdrop{background:rgba(0,0,0,.8)}
+.met-ampliado header{display:flex;align-items:start;justify-content:space-between;gap:20px;flex-shrink:0}
+.met-ampliado h2{font-size:24px;line-height:1.35;margin:0}
+.met-ampliado header p,.met-ampliado footer{font-size:14px;line-height:1.6;color:var(--t2,#aeb8cd);margin-top:8px}
+.met-ampliado-acoes{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.met-ampliado .met-btn{font:inherit;font-size:14px;min-height:44px;padding:9px 14px;border:1px solid var(--bdr2,#39445a);border-radius:8px;background:var(--surf,#141c29);color:var(--t1,#e8edf5);cursor:pointer}
+.met-ampliado [hidden]{display:none!important}
+.met-ampliado-corpo{flex:1;min-height:0;min-width:0;position:relative;overflow:hidden}
+.met-ampliado-corpo .met-chart-area{width:100%;height:100%;position:relative;min-height:0}
+.met-ampliado footer{flex-shrink:0}
+@media(max-width:600px){.met-ampliado{padding:14px}.met-ampliado header{flex-direction:column;gap:10px}.met-ampliado h2{font-size:20px}}
+
+#met-root .met-regra{border:1px solid var(--bdr2);border-radius:10px;padding:16px;margin:18px 0;background:var(--surf)}
+#met-root .met-regra h3{font-size:17px;margin-bottom:10px}
+#met-root .met-comparacoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:18px 0}
+#met-root .met-comparacao{min-width:0;border:1px solid var(--bdr2);border-radius:10px;background:var(--surf);padding:20px}
+#met-root .met-comparacao h4{font-size:20px;line-height:1.4}
+#met-root .met-comparacao dl{margin:12px 0}
+#met-root .met-medida{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--bdr2)}
+#met-root .met-medida dt{color:var(--met-muted);font-size:14px;line-height:1.5}
+#met-root .met-medida dd{margin:0;font-size:clamp(20px,2.6vw,28px);font-weight:700;text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#met-root .met-comparacao-status{font-size:15px;line-height:1.6;font-weight:600;margin-top:12px}
+#met-root .met-neutro{color:var(--met-muted)}
+@media(max-width:800px){#met-root .met-comparacoes{grid-template-columns:1fr}}
+
+#met-root .met-rota-resumo{grid-template-columns:repeat(3,minmax(0,1fr));margin:18px 0}
+#met-root .met-retomada{background:var(--surf2);border-left:3px solid var(--met-pending);padding:18px 20px;margin:20px 0;font-size:15px;line-height:1.8}
+#met-root .met-retomada h4{font-size:17px;margin-bottom:10px}
+#met-root .met-retomada strong{color:var(--t1)}
+#met-root .met-retomada p+p{margin-top:8px;color:var(--met-muted)}
+#met-root .met-calendario{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0}
+#met-root .met-dia-chip{font:inherit;width:44px;min-height:44px;border:1px solid var(--bdr2);border-radius:8px;cursor:pointer;color:var(--t1);background:var(--surf)}
+#met-root .met-dia-chip.met-active{border-color:var(--met-pending);background:var(--surf3)}
+#met-root .met-dia-chip small{display:block;font-size:11px;line-height:1.2}
+#met-root .met-dia-chip.met-ritmo-ok{color:var(--met-ok)}
+#met-root .met-dia-chip.met-ritmo-atencao{color:var(--met-warning)}
+#met-root .met-dia-chip:disabled{cursor:default;color:var(--met-muted);opacity:.65;border-style:dashed}
+#met-root .met-selected-row{background:var(--surf2)}
+#met-root .met-detalhe h4{overflow-wrap:anywhere}
+#met-root .met-rota .met-chart-area{height:330px}
+#met-root .met-table td:last-child{white-space:normal;min-width:140px}
+#met-root :is(input,button):focus-visible{outline:2px solid var(--met-pending);outline-offset:3px}
+@media(max-width:900px){#met-root .met-rota-resumo{grid-template-columns:1fr 1fr}#met-root .met-rota-resumo .met-card:last-child{grid-column:1/-1}}
+@media(max-width:580px){#met-root .met-rota-resumo{grid-template-columns:1fr}#met-root .met-rota-resumo .met-card:last-child{grid-column:auto}#met-root .met-ref{width:100%}#met-root .met-retomada{padding:14px}#met-root .met-rota .met-chart-area{height:280px}}
+
 </style>
 </head>
 <body><div id="bc-dataload" style="position:fixed;inset:0;z-index:9990;background:#0d1119;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:Inter,system-ui,sans-serif;color:#8891a8"><div class="sp"></div><div id="bc-dataload-txt">Carregando…</div></div>
@@ -2386,10 +2530,14 @@ let _FIRST_SKU=null; // 1ª venda de cada SKU (cache, calculado do DETALHE) — 
 const NOVO_DIAS=60; // janela de maturação: produto novo (cadastro OU 1ª venda <= NOVO_DIAS) não é "peso morto"
 let COMISSAO=[];      // aba "Comissao": bônus por operação × mês (metas ponderadas)
 let COMISSAO_DET=[];  // aba "ComissaoDetalhe": objetivo/realizado/bônus por meta
+let METAS_FONTE={};   // carimbo da base, nunca prova de cobertura da coleta
+let METAS_GESTORES=null; // vínculo do servidor; null mantém a compatibilidade com arquivos locais
 let _COM_MES='', _COM_OP=''; // mês e operação selecionados na aba Minha operação
 let ADS=[]; // aba "Ads" do Consolidado: 1 linha por anúncio × competência (grão diferente das vendas)
 let ADS_CAMP=[]; // aba "AdsCampanhas": 1 linha por campanha × competência (Orçamento, ROAS Objetivo, Status, totais)
 let ADS_DIA=[];  // aba "AdsDia": 1 linha por campanha × dia (série diária p/ gráfico)
+let AFILIADOS_DIA=[]; // abertura de cobranças conciliadas por venda
+let AFILIADOS_FONTE=[]; // conciliação e pendências por operação
 let GER_ASORT={col:'inv',dir:-1}; // ordenação da tabela de Publicidade
 let GER_AFILT=''; // filtro por veredito na aba Publicidade ('', 'queima', 'semv', 'escala', 'lucra')
 let GER_APUB='campanha'; // visão da aba Publicidade: 'campanha' | 'anuncio'
@@ -5832,378 +5980,466 @@ function _renderGerAcomp(){
 // Mesma régua que paga o bônus (COMISSAO/COMISSAO_DET, do comissao.js): margem FINAL = depois do Ads e dos
 // custos do gestor. As metas saem do metas-auto.js (séries A/B/C, sazonalidade, TACOS pela margem) — 19/10/2026.
 // Online, o /api/extras já entrega ao gestor só as operações dele; aqui o seletor de gestor é a visão do coordenador.
-let _MET_MES='', _MET_GES='', _MET_OP='', _MET_AJUDA=false;
-function metMes(v){ _MET_MES=v; renderGerencial(); }
-function metGes(v){ _MET_GES=v; renderGerencial(); }
-function metAjuda(){ _MET_AJUDA=!_MET_AJUDA; renderGerencial(); }
-// cópia fiel do bonusMeta do comissao.js: "maior" = quanto mais melhor (teto 100%); "custo" = passou do teto, perde na proporção
-function _metBonus(real,obj,peso,tipo){ if(!(obj>0)) return 0; const r=tipo==='custo'?Math.max(0,Math.min(2-real/obj,1)):Math.min(real/obj,1); return r*peso; }
-function metOp(v){ _MET_OP=v; renderGerencial(); }
-function _renderGerMetas(){
-  const root=document.getElementById('met-root'); if(!root) return;
-  const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
-  const brl=v=>'R$ '+Math.round(+v||0).toLocaleString('pt-BR');
-  const bk=v=>{ v=+v||0; const a=Math.abs(v); return a>=1e6?'R$ '+(v/1e6).toFixed(2).replace('.',',')+' mi':a>=1e3?'R$ '+(v/1e3).toFixed(1).replace('.',',')+' mil':brl(v); };
-  const pc=(v,d=1)=>((+v||0)*100).toFixed(d).replace('.',',')+'%';
-  const IDS=['c-met-acum','c-met-mcdia','c-met-ponte','c-met-evol','c-met-ating','c-met-bonus','c-met-tacos','c-met-hfat','c-met-hmc'];
-  IDS.forEach(id=>{ if(charts[id]){ charts[id].destroy(); delete charts[id]; } });
-  const L=(typeof COMISSAO!=='undefined'&&Array.isArray(COMISSAO))?COMISSAO:[];
-  const D=(typeof COMISSAO_DET!=='undefined'&&Array.isArray(COMISSAO_DET))?COMISSAO_DET:[];
-  if(!L.length){ root.innerHTML='<div class="cc" style="padding:30px;text-align:center;color:var(--t2);font-size:13px;line-height:1.7;">Sem metas carregadas ainda.<br><span style="font-size:12px;color:var(--t3)">As metas vêm de <code>Comissao/Comissao_Metas.xlsx</code> (calculadas pelo <code>metas-auto.js</code>) e entram no painel na rodada do <code>geral</code>.</span></div>'; return; }
-  // dias corridos do mês = último dia com venda no mês; projeção linear até o fim do mês
-  const R0=(typeof ROWS!=='undefined'&&Array.isArray(ROWS))?ROWS:[];
-  let maxG=''; for(const r of R0){ if(r.date&&r.date>maxG) maxG=r.date; }
-  const meses=[...new Set(L.map(r=>r.mes))].sort();
-  if(!_MET_MES||!meses.includes(_MET_MES)) _MET_MES=meses.includes(maxG.slice(0,7))?maxG.slice(0,7):meses[meses.length-1];
-  const [yy,mm]=_MET_MES.split('-').map(Number), dm=new Date(yy,mm,0).getDate();
-  let ultM=''; for(const r of R0){ if(r.date&&r.date.slice(0,7)===_MET_MES&&r.date>ultM) ultM=r.date; }
-  // mês fechado = já passou no calendário (ou os dados já entraram no mês seguinte); sem venda carregada no mês
-  // corrente, conta até ontem
-  const hoje=new Date(), hojeM=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
-  const fechado=_MET_MES<hojeM||(!!maxG&&maxG.slice(0,7)>_MET_MES);
-  const dd=fechado?dm:(ultM?+ultM.slice(8,10):Math.max(1,hoje.getDate()-1)), resta=Math.max(0,dm-dd);
-  // PESO DE CADA DIA DA SEMANA (fase 2, 19/10/2026): sábado e domingo vendem menos — com a reta, o gestor parecia
-  // atrasado na segunda e adiantado na sexta. Peso = venda média daquele dia da semana ÷ média geral, nos 90 dias antes
-  // do mês (todo o grupo, p/ não oscilar com o filtro). Sem histórico suficiente, peso 1 (= reta).
-  const W=Array(7).fill(1);
-  { const t0=Date.UTC(yy,mm-1,1), de=new Date(t0-91*864e5).toISOString().slice(0,10), ate=new Date(t0-864e5).toISOString().slice(0,10);
-    const porDia={}; for(const r of R0){ if(r.date&&r.date>=de&&r.date<=ate) porDia[r.date]=(porDia[r.date]||0)+(+r.fat||0); }
-    const soma=Array(7).fill(0), n=Array(7).fill(0);
-    for(let t=t0-91*864e5;t<t0;t+=864e5){ const d=new Date(t).toISOString().slice(0,10), w=new Date(t).getUTCDay(); soma[w]+=porDia[d]||0; n[w]++; }
-    const media=soma.reduce((a,b)=>a+b,0)/Math.max(1,n.reduce((a,b)=>a+b,0));
-    if(media>0&&Object.keys(porDia).length>=60) for(let w=0;w<7;w++) W[w]=n[w]?Math.max(.2,(soma[w]/n[w])/media):1; }
-  const pesoDia=i=>W[new Date(Date.UTC(yy,mm-1,i)).getUTCDay()];
-  const cumW=[0]; for(let i=1;i<=dm;i++) cumW[i]=cumW[i-1]+pesoDia(i);
-  const fP=(!fechado&&dd>0&&cumW[dd]>0)?cumW[dm]/cumW[dd]:1;   // fator de projeção do mês (não mais linear)
-  // O ÚLTIMO DIA PODE ESTAR PELA METADE (o atualizar roda de hora em hora): se ele é hoje, a projeção parte de ONTEM —
-  // senão um dia com 11 horas de venda contaria como dia cheio e puxaria a projeção do mês para baixo.
-  const hojeISO=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-'+String(hoje.getDate()).padStart(2,'0');
-  const parcial=!fechado&&ultM===hojeISO&&dd>1&&cumW[dd-1]>0, ddP=parcial?dd-1:dd;
-  const hojeOp={}; if(parcial) for(const r of R0){ if(r.date===hojeISO){ const k=r.emp+' · '+r.mkt; hojeOp[k]=(hojeOp[k]||0)+(+r.fat||0); } }
-  // fator por operação: (mês − hoje) × peso do mês inteiro ÷ peso até ontem, aplicado sobre o valor do mês
-  const fOp=(op,fatMes)=>{ if(fechado) return 1; if(!parcial||!(fatMes>0)) return fP; const h=Math.min(hojeOp[op]||0,fatMes); return ((fatMes-h)/fatMes)*cumW[dm]/cumW[dd-1]; };
-  const NOMES=['','janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-  const gesDe=op=>{ const [e,m]=String(op).split(' · '); return (typeof AC2_GESTOR!=='undefined'&&AC2_GESTOR[e+'|'+m])||'—'; };
-  const gCor=g=>(typeof AC2_GCOR!=='undefined'&&AC2_GCOR[g])||'var(--t2)';
-  const curto=op=>{ const [e,m]=String(op).split(' · '); const M={'Mercado Livre':'ML','Magazine Luiza':'Magalu','TikTok Shop':'TikTok','Kwai Shop':'Kwai'}; return (M[m]||m)+' · '+e.replace('Powerfull Imports','Powerfull').replace('Pesseguinho Store','Pesseguinho').replace('Powerfull Filial','Filial'); };
-  const rowsM=L.filter(r=>r.mes===_MET_MES);
-  const gestores=[...new Set(rowsM.map(r=>gesDe(r.operacao)))].sort();
-  if(_MET_GES&&!gestores.includes(_MET_GES)) _MET_GES='';
-  const doGes=rowsM.filter(r=>!_MET_GES||gesDe(r.operacao)===_MET_GES);
-  if(_MET_OP&&!doGes.some(r=>r.operacao===_MET_OP)) _MET_OP='';
-  const sel=doGes.filter(r=>!_MET_OP||r.operacao===_MET_OP);
+let _MET_MES='', _MET_GES='', _MET_OP='', _MET_AJUDA=false, _MET_OPEN='', _MET_ALL=false;
+const _MET_SECOES=new Set();
+let _MET_MODEL=null;
+const _metNum=(v,f=0)=>v!==null&&v!==''&&v!==undefined&&Number.isFinite(+v)?+v:f;
+const _metEsc=v=>String(v==null?'':v).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+const _metBRL=v=>Number.isFinite(v)?(Math.round(v)===0?0:v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}):'—';
+const _metBRL2=v=>Number.isFinite(v)?(Math.round(v*100)===0?0:v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+const _metPct=v=>Number.isFinite(v)?(100*v).toLocaleString('pt-BR',{maximumFractionDigits:1,minimumFractionDigits:1})+'%':'—';
+const _metDia=d=>d?d.slice(8,10)+'/'+d.slice(5,7):'—';
+const _metISO=d=>new Date(d).toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
+function _metBonus(real,obj,peso,tipo){return obj>0?Math.max(0,Math.min(tipo==='custo'?2-real/obj:real/obj,1))*peso:0;}
+function metMes(v){_MET_MES=v;_MET_DAY=0;_renderGerMetas();}
+function metGes(v){_MET_GES=v;_renderGerMetas();}
+function metOp(v){_MET_OP=v;_MET_OPEN=v;_renderGerMetas();}
+function metAjuda(){_MET_AJUDA=!_MET_AJUDA;_renderGerMetas();}
+function metTodas(){_MET_ALL=!_MET_ALL;_renderGerMetas();}
+function metAbrir(v){_MET_OPEN=_MET_OPEN===v?'':v;_renderGerMetas();const e=document.getElementById('met-operacao');if(e){e.focus();e.scrollIntoView({behavior:'smooth',block:'start'});}}
+function metAnalise(el){if(el.open)_MET_SECOES.add(el.dataset.metSection);else _MET_SECOES.delete(el.dataset.metSection);if(el.open&&typeof requestAnimationFrame==='function')requestAnimationFrame(()=>Object.keys(charts).filter(k=>k.startsWith('c-met-')).forEach(k=>charts[k].resize&&charts[k].resize()));}
 
-  // ── cada operação: 4 indicadores (ou 2, sem Ads) com meta, realizado e projeção; bônus projetado com a régua do bônus
-  const calcOp=l=>{
-    const d=D.find(x=>x.mes===l.mes&&x.operacao===l.operacao)||{};
-    const fatR=+d.Faturamento_real||+l.faturamento||0, adsR=+d.Ads_real||0;
-    const fp=l.mes===_MET_MES?fOp(l.operacao,fatR):1;
-    const ind=[
-      {n:'Faturamento',dica:'vendas sem devolução e cancelamento',meta:+d.Faturamento_obj||0,real:fatR,proj:fatR*fp,peso:+d.Faturamento_peso||0,tipo:'maior',fmt:brl},
-      {n:'Margem final',dica:'o que sobra depois de produto, impostos, tarifas, frete, Ads e custos da operação',meta:+d.MC_obj||0,real:+d.MC_real||0,proj:+d.MC_real||0,peso:+d.MC_peso||0,tipo:'maior',fmt:v=>pc(v),taxa:true},
-      {n:'TACOS',dica:'(Ads + afiliados) ÷ faturamento — teto: margem 15% → 3%, 20% → 5%',meta:+d.TACOS_obj||0,real:+d.TACOS_real||0,proj:+d.TACOS_real||0,peso:+d.TACOS_peso||0,tipo:'custo',fmt:v=>pc(v),taxa:true},
-      {n:'Orçamento de Ads',dica:'faturamento líquido do mês anterior × teto de TACOS',meta:+d.Ads_obj||0,real:adsR,proj:adsR*fp,peso:+d.Ads_peso||0,tipo:'custo',fmt:brl},
-    ].filter(i=>i.peso>0);
-    const somaP=ind.reduce((s,i)=>s+i.peso,0)||1;
-    const progP=ind.reduce((s,i)=>s+_metBonus(i.proj,i.meta,i.peso,i.tipo),0)/somaP;
-    const teto=(+d.Teto)||((+l.teto_pct||0)/100);
-    const mcont=+l.margem_cont||0, mcontP=mcont*fp;
-    const fechadoM=l.mes!==_MET_MES||fechado;
-    const bonusP=fechadoM?(+l.bonus_final_rs||0):Math.max(0,progP*teto*mcontP);
-    return {l,d,ind,fatR,fatP:fatR*fp,mcont,mcontP,adsR,adsP:adsR*fp,progP:fechadoM?(+l.progresso_metas||0)/100:progP,teto,bonusHoje:+l.bonus_final_rs||0,bonusP,bonusMax:Math.max(0,teto*mcontP),ges:gesDe(l.operacao),serie:String(d.Serie||''),
-      metaFat:+d.Faturamento_obj||0, metaMc:+d.MC_obj||0, metaTac:+d.TACOS_obj||0, metaAds:+d.Ads_obj||0, tacR:+d.TACOS_real||0, mcR:+d.MC_real||0};
-  };
-  const opsG=doGes.map(calcOp).sort((a,b)=>b.mcontP-a.mcontP);   // todas do gestor (gráficos comparativos)
-  const ops=opsG.filter(o=>!_MET_OP||o.l.operacao===_MET_OP);   // seleção (KPIs, ritmo, cards)
-
-  const st=i=>{
-    if(!(i.meta>0)) return ['sem meta','var(--t3)'];
-    const r=i.proj/i.meta;
-    if(i.tipo==='maior') return r>=1?[fechado?'✅ batida':'✅ no ritmo','#22c55e']:r>=0.9?['🟡 perto','#f59e0b']:['🔴 abaixo','#f87171'];
-    return r<=1?['✅ dentro','#22c55e']:r<=1.1?['🟡 no limite','#f59e0b']:['🔴 estourou','#f87171'];
-  };
-  const corAt=r=>r>=1?'#22c55e':r>=0.9?'#f59e0b':'#f87171';
-  const SCOR={A:'#22c55e',B:'#4f8ef7',C:'#a855f7'};
-  const badge=(t,c)=>`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;border:1px solid ${c};color:${c};white-space:nowrap;">${t}</span>`;
-
-  // ── totais da seleção (meta de margem e teto de TACOS ponderados pela meta de faturamento)
-  const S_=(arr,k)=>arr.reduce((s,o)=>s+(+o[k]||0),0);
-  const metaFatT=S_(ops,'metaFat'), fatRT=S_(ops,'fatR'), fatPT=S_(ops,'fatP');
-  const mcontT=S_(ops,'mcont'), mcontPT=S_(ops,'mcontP');
-  const pesoMeta=ops.filter(o=>o.metaFat>0&&o.metaMc>0);
-  const metaMcT=pesoMeta.length?pesoMeta.reduce((s,o)=>s+o.metaMc*o.metaFat,0)/S_(pesoMeta,'metaFat'):0;
-  const mcRT=fatRT?mcontT/fatRT:0;
-  const comAds=ops.filter(o=>o.metaTac>0);
-  const metaTacT=comAds.length?comAds.reduce((s,o)=>s+o.metaTac*o.metaFat,0)/(S_(comAds,'metaFat')||1):0;
-  const tacRT=S_(comAds,'fatR')?comAds.reduce((s,o)=>s+o.tacR*o.fatR,0)/S_(comAds,'fatR'):0;
-  const adsRT=S_(comAds,'adsR'), adsPT=S_(comAds,'adsP'), metaAdsT=S_(comAds,'metaAds');
-  const bonusPT=S_(ops,'bonusP'), bonusMaxT=S_(ops,'bonusMax'), bonusHojeT=S_(ops,'bonusHoje');
-  const escopo=_MET_OP?esc(_MET_OP):(_MET_GES?'operações de '+esc(_MET_GES):'todas as operações');
-
-  // ── controles
-  const opsOpc=doGes.map(r=>r.operacao).sort();
-  let h='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px;">'
-    +'<span class="pf-lbl">Mês</span><select class="abc-select" onchange="metMes(this.value)">'+meses.map(s=>`<option value="${s}"${s===_MET_MES?' selected':''}>${NOMES[+s.slice(5)]} ${s.slice(0,4)}</option>`).join('')+'</select>'
-    +(gestores.length>1?'<span class="pf-lbl" style="margin-left:6px;">Gestor</span><select class="abc-select" onchange="metGes(this.value)"><option value="">Todos</option>'+gestores.map(g=>`<option value="${esc(g)}"${g===_MET_GES?' selected':''}>${esc(g)}</option>`).join('')+'</select>':'')
-    +'<span class="pf-lbl" style="margin-left:6px;">Operação</span><select class="abc-select" onchange="metOp(this.value)"><option value="">Todas</option>'+opsOpc.map(o=>`<option value="${esc(o)}"${o===_MET_OP?' selected':''}>${esc(o)}</option>`).join('')+'</select>'
-    +`<span style="font-size:11px;color:var(--t3);">${fechado?'mês fechado':'dia '+dd+' de '+dm+' · faltam '+resta+' dias'+(parcial?' · hoje ainda em andamento: a projeção parte de ontem':'')}</span>`
-    +`<button class="dshort" style="margin-left:auto;" onclick="metAjuda()">${_MET_AJUDA?'✕ fechar':'❓ Como funcionam as metas'}</button></div>`;
-
-  // ── explicação para o gestor (linguagem simples)
-  const ip=+(D.find(x=>x.Ipca12m)||{}).Ipca12m||0, se=+(D.find(x=>x.Selic)||{}).Selic||0;
-  if(_MET_AJUDA){
-    const bloco=(t,txt)=>`<div style="margin-bottom:12px;"><div style="font-weight:700;color:var(--t);margin-bottom:3px;">${t}</div><div>${txt}</div></div>`;
-    h+='<div class="cc" style="margin-top:12px;font-size:12.5px;line-height:1.65;color:var(--t2);border-left:3px solid var(--a);">'
-      +bloco('1 · O que conta é a margem final','Margem final = o que sobra da venda depois de pagar o produto, os impostos, as tarifas do marketplace, o frete, o <b>Ads</b> e os custos da operação (Full etc.). É sobre ela que o bônus é pago. Olhar a margem antes do Ads dá uma falsa sensação de lucro.')
-      +bloco('2 · Quatro metas, pesos diferentes','<b>Margem final</b> pesa 6 · <b>TACOS</b> pesa 2 · <b>Faturamento</b> pesa 1 · <b>Ads dentro do orçamento</b> pesa 1. Operação sem Ads: Faturamento 4 e Margem 6. Cada meta batida soma o peso inteiro; meta não batida soma a parte que foi atingida. <b>Bônus = progresso × teto (3,33%, ou 5% na Powerfull) × margem final em R$</b> — por isso vender muito com margem ruim paga pouco.')
-      +bloco('3 · Como a meta é calculada (automática)','<b>Faturamento</b> = ritmo dos 3 últimos meses (o mais recente pesa mais) × o fator do mês (ex.: novembro 1,10; Amazon 1,20 pela Black Friday) + 5% de desafio. A ideia é uma meta que se bate em cerca de metade dos meses: nem fácil, nem impossível.<br><b>Margem</b> = a margem real da operação nos últimos meses, subindo 1 ponto por mês até o alvo da série.')
-      +bloco('4 · Séries','<b>Série A</b> — a partir de R$ 20 mil/mês: margem alvo 20%; crescer até R$ 170 mil/mês por operação (acima disso, avisar: é hora de avaliar outro CNPJ).<br><b>Série B</b> — R$ 10 a 20 mil/mês: margem alvo 18%, sem frear as vendas.<br><b>Série C</b> — até R$ 10 mil/mês ou conta nova: margem alvo 15%.<br>A série sai da média dos 3 últimos meses — um mês ruim sozinho não rebaixa ninguém.')
-      +bloco('5 · Ads tem teto','O orçamento de Ads do mês = faturamento do mês anterior × o teto de TACOS. O teto depende da margem: <b>margem 15% → até 3%</b> · <b>18% → 4,2%</b> · <b>20% → até 5%</b>. Gastar acima do teto é meta de TACOS não batida.')
-      +bloco('6 · O placar do ano','Além do mês, cada operação tem um placar anual em R$ comparando o lucro do ano com o do ano anterior, mês a mês (assim a sazonalidade já está descontada). <b>Linha amarela</b> = lucro do ano passado + '+(ip?pc(ip):'a inflação')+' (o quanto as coisas ficaram mais caras): abaixo dela, a operação <b>encolheu</b>. <b>Linha verde</b> = lucro do ano passado + '+(se?pc(se,2):'a Selic')+' (o quanto o dinheiro renderia parado no banco, sem risco): entre as duas, a operação <b>sobreviveu</b>; acima da verde, <b>cresceu de verdade</b>.')
-      +'</div>';
-  }
-
-  const qqR=k=>`<span onclick="showTooltip(event,'${k}')" title="Como ler" style="display:inline-flex;width:15px;height:15px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid var(--bdr2);color:var(--t2);font-size:10px;font-weight:700;align-items:center;justify-content:center;cursor:pointer;margin-left:6px;vertical-align:middle">?</span>`;
-  // ── ONDE ESTÁ O BÔNUS QUE SE PERDE: por meta, quanto do teto cada uma deixa de pagar (no ritmo atual)
-  const perde={};
-  ops.forEach(o=>{ const sp=o.ind.reduce((s,i)=>s+i.peso,0)||1, base=o.teto*Math.max(0,o.mcontP);
-    o.ind.forEach(i=>{ const k=i.n==='Orçamento de Ads'?'TACOS':i.n; perde[k]=(perde[k]||0)+(i.peso-_metBonus(i.proj,i.meta,i.peso,i.tipo))/sp*base; }); });
-  const vaz=Object.entries(perde).filter(x=>x[1]>=1).sort((a,b)=>b[1]-a[1]);
-  { const it=[]; const ok='✅', no='⚠️';
-    if(metaFatT) it.push((atFatF=>(atFatF>=1?ok:no)+(fechado?' Faturamento fechou em ':' No ritmo atual o faturamento fecha em ')+'<b>'+Math.round(100*atFatF)+'% da meta</b> ('+bk(fatPT)+' de '+bk(metaFatT)+')'+(atFatF<1&&!fechado&&resta?' — precisa de <b>'+bk((metaFatT-fatRT)/resta)+'/dia</b> até o fim do mês':''))(fatPT/metaFatT));
-    if(metaMcT) it.push((mcRT>=metaMcT?ok:no)+' Margem final em <b>'+pc(mcRT)+'</b> (meta '+pc(metaMcT)+')'+(mcRT>=metaMcT?'':' — faltam '+((metaMcT-mcRT)*100).toFixed(1).replace('.',',')+' pontos'));
-    if(comAds.length&&metaTacT) it.push((tacRT<=metaTacT?ok:no)+' TACOS em <b>'+pc(tacRT)+'</b> (teto '+pc(metaTacT)+')'+(tacRT>metaTacT?' — Ads '+((tacRT-metaTacT)*100).toFixed(1).replace('.',',')+' pontos acima do teto':''));
-    const lead=bonusMaxT?Math.round(100*bonusPT/bonusMaxT):0;
-    const NM={'Faturamento':'faturamento','Margem final':'margem final','TACOS':'TACOS/Ads acima do teto'};
-    const leak=vaz.length?' O que mais tira bônus'+(ops.length>1?' (somando as operações que estão abaixo da própria meta)':'')+': '+vaz.slice(0,2).map(x=>'<b>'+(NM[x[0]]||x[0])+'</b> ('+bk(x[1])+')').join(' e ')+'.':' Todas as metas no ritmo — bônus cheio.';
-    h+='<div class="cc" style="margin-top:14px;border-left:3px solid '+(lead>=90?'#22c55e':lead>=70?'#f59e0b':'#f87171')+';padding:12px 16px;font-size:13px;line-height:1.75;color:var(--t2);">'
-      +'<div style="font-weight:700;color:var(--t);margin-bottom:2px;">📍 Resumo — '+escopo+qqR('met_resumo')+'</div>'+it.join('<br>')
-      +'<br>💰 Bônus '+(fechado?'do mês':'projetado')+' <b style="color:#22c55e;">'+bk(bonusPT)+'</b> = '+lead+'% do máximo ('+bk(bonusMaxT)+').'+leak+'</div>';
-  }
-  // ── PROGRESSO DO MÊS: KPIs no padrão da Metas & Forecast
-  const barra=(r,c)=>`<div style="height:5px;background:var(--bdr2);border-radius:3px;overflow:hidden;margin-top:8px;"><div style="height:100%;width:${Math.max(0,Math.min(100,100*r))}%;background:${c};"></div></div>`;
-  const qq=k=>`<span onclick="showTooltip(event,'${k}')" title="Como ler" style="display:inline-flex;width:15px;height:15px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid var(--bdr2);color:var(--t2);font-size:10px;font-weight:700;align-items:center;justify-content:center;cursor:pointer;margin-left:6px;vertical-align:middle;text-transform:none;letter-spacing:0">?</span>`;
-  const kpi=(eye,val,c,linha1,linha2,r)=>`<div class="kpi" style="border-color:${c}33"><div class="kpi-glow" style="background:${c}"></div>
-    <div class="kpi-eye" style="color:${c}">${eye}</div><div class="kpi-val" style="font-size:22px">${val}</div>
-    <div class="kpi-pct" style="color:var(--t2)">${linha1}</div>${linha2?`<div class="kpi-sub">${linha2}</div>`:''}${r!=null?barra(r,c):''}<div class="kpi-accent" style="background:${c}"></div></div>`;
-  const atFat=metaFatT?fatPT/metaFatT:0, atMc=metaMcT?mcRT/metaMcT:0, atTac=metaTacT?(tacRT<=metaTacT?1:metaTacT/tacRT):1, atBon=bonusMaxT?bonusPT/bonusMaxT:0;
-  if(metaFatT>0&&!fechado){
-    const opsKeys=new Set(ops.map(o=>o.l.operacao));
-    const iso=d=>_MET_MES+'-'+String(d).padStart(2,'0');
-    const diaHoje=Math.min(dm, Math.max(1,dd||1));
-    const dow=new Date(Date.UTC(yy,mm-1,diaHoje)).getUTCDay();
-    const seg=diaHoje-(dow===0?6:dow-1), dom=seg+6;
-    let pSem=0;
-    for(let i=Math.max(1,seg); i<=Math.min(dm,dom); i++) pSem+=pesoDia(i);
-    const totW=cumW[dm]||1;
-    const metaDia=metaFatT*pesoDia(diaHoje)/totW;
-    const metaSem=metaFatT*pSem/totW;
-    let fatHoje=0, fatSem=0;
-    const dA=iso(Math.max(1,seg)), dB=iso(Math.min(dm, Math.min(dom, diaHoje))), dH=iso(diaHoje);
-    for(const r of R0){
-      if(!r.date||!opsKeys.has((r.emp||'')+' · '+(r.mkt||''))) continue;
-      const f=+r.fat||0;
-      if(r.date===dH) fatHoje+=f;
-      if(r.date>=dA&&r.date<=dB) fatSem+=f;
-    }
-    const cardM=(olho,val,sub,c)=>`<div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:14px;padding:16px 18px;border-top:3px solid ${c};"><div style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:${c};">${olho}</div><div style="font-size:28px;font-weight:800;color:var(--t);margin-top:6px;line-height:1.1;">${val}</div><div style="font-size:13px;color:var(--t2);margin-top:6px;line-height:1.45;">${sub}</div></div>`;
-    const pDia=metaDia?Math.round(100*fatHoje/metaDia):0, pSemR=metaSem?Math.round(100*fatSem/metaSem):0, pMes=Math.round(100*fatRT/metaFatT);
-    h+=`<div class="sl" style="margin-top:16px;">Meta prática · ${escopo}</div>`
-      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">'
-      +cardM('Meta de hoje', bk(metaDia), 'já entrou '+bk(fatHoje)+' · '+pDia+'% do dia'+(parcial?' · o dia ainda não fechou':'')+'. O dia pesa pelo histórico de sábado e domingo.', '#4f8ef7')
-      +cardM('Meta da semana', bk(metaSem), 'de segunda a domingo, só os dias deste mês · já entrou '+bk(fatSem)+' · '+pSemR+'%.', '#a78bfa')
-      +cardM('Meta do mês', bk(metaFatT), 'até agora '+bk(fatRT)+' · '+pMes+'% · no ritmo fecha em '+bk(fatPT)+(resta?(' · faltam '+bk(Math.max(0,metaFatT-fatRT))+' em '+resta+' dias'):''), corAt(fatPT/metaFatT))
-      +'</div>';
-  }
-  h+=`<div class="sl" style="margin-top:16px;">Progresso do mês · ${escopo}</div>`
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;">'
-    +kpi((fechado?'💰 Bônus do mês':'💰 Bônus projetado')+qq('met_bonus'),bk(bonusPT),'#22c55e','de '+bk(bonusMaxT)+' possíveis ('+Math.round(100*atBon)+'%)',fechado?'':'se fechasse hoje: '+bk(bonusHojeT),atBon)
-    +kpi('Faturamento · meta'+qq('met_fat'),metaFatT?Math.round(100*atFat)+'%':'—',corAt(atFat),(fechado?'':'projeção ')+bk(fatPT)+' de '+bk(metaFatT),fechado?'':'até agora '+bk(fatRT)+(metaFatT>fatRT&&resta?' · precisa de '+bk((metaFatT-fatRT)/resta)+'/dia, vem fazendo '+bk(ddP?(fatRT-(parcial?Object.entries(hojeOp).filter(([k])=>ops.some(o=>o.l.operacao===k)).reduce((s2,[,v])=>s2+v,0):0))/ddP:0)+'/dia':''),atFat)
-    +kpi('Margem final · meta'+qq('met_mc'),pc(mcRT),corAt(atMc),'meta '+pc(metaMcT)+' · depois do Ads e custos','lucro '+bk(fechado?mcontT:mcontPT)+(fechado?'':' projetado'),atMc)
-    +(comAds.length?kpi('TACOS · teto'+qq('met_tacos'),pc(tacRT),tacRT<=metaTacT?'#22c55e':tacRT<=metaTacT*1.1?'#f59e0b':'#f87171','teto '+pc(metaTacT)+' · (Ads + afiliados) ÷ faturamento','Ads '+bk(adsRT)+' de '+bk(metaAdsT)+' do orçamento'+(fechado?'':' · ritmo '+bk(adsPT)),atTac):'')
-    +kpi('Progresso das metas'+qq('met_prog'),Math.round(100*(ops.length?ops.reduce((s,o)=>s+o.progP*Math.max(0,o.mcontP),0)/Math.max(1,ops.reduce((s,o)=>s+Math.max(0,o.mcontP),0)):0))+'%','#4f8ef7','média ponderada pelo lucro',ops.length+' operação'+(ops.length>1?'ões':''),null)
-    +'</div>';
-
-  // ── RITMO DO MÊS: acumulado × meta e margem por dia
-  const QK={'c-met-acum':'met_acum','c-met-mcdia':'met_mcdia','c-met-ponte':'met_ponte','c-met-evol':'met_evol','c-met-ating':'met_ating','c-met-bonus':'met_bonusmesa','c-met-tacos':'met_tacosteto','c-met-hfat':'met_hist','c-met-hmc':'met_hist'};
-  const box=(id,t,sub,hgt)=>`<div class="cc"><div class="cc-hdr"><div><div class="cc-title">${t}${QK[id]?qq(QK[id]):''}</div><div class="cc-sub">${sub}</div></div></div><div style="position:relative;height:${hgt||260}px;margin-top:6px;"><canvas id="${id}"></canvas></div></div>`;
-  h+='<div class="sl" style="margin-top:18px;">Ritmo do mês</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;">'
-    +box('c-met-acum','📈 Faturamento acumulado × meta','realizado · ritmo necessário até a meta (pesa o dia da semana) · projeção no ritmo atual')
-    +box('c-met-mcdia','📊 Margem depois do Ads por dia','barras = margem do dia · linha = margem acumulada no mês · tracejado = meta')
-    +'</div>';
-
-  // ── POR QUE ESTOU ASSIM · VOU CHEGAR?
-  h+='<div class="sl" style="margin-top:18px;">Por que estou assim · vou chegar?</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;">'
-    +box('c-met-ponte','🌉 Ponte do lucro: meta → projeção','quanto do lucro veio de vender mais/menos (volume), de preço e custo (margem) e do Ads acima/abaixo do teto',280)
-    +box('c-met-evol','🔭 Evolução da projeção de faturamento','como a previsão de fechamento do mês mudou a cada dia · subindo = acelerando',280)
-    +'</div>';
-  // ── COMPARATIVO ENTRE OPERAÇÕES
-  const nOps=opsG.length, hBar=Math.max(200,34*nOps+60);
-  const opsAds=opsG.filter(o=>o.metaTac>0);
-  if(!_MET_OP){   // com UMA operação escolhida, o comparativo (todas as do gestor) sai — confundia (Weskley 19/10)
-  h+=`<div class="sl" style="margin-top:18px;">Comparativo entre operações${_MET_GES?' · '+esc(_MET_GES):''}</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;">`
-    +box('c-met-ating','🎯 Atingimento das metas (projeção)','% da meta · faturamento e margem final · linha de 100% = meta batida',hBar)
-    +box('c-met-bonus','💰 Bônus: projetado × o que fica na mesa','verde = bônus no ritmo atual · cinza = o que falta para 100% das metas',hBar)
-    +'</div>';
-  if(opsAds.length) h+='<div style="margin-top:14px;">'+box('c-met-tacos','📣 TACOS × teto','gasto com Ads e afiliados ÷ faturamento · barra cinza = teto da operação (pela margem: 15% → 3%, 20% → 5%)',Math.max(180,30*opsAds.length+60))+'</div>';
-  }
-  else h+='<div style="margin-top:18px;font-size:12px;color:var(--t3);">Comparativo entre operações escondido porque uma operação está escolhida — <span onclick="metOp(\'\')" style="color:var(--a2);cursor:pointer;font-weight:600;">ver comparativo de todas ›</span> · ou na aba <span onclick="goPage(\'metas\',document.getElementById(\'nav-metas\'))" style="color:var(--a2);cursor:pointer;font-weight:600;">Forecast ›</span></div>';
-
-  // ── HISTÓRICO: meses com meta
-  const mesesH=meses.filter(m=>m<=_MET_MES);
-  const histo=mesesH.map(m=>{ const os=L.filter(r=>r.mes===m&&(!_MET_GES||gesDe(r.operacao)===_MET_GES)&&(!_MET_OP||r.operacao===_MET_OP)).map(calcOp);
-    const mf=S_(os,'metaFat'), fr=S_(os,'fatR'), fp=S_(os,'fatP'), pm=os.filter(o=>o.metaFat>0&&o.metaMc>0);
-    return {m, metaFat:mf, fat:fr, fatP:fp, mc:fr?S_(os,'mcont')/fr:0, metaMc:pm.length?pm.reduce((s,o)=>s+o.metaMc*o.metaFat,0)/S_(pm,'metaFat'):0, bonus:S_(os,'bonusP')}; });
-  if(mesesH.length>1) h+='<div class="sl" style="margin-top:18px;">Histórico · meta × realizado</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;">'
-    +box('c-met-hfat','Faturamento por mês','barras = realizado (mês corrente: projeção) · linha = meta',220)
-    +box('c-met-hmc','Margem final por mês','realizado × meta (ponderada pela meta de faturamento)',220)+'</div>';
-
-  // ── DETALHE POR OPERAÇÃO (cards)
-  h+='<div class="sl" style="margin-top:18px;">Detalhe por operação</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:12px;">';
-  ops.forEach(o=>{
-    const sc=SCOR[o.serie]||'var(--t3)';
-    const fatI=o.ind.find(i=>i.n==='Faturamento')||{meta:0};
-    const adsI=o.ind.find(i=>i.n==='Orçamento de Ads');
-    const falta=Math.max(0,fatI.meta-o.fatR);
-    let linhas=o.ind.map(i=>{ const [t,c]=st(i);
-      return `<tr><td style="text-align:left;" title="${esc(i.dica)}">${i.n} <span style="color:var(--t3);font-size:10px;">peso ${i.peso}</span></td>`
-        +`<td class="r">${i.meta>0?i.fmt(i.meta):'—'}</td><td class="r">${i.fmt(i.real)}</td>`
-        +`<td class="r" style="color:var(--t2);">${fechado?'':(i.taxa?'≈ ':'')+i.fmt(i.proj)}</td>`
-        +`<td style="color:${c};font-weight:600;white-space:nowrap;">${t}</td></tr>`; }).join('');
-    const notas=[];
-    if(fatI.meta>0) notas.push(falta>0?(fechado?`Faltaram <b>${brl(falta)}</b> para a meta de faturamento.`:`Faltam <b>${brl(falta)}</b> de faturamento → <b>${brl(resta?falta/resta:falta)}/dia</b> nos ${resta} dias que restam.`):'✅ Meta de faturamento já alcançada.');
-    if(adsI&&adsI.meta>0&&!(adsI.real>0)) notas.push('⚠️ O gasto de Ads deste mês ainda não foi coletado — o TACOS aparece mais baixo do que é.');
-    else if(adsI&&adsI.meta>0) notas.push(`Ads: gastou <b>${brl(adsI.real)}</b> de <b>${brl(adsI.meta)}</b> do orçamento${fechado?'':' · no ritmo, fecha em '+brl(adsI.proj)}.`);
-    if(o.mcont<0) notas.push('🔴 Margem final negativa: sem bônus enquanto a operação estiver no prejuízo.');
-    const origem=String(o.d.Origem||'manual');
-    h+=`<div class="cc" style="border-left:3px solid ${sc};padding:14px 16px;">`
-      +`<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">`
-      +`<div><div style="font-weight:700;font-size:14px;color:var(--t);">${esc(o.l.operacao)}</div>`
-      +`<div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap;">${o.serie?badge('Série '+o.serie,sc):badge('sem série','var(--t3)')}<span style="font-size:11px;color:${gCor(o.ges)};font-weight:600;">${esc(o.ges)}</span><span style="font-size:10.5px;color:var(--t3);">progresso ${Math.round(100*o.progP)}%</span></div></div>`
-      +`<div style="text-align:right;"><div style="font-size:10.5px;color:var(--t3);">${fechado?'bônus':'bônus projetado'}</div><div style="font-size:20px;font-weight:700;color:#22c55e;line-height:1.1;">${brl(o.bonusP)}</div><div style="font-size:10.5px;color:var(--t3);">máximo ${brl(o.bonusMax)}${fechado?'':' · hoje '+brl(o.bonusHoje)}</div></div></div>`
-      +`<div class="tbl-wrap" style="margin-top:10px;overflow:auto;"><table class="tbl" style="font-size:12px;"><thead><tr><th style="text-align:left;">Meta</th><th class="r">Objetivo</th><th class="r">${fechado?'Realizado':'Até agora'}</th><th class="r">${fechado?'':'Fecha o mês em'}</th><th style="text-align:left;">Situação</th></tr></thead><tbody>${linhas}</tbody></table></div>`
-      +`<div style="font-size:11.5px;color:var(--t2);margin-top:8px;line-height:1.6;">${notas.join('<br>')}`
-      +`<br>Lucro da operação (margem final): <b style="color:${o.mcont>=0?'var(--t)':'#f87171'}">${brl(o.mcont)}</b>${fechado?'':' até agora · projeção '+brl(o.mcontP)}</div>`
-      +(origem==='auto'&&o.d.ObsMeta?`<div style="font-size:10.5px;color:var(--t3);margin-top:6px;">Como a meta foi feita: ${esc(o.d.ObsMeta)}</div>`:'')
-      +(origem!=='auto'?`<div style="font-size:10.5px;color:var(--t3);margin-top:6px;">Meta definida à mão (antes da régua automática).</div>`:'')
-      +'</div>';
-  });
-  h+='</div>';
-
-  // ── placar do ano: lucro (margem final) acumulado por operação + as duas linhas do ano seguinte
-  const ano=_MET_MES.slice(0,4), mesesAno=meses.filter(m=>m.slice(0,4)===ano&&m<=_MET_MES);
-  const opsSel=new Set(sel.map(r=>r.operacao));
-  const lucro=(op,m)=>{ const r=L.find(x=>x.mes===m&&x.operacao===op); return r?(+r.margem_cont||0):null; };
-  let tp='<div class="sl" style="margin-top:18px;">Placar do ano</div><div class="cc"><div class="cc-hdr"><div><div class="cc-title">🏁 Lucro da operação (margem final)'+qq('met_placar')+'</div>'
-    +`<div class="cc-sub">Base que vai virar a régua de ${+ano+1}: cada mês de ${+ano+1} será comparado com o mesmo mês de ${ano}. Linha amarela = ${ano} + ${pc(ip)} (inflação) · linha verde = ${ano} + ${pc(se,2)} (Selic).</div></div></div>`
-    +'<div class="tbl-wrap" style="overflow:auto;margin-top:8px;"><table class="tbl" style="font-size:12px;"><thead><tr><th style="text-align:left;">Operação</th>'
-    +mesesAno.map(m=>`<th class="r">${NOMES[+m.slice(5)].slice(0,3)}</th>`).join('')
-    +`<th class="r">Acumulado</th><th class="r" style="color:#f59e0b;">🟡 ${+ano+1} p/ não encolher</th><th class="r" style="color:#22c55e;">🟢 ${+ano+1} p/ crescer</th></tr></thead><tbody>`;
-  [...opsSel].sort().forEach(op=>{ const vs=mesesAno.map(m=>lucro(op,m)); const ac=vs.reduce((s,v)=>s+(v||0),0);
-    tp+=`<tr><td style="text-align:left;white-space:nowrap;">${esc(op)}</td>`+vs.map((v,i)=>`<td class="r" style="color:${v==null?'var(--t3)':v<0?'#f87171':'var(--t)'};">${v==null?'—':brl(v)}${(!fechado&&mesesAno[i]===_MET_MES&&v!=null)?'*':''}</td>`).join('')
-      +`<td class="r" style="font-weight:700;">${brl(ac)}</td><td class="r" style="color:#f59e0b;">${brl(ac*(1+ip))}</td><td class="r" style="color:#22c55e;">${brl(ac*(1+se))}</td></tr>`; });
-  tp+=`</tbody></table></div><div style="font-size:10.5px;color:var(--t3);margin-top:6px;">${fechado?'':'* mês em andamento (até agora). '}Só entram os meses que já têm meta registrada. O placar oficial começa em janeiro de ${+ano+1}; os índices ficam travados em janeiro para a linha não mudar no meio do ano.</div></div>`;
-  h+=tp;
-  root.innerHTML=h;
-
-  // ═══ GRÁFICOS ═══
-  if(typeof Chart==='undefined') return;
-  const tc=isDark?'#8891a8':'#556070', gc=isDark?'rgba(255,255,255,.05)':'rgba(0,0,0,.06)';
-  const fK=v=>{ const a=Math.abs(v); return a>=1e6?(v/1e6).toFixed(1)+'mi':a>=1e3?(v/1e3).toFixed(0)+'k':Math.round(v); };
-  const baseOpt=()=>({responsive:true,maintainAspectRatio:false,animation:{duration:300},plugins:{legend:{position:'bottom',labels:{color:tc,font:{family:'Inter',size:11},boxWidth:12,padding:10}},datalabels:{display:false}}});
-  // série diária da seleção (ROWS = vendas por dia × operação; Ads rateado por dia, como no Diário)
-  const keys=new Set(ops.map(o=>{ const [e,m]=o.l.operacao.split(' · '); return e+'||'+m; }));
-  const fatD=Array(dm).fill(0), mcD=Array(dm).fill(0);
-  for(const r of R0){ if(!r.date||r.date.slice(0,7)!==_MET_MES) continue; const k=r.emp+'||'+r.mkt; if(!keys.has(k)) continue; const i=+r.date.slice(8,10)-1; fatD[i]+=+r.fat||0; mcD[i]+=+r.mc||0; }
-  if(typeof _adsOpPer==='function') keys.forEach(k=>{ for(let i=0;i<dd;i++){ const d=_MET_MES+'-'+String(i+1).padStart(2,'0'); mcD[i]-=_adsOpPer(k,d,d); } });
-  // a série diária vem das vendas do dia (todas as situações); o cartão usa o faturamento da COMISSÃO (só venda efetivada).
-  // Ajusta a escala do faturamento diário p/ o acumulado do gráfico bater com o cartão (Bsan ML out/26: ~2% de diferença).
-  { const sr=fatD.reduce((a,b)=>a+b,0); if(sr>0&&fatRT>0){ const k=fatRT/sr; for(let i=0;i<dm;i++){ fatD[i]*=k; mcD[i]*=k; } } }   // margem junto: o % do dia não muda
-  const lab=Array.from({length:dm},(_,i)=>String(i+1));
-  // 1) acumulado × meta
-  { let ac=0; const real=fatD.map((v,i)=>{ ac+=v; return i<dd?ac:null; }); const acDd=real[dd-1]||0;
-    const ideal=lab.map((_,i)=>metaFatT?metaFatT*cumW[i+1]/cumW[dm]:null);
-    const acP=parcial?(real[ddP-1]||0):acDd;   // base da projeção = acumulado até ontem se hoje está pela metade
-    const proj=lab.map((_,i)=>(!fechado&&i>=ddP-1&&ddP>0&&cumW[ddP]>0)?acP*cumW[i+1]/cumW[ddP]:null);
-    const el=document.getElementById('c-met-acum');
-    if(el) charts['c-met-acum']=new Chart(el,{type:'line',data:{labels:lab,datasets:[
-      {label:'Realizado',data:real,borderColor:'#00c2a8',backgroundColor:'rgba(0,194,168,.12)',fill:true,tension:.25,pointRadius:0,borderWidth:2.5},
-      {label:'Ritmo para bater a meta',data:ideal,borderColor:'#94a3b8',borderDash:[6,5],pointRadius:0,borderWidth:1.5,fill:false},
-      ...(fechado?[]:[{label:'Projeção no ritmo atual',data:proj,borderColor:(proj[dm-1]||0)>=metaFatT?'#22c55e':'#f59e0b',borderDash:[2,4],pointRadius:0,borderWidth:2,fill:false}])]},
-      options:Object.assign(baseOpt(),{interaction:{mode:'index',intersect:false},
-        plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{title:c=>'dia '+c[0].label,label:c=>c.raw==null?null:c.dataset.label+': '+brl(c.raw)}}}),
-        scales:{x:{ticks:{color:tc,font:{size:9},maxTicksLimit:16},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:fK},grid:{color:gc}}}})}); }
-  // 2) margem depois do Ads por dia
-  { let fa=0,ma=0; const pd=fatD.map((f,i)=>i<dd&&f>0?100*mcD[i]/f:null), acum=fatD.map((f,i)=>{ if(i>=dd) return null; fa+=f; ma+=mcD[i]; return fa?100*ma/fa:null; });
-    const metaL=lab.map(()=>metaMcT?100*metaMcT:null);
-    const el=document.getElementById('c-met-mcdia');
-    if(el) charts['c-met-mcdia']=new Chart(el,{data:{labels:lab,datasets:[
-      {type:'bar',label:'Margem do dia',data:pd,backgroundColor:pd.map(v=>v==null?'transparent':(metaMcT&&v>=100*metaMcT?'rgba(34,197,94,.55)':'rgba(248,113,113,.5)')),borderWidth:0,order:3},
-      {type:'line',label:'Acumulada no mês',data:acum,borderColor:'#f59e0b',pointRadius:0,borderWidth:2.5,tension:.3,order:1},
-      {type:'line',label:'Meta',data:metaL,borderColor:'#94a3b8',borderDash:[6,5],pointRadius:0,borderWidth:1.5,order:2}]},
-      options:Object.assign(baseOpt(),{interaction:{mode:'index',intersect:false},
-        plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{title:c=>'dia '+c[0].label,label:c=>c.raw==null?null:c.dataset.label+': '+c.raw.toFixed(1)+'%'}}}),
-        scales:{x:{ticks:{color:tc,font:{size:9},maxTicksLimit:16},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc}}}})}); }
-  // 2b) PONTE DO LUCRO (cascata): lucro da meta → volume → margem (preço e custo) → Ads → lucro projetado
-  //   volume = (fat projetado − meta de fat) × meta de margem · Ads = −fat projetado × (TACOS − teto)
-  //   margem = o resto da diferença de margem (preço, custo do produto, frete, tarifas) — a soma fecha no lucro projetado
-  { let lm=0,ev=0,em=0,ea=0,lp=0;
-    ops.forEach(o=>{ if(!(o.metaFat>0)) return; const lmo=o.metaFat*o.metaMc, ad=o.metaTac>0?-o.fatP*(o.tacR-o.metaTac):0, vo=(o.fatP-o.metaFat)*o.metaMc;
-      lm+=lmo; ev+=vo; ea+=ad; em+=o.fatP*o.mcR-lmo-vo-ad; lp+=o.fatP*o.mcR; });
-    const passos=[['Lucro da meta',0,lm,'#64748b'],['Volume',lm,lm+ev,ev>=0?'#22c55e':'#f87171'],['Margem (preço e custo)',lm+ev,lm+ev+em,em>=0?'#22c55e':'#f87171'],['Ads × teto',lm+ev+em,lm+ev+em+ea,ea>=0?'#22c55e':'#f87171'],[fechado?'Lucro realizado':'Lucro projetado',0,lp,'#00c2a8']];
-    const el=document.getElementById('c-met-ponte');
-    if(el) charts['c-met-ponte']=new Chart(el,{type:'bar',data:{labels:passos.map(p=>p[0]),datasets:[{label:'R$',data:passos.map(p=>[Math.min(p[1],p[2]),Math.max(p[1],p[2])]),backgroundColor:passos.map(p=>p[3]),borderRadius:3,barPercentage:.7}]},
-      options:Object.assign(baseOpt(),{plugins:Object.assign(baseOpt().plugins,{legend:{display:false},tooltip:{callbacks:{label:c=>{ const p=passos[c.dataIndex]; const v=p[2]-p[1]; return (c.dataIndex===0||c.dataIndex===4)?brl(p[2]):((v>=0?'+':'−')+brl(Math.abs(v))); }}}}),
-        scales:{x:{ticks:{color:tc,font:{size:10.5}},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>'R$ '+fK(v)},grid:{color:gc}}}})}); }
-  // 2c) EVOLUÇÃO DA PROJEÇÃO: a cada dia, onde o mês fecharia naquele ritmo (com o peso do dia da semana)
-  { let ac=0; const pj=fatD.map((v,i)=>{ ac+=v; return (i<ddP&&cumW[i+1]>0&&i>=2)?ac*cumW[dm]/cumW[i+1]:null; });
-    const el=document.getElementById('c-met-evol');
-    if(el) charts['c-met-evol']=new Chart(el,{type:'line',data:{labels:lab,datasets:[
-      {label:'Projeção de fechamento',data:pj,borderColor:'#4f8ef7',backgroundColor:'rgba(79,142,247,.1)',fill:true,pointRadius:2,borderWidth:2.5,tension:.25,spanGaps:true},
-      {label:'Meta',data:lab.map(()=>metaFatT||null),borderColor:'#f59e0b',borderDash:[6,5],pointRadius:0,borderWidth:1.5}]},
-      options:Object.assign(baseOpt(),{interaction:{mode:'index',intersect:false},
-        plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{title:c=>'projeção feita no dia '+c[0].label,label:c=>c.raw==null?null:c.dataset.label+': '+brl(c.raw)}}}),
-        scales:{x:{ticks:{color:tc,font:{size:9},maxTicksLimit:16},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>'R$ '+fK(v)},grid:{color:gc}}}})}); }
-  // 3) atingimento por operação
-  { const lb=opsG.map(o=>curto(o.l.operacao)), af=opsG.map(o=>o.metaFat?Math.round(100*o.fatP/o.metaFat):null), am=opsG.map(o=>o.metaMc?Math.round(100*o.mcR/o.metaMc):null);
-    const cor=a=>a.map(v=>v==null?'transparent':v>=100?'#22c55e':v>=90?'#f59e0b':'#f87171');
-    const el=document.getElementById('c-met-ating');
-    if(el) charts['c-met-ating']=new Chart(el,{type:'bar',data:{labels:lb,datasets:[
-      {label:'Faturamento',data:af,backgroundColor:cor(af),borderRadius:3,barPercentage:.9,categoryPercentage:.75},
-      {label:'Margem final',data:am,backgroundColor:cor(am).map(c=>c==='transparent'?c:c+'99'),borderColor:cor(am),borderWidth:1,borderRadius:3,barPercentage:.9,categoryPercentage:.75}]},
-      options:Object.assign(baseOpt(),{indexAxis:'y',plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{label:c=>c.raw==null?null:c.dataset.label+': '+c.raw+'% da meta'}}}),
-        scales:{x:{suggestedMax:120,ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:c=>c.tick&&c.tick.value===100?'#94a3b8':gc,lineWidth:c=>c.tick&&c.tick.value===100?2:1}},
-          y:{ticks:{color:c=>opsG[c.index]&&opsG[c.index].l.operacao===_MET_OP?'#00c2a8':tc,font:{size:10.5}},grid:{display:false}}}})}); }
-  // 4) bônus projetado × na mesa
-  { const lb=opsG.map(o=>curto(o.l.operacao));
-    const el=document.getElementById('c-met-bonus');
-    if(el) charts['c-met-bonus']=new Chart(el,{type:'bar',data:{labels:lb,datasets:[
-      {label:fechado?'Bônus':'Bônus projetado',data:opsG.map(o=>Math.round(o.bonusP)),backgroundColor:'#22c55e',borderRadius:3,stack:'b'},
-      {label:'Fica na mesa',data:opsG.map(o=>Math.round(Math.max(0,o.bonusMax-o.bonusP))),backgroundColor:isDark?'rgba(148,163,184,.28)':'rgba(100,116,139,.25)',borderRadius:3,stack:'b'}]},
-      options:Object.assign(baseOpt(),{indexAxis:'y',plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{label:c=>c.dataset.label+': '+brl(c.raw)}}}),
-        scales:{x:{stacked:true,ticks:{color:tc,font:{size:10},callback:v=>'R$ '+fK(v)},grid:{color:gc}},y:{stacked:true,ticks:{color:tc,font:{size:10.5}},grid:{display:false}}}})}); }
-  // 5) TACOS × teto
-  if(opsAds.length){ const el=document.getElementById('c-met-tacos');
-    if(el) charts['c-met-tacos']=new Chart(el,{type:'bar',data:{labels:opsAds.map(o=>curto(o.l.operacao)),datasets:[
-      {label:'TACOS real',data:opsAds.map(o=>+(100*o.tacR).toFixed(2)),backgroundColor:opsAds.map(o=>o.tacR<=o.metaTac?'#22c55e':o.tacR<=o.metaTac*1.1?'#f59e0b':'#f87171'),borderRadius:3},
-      {label:'Teto',data:opsAds.map(o=>+(100*o.metaTac).toFixed(2)),backgroundColor:isDark?'rgba(148,163,184,.3)':'rgba(100,116,139,.25)',borderRadius:3}]},
-      options:Object.assign(baseOpt(),{indexAxis:'y',plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw.toFixed(1)+'%'}}}),
-        scales:{x:{ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc}},y:{ticks:{color:tc,font:{size:10.5}},grid:{display:false}}}})}); }
-  // 6) histórico
-  if(mesesH.length>1){ const lb=histo.map(x=>NOMES[+x.m.slice(5)].slice(0,3)+'/'+x.m.slice(2,4));
-    const e1=document.getElementById('c-met-hfat');
-    if(e1) charts['c-met-hfat']=new Chart(e1,{data:{labels:lb,datasets:[
-      {type:'bar',label:'Realizado',data:histo.map(x=>x.m===_MET_MES?x.fatP:x.fat),backgroundColor:histo.map(x=>(x.m===_MET_MES&&!fechado)?'rgba(0,194,168,.45)':(x.metaFat&&(x.m===_MET_MES?x.fatP:x.fat)>=x.metaFat?'#22c55e':'#00c2a8')),borderRadius:3,order:2},
-      {type:'line',label:'Meta',data:histo.map(x=>x.metaFat||null),borderColor:'#f59e0b',pointRadius:4,pointBackgroundColor:'#f59e0b',borderWidth:2,order:1}]},
-      options:Object.assign(baseOpt(),{plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{label:c=>c.dataset.label+': '+brl(c.raw)}}}),
-        scales:{x:{ticks:{color:tc,font:{size:10}},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>'R$ '+fK(v)},grid:{color:gc}}}})});
-    const e2=document.getElementById('c-met-hmc');
-    if(e2) charts['c-met-hmc']=new Chart(e2,{type:'line',data:{labels:lb,datasets:[
-      {label:'Margem final realizada',data:histo.map(x=>+(100*x.mc).toFixed(1)),borderColor:'#00c2a8',backgroundColor:'#00c2a8',pointRadius:4,borderWidth:2.5,tension:.25},
-      {label:'Meta',data:histo.map(x=>x.metaMc?+(100*x.metaMc).toFixed(1):null),borderColor:'#f59e0b',borderDash:[6,5],pointRadius:3,borderWidth:2}]},
-      options:Object.assign(baseOpt(),{plugins:Object.assign(baseOpt().plugins,{tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw+'%'}}}),
-        scales:{x:{ticks:{color:tc,font:{size:10}},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc}}}})}); }
+function _metToday(M){
+ if(!M||M.fechado||M.futuro||M.congelado)return null;
+ const dia=+M.hoje.slice(8,10),meta=M.metaFatT>0?M.metaFatT*M.pesoDia(dia)/M.cumW[M.dm]:null;
+ const temHoje=M.ultima===M.hoje&&M.ops.length>0&&M.ops.every(o=>o.concilia);
+ const realizado=temHoje?M.ops.reduce((s,o)=>s+o.fatD[dia-1],0):null;
+ return {dia:M.hoje,meta,realizado,falta:meta!==null&&realizado!==null?Math.max(0,meta-realizado):null,progresso:meta>0&&realizado!==null?realizado/meta:null};
 }
+function _metTodayHTML(M,stamp){
+ const d=_metToday(M);if(!d)return '';
+ const E=_metEsc,B=_metBRL,P=_metPct;
+ const andamento=d.meta===null?'Meta diária não calculada: confira os objetivos do mês.':d.progresso===null?'Valores de hoje ainda não disponíveis nesta base.':d.progresso>=1?'✓ Meta de faturamento do dia alcançada · '+P(d.progresso):P(d.progresso)+' da meta de hoje, conforme a última base carregada';
+ return `<section class="met-hoje" aria-labelledby="met-hoje-titulo"><div class="met-section-heading"><h3 id="met-hoje-titulo">Seu objetivo de hoje</h3><span>${_metDia(d.dia)}</span></div><div class="met-dia-grid"><div class="met-dia-item met-dia-meta"><span class="met-dia-label">Meta de faturamento de hoje</span><strong class="met-dia-numero" id="met-hoje-meta">${B(d.meta)}</strong></div><div class="met-dia-item"><span class="met-dia-label">Realizado no dia</span><strong class="met-dia-numero" id="met-hoje-realizado">${B(d.realizado)}</strong></div><div class="met-dia-item"><span class="met-dia-label">Falta para a meta de hoje</span><strong class="met-dia-numero" id="met-hoje-falta">${B(d.falta)}</strong></div></div>${d.progresso===null?'':`<div class="met-dia-track" role="progressbar" aria-label="Faturamento realizado em relação à meta de hoje" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(Math.max(0,Math.min(100,100*d.progresso)))}" aria-valuetext="${P(d.progresso)} da meta de hoje"><div class="met-dia-fill" style="width:${Math.max(0,Math.min(100,100*d.progresso))}%"></div></div>`}<p class="met-dia-status">${andamento}</p><p class="met-dia-fonte">Parcela planejada da meta mensal · referência: ${E(_metRegraNome(M))}.${d.meta===null?' Confira os objetivos do mês para calcular a meta diária.':''}<br>${E(stamp)}. Os valores realizados representam os dados carregados, e podem estar parciais.</p></section>`;
+}
+
+// Modelo independente do DOM. Nenhum filtro amplia os dados autorizados pelo servidor.
+function _metModel(L,D,R,sales,opts={}){
+ const hoje=_metISO(opts.now||new Date()), mesAtual=hoje.slice(0,7), meses=[...new Set(L.map(l=>l.mes))].filter(m=>/^\d{4}-\d{2}$/.test(m)).sort();
+ const mes=meses.includes(opts.mes)?opts.mes:meses.includes(mesAtual)?mesAtual:meses.filter(m=>m<mesAtual).at(-1)||meses[0];
+ if(!mes)return null;
+ const [yy,mm]=mes.split('-').map(Number), dm=new Date(Date.UTC(yy,mm,0)).getUTCDate(), fechado=mes<mesAtual, futuro=mes>mesAtual;
+ const dono=op=>{const [e,m]=op.split(' · ');return opts.gestores?.[e+'|'+m]||'Sem gestor mapeado';};
+ const linhas=L.filter(l=>l.mes===mes), gestores=[...new Set(linhas.map(l=>dono(l.operacao)))].sort();
+ const ges=gestores.includes(opts.ges)?opts.ges:'', doGes=linhas.filter(l=>!ges||dono(l.operacao)===ges);
+ const op=doGes.some(l=>l.operacao===opts.op)?opts.op:'', selecionadas=doGes.filter(l=>!op||l.operacao===op);
+ const keys=new Set(selecionadas.map(l=>l.operacao)), mensal=R.filter(r=>r.date?.startsWith(mes));
+ const ultima=mensal.map(r=>r.date).sort().at(-1)||'';
+ // Sem manifesto de coleta completa: exclui SEMPRE o último dia observado, inclusive após a meia-noite.
+ // O corte é conservador, não uma afirmação de que a coleta de todas as contas está completa.
+ const dd=ultima?+ultima.slice(8,10):0, ddP=fechado?dm:futuro?0:Math.max(0,dd-1), resta=fechado||futuro?0:dm-(+hoje.slice(8,10))+1;
+ const porDia={},t0=Date.UTC(yy,mm-1,1), de=new Date(t0-91*864e5).toISOString().slice(0,10), ate=new Date(t0-864e5).toISOString().slice(0,10);
+ for(const r of R)if(r.date>=de&&r.date<=ate&&keys.has(r.emp+' · '+r.mkt))porDia[r.date]=(porDia[r.date]||0)+_metNum(r.fatMetas,_metNum(r.fat));
+ const W=Array(7).fill(1),som=Array(7).fill(0),n=Array(7).fill(0);
+ for(let t=t0-91*864e5;t<t0;t+=864e5){const d=new Date(t).toISOString().slice(0,10),w=new Date(t).getUTCDay();som[w]+=porDia[d]||0;n[w]++;}
+ const media=som.reduce((a,b)=>a+b,0)/91,historicoDias=Object.keys(porDia).length,historicoDisponivel=media>0&&historicoDias>=60;
+ if(historicoDisponivel)for(let w=0;w<7;w++)W[w]=Math.max(.2,som[w]/n[w]/media);
+ const regra=opts.regra==='historico'?'historico':'fixa',pesoDiaHistorico=i=>W[new Date(Date.UTC(yy,mm-1,i)).getUTCDay()],cumWHistorico=[0];
+ for(let i=1;i<=dm;i++)cumWHistorico[i]=cumWHistorico[i-1]+pesoDiaHistorico(i);
+ const pesoDia=i=>regra==='historico'&&historicoDisponivel?pesoDiaHistorico(i):1,cumW=[0];for(let i=1;i<=dm;i++)cumW[i]=cumW[i-1]+pesoDia(i);
+ const diarios=new Map(),add=(date,op,fat,mc)=>{const k=op+'|'+date;let r=diarios.get(k);if(!r){r={date,op,fat:0,mc:0};diarios.set(k,r);}r.fat+=fat;r.mc+=mc;};
+ // Agregados novos carregam o mesmo filtro de situações da comissão; legado usa DETALHE.
+ const temAgregados=mensal.length>0&&mensal.every(r=>Number.isFinite(r.fatMetas)&&Number.isFinite(r.mcMetas));
+ if(temAgregados){for(const r of mensal)if(keys.has(r.emp+' · '+r.mkt))add(r.date,r.emp+' · '+r.mkt,r.fatMetas,r.mcMetas);}
+ else for(const r of sales){if(!r.date?.startsWith(mes)||!keys.has(r.emp+' · '+r.mkt))continue;const st=String(r.stat||'venda').toLowerCase().trim(),v=/venda/i.test(st);if(v||st==='devolvida')add(r.date,r.emp+' · '+r.mkt,v?_metNum(r.fat):0,_metNum(r.mccom,_metNum(r.mc)));}
+ const idx=new Map(D.map(d=>[d.mes+'|'+d.operacao,d]));
+ const calc=l=>{
+  const d=idx.get(l.mes+'|'+l.operacao)||{},selMes=l.mes===mes;
+  const fatR=_metNum(d.DreFat,_metNum(d.Faturamento_real,_metNum(l.faturamento))),mcont=_metNum(d.DreMargem,_metNum(l.margem_cont));
+  const mcR=fatR>0?mcont/fatR:0,adsR=_metNum(d.Ads_real,_metNum(l.ads)+_metNum(l.afiliados)),tacR=fatR>0?adsR/fatR:0;
+  const diario=selMes?[...diarios.values()].filter(r=>r.op===l.operacao).sort((a,b)=>a.date.localeCompare(b.date)):[];
+  const somaFat=diario.reduce((s,r)=>s+r.fat,0),somaMc=diario.reduce((s,r)=>s+r.mc,0);
+  const congelado=!!l.fechado_em,bruto=_metNum(d.DreMc,_metNum(l.mc_bruto));
+  const mensalZerado=fatR===0&&bruto===0&&Number.isFinite(l.faturamento)&&Number.isFinite(l.mc_bruto);
+  const concilia=!congelado&&(diario.length>0?Math.abs(somaFat-fatR)<=1&&Math.abs(somaMc-bruto)<=1:mensalZerado&&mcont===0);
+  const baseFat=diario.filter(r=>+r.date.slice(8,10)<=ddP).reduce((s,r)=>s+r.fat,0);
+  const podeProjetar=selMes&&!fechado&&!futuro&&ddP>0&&(concilia||mensalZerado);
+  const fatP=!selMes||fechado?fatR:podeProjetar?Math.max(fatR,baseFat*cumWHistorico[dm]/cumWHistorico[ddP]):null;
+  const fp=fatP!==null&&fatR>0?fatP/fatR:1,mcontP=fatP===null?null:mcont*fp;
+  const ind=[
+   {n:'Faturamento',meta:_metNum(d.Faturamento_obj),real:fatR,proj:fatP,peso:_metNum(d.Faturamento_peso),tipo:'maior',taxa:false},
+   {n:'Margem final',meta:_metNum(d.MC_obj),real:mcR,proj:fatP===null?null:mcR,peso:_metNum(d.MC_peso),tipo:'maior',taxa:true},
+   {n:'Publicidade sobre vendas (TACOS)',meta:_metNum(d.TACOS_obj),real:tacR,proj:fatP===null?null:tacR,peso:_metNum(d.TACOS_peso),tipo:'custo',taxa:true},
+   {n:'Orçamento de Ads e afiliados',meta:_metNum(d.Ads_obj),real:adsR,proj:fatP===null?null:adsR*fp,peso:_metNum(d.Ads_peso),tipo:'custo',taxa:false}
+  ].filter(i=>i.peso>0);
+  if(d.Obsoletos_obj!==undefined&&d.Obsoletos_obj!=='(sem)'&&d.Obsoletos_obj!==''&&d.Obsoletos_obj!==null)ind.push({n:'Obsoletos',meta:_metNum(d.Obsoletos_obj),real:_metNum(d.Obsoletos_real),proj:fatP===null?null:_metNum(d.Obsoletos_real),peso:1,tipo:'maior',taxa:false,unidade:true});
+  const peso=ind.reduce((s,i)=>s+i.peso,0)||1,score=key=>Math.max(0,Math.min(1,ind.reduce((s,i)=>s+_metBonus(i[key]||0,i.meta,i.peso,i.tipo),0)/peso));
+  const teto=_metNum(d.Teto,_metNum(l.teto_pct)/100),progP=fatP===null?null:congelado?_metNum(l.progresso_metas)/100:score('proj');
+  const bonusHoje=congelado?_metNum(l.bonus_final_rs):mcont>0?score('real')*teto*mcont:0;
+  const bonusP=fatP===null?null:congelado?_metNum(l.bonus_final_rs):mcontP>0?progP*teto*mcontP:0;
+  const bonusMax=mcontP===null?null:Math.max(0,teto*mcontP);
+  const metaFat=_metNum(d.Faturamento_obj),metaMc=_metNum(d.MC_obj),metaTac=_metNum(d.TACOS_obj),metaAds=_metNum(d.Ads_obj);
+  const metaIncompleta=!ind.length||ind.some(i=>!(i.meta>0));
+  const adsZero=ind.some(i=>i.tipo==='custo')&&!(adsR>0);
+  const desvios=ind.filter(i=>i.meta>0&&i.proj!==null&&(i.tipo==='custo'?i.proj>i.meta:i.proj<i.meta)).map(i=>({...i,perda:Math.max(0,(i.peso-_metBonus(i.proj,i.meta,i.peso,i.tipo))/peso*(bonusMax||0))})).sort((a,b)=>b.perda-a.perda);
+  const status=futuro?'futuro':mcont<0?'critico':metaIncompleta||adsZero||(!fechado&&!podeProjetar)?'pendente':desvios.length?'atencao':'ok';
+  // Série diária estimada: MC elegível e custos mensais rateados pelo faturamento. Sem ajuste de escala da receita.
+  const fatD=Array(dm).fill(0),mcD=Array(dm).fill(0);
+  if(concilia){for(const r of diario){const i=+r.date.slice(8,10)-1;fatD[i]+=r.fat;mcD[i]+=r.mc;}
+   const custos=somaMc-mcont;
+   for(let i=0;i<dm;i++)mcD[i]-=custos*(somaFat>0?fatD[i]/somaFat:diario.some(r=>+r.date.slice(8,10)===i+1)?1/new Set(diario.map(r=>r.date)).size:0);
+   // Diferença máxima de R$1 tolera fontes antigas arredondadas. Ajuste monetário, nunca reescala %.
+   if(diario.length){const i=Math.max(...diario.map(r=>+r.date.slice(8,10)-1));fatD[i]+=fatR-somaFat;}
+  }
+  return {l,d,ges:dono(l.operacao),fatR,fatP,mcont,mcontP,adsR,adsP:fatP===null?null:adsR*fp,mcR,tacR,metaFat,metaMc,metaTac,metaAds,ind,progP,teto,bonusHoje,bonusP,bonusMax,congelado,concilia,fatD,mcD,desvios,status,adsZero,metaIncompleta};
+ };
+ const rank={critico:0,pendente:1,atencao:2,futuro:3,ok:4};
+ const ops=selecionadas.map(calc).sort((a,b)=>rank[a.status]-rank[b.status]||((b.bonusMax||0)-(b.bonusP||0))-((a.bonusMax||0)-(a.bonusP||0))||a.l.operacao.localeCompare(b.l.operacao));
+ const sum=k=>ops.reduce((s,o)=>s+_metNum(o[k]),0),complete=ops.length>0&&ops.every(o=>o.fatP!==null),fatRT=sum('fatR'),mcontT=sum('mcont'),metaFatT=sum('metaFat');
+ const pondera=(a,k)=>{const s=a.reduce((s,o)=>s+o.metaFat,0);return s?a.reduce((s,o)=>s+o[k]*o.metaFat,0)/s:0;},comAds=ops.filter(o=>o.ind.some(i=>i.tipo==='custo'));
+ const histo=meses.filter(m=>m<=mes&&m<=mesAtual).map(m=>{const a=L.filter(l=>l.mes===m&&(!ges||dono(l.operacao)===ges)&&(!op||l.operacao===op)).map(calc),fat=a.reduce((s,o)=>s+o.fatR,0);return {m,fat,metaFat:a.reduce((s,o)=>s+o.metaFat,0),mc:fat?a.reduce((s,o)=>s+o.mcont,0)/fat:0,metaMc:pondera(a.filter(o=>o.metaMc>0),'metaMc')};});
+ return {mes,meses,ges,op,gestores,opcoes:doGes.map(l=>l.operacao).sort(),hoje,dm,dd,ddP,resta,ultima,fechado,futuro,regra,historicoDisponivel,historicoDias,pesoDiaHistorico,cumWHistorico,pesoDia,cumW,ops,histo,comAds,
+  fatRT,fatPT:complete?sum('fatP'):null,mcontT,mcontPT:complete?sum('mcontP'):null,metaFatT,mcRT:fatRT?mcontT/fatRT:0,metaMcT:pondera(ops.filter(o=>o.metaMc>0),'metaMc'),
+  metaTacT:pondera(comAds,'metaTac'),tacRT:comAds.reduce((s,o)=>s+o.fatR,0)>0?comAds.reduce((s,o)=>s+o.adsR,0)/comAds.reduce((s,o)=>s+o.fatR,0):0,
+  bonusPT:complete?sum('bonusP'):null,bonusHojeT:sum('bonusHoje'),bonusMaxT:complete?sum('bonusMax'):null,
+  congelado:ops.length>0&&ops.every(o=>o.congelado),parcial:!fechado&&!futuro&&dd>ddP};
+}
+
+let _MET_VIEW='rota',_MET_DAY=0,_MET_METRIC='fat',_MET_CHART_MODE='diario',_MET_REGRA='fixa';
+function metVisao(v){_MET_VIEW=v;_renderGerMetas();}
+function metReferencia(v){if(String(v).includes('-'))v=String(v).slice(8,10);_MET_DAY=+v||0;_renderGerMetas();document.getElementById('met-ref-dia')?.focus();}
+function metRegra(v){if(v!=='fixa'&&v!=='historico')return;_MET_REGRA=v;_renderGerMetas();document.getElementById('met-regra-'+v)?.focus();}
+function metGrafico(v){if(v!=='diario'&&v!=='acumulado')return;_MET_CHART_MODE=v;_renderGerMetas();}
+function metIndicador(v){_MET_METRIC=v;_renderGerMetas();}
+const _MET_METRICAS={fat:{nome:'Faturamento',unidade:'R$',tipo:'maior'},margem:{nome:'Margem final (%)',unidade:'%',tipo:'maior'},mc:{nome:'Lucro final estimado',unidade:'R$',tipo:'maior'},ads:{nome:'Ads e afiliados',unidade:'R$',tipo:'custo'},tacos:{nome:'Publicidade sobre vendas (TACOS)',unidade:'%',tipo:'custo'}};
+
+// Concilia a campanha com Ads; afiliados mensais não viram gastos diários inventados.
+let _MET_AMPLIADO=null,_MET_TELA_CHEIA_BLOQUEADA=false;
+function _metBotaoAmpliar(id,nome){
+ return '<button type="button" class="met-btn met-ampliar-btn" data-met-alvo="'+_metEsc(id)+'" onclick="metAmpliar(this.dataset.metAlvo,this)" aria-label="Ampliar gráfico: '+_metEsc(nome)+'" title="Ampliar gráfico">⛶ Ampliar</button>';
+}
+// Fontes e navegação são temporárias; os dados e a seleção da legenda não são copiados.
+function _metPrepararAmpliacao(chart){
+ const undo=[],root=chart.config.options;
+ const set=(obj,k,v)=>{undo.push([obj,k,Object.prototype.hasOwnProperty.call(obj,k),obj[k]]);obj[k]=v;};
+ const child=(obj,k)=>{if(!obj[k]||typeof obj[k]!=='object')set(obj,k,{});return obj[k];};
+ const font=(obj,k,size)=>set(obj,k,{...(obj[k]&&typeof obj[k]==='object'?obj[k]:{}),size});
+ const plugins=child(root,'plugins'),legend=child(plugins,'legend'),labels=child(legend,'labels'),tooltip=child(plugins,'tooltip');
+ font(labels,'font',16);font(tooltip,'titleFont',16);font(tooltip,'bodyFont',15);
+ for(const axis of Object.values(root.scales||{})){font(child(axis,'ticks'),'font',14);font(child(axis,'title'),'font',16);}
+ set(root,'onClick',()=>{});
+ return ()=>{for(const [obj,k,had,v] of undo.reverse()){if(had)obj[k]=v;else delete obj[k];}};
+}
+function _metDialogAmpliado(){
+ let dialog=document.getElementById('met-ampliado');if(dialog)return dialog;
+ dialog=document.createElement('dialog');dialog.id='met-ampliado';dialog.className='met-ampliado';dialog.setAttribute('aria-labelledby','met-ampliado-titulo');
+ dialog.innerHTML='<header><div><h2 id="met-ampliado-titulo"></h2><p id="met-ampliado-contexto"></p></div><div class="met-ampliado-acoes"><button type="button" class="met-btn" id="met-ampliado-tela" onclick="metTelaCheia()">Tela cheia</button><button type="button" class="met-btn" id="met-ampliado-fechar" onclick="metFecharAmpliado()" aria-label="Fechar visualização ampliada">Fechar ×</button></div></header><div id="met-ampliado-corpo" class="met-ampliado-corpo"></div><footer id="met-ampliado-nota" role="status"></footer>';
+ dialog.addEventListener('cancel',e=>{e.preventDefault();metFecharAmpliado();});dialog.addEventListener('close',()=>{if(!dialog.open)metFecharAmpliado();});
+ document.addEventListener('fullscreenchange',()=>{const b=document.getElementById('met-ampliado-tela');if(b)b.textContent=document.fullscreenElement===dialog?'Sair da tela cheia':'Tela cheia';});
+ document.body.appendChild(dialog);return dialog;
+}
+function metAmpliar(id,botao){
+ if(!/^c-met-/.test(id))return;
+ metFecharAmpliado(false);
+ const alvo=document.getElementById(id);if(!alvo)return;
+ const chart=typeof charts!=='undefined'?charts[id]:null;
+ if(!chart)return;
+ const dialog=_metDialogAmpliado(),body=document.getElementById('met-ampliado-corpo'),titulo=id==='c-met-rota'?alvo.getAttribute('aria-label'):alvo.closest('article')?.querySelector('h4')?.textContent||alvo.getAttribute('aria-label');
+ const contexto=document.querySelector('#met-root .met-heading p')?.textContent||'',mes=document.querySelector('#met-mes option:checked')?.textContent||'',ref=document.getElementById('met-ref-dia')?.value||'';
+ document.getElementById('met-ampliado-titulo').textContent=titulo||'Visualização ampliada';
+ document.getElementById('met-ampliado-contexto').textContent=[contexto,mes,...(id==='c-met-rota'?[ref?_metDia(ref):'',_MET_MODEL?_metReferenciaNome(_MET_MODEL,_MET_METRIC):'']:[])].filter(Boolean).join(' · ');
+ document.getElementById('met-ampliado-tela').hidden=!document.fullscreenEnabled||_MET_TELA_CHEIA_BLOQUEADA;
+ document.getElementById('met-ampliado-nota').textContent='Passe o cursor nos pontos ou barras para ver valores. Use a legenda para mostrar ou ocultar séries. Esc fecha a ampliação.';
+ body.replaceChildren();
+ const state={id,chart,dialog,botao:botao||document.activeElement,overflow:document.body.style.overflow,scroll:window.scrollY};
+ state.area=alvo.parentElement;state.marca=document.createComment('met-ampliado-origem');state.area.before(state.marca);state.restaurar=_metPrepararAmpliacao(chart);body.appendChild(state.area);
+ _MET_AMPLIADO=state;document.body.style.overflow='hidden';
+ try{dialog.showModal();document.getElementById('met-ampliado-fechar').focus();if(chart)requestAnimationFrame(()=>{if(_MET_AMPLIADO===state){chart.resize();chart.update('none');}});}
+ catch(e){metFecharAmpliado(false);}
+}
+function metFecharAmpliado(devolverFoco=true){
+ const z=_MET_AMPLIADO;if(!z)return;_MET_AMPLIADO=null;
+ if(document.fullscreenElement===z.dialog)document.exitFullscreen?.().catch(()=>{});
+ if(z.restaurar)z.restaurar();
+ if(z.area&&z.marca?.isConnected){z.marca.replaceWith(z.area);}
+ if(z.dialog.open)z.dialog.close();document.getElementById('met-ampliado-corpo')?.replaceChildren();document.body.style.overflow=z.overflow;
+ if(devolverFoco){if(z.chart&&charts[z.id]===z.chart)requestAnimationFrame(()=>{z.chart.resize();z.chart.update('none');});window.scrollTo({top:z.scroll,behavior:'instant'});if(z.botao?.isConnected)z.botao.focus({preventScroll:true});}
+}
+async function metTelaCheia(){
+ const z=_MET_AMPLIADO;if(!z)return;
+ try{if(document.fullscreenElement===z.dialog)await document.exitFullscreen();else await z.dialog.requestFullscreen();if(z.chart)z.chart.resize();}
+ catch(e){_MET_TELA_CHEIA_BLOQUEADA=true;document.getElementById('met-ampliado-tela').hidden=true;document.getElementById('met-ampliado-nota').textContent='Este navegador não permite tela cheia. A ampliação usa toda a área disponível.';}
+}
+
+function _metRegraNome(M){return M.regra==='historico'&&M.historicoDisponivel?'Histórica por dia da semana':M.regra==='historico'?'Fixa · histórico insuficiente':'Fixa · mês ÷ dias';}
+function _metReferenciaNome(M,k){return k==='ads'?'Orçamento linear · mês ÷ dias':k==='tacos'?'Teto percentual de TACOS':k==='margem'?'Meta percentual de margem':_metRegraNome(M);}
+function _metRegraHTML(M){
+ const aviso=M.regra==='historico'?(M.historicoDisponivel?'Distribuição pelo dia da semana, com base nos 91 dias anteriores ao mês e nas operações selecionadas.':'Histórico insuficiente: '+M.historicoDias+' dias com dados; são necessários pelo menos 60. Usamos parcelas fixas enquanto essa referência não estiver disponível.'):'Meta mensal dividida igualmente pelos '+M.dm+' dias de calendário. O plano acumulado cresce de forma linear.';
+ return '<section class="met-regra" aria-label="Regra de distribuição da meta"><h3>Como distribuir a meta?</h3><div class="met-rota-metricas" role="group" aria-label="Referência de planejamento">'+[['fixa','Fixa · mês ÷ dias'],['historico','Histórica · dia da semana']].map(([v,n])=>'<button id="met-regra-'+v+'" class="met-btn" aria-pressed="'+(M.regra===v)+'" data-regra="'+v+'" onclick="metRegra(this.dataset.regra)">'+n+'</button>').join('')+'</div><p class="met-nota">'+aviso+'</p><p class="met-nota">A meta mensal e o realizado não mudam. A regra distribui faturamento e lucro planejado; orçamento de Ads continua linear e metas percentuais mantêm seus limites. A projeção de fechamento usa o ritmo histórico quando disponível.</p></section>';
+}
+function _metReferenciasHTML(R,k){
+ if(!R.pos||!['fat','mc'].includes(k))return '';
+ const M=R.M,meta=R.month[k],B=_metBRL2,nulo=meta===null;
+ const fDia=nulo?null:meta/M.dm,fAcum=nulo?null:meta*R.cut/M.dm,
+  hDia=nulo||!M.historicoDisponivel?null:meta*M.pesoDiaHistorico(R.cut)/M.cumWHistorico[M.dm],hAcum=nulo||!M.historicoDisponivel?null:meta*M.cumWHistorico[R.cut]/M.cumWHistorico[M.dm];
+ return '<div class="met-table-wrap"><table class="met-table"><caption>Comparar referências em '+_metDia(R.pos.date)+' · '+_MET_METRICAS[k].nome+' · meta mensal preservada</caption><thead><tr><th>Regra</th><th>Planejado no dia</th><th>Planejado acumulado</th></tr></thead><tbody><tr'+(M.regra==='fixa'?' class="met-selected-row"':'')+'><th>Fixa · mês ÷ dias</th><td>'+B(fDia)+'</td><td>'+B(fAcum)+'</td></tr><tr'+(M.regra==='historico'?' class="met-selected-row"':'')+'><th>Histórica · dia da semana'+(!M.historicoDisponivel?'<small>Histórico insuficiente</small>':'')+'</th><td>'+B(hDia)+'</td><td>'+B(hAcum)+'</td></tr></tbody></table></div><p class="met-nota">Painéis, gráfico e mínimo restante usam a referência: <strong>'+_metRegraNome(M)+'</strong>. O mínimo restante é uma simulação, separada da meta diária original.</p>';
+}
+
+function _metAdsFontes(M,rows=[],cut=M.ddP,limite=cut,abertura={}){
+ return M.comAds.map(o=>{
+  const dias=new Map();
+  for(const r of rows){const date=String(r.data||r.date||'').slice(0,10),op=(r.emp||r.empresa)+' · '+(r.mkt||r.canal),inv=_metNum(r.inv,_metNum(r.investimento,null));if(op!==o.l.operacao||!date.startsWith(M.mes)||!/^\d{4}-\d{2}-\d{2}$/.test(date)||inv===null)continue;dias.set(date,(dias.get(date)||0)+inv);}
+  const afil=_metNum(o.d.Afiliados,_metNum(o.l.afiliados,null)),ads=_metNum(o.l.ads,afil===null?null:o.adsR-afil),rel=/relat[oó]rio/i.test(String(o.d.Ads_fonte||''))?_metNum(o.d.Ads_relatorio,ads):ads;
+  const soma=[...dias.values()].reduce((s,v)=>s+v,0),cobertura=limite>0&&Array.from({length:limite},(_,i)=>M.mes+'-'+String(i+1).padStart(2,'0')).every(d=>dias.has(d));
+  const componentes=ads!==null&&afil!==null&&Math.abs(ads+afil-o.adsR)<=1;
+  const concilia=rel!==null&&Math.abs(soma-rel)<=1&&ads!==null&&Math.abs(soma-ads)<=1;
+  const afDias=new Map(),afFonte=(abertura.fontes||[]).find(r=>(r.comp||r.competencia)===M.mes&&(r.emp||r.empresa)+' · '+(r.mkt||r.canal)===o.l.operacao)||o.d.AfiliadosFonte;
+  const afRows=(abertura.dias||[]).length?abertura.dias:(o.d.AfiliadosDia||[]);
+  for(const r of afRows){const date=String(r.data||'').slice(0,10);if((r.emp||r.empresa)+' · '+(r.mkt||r.canal)===o.l.operacao&&date.startsWith(M.mes)&&r.valor!=null&&Number.isFinite(+r.valor))afDias.set(date,(afDias.get(date)||0)+(+r.valor));}
+  const somaAf=[...afDias.values()].reduce((s,v)=>s+v,0),afValido=afFonte?.natureza==='estimativa_diaria'&&afFonte?.conciliado===true&&afFonte.status==='conciliado'&&afil!==null&&Math.round(somaAf*100)===Math.round(afil*100);
+  const serieValida=!o.congelado&&cobertura&&concilia,completa=serieValida&&componentes&&(Math.abs(afil)<.005||afValido);
+  const motivo=o.congelado?'Comissão congelada sem fotografia diária.':!cobertura?'Série de Ads sem cobertura de todos os dias do corte.':!concilia?'Soma diária de Ads difere do total de Ads usado no mês.':!componentes?'Componentes mensais precisam de conciliação.':!completa?(afFonte?'Product Ads diário conciliado. Afiliados: '+afFonte.motivo:'Product Ads diário conciliado; afiliados disponíveis apenas no total mensal.') :afValido?'Product Ads e afiliados por venda conciliados; sujeitos a atualizações.':'Product Ads diário conciliado; total mensal informado sem afiliados.';
+  const noCorte=serieValida?[...dias].filter(([d])=>+d.slice(8,10)<=cut).reduce((s,[,v])=>s+v,0):null;
+  const afiliadosNoCorte=afValido?[...afDias].filter(([d])=>+d.slice(8,10)<=cut).reduce((s,[,v])=>s+v,0):Math.abs(afil)<.005?0:null;
+  return {op:o.l.operacao,ads,afil,total:o.adsR,meta:o.metaAds>0?o.metaAds:null,dias,afDias,soma,serieValida,completa,noCorte,afValido,afiliadosNoCorte,motivo};
+ });
+}
+function _metPainelHTML(M,metric){
+ const E=_metEsc,B=_metBRL,P=_metPct,publicidade=M.comAds.length>0,metaAds=publicidade&&M.comAds.every(o=>o.metaAds>0)?M.comAds.reduce((s,o)=>s+o.metaAds,0):null,
+  metaTac=publicidade&&M.comAds.every(o=>o.metaTac>0)?M.metaTacT:null,ads=publicidade?M.comAds.reduce((s,o)=>s+o.adsR,0):null,tac=publicidade&&M.comAds.reduce((s,o)=>s+o.fatR,0)>0?M.tacRT:null,
+  metaFat=M.ops.length&&M.ops.every(o=>o.metaFat>0)?M.metaFatT:null,metaMc=M.ops.length&&M.ops.every(o=>o.metaMc>0)?M.metaMcT:null;
+ const card=(k,title,value,sub,note)=>`<article id="met-kpi-${k}" class="met-card${metric===k?' met-selected-row':''}"><h3>${title}</h3><div class="met-value">${value}</div><p>${sub}</p><div class="met-foot">${note}</div><button class="met-btn" aria-pressed="${metric===k}" onclick="metIndicador('${k}')">${title}</button></article>`;
+ let h='<section aria-label="Resumo dos objetivos do mês"><h3>Todos os objetivos do mês</h3><p class="met-nota">Consolidado mensal carregado'+(M.ultima?' · vendas na base até '+_metDia(M.ultima):'')+'. Inclui valores parciais e não acompanha a data escolhida para o histórico. Cada fonte pode ter seu próprio corte.</p><div class="met-resumo">';
+ h+=card('fat','Faturamento',B(M.fatRT),'Meta mensal: '+B(metaFat),metaFat===null?'Meta não informada':M.fatRT>=metaFat?'Meta alcançada. Mantenha o desempenho e a margem.':'Saldo para a meta: '+B(metaFat-M.fatRT));
+ h+=card('margem','Margem final (%)',P(M.fatRT>0?M.mcRT:null),'Meta: '+P(metaMc),'Lucro final: '+B(M.mcontT)+(metaMc!==null&&M.fatRT>0?'<br>Diferença: '+((M.mcRT-metaMc)*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+' p.p.':''));
+ h+=card('ads','Ads e afiliados',B(ads),'Orçamento mensal: '+B(metaAds),!publicidade?'Sem meta de publicidade neste escopo.':metaAds===null?'Orçamento não informado.':(ads>metaAds?'Excesso sobre o orçamento: '+B(ads-metaAds):'Saldo do orçamento: '+B(metaAds-ads))+'<br>Orçamento é limite, não obrigação de gastar.');
+ h+=card('tacos','Publicidade sobre vendas (TACOS)',P(tac),'Teto: '+P(metaTac),!publicidade?'Sem meta de publicidade neste escopo.':metaTac===null||tac===null?'Confira a meta e o faturamento da base.':'Diferença para o teto: '+((tac-metaTac)*100).toLocaleString('pt-BR',{maximumFractionDigits:2})+' p.p.<br>Ads + afiliados / faturamento das operações com essas metas.');
+ return h+'</div><p class="met-nota">As metas são apresentadas mesmo sem uma série diária conciliada. Escolha um indicador para aprofundar. Lucro em R$ complementa a margem percentual.</p></section>';
+}
+function _metAdsFontesHTML(R){
+ if(!R.adsFontes.length)return '<p class="met-nota">Não há metas de publicidade para as operações selecionadas.</p>';
+ const E=_metEsc,B=_metBRL;
+ let h='<details class="met-expande" open><summary>Ads e afiliados · disponibilidade por operação</summary><p class="met-nota">Afiliados informados no mês podem conter estimativas. Cobranças do billing e pagamentos são conferidos separadamente; não substituem a estimativa diária. Sem essa abertura, o TACOS diário completo permanece indisponível. Valores mensais não são distribuídos artificialmente pelos dias.</p><div class="met-table-wrap"><table class="met-table"><caption>Fontes de publicidade · mensal carregado versus corte de '+_metDia(R.M.mes+'-'+String(R.cut).padStart(2,'0'))+'</caption><thead><tr><th>Operação</th><th>Orçamento mensal</th><th>Product Ads no mês</th><th>Afiliados informados no mês</th><th>Total informado no mês</th><th>Product Ads até o corte</th><th>Estimativa de afiliados até o corte</th><th>Situação da abertura diária</th></tr></thead><tbody>';
+ for(const a of R.adsFontes)h+='<tr><th>'+E(a.op)+'</th><td>'+B(a.meta)+'</td><td>'+B(a.ads)+'</td><td>'+B(a.afil)+'</td><td>'+B(a.total)+'</td><td>'+B(a.noCorte)+'</td><td>'+B(a.afiliadosNoCorte)+'</td><td style="white-space:normal;min-width:230px">'+E(a.motivo)+'</td></tr>';
+ return h+'</tbody></table></div></details>';
+}
+
+function _metRoute(M,adsDia=[],ref=0,afiliados={}){
+ const limite=M.futuro?0:M.fechado?M.dm:M.ddP,cut=Math.max(0,Math.min(limite,ref||limite));
+ const ok=M.ops.length>0&&M.ops.every(o=>o.concilia)&&!M.congelado;
+ const abertura={dias:afiliados.dias||(typeof AFILIADOS_DIA!=='undefined'?AFILIADOS_DIA:[]),fontes:afiliados.fontes||(typeof AFILIADOS_FONTE!=='undefined'?AFILIADOS_FONTE:[])};
+ const adsFontes=_metAdsFontes(M,adsDia,cut,limite,abertura),adsValid=adsFontes.length>0&&adsFontes.every(a=>a.completa),adsReportValid=adsFontes.length>0&&adsFontes.every(a=>a.serieValida);
+ const planMC=M.ops.every(o=>o.metaFat>0&&o.metaMc>0)?M.ops.reduce((s,o)=>s+o.metaFat*o.metaMc,0):null,planAds=M.comAds.length>0&&M.comAds.every(o=>o.metaAds>0)?M.comAds.reduce((s,o)=>s+o.metaAds,0):null;
+ const month={fat:M.ops.every(o=>o.metaFat>0)?M.metaFatT:null,mc:planMC,margem:M.ops.every(o=>o.metaMc>0)?M.metaMcT:null,ads:planAds,tacos:M.comAds.length>0&&M.comAds.every(o=>o.metaTac>0)?M.metaTacT||null:null};
+ let fat=0,mc=0,ads=0,adsCamp=0,fatAds=0;const rows=[];
+ for(let i=1;i<=M.dm;i++){
+  const date=M.mes+'-'+String(i).padStart(2,'0'),base=ok&&i<=limite,observado=i<=M.dd,estado=base?'base':date>M.hoje?'futuro':observado?'fora_corte':'sem_valores';
+  const df=M.ops.reduce((s,o)=>s+o.fatD[i-1],0),dc=M.ops.reduce((s,o)=>s+o.mcD[i-1],0),daCamp=adsFontes.reduce((s,a)=>s+(a.dias.get(date)||0),0),da=daCamp+adsFontes.reduce((s,a)=>s+(a.afValido?a.afDias.get(date)||0:0),0),fa=M.comAds.reduce((s,o)=>s+o.fatD[i-1],0);
+  if(base){fat+=df;mc+=dc;ads+=da;adsCamp+=daCamp;fatAds+=fa;}
+  const plan={fat:month.fat===null?null:month.fat*M.pesoDia(i)/M.cumW[M.dm],mc:month.mc===null?null:month.mc*M.pesoDia(i)/M.cumW[M.dm],ads:month.ads===null?null:month.ads/M.dm,tacos:month.tacos,margem:month.margem};
+  const real={fat:base?df:null,mc:base?dc:null,ads:base&&adsValid?da:null,tacos:base&&adsValid&&fa>0?da/fa:null,margem:base&&df>0?dc/df:null,adsCamp:base&&adsReportValid?daCamp:null};
+  const acumPlan={fat:month.fat===null?null:month.fat*M.cumW[i]/M.cumW[M.dm],mc:month.mc===null?null:month.mc*M.cumW[i]/M.cumW[M.dm],ads:month.ads===null?null:month.ads*i/M.dm,tacos:month.tacos,margem:month.margem};
+  const acumReal={fat:base?fat:null,mc:base?mc:null,ads:base&&adsValid?ads:null,tacos:base&&adsValid&&fatAds>0?ads/fatAds:null,margem:base&&fat>0?mc/fat:null,adsCamp:base&&adsReportValid?adsCamp:null};
+  rows.push({dia:i,date,estado,plan,real,acumPlan,acumReal});
+ }
+ const pos=cut>0&&ok?rows[cut-1]:null,next=cut<M.dm?cut+1:null,restW=M.cumW[M.dm]-M.cumW[cut],recovery={};
+ for(const k of ['fat','mc','ads']){const atual=pos?.acumReal[k],meta=month[k];let remaining=atual===null||atual===undefined||meta===null?null:Math.max(0,meta-atual);recovery[k]={remaining,next:next&&remaining!==null?(k==='ads'?remaining/(M.dm-cut):remaining*M.pesoDia(next)/restW):null,planNext:next?rows[next-1].plan[k]:null};}
+ return {M,limite,cut,ok,adsValid,adsReportValid,adsFontes,rows,pos,month,next,recovery};
+}
+
+// Esforço para cumprir o objetivo; não gera diagnósticos nem demandas.
+function _metEsforco(R,k){
+ if(!R.pos||!['fat','mc'].includes(k)||R.month[k]===null)return null;
+ const real=R.pos.acumReal[k],r=R.recovery[k],peso=R.M.cumWHistorico[R.cut];
+ return {fechamento:peso>0?real*R.M.cumWHistorico[R.M.dm]/peso:null,
+  diferenca:r.next!==null&&r.planNext>0&&r.remaining>0?r.next/r.planNext-1:null,
+  dias:R.M.dm-R.cut};
+}
+function _metEsforcoHTML(R,k){
+ const e=_metEsforco(R,k);if(!e)return '';
+ const alvo=k==='fat'?'faturamento':'lucro final estimado',meta=R.month[k],atingida=R.recovery[k].remaining===0;
+ let h='<p><strong>Se repetir o ritmo acumulado até '+_metDia(R.pos.date)+': '+_metBRL(e.fechamento)+'</strong> de '+alvo+' no fechamento, para objetivo de '+_metBRL(meta)+'.</p>';
+ if(e.dias>0&&!atingida&&e.diferenca!==null&&e.diferenca>0)h+='<p><strong>Recuperação nos '+e.dias+' dias seguintes: '+_metPct(e.diferenca)+' acima do ritmo originalmente planejado.</strong> O saldo é distribuído conforme a referência '+_metReferenciaNome(R.M,k)+', sem alterar a meta cadastrada.</p>';
+ else if(e.dias===0)h+='<p>Período encerrado: '+(atingida?'objetivo alcançado.':'diferença final de '+_metBRL(Math.max(0,meta-R.pos.acumReal[k]))+' para o objetivo.')+'</p>';
+ return h+'<p class="met-nota">Projeção pelo ritmo histórico quando disponível; sem garantia de fechamento.'+(k==='mc'?' O lucro diário inclui rateio estimado dos custos mensais.':' Preserve também a margem-alvo nas vendas restantes.')+'</p>';
+}
+function _metRitmoOperacoesHTML(R,k){
+ if(!R.pos||R.M.ops.length<2||!['fat','mc'].includes(k))return '';
+ const M=R.M,E=_metEsc,B=_metBRL,P=_metPct;
+ let h='<details class="met-expande"><summary>Ritmo necessário por operação</summary><p class="met-nota">Mesmo corte de '+_metDia(R.pos.date)+'. Cada operação mantém sua própria meta; o adiantamento de uma não apaga o saldo de outra.</p><div class="met-table-wrap"><table class="met-table"><caption>'+_MET_METRICAS[k].nome+' · objetivos e esforço por operação</caption><thead><tr><th>Operação / gestor</th><th>Meta mensal</th><th>Informado no corte</th><th>Saldo da meta</th><th>Plano original do próximo dia</th><th>Necessário no próximo dia</th><th>Margem no corte / alvo</th></tr></thead><tbody>';
+ for(const o of M.ops){
+  const f=o.fatD.slice(0,R.cut).reduce((s,v)=>s+v,0),c=o.mcD.slice(0,R.cut).reduce((s,v)=>s+v,0),real=k==='fat'?f:c;
+  const meta=k==='fat'?(o.metaFat>0?o.metaFat:null):(o.metaFat>0&&o.metaMc>0?o.metaFat*o.metaMc:null),saldo=meta===null?null:Math.max(0,meta-real),peso=M.cumW[M.dm]-M.cumW[R.cut];
+  const plano=R.next&&meta!==null?meta*M.pesoDia(R.next)/M.cumW[M.dm]:null,necessario=R.next&&saldo!==null&&peso>0?saldo*M.pesoDia(R.next)/peso:null;
+  h+='<tr><th>'+E(o.l.operacao)+'<small>'+E(o.ges)+'</small></th><td>'+B(meta)+'</td><td>'+B(real)+'</td><td>'+B(saldo)+'</td><td>'+B(plano)+'</td><td>'+(saldo===0?'Meta mensal alcançada':B(necessario))+'</td><td>'+P(f>0?c/f:null)+' / '+P(o.metaMc>0?o.metaMc:null)+'</td></tr>';
+ }
+ return h+'</tbody></table></div></details>';
+}
+
+function _metComparacao(R,k,acumulado=false){
+ if(!R.pos)return null;
+ const p=R.pos,info=_MET_METRICAS[k],plan=acumulado?p.acumPlan:p.plan,real=acumulado?p.acumReal:p.real;
+ const meta=plan[k],realizado=real[k],desvio=realizado===null||meta===null?null:realizado-meta,
+  parcial=k==='ads'&&realizado===null&&R.adsReportValid,exibido=parcial?real.adsCamp:realizado;
+ let status,classe='met-pendente';
+ if(desvio===null)status=parcial?'Ads de campanha disponível; afiliados sem abertura diária.':'Sem comparação completa para este período.';
+ else if(info.tipo==='custo'){status=desvio>0?'Acima do limite de referência.':'Dentro do limite; avalie também receita e margem.';classe=desvio>0?'met-atencao':'met-neutro';}
+ else{status=desvio>=0?'No plano ou acima.':'Abaixo do planejado.';classe=desvio>=0?'met-ok':'met-atencao';}
+ return {date:p.date,meta,realizado,exibido,desvio,parcial,status,classe,acumulado};
+}
+function _metComparacoesHTML(R,k){
+ const E=_metEsc,info=_MET_METRICAS[k],fmt=v=>info.unidade==='%'?_metPct(v):_metBRL2(v),delta=v=>v===null?'—':info.unidade==='%'?(100*v).toLocaleString('pt-BR',{maximumFractionDigits:2})+' p.p.':_metBRL2(v);
+ const medida=(nome,valor)=>'<div class="met-medida"><dt>'+nome+'</dt><dd>'+valor+'</dd></div>';
+ let h='<div class="met-comparacoes" aria-label="Dia selecionado e posição acumulada">';
+ for(const acumulado of [false,true]){const c=_metComparacao(R,k,acumulado);if(!c)continue;
+  const id=acumulado?'met-resumo-acumulado':'met-resumo-dia',data=_metDia(c.date),nomeMeta=k==='ads'?'Referência de orçamento':k==='tacos'?'Teto de TACOS':k==='margem'?'Meta de margem':'Planejado',nomeReal=c.parcial?'Ads de campanha, sem afiliados':acumulado?'Realizado acumulado':'Realizado no dia';
+  h+='<section id="'+id+'-box" class="met-comparacao" aria-labelledby="'+id+'"><h4 id="'+id+'">'+(acumulado?'Acumulado até '+data:'Dia selecionado · '+data)+'</h4><p class="met-nota">'+E(info.nome)+(acumulado?' · desde o início do mês.':' · somente este dia.')+' Referência: '+_metReferenciaNome(R.M,k)+'.'+'</p><dl>'+medida(nomeMeta,fmt(c.meta))+medida(nomeReal,fmt(c.exibido))+medida(acumulado?'Desvio acumulado':'Desvio do dia',delta(c.desvio))+'</dl><p class="met-comparacao-status '+c.classe+'">'+E(c.status)+'</p>';
+  if(c.parcial)h+='<p class="met-nota">O valor mostrado não inclui afiliados. O desvio do indicador completo fica indisponível.</p>';
+  if(k==='mc'||k==='margem')h+='<p class="met-nota">Resultado estimado, com rateio de custos mensais.</p>';
+  h+='</section>';
+ }
+ return h+'</div>';
+}
+
+function _metRotaHTML(R,metric){
+ const M=R.M,E=_metEsc,B=_metBRL,P=_metPct,k=_MET_METRICAS[metric]?metric:'fat',info=_MET_METRICAS[k],fmt=v=>v===null||v===undefined?'—':info.unidade==='%'?P(v):B(v),gapFmt=v=>info.unidade==='%'?(100*v).toLocaleString('pt-BR',{maximumFractionDigits:2})+' p.p.':B(v);
+ const painel=_metPainelHTML(M,k);
+ if(!R.pos)return painel+`<section class="met-rota"><h3>Rota do mês</h3><p class="met-nota">${M.congelado?'Este mês tem uma fotografia de comissão congelada, sem uma série diária dessa fotografia. O resultado mensal continua na visão mensal.':M.futuro?'O período ainda não começou. Consulte os objetivos na visão mensal.':'Não há uma base diária conciliada suficiente para comparar a rota. Consulte a visão mensal e a atualização da base.'}</p></section>`;
+ if((k==='ads'||k==='tacos')&&!M.comAds.length)return painel+'<section class="met-rota"><h3>Publicidade</h3><p>As operações selecionadas não concorrem em metas de Ads e TACOS. Os objetivos de faturamento e margem continuam disponíveis.</p></section>';
+ const p=R.pos,actual=p.acumReal[k],expected=p.acumPlan[k],gap=actual===null||expected===null?null:actual-expected;
+ const estado=gap===null?(k==='ads'||k==='tacos'?R.adsReportValid?'Ads de campanha conciliado; afiliados sem abertura diária':'Abertura diária não conciliada; metas e totais mensais disponíveis acima':'Conferir a abertura dos dados'):k==='ads'?(gap>0?'Gasto acima da referência de orçamento':'Gasto dentro da referência; avalie também vendas e margem'):k==='tacos'?(gap>0?'Publicidade acima do teto':'Publicidade dentro do teto'):k==='margem'?(gap>=0?'Margem dentro do objetivo':'Margem abaixo do objetivo'):gap>=0?'Acima do planejado até esta data':'Abaixo do planejado até esta data';
+ let h=painel+`<section class="met-rota"><div class="met-section-heading"><div><h3>Sua rota do mês</h3><p>Compare os dias anteriores ao último dia da base. O dia em andamento fica separado.</p></div><label class="met-ref">Analisar até<input id="met-ref-dia" type="date" min="${M.mes}-01" max="${M.mes}-${String(R.limite).padStart(2,'0')}" value="${p.date}" onchange="metReferencia(this.value)"></label></div><div class="met-rota-metricas" role="group" aria-label="Indicador da rota">`;
+ h+=`<button class="met-btn" aria-pressed="${k==='mc'}" onclick="metIndicador('mc')">Lucro final estimado</button>`;
+ h+='</div>'+_metReferenciasHTML(R,k)+_metComparacoesHTML(R,k);
+ const margem=p.acumReal.fat>0?p.acumReal.mc/p.acumReal.fat:null;
+ if(margem!==null&&M.metaMcT>0)h+=`<div class="${margem<M.metaMcT?'met-alerta':'met-nota'}"><strong>Margem final estimada no corte: ${P(margem)} · meta ${P(M.metaMcT)}.</strong> ${margem<M.metaMcT?'O ritmo de faturamento precisa vir acompanhado da margem-alvo; volume adiantado não compensa automaticamente uma margem abaixo do objetivo.':'Acompanhe também a qualidade das vendas ao recuperar o volume.'}</div>`;
+ const rec=R.recovery[k],proximo=R.next?M.mes+'-'+String(R.next).padStart(2,'0'):'';
+ h+='<div class="met-retomada"><h4>'+(info.tipo==='custo'?'Controle do limite até o fechamento':gap!==null&&gap<0?'Ritmo de recuperação':'Mantenha o desempenho')+'</h4>';
+ if(k==='fat'||k==='mc'){h+=rec.remaining===0?`<p><strong>${k==='fat'?'Meta mensal de faturamento já alcançada':'Meta mensal de lucro já alcançada'} no corte.</strong> ${R.next?'O plano original de '+_metDia(proximo)+' continua em '+B(rec.planNext)+'.':'O período está encerrado.'} Acompanhe margem, eficiência e qualidade das vendas.</p>`:rec.next===null?'<p>O mês terminou, ou a meta e a base precisam de conferência para calcular a recuperação.</p>':`<p>Para ${_metDia(proximo)}: <strong>${B(rec.next)}</strong> de ${k==='fat'?'faturamento':'lucro final estimado'} como mínimo para atingir a meta mensal após ${_metDia(p.date)}.</p><p>O plano original desse dia é ${B(rec.planNext)}. Restam ${B(rec.remaining)} para o ${k==='fat'?'faturamento mensal':'lucro planejado do mês'}.</p>`;if(gap!==null&&gap>=0&&rec.remaining>0)h+='<p><strong>Você está adiantado em relação ao plano. Mantenha o desempenho e a margem.</strong> O plano original do próximo dia continua sendo a referência; o mínimo restante não recomenda desacelerar.</p>';h+=_metEsforcoHTML(R,k);if(k==='mc')h+='<p>O lucro planejado combina faturamento-meta e margem-alvo. A margem percentual da operação também precisa ser acompanhada; esta conta não substitui a regra da comissão.</p>';}
+ else if(k==='margem')h+=`<p>Margem final estimada no corte: <strong>${P(actual)}</strong>, para objetivo de ${P(expected)}. ${gap===null?'Confira a base diária.':gap<0?'Diferença de '+gapFmt(-gap)+' para alcançar o percentual-alvo.':'Mantenha a margem-alvo junto com o ritmo de faturamento.'}</p><p>Lucro estimado no corte: ${B(p.acumReal.mc)}. Percentuais diários não são somados.</p>`;
+ else if(k==='ads')h+=rec.remaining===null?`<p>${R.adsReportValid?'O Ads de campanha está conciliado. Os afiliados estão disponíveis apenas no total mensal; não calculamos um saldo diário do indicador completo.':'A abertura diária ou a meta de Ads precisa de conferência.'} O relatório mensal carregado informa ${B(M.comAds.reduce((s,o)=>s+o.adsR,0))}, para orçamento de ${B(R.month.ads)}. Esses totais mensais não representam, necessariamente, o corte diário selecionado.</p>`:actual>R.month.ads?`<p><strong>Limite mensal excedido em ${B(actual-R.month.ads)} no corte selecionado.</strong> Orçamento mensal: ${B(R.month.ads)}.</p>`:`<p>Saldo informado do orçamento: <strong>${B(rec.remaining)}</strong>. ${R.next?'Referência máxima por dia restante: '+B(rec.next)+'.':'Período encerrado.'} Orçamento não utilizado não é ganho por si só: confira receita e margem.</p>`;
+ else h+=actual===null?`<p>${R.adsReportValid?'O Ads de campanha está conciliado, mas os afiliados só têm total mensal. Não atribuímos esse gasto a dias sem uma fonte diária.':'Não calculamos uma taxa diária com gastos que não conciliam.'} No relatório mensal carregado, o TACOS é ${P(M.tacRT)}, para teto ${P(M.metaTacT)}. Confira a abertura de Ads e afiliados.</p>`:`<p>TACOS acumulado ${P(actual)}, teto ${P(M.metaTacT)}. Mantenha o gasto proporcional às vendas dentro desse teto. Não somamos percentuais diários nem tratamos uma taxa baixa, isoladamente, como bom desempenho.</p>`;
+ if(k==='ads'||k==='tacos')h+=_metAdsFontesHTML(R);
+ h+='</div>'+_metRitmoOperacoesHTML(R,k)+'<article class="met-chart"><div class="met-ampliar-cabecalho"><h4>Resultado diário e posição acumulada</h4>'+_metBotaoAmpliar('c-met-rota','Histórico de '+info.nome)+'</div><div class="met-rota-metricas" role="group" aria-label="Leitura do gráfico"><button class="met-btn" aria-pressed="'+(_MET_CHART_MODE==='diario')+'" data-periodo="diario" onclick="metGrafico(this.dataset.periodo)">Diário</button><button class="met-btn" aria-pressed="'+(_MET_CHART_MODE==='acumulado')+'" data-periodo="acumulado" onclick="metGrafico(this.dataset.periodo)">Acumulado</button></div><p>'+(_MET_CHART_MODE==='diario'?'Cada barra mostra o realizado de um dia; a linha mostra seu plano original.':'As linhas mostram os valores acumulados desde o início do mês.')+' Eixo horizontal: dia do mês · vertical: '+E(info.unidade)+'. Clique em um dia da base para rever a posição. A simulação de recuperação só aparece na leitura acumulada, quando há atraso.</p><div class="met-chart-area"><canvas id="c-met-rota" role="img" aria-label="'+(_MET_CHART_MODE==='diario'?'Histórico diário de ':'Histórico acumulado de ')+E(info.nome)+'"></canvas></div></article><div class="met-calendario" role="group" aria-label="Selecionar dia de análise">';
+ for(const row of R.rows){const future=row.date>M.hoje,enabled=row.dia<=R.limite,a=row.real[k],t=row.plan[k],known=enabled&&a!==null&&t!==null,fora=known&&(info.tipo==='custo'?a>t:a<t),sinal=!known?'·':fora?'!':info.tipo==='custo'?'·':'✓',qual=!known?'sem comparação':fora?info.tipo==='custo'?'acima do limite':'abaixo do plano':info.tipo==='custo'?'dentro do limite':'no plano ou acima',label=enabled?row.dia+' · analisar · '+qual:future?row.dia+' · futuro':row.dia+' · fora do corte';h+=`<button class="met-dia-chip${row.dia===R.cut?' met-active':''}${fora?' met-ritmo-atencao':known&&info.tipo!=='custo'?' met-ritmo-ok':''}" ${enabled?`onclick="metReferencia(${row.dia})"`:'disabled'} aria-label="${label}" aria-pressed="${row.dia===R.cut}">${row.dia}<small aria-hidden="true">${sinal}</small></button>`;}
+ h+='</div><p class="met-nota">'+(info.tipo==='custo'?'! acima do limite · ponto indica referência atendida ou comparação indisponível; confira a abertura.':'✓ dia no plano ou acima · ! abaixo do plano · ponto indica dia fora da comparação.')+'</p><details class="met-expande"><summary>Demonstrativo diário · plano, realizado e desvio</summary><div class="met-table-wrap"><table class="met-table"><caption>'+E(info.nome)+' · valores da base atual; dias fora do corte ficam sem julgamento</caption><thead><tr><th>Data</th><th>Plano do dia</th><th>Informado no dia</th><th>Desvio do dia</th><th>Plano acumulado</th><th>Informado acumulado</th><th>Desvio acumulado</th></tr></thead><tbody>';
+ const tableFmt=v=>v===null?'—':info.unidade==='%'?(v*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':_metBRL2(v),tableGap=v=>info.unidade==='%'?(100*v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' p.p.':_metBRL2(v);
+ for(const row of R.rows){const a=row.real[k],t=row.plan[k],ar=row.acumReal[k],ap=row.acumPlan[k];h+=`<tr${row.dia===R.cut?' class="met-selected-row"':''}><th>${_metDia(row.date)}${row.estado==='base'?'':`<small>${row.estado==='futuro'?'Futuro':row.estado==='fora_corte'?'Fora do corte / parcial':'Sem valores no corte'}</small>`}</th><td>${tableFmt(t)}</td><td>${tableFmt(a)}</td><td>${a===null||t===null?'—':tableGap(a-t)}</td><td>${tableFmt(ap)}</td><td>${tableFmt(ar)}</td><td>${ar===null||ap===null?'—':tableGap(ar-ap)}</td></tr>`;}
+ h+='</tbody></table></div></details><p class="met-nota">Metas originais preservadas. Mínimo restante recalculado para os dias seguintes conforme a regra escolhida. O histórico usa a base atual; não representa fotografias diárias imutáveis. Lucro diário inclui rateio de custos. Dias sem confirmação de cobertura podem mudar após uma nova coleta.</p></section>';
+ return h;
+}
+
+function _metRouteChart(R,k,modo='acumulado'){
+ const el=document.getElementById('c-met-rota');if(!el||typeof Chart==='undefined'||!R.pos)return;
+ const info=_MET_METRICAS[k]||_MET_METRICAS.fat,percent=info.unidade==='%',factor=percent?100:1,rec=R.recovery[k];
+ const colors=typeof isDark==='undefined'||isDark?['#fbbf24','#34d399','#a5b4fc','#aeb8cd']:['#92400e','#047857','#4338ca','#475569'];
+ const serie=(label,data,c,dash=false)=>({label,data,borderColor:c,backgroundColor:c,borderWidth:2,pointRadius:3,pointHoverRadius:6,borderDash:dash?[5,4]:[],fill:false});
+ const diario=modo==='diario',pk=diario?'plan':'acumPlan',rk=diario?'real':'acumReal';
+ const linha=R.rows.map(r=>r[pk][k]===null?null:r[pk][k]*factor),real=R.rows.map(r=>r[rk][k]!==null?r[rk][k]*factor:null);
+ let datasets=[serie((diario?'Plano do dia · ':'Plano acumulado · ')+_metReferenciaNome(R.M,k),linha,colors[0],true),{...serie(k==='mc'||k==='margem'?'Realizado estimado'+(diario?' no dia':' acumulado'):'Realizado'+(diario?' no dia':' acumulado'),real,colors[1]),...(diario?{type:'bar',borderWidth:0}: {})}];
+ if(k==='ads'&&!R.adsValid&&R.adsReportValid)datasets.push({...serie('Ads de campanha (sem afiliados)',R.rows.map(r=>r[rk].adsCamp),colors[2]),...(diario?{type:'bar',borderWidth:0}:{})});
+ if(!diario&&rec&&rec.remaining>0&&R.cut<R.M.dm&&k!=='ads'&&R.pos.acumReal[k]<R.pos.acumPlan[k]){const start=R.pos.acumReal[k],peso=R.M.cumW[R.M.dm]-R.M.cumW[R.cut];datasets.push(serie('Ritmo de recuperação (simulação)',R.rows.map(r=>r.dia<R.cut?null:r.dia===R.cut?start:(start+rec.remaining*(R.M.cumW[r.dia]-R.M.cumW[R.cut])/peso)),colors[2],true));}
+ charts['c-met-rota']=new Chart(el,{type:'line',data:{labels:R.rows.map(r=>String(r.dia)),datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},onClick:(event,points)=>{if(points.length){const d=points[0].index+1;if(d<=R.limite)setTimeout(()=>metReferencia(d),0);}},plugins:{legend:{labels:{color:colors[3]}},datalabels:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+(percent?(+c.raw).toLocaleString('pt-BR',{maximumFractionDigits:2})+'%':_metBRL(c.raw))}}},scales:{x:{title:{display:true,text:'Dia do mês',color:colors[3]},ticks:{color:colors[3]}},y:{title:{display:true,text:info.unidade,color:colors[3]},ticks:{color:colors[3]}}}}});
+}
+
+function _renderGerMetas(){
+ const root=document.getElementById('met-root');if(!root)return;
+ metFecharAmpliado(false);
+ const foco=document.activeElement?.id;
+ Object.keys(charts).filter(k=>k.startsWith('c-met-')).forEach(k=>{charts[k].destroy();delete charts[k];});
+ const M=_metModel(COMISSAO,COMISSAO_DET,ROWS,typeof DETALHE==='undefined'?[]:DETALHE,{mes:_MET_MES,ges:_MET_GES,op:_MET_OP,gestores:(typeof METAS_GESTORES!=='undefined'&&METAS_GESTORES)||AC2_GESTOR,regra:_MET_REGRA});
+ _MET_MODEL=M;
+ if(!M){root.innerHTML='<div class="cc">As metas ainda não estão disponíveis para esta base. Aguarde a atualização ou selecione uma base com metas registradas.</div>';return;}
+ _MET_MES=M.mes;_MET_GES=M.ges;_MET_OP=M.op;
+ if(!M.ops.some(o=>o.l.operacao===_MET_OPEN))_MET_OPEN=M.op;
+ const E=_metEsc,B=_metBRL,P=_metPct,dt=d=>_metDia(d),rotMes=m=>new Date(m+'-02T12:00:00Z').toLocaleDateString('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'});
+ const txt={critico:'! Prejuízo',pendente:'? Conferir dados',atencao:'! Fora da meta',ok:M.fechado?'✓ Metas alcançadas':'✓ No ritmo',futuro:'○ Período futuro'};
+ const badge=o=>`<span class="met-status met-${o.status}">${txt[o.status]}</span>`;
+ const val=i=>i.unidade?String(i.real):i.taxa?P(i.real):B(i.real);
+ const diff=i=>i.taxa?Math.abs((i.proj-i.meta)*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+' p.p.':i.unidade?String(Math.abs(i.proj-i.meta)):B(Math.abs(i.proj-i.meta));
+ const desvio=o=>M.futuro?'O mês ainda não começou':o.mcont<0?'Prejuízo de '+B(-o.mcont):o.metaIncompleta?'Meta ou detalhamento incompleto':o.adsZero?'Publicidade informada em zero':o.fatP===null?'Base diária não conciliada para projetar':o.desvios.length?o.desvios.slice(0,2).map(i=>i.n+': '+diff(i)+(i.tipo==='custo'?' acima do teto':' abaixo da meta')).join(' · '):'Indicadores dentro das metas';
+ const acao=o=>M.futuro?'Confira os objetivos antes do início do mês.':o.mcont<0?'O resultado está negativo. Recuperar faturamento exige preservar a margem-alvo.':o.metaIncompleta?'Confira os objetivos e o detalhamento da operação.':o.adsZero?'Confirme se o gasto zero representa a plataforma e o período.':o.fatP===null?'Confira o corte e aguarde a base diária para estimar o fechamento.':o.desvios[0]?.tipo==='custo'?'Mantenha o orçamento e o TACOS dentro dos limites cadastrados.':o.desvios[0]?.n==='Margem final'?'A margem precisa alcançar o percentual-alvo junto com o ritmo de faturamento.':o.desvios.length?'Compare o ritmo necessário de vendas com o realizado, preservando a margem.':'Acompanhe a manutenção da margem e do ritmo de vendas.';
+ const opt=(list,sel)=>list.map(([v,t])=>`<option value="${E(v)}"${v===sel?' selected':''}>${E(t)}</option>`).join('');
+ const escopo=M.op|| (M.ges?'Operações de '+M.ges:(typeof BCAUTH!=='undefined'&&BCAUTH.user?.perfil==='gestor'?'Minhas operações':'Todas as operações disponíveis'));
+ const carimbo=typeof METAS_FONTE!=='undefined'&&METAS_FONTE.atualizadoEm?new Date(METAS_FONTE.atualizadoEm):null;
+ const stamp=carimbo&&!isNaN(carimbo)?(METAS_FONTE.origem||'Base atualizada')+' em '+carimbo.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'}):'Data de sincronização não informada nesta base';
+ const statusMes=M.futuro?'Período futuro':M.fechado?'Mês encerrado no calendário':'Mês em andamento';
+ let h=`<div class="met-page"><header class="met-heading"><div><div class="met-eyebrow">GERENCIAL / METAS</div><h2>Metas do mês</h2><p>${E(escopo)}</p></div><button class="met-btn" onclick="metAjuda()" aria-expanded="${_MET_AJUDA}">Entenda as metas</button></header>
+ <div class="met-filtros"><label for="met-mes">Mês<select id="met-mes" onchange="metMes(this.value)">${opt(M.meses.map(m=>[m,rotMes(m)]),M.mes)}</select></label>${M.gestores.length>1?`<label for="met-gestor">Gestor<select id="met-gestor" onchange="metGes(this.value)">${opt([['','Todos os disponíveis'],...M.gestores.map(g=>[g,g])],M.ges)}</select></label>`:''}<label for="met-op">Operação<select id="met-op" onchange="metOp(this.value)">${opt([['','Todas as disponíveis'],...M.opcoes.map(o=>[o,o])],M.op)}</select></label></div>
+ <details class="met-context"><summary>${statusMes}${!M.fechado&&!M.futuro&&M.ddP?' · previsão com base até '+dt(M.mes+'-'+String(M.ddP).padStart(2,'0')):''} · ver atualização</summary><div class="met-context-body"><span>${M.congelado?'Comissão congelada':M.ops.some(o=>o.congelado)?'Há comissões congeladas na seleção':'Comissão não congelada'}</span><span>${E(stamp)}</span><span>Último dia na base: ${M.ultima?dt(M.ultima)+'/'+M.mes.slice(0,4):'não disponível'} · Hoje: ${dt(M.hoje)}</span>${!M.fechado&&!M.futuro?'<p>Excluímos o último dia presente na base por precaução. A base não confirma a cobertura completa de cada conta. A simulação mantém a margem realizada.</p>':''}</div></details>`;
+ h+=_metRegraHTML(M);
+ const visoes=[['rota','Rota e histórico'],['hoje','Hoje · parcial'],['mensal','Visão mensal']];
+ if(!visoes.some(([v])=>v===_MET_VIEW))_MET_VIEW='rota';
+ h+='<nav class="met-views" aria-label="Leituras das metas">'+visoes.map(([v,n])=>`<button class="met-btn${_MET_VIEW===v?' met-active':''}" aria-pressed="${_MET_VIEW===v}" onclick="metVisao('${v}')">${n}</button>`).join('')+'</nav>';
+ if(_MET_VIEW!=='mensal'){
+  const route=_metRoute(M,typeof ADS_DIA==='undefined'?[]:ADS_DIA,_MET_DAY);
+  if(_MET_VIEW==='rota')h+=_metRotaHTML(route,_MET_METRIC);
+  else h+='<p class="met-alerta">Hoje é uma posição parcial, dependente das atualizações da base. Use “Rota e histórico” para avaliar o resultado até o corte conservador.</p>'+(_metTodayHTML(M,stamp)||'<p>O objetivo de hoje não se aplica a este período. Consulte a visão mensal.</p>');
+  root.innerHTML=h+'</div>';
+  if(foco&&/^met-(mes|gestor|op)$/.test(foco))document.getElementById(foco)?.focus();
+  if(_MET_VIEW==='rota')_metRouteChart(route,_MET_METRIC,_MET_CHART_MODE);
+  return;
+ }
+ h+=_metTodayHTML(M,stamp);
+ const pend=M.ops.filter(o=>o.status==='pendente');
+ if(pend.length)h+=`<div class="met-alerta" role="status"><strong>${pend.length} ${pend.length>1?'operações precisam':'operação precisa'} de conferência.</strong> Veja a pendência na situação das metas por operação. O bônus é uma estimativa.</div>`;
+ if(_MET_AJUDA)h+=`<section class="met-ajuda"><h3>Como ler esta tela</h3><p><b>Realizado</b> é o resultado informado no mês. <b>Projeção</b> estima o fechamento pelo ritmo de vendas, com pesos por dia da semana. Não é uma promessa.</p><p><b>Margem final</b> é o que sobra após produto, impostos, tarifas, frete, Ads e custos da operação. <b>TACOS</b> é Ads + afiliados dividido pelo faturamento.</p><p><b>Bônus</b> = pontuação das metas × teto da operação × lucro final positivo. Pesos usuais: faturamento 1, margem 6, TACOS 2 e orçamento 1; sem Ads, faturamento 4 e margem 6. O detalhe exibe os pesos efetivos, inclusive obsoletos.</p><p>Metas automáticas usam histórico, série e sazonalidade. A origem e os objetivos efetivos ficam no detalhe. Mês encerrado no calendário não significa comissão congelada.</p></section>`;
+ let cardIndex=0;
+ const card=(label,value,sub,foot,cls='')=>{const id='met-kpi-mensal-'+cardIndex++;return `<article id="${id}" class="met-card ${cls}"><h3>${label}</h3><div class="met-value">${value}</div><p>${sub}</p><div class="met-foot">${foot}</div></article>`;};
+ h+=`<section aria-labelledby="met-resumo"><div class="met-section-heading"><h3 id="met-resumo">Como está o mês</h3><span>${E(rotMes(M.mes))}</span></div><div class="met-resumo">`
+ +card('Faturamento realizado',B(M.fatRT),'Meta do mês: '+B(M.metaFatT),`${M.metaFatT?P(M.fatRT/M.metaFatT)+' da meta realizada':'Meta não informada'}<br>${M.fechado?'Resultado do período':M.futuro?'Aguardando início do mês':'Previsão de fechamento: <b>'+B(M.fatPT)+'</b>'}`)
+ +card('Margem final realizada',M.fatRT?P(M.mcRT):'—','Meta: '+P(M.metaMcT),`${M.metaMcT&&M.fatRT?Math.abs((M.mcRT-M.metaMcT)*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+' p.p. '+(M.mcRT>=M.metaMcT?'acima':'abaixo')+' da meta<br>':''}Lucro realizado: <b>${B(M.mcontT)}</b>`,M.mcontT<0?'met-critical':'')
+ +(M.comAds.length?card('Ads e afiliados',B(M.comAds.reduce((s,o)=>s+o.adsR,0)),'Orçamento mensal: '+B(M.comAds.every(o=>o.metaAds>0)?M.comAds.reduce((s,o)=>s+o.metaAds,0):null),'O orçamento é um limite, não uma obrigação de gastar.'):'')
+ +(M.comAds.length?card('Publicidade sobre vendas',P(M.tacRT),'TACOS · teto ponderado: '+P(M.metaTacT),'Ads e afiliados: '+B(M.comAds.reduce((s,o)=>s+o.adsR,0))+'<br>Confira o orçamento de cada operação no detalhe.'):'')
+ +card(M.congelado?'Bônus da fotografia congelada':M.fechado?'Bônus calculado no período':'Bônus estimado no fechamento',B(M.bonusPT),pend.length?'Estimativa com pendências de dados':M.futuro?'Estimativa disponível após o início do período':M.bonusPT===null?'Aguardando base diária conciliada':'Resultado das metas e do lucro da seleção',M.congelado?'Preservado conforme o fechamento registrado.':`Com 100% das metas: ${B(M.bonusMaxT)}<br><span>Usando o mesmo lucro ${M.fechado?'realizado':'projetado'}; não é um teto absoluto.</span>`)
+ +'</div></section>';
+ h+=`<section aria-labelledby="met-prioridades"><div class="met-section-heading"><h3 id="met-prioridades">Situação das metas por operação</h3><span>${M.ops.length} ${M.ops.length>1?'operações':'operação'}${M.ops.length>5&&!_MET_ALL?' · 5 prioridades à vista':''}</span></div><div class="met-prioridades">`;
+ for(const o of _MET_ALL?M.ops:M.ops.slice(0,5))h+=`<article class="met-prioridade"><div class="met-op-nome"><strong>${E(o.l.operacao)}</strong><span>${E(o.ges)}</span></div><div>${badge(o)}<p>${E(desvio(o))}</p></div><div class="met-proximo"><p>${E(acao(o))}</p><button class="met-btn" data-op="${E(o.l.operacao)}" onclick="metAbrir(this.dataset.op)" aria-expanded="${_MET_OPEN===o.l.operacao}" aria-controls="met-operacao">${_MET_OPEN===o.l.operacao?'Fechar detalhe':'Ver detalhes'}<span class="met-sr"> de ${E(o.l.operacao)}</span></button></div></article>`;
+ h+='</div>'+(M.ops.length>5?`<button class="met-btn met-todas" onclick="metTodas()" aria-expanded="${_MET_ALL}">${_MET_ALL?'Mostrar 5 prioridades':'Ver todas as '+M.ops.length+' operações'}</button>`:'')+'</section>';
+ const o=M.ops.find(o=>o.l.operacao===_MET_OPEN);
+ if(o){const fmt=(i,v)=>v===null?'—':i.unidade?String(v):i.taxa?P(v):B(v),falta=Math.max(0,o.metaFat-o.fatR);
+  h+=`<section class="met-detalhe" id="met-operacao" tabindex="-1"><div class="met-section-heading"><div><div class="met-eyebrow">DETALHE DA OPERAÇÃO</div><h3>${E(o.l.operacao)}</h3><p>${E(o.ges)}${o.d.Serie?' · Série '+E(o.d.Serie):''}</p></div>${badge(o)}</div><p class="met-diagnostico">${E(acao(o))}</p><div class="met-table-wrap"><table class="met-table"><caption>Objetivos e resultados de ${E(o.l.operacao)} · ${E(rotMes(M.mes))}</caption><thead><tr><th scope="col">Indicador</th><th scope="col">Meta</th><th scope="col">Realizado</th><th scope="col">${M.fechado?'Resultado do período':'Projeção'}</th><th scope="col">Situação</th></tr></thead><tbody>`;
+  for(const i of o.ind){const ok=i.proj!==null&&(i.tipo==='custo'?i.proj<=i.meta:i.proj>=i.meta);h+=`<tr><th scope="row">${E(i.n)}<small>Peso ${i.peso}</small></th><td>${i.meta>0?fmt(i,i.meta):'Não informada'}</td><td>${fmt(i,i.real)}</td><td>${fmt(i,i.proj)}</td><td>${!(i.meta>0)?'Conferir meta':i.proj===null?'Sem projeção':ok?'✓ Dentro':'! '+diff(i)+(i.tipo==='custo'?' acima':' abaixo')}</td></tr>`;}
+  h+='</tbody></table></div>';
+  if(!M.fechado&&!M.futuro){const day=+M.hoje.slice(8,10),dow=new Date(M.hoje+'T12:00:00Z').getUTCDay(),seg=day-(dow===0?6:dow-1),dom=Math.min(M.dm,seg+6),ini=Math.max(1,seg);let pw=0;for(let i=ini;i<=dom;i++)pw+=M.pesoDia(i);
+   const hojeR=o.concilia?o.fatD[day-1]:null,semR=o.concilia?o.fatD.slice(ini-1,Math.min(day,dom)).reduce((a,b)=>a+b,0):null;
+   h+=`<div class="met-ritmo"><div><strong>Hoje · ${dt(M.hoje)}</strong><p>Meta: ${B(o.metaFat*M.pesoDia(day)/M.cumW[M.dm])}<br>Informado no dia: ${B(hojeR)}</p></div><div><strong>Semana · ${ini}/${M.mes.slice(5)} a ${dom}/${M.mes.slice(5)}</strong><p>Meta: ${B(o.metaFat*pw/M.cumW[M.dm])}<br>Informado até hoje: ${B(semR)}</p></div><div><strong>Até o fim do mês</strong><p>Faltam ${B(falta)} de faturamento<br>${B(M.resta?falta/M.resta:0)} por dia nos ${M.resta} dias de calendário, incluindo hoje</p></div></div>`;
+  }
+  h+=`<details class="met-expande"><summary>Entenda o bônus e a origem dos números</summary><div class="met-expande-body"><p>Pontuação ${o.progP===null?'indisponível':P(o.progP)} · teto ${P(o.teto)} · lucro ${M.fechado?'realizado':'projetado'} ${B(o.mcontP)} · bônus ${B(o.bonusP)}.</p><p>${o.congelado?'Fotografia congelada; valores históricos preservados.':o.mcont<=0?'Sem bônus sobre resultado zero ou negativo.':'Com 100% das metas, mantendo esse lucro: '+B(o.bonusMax)+'.'}</p>${o.desvios.map(i=>`<p>${E(i.n)}: contribuição aproximada de ${B(i.perda)} para a diferença de bônus. Peso ${i.peso}.</p>`).join('')}<p>Meta ${o.d.Origem==='auto'?'automática':'manual ou histórica'}. ${E(o.d.ObsMeta||'Objetivos definidos na base de metas da operação.')}</p><p>Full: ${B(_metNum(o.d.CustoFull))} (${E(o.d.CustoFull_fonte||'origem não informada')}); Minha Página: ${B(_metNum(o.d.MinhaPagina))}; Picapinha: ${B(_metNum(o.d.Picapinha))}; outros: ${B(_metNum(o.d.OutrosCustos))}.</p><p>Publicidade: ${E(o.d.Ads_fonte||'origem não informada')}. ${o.adsZero?'Gasto informado zero; a cobertura da coleta deve ser confirmada.':''}</p></div></details></section>`;
+ }
+ const box=(id,title,sub)=>`<article class="met-chart"><div class="met-ampliar-cabecalho"><h4>${title}</h4>${_metBotaoAmpliar(id,title)}</div><p>${sub}</p><div class="met-chart-area"><canvas id="${id}" role="img" aria-label="${E(title+' · '+sub)}"></canvas></div></article>`;
+ const section=(key,title,body)=>`<details class="met-expande" data-met-section="${key}" ontoggle="metAnalise(this)"${_MET_SECOES.has(key)?' open':''}><summary>${title}</summary><div class="met-expande-body">${body}</div></details>`;
+ const diarioOk=M.ops.length>0&&M.ops.every(o=>o.concilia);
+ h+=`<section><div class="met-section-heading"><h3>Análises do período</h3><span>${E(escopo)}</span></div>`;
+ if(diarioOk&&!M.futuro)h+=box('c-met-acum','Faturamento acumulado × meta','Eixo horizontal: dia do mês · vertical: R$ · faturamento elegível para comissão; previsão baseada no corte informado.');
+ else h+='<p class="met-nota">A curva diária não é exibida porque não foi possível conciliá-la com o resultado mensal, ou a comissão está congelada sem uma série diária da fotografia. Os valores mensais continuam disponíveis no detalhe.</p>';
+ h+=section('ritmo','Margem diária e evolução da previsão',diarioOk&&!M.futuro?'<div class="met-chart-grid">'+box('c-met-mcdia','Margem final diária estimada','Dia do mês × margem (%) · custos mensais rateados pelo faturamento. O acumulado reconcilia com o cartão.')+(!M.fechado?box('c-met-evol','Evolução da previsão de faturamento','Dia de base × R$ no fechamento · cada ponto usa somente os dias anteriores ao último dia observado.'):'')+'</div>':'<p>Abertura diária indisponível para esta seleção; consulte os indicadores mensais.</p>');
+ if(!M.futuro)h+=section('comparar','Comparar operações e entender o resultado','<div class="met-chart-grid">'+box('c-met-ating','Atingimento por operação','Operação × % da meta · faturamento e margem final.')+box('c-met-bonus','Bônus por operação','Operação × R$ · resultado das metas e valor com 100%, mantido o mesmo lucro.')+(M.comAds.length?box('c-met-tacos','Publicidade sobre vendas por operação','Operação × TACOS (%) · realizado e teto.'):'')+box('c-met-ponte','Composição da diferença de lucro','Etapa × R$ · volume, margem/custos e Ads; decomposição indicativa, não prova de causa.')+'</div>');
+ if(M.histo.length)h+=section('historico','Histórico e placar do ano','<div class="met-chart-grid">'+box('c-met-hfat','Faturamento por mês','Mês × R$ · realizado e meta, sem misturar previsão com realizado.')+box('c-met-hmc','Margem final por mês','Mês × margem (%) · realizada e meta ponderada pelo faturamento-meta.')+'</div>'+_metPlacar(M,COMISSAO,COMISSAO_DET));
+ h+='</section></div>';root.innerHTML=h;
+ if(foco&&/^met-(mes|gestor|op)$/.test(foco))document.getElementById(foco)?.focus();
+ if(typeof Chart!=='undefined')_metCharts(M,diarioOk);
+}
+
+function _metPlacar(M,L,D){
+ const E=_metEsc,B=_metBRL,ano=M.mes.slice(0,4),meses=M.meses.filter(m=>m.startsWith(ano)&&m<=M.mes&&m<=M.hoje.slice(0,7)),ds=D.find(d=>d.Ipca12m&&d.Selic)||{},ip=_metNum(ds.Ipca12m),se=_metNum(ds.Selic);
+ let h='<h4>Placar anual · lucro realizado</h4><p>Somente meses com meta registrada. Índices de referência da base; não representam retorno garantido.</p><div class="met-table-wrap"><table class="met-table"><caption>Lucro realizado por operação e mês, em R$</caption><thead><tr><th>Operação</th>'+meses.map(m=>'<th>'+m.slice(5)+'/'+ano+'</th>').join('')+'<th>Acumulado</th>'+(ip>0?'<th>Referência + IPCA ('+_metPct(ip)+')</th>':'')+(se>0?'<th>Referência + Selic ('+_metPct(se)+')</th>':'')+'</tr></thead><tbody>';
+ for(const o of M.ops){const vs=meses.map(m=>L.find(l=>l.mes===m&&l.operacao===o.l.operacao)),ac=vs.reduce((s,l)=>s+_metNum(l?.margem_cont),0);h+='<tr><th>'+E(o.l.operacao)+'</th>'+vs.map(l=>'<td>'+(l?B(_metNum(l.margem_cont)):'—')+'</td>').join('')+'<td>'+B(ac)+'</td>'+(ip>0?'<td>'+B(ac*(1+ip))+'</td>':'')+(se>0?'<td>'+B(ac*(1+se))+'</td>':'')+'</tr>';}
+ return h+'</tbody></table></div>';
+}
+
+function _metCharts(M,diarioOk){
+ const color=typeof isDark==='undefined'||isDark?['#34d399','#fbbf24','#a5b4fc','#aeb8cd']:['#047857','#92400e','#4338ca','#475569'],[real,meta,proj,tc]=color;
+ const mk=(id,type,labels,datasets,unit,axis='x')=>{const el=document.getElementById(id);if(!el)return;charts[id]=new Chart(el,{type,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,indexAxis:axis,plugins:{legend:{labels:{color:tc}},datalabels:{display:false},tooltip:{callbacks:{label:c=>c.raw===null?'':c.dataset.label+': '+(Array.isArray(c.raw)?_metBRL(c.raw[1]-c.raw[0]):unit==='R$'?_metBRL(c.raw):(+c.raw).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%')}}},scales:{x:{ticks:{color:tc},title:{display:true,text:axis==='y'?unit:'Dia / mês / operação',color:tc},grid:{color:'rgba(128,128,128,.12)'}},y:{ticks:{color:tc},title:{display:true,text:axis==='y'?'Operação':unit,color:tc},grid:{color:'rgba(128,128,128,.12)'}}}}});};
+ const line=(label,data,c,dash=false)=>({label,data,borderColor:c,backgroundColor:c,borderDash:dash?[5,4]:[],borderWidth:2,pointRadius:0,tension:.15,fill:false});
+ const bar=(label,data,c)=>({label,data,backgroundColor:c,borderRadius:3});
+ const lab=Array.from({length:M.dm},(_,i)=>String(i+1));
+ if(diarioOk&&!M.futuro){const fatD=lab.map((_,i)=>M.ops.reduce((s,o)=>s+o.fatD[i],0)),mcD=lab.map((_,i)=>M.ops.reduce((s,o)=>s+o.mcD[i],0));let f=0,mc=0;
+  const fat=fatD.map((v,i)=>{f+=v;return i<M.dd?f:null;}),mg=mcD.map((v,i)=>{mc+=v;const fa=fat[i];return i<M.dd&&fa>0?100*mc/fa:null;});
+  const forecast=lab.map((_,i)=>!M.fechado&&M.fatPT!==null&&i>=M.ddP-1?M.fatPT*M.cumWHistorico[i+1]/M.cumWHistorico[M.dm]:null);
+  mk('c-met-acum','line',lab,[line('Realizado',fat,real),line('Meta acumulada',lab.map((_,i)=>M.metaFatT*M.cumW[i+1]/M.cumW[M.dm]),meta,true),...(!M.fechado&&M.fatPT!==null?[line('Previsão pelo corte de base',forecast,proj,true)]:[])],'R$');
+  mk('c-met-mcdia','line',lab,[line('Margem acumulada',mg,real),line('Meta',lab.map(()=>M.metaMcT*100),meta,true),{...bar('Margem do dia (rateio)',fatD.map((v,i)=>i<M.dd&&v>0?100*mcD[i]/v:null),proj),type:'bar'}],'%');
+  if(!M.fechado){let ac=0;mk('c-met-evol','line',lab,[line('Previsão ao fim de cada dia de base',fatD.map((v,i)=>{ac+=v;return i<M.ddP?ac*M.cumWHistorico[M.dm]/M.cumWHistorico[i+1]:null;}),real),line('Meta do mês',lab.map(()=>M.metaFatT),meta,true)],'R$');}
+ }
+ const short=o=>o.l.operacao.replace('Mercado Livre','ML').replace('Powerfull Imports','Powerfull').replace('Pesseguinho Store','Pesseguinho');
+ mk('c-met-ating','bar',M.ops.map(short),[bar('Faturamento / meta',M.ops.map(o=>o.fatP!==null&&o.metaFat>0?100*o.fatP/o.metaFat:null),real),bar('Margem / meta',M.ops.map(o=>o.metaMc>0?100*o.mcR/o.metaMc:null),meta)],'%','y');
+ mk('c-met-bonus','bar',M.ops.map(short),[bar('Bônus calculado / estimado',M.ops.map(o=>o.bonusP),real),bar('Com 100% das metas, mesmo lucro',M.ops.map(o=>o.bonusMax),proj)],'R$','y');
+ if(M.comAds.length)mk('c-met-tacos','bar',M.comAds.map(short),[bar('TACOS realizado',M.comAds.map(o=>100*o.tacR),real),bar('Teto',M.comAds.map(o=>100*o.metaTac),meta)],'%','y');
+ if(M.fatPT!==null){let lm=0,vo=0,ad=0,lp=0;for(const o of M.ops){if(!(o.metaFat>0))continue;lm+=o.metaFat*o.metaMc;vo+=(o.fatP-o.metaFat)*o.metaMc;ad+=o.metaTac>0?-o.fatP*(o.tacR-o.metaTac):0;lp+=o.mcontP;}mk('c-met-ponte','bar',['Lucro-meta','Volume','Margem e custos','Ads × teto',M.fechado?'Lucro realizado':'Lucro previsto'],[bar('R$',[lm,vo,lp-lm-vo-ad,ad,lp],real)],'R$');}
+ mk('c-met-hfat','bar',M.histo.map(x=>x.m),[bar('Realizado',M.histo.map(x=>x.fat),real),{...line('Meta',M.histo.map(x=>x.metaFat),meta),type:'line'}],'R$');
+ mk('c-met-hmc','line',M.histo.map(x=>x.m),[line('Margem realizada',M.histo.map(x=>100*x.mc),real),line('Meta',M.histo.map(x=>100*x.metaMc),meta,true)],'%');
+}
+
 // ═══════════ GERENCIAL · sub-aba COMISSÃO — bônus dos gestores por operação × mês ═══════════
 function comMes(v){ _COM_MES=v; _COM_OP=''; renderGerencial(); }
 function comOp(op){ _COM_OP=(_COM_OP===op?'':op); renderGerencial(); }
@@ -6671,7 +6907,7 @@ function renderGerencial(){
   // mesmo sem dado a barra do MODO precisa ser pintada — senão, antes de carregar/logar, os botões
   // Gestão/Acompanhamento ficam congelados e o seletor de operação aparece onde não se aplica.
   // (era o último caminho de saída que ainda não repintava; o de "sem operação" já foi corrigido)
-  if(!base.length){ const msg=painelOnline()?(window._detLoaded?'Sem venda neste recorte.':'Carregando as vendas da operação.'):'Carregue os dados de vendas para usar o Gerencial.'; vazio.style.display='block'; vazio.innerHTML=msg; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); _gerPainel(); _gerSubHighlight(); return; }
+  if(!base.length&&GER_SUB!=='metas'){ const msg=painelOnline()?(window._detLoaded?'Sem venda neste recorte.':'Carregando as vendas da operação.'):'Carregue os dados de vendas para usar o Gerencial.'; vazio.style.display='block'; vazio.innerHTML=msg; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); _gerPainel(); _gerSubHighlight(); return; }
   // Acompanhamento é visão de COORDENADOR (todas as operações) — não depende de escolher operação
   if(GER_SUB==='acomp'){
     vazio.style.display='none'; corpo.style.display='none';
@@ -7800,6 +8036,8 @@ async function handleFile(file){
     ADS=result.ads||[];
     ADS_CAMP=result.adsCamp||[];
     ADS_DIA=result.adsDia||[];
+    AFILIADOS_DIA=result.afiliadosDia||[];
+    AFILIADOS_FONTE=result.afiliadosFonte||[];
     ESTOQUE=result.estoque||[];
     PRODUTOS=result.produtos||[];
     ACOMP=result.acomp||[];
@@ -7807,6 +8045,7 @@ async function handleFile(file){
     CAD_SKU=result.skuCad||{}; _FIRST_SKU=null;
     COMISSAO=result.comissao||[];
     COMISSAO_DET=result.comissaoDet||[];
+    METAS_FONTE={atualizadoEm:file.lastModified?new Date(file.lastModified).toISOString():'',origem:'Arquivo importado'};
     SKU_MON=result.skuMon;
     if(result.skuMkt) SKU_MKT=result.skuMkt;
     if(result.skuMktMon) SKU_MKT_MON=result.skuMktMon;
@@ -8006,9 +8245,11 @@ async function parseXLSX(file){
           // agregados (Visão Geral / DRE / ABC) — canceladas NÃO entram
           if(isCancel) continue;
           const k=`${date}||${emp}||${mkt}`;
-          if(!rowMap[k])rowMap[k]={date,emp,mkt,ponto:est,fat:0,liq:0,ctp:0,imp:0,mc:0,mcReal:0,qtd:0,ped:0};
+          if(!rowMap[k])rowMap[k]={date,emp,mkt,ponto:est,fat:0,liq:0,ctp:0,imp:0,mc:0,mcReal:0,qtd:0,ped:0,fatMetas:0,mcMetas:0};
           const o=rowMap[k];
           o.fat+=fat;o.liq+=liq;o.ctp+=ctp;o.imp+=imp;o.mc+=mccom;o.mcReal+=mc;o.qtd+=qtd;o.ped+=1;
+          if(/venda/i.test(stat||'venda')) o.fatMetas+=fat;
+          if(/venda/i.test(stat||'venda')||stat==='devolvida') o.mcMetas+=mccom;
 
           if(sku&&sku!=='nan'){
             const sk=`${mes}||${sku}`;
@@ -8025,7 +8266,7 @@ async function parseXLSX(file){
           totalRows++;
         }
 
-        const rndO=o=>({...o,fat:rnd(o.fat),liq:rnd(o.liq),ctp:rnd(o.ctp),imp:rnd(o.imp),mc:rnd(o.mc),mcReal:rnd(o.mcReal||0),qtd:rnd(o.qtd)});
+        const rndO=o=>({...o,fat:rnd(o.fat),liq:rnd(o.liq),ctp:rnd(o.ctp),imp:rnd(o.imp),mc:rnd(o.mc),mcReal:rnd(o.mcReal||0),qtd:rnd(o.qtd),fatMetas:rnd(o.fatMetas),mcMetas:rnd(o.mcMetas)});
         const rows=Object.values(rowMap).map(rndO);
         const skuMon=Object.values(skuMonMap).map(rndO);
 
@@ -8211,10 +8452,12 @@ async function parseXLSX(file){
         if(wsCo){ XLSX.utils.sheet_to_json(wsCo,{defval:null}).forEach(r=>{ if(!r.operacao)return; comissao.push({
           mes:String(r.mes||'').trim(), operacao:String(r.operacao||'').trim(), faturamento:+r.faturamento||0, mc_bruto:+r.mc_bruto||0,
           ads:+r.ads||0, afiliados:+r.afiliados||0, margem_cont:+r.margem_cont||0, mc_pct:+r.mc_pct||0, tacos_pct:+r.tacos_pct||0,
-          progresso_metas:+r.progresso_metas||0, teto_pct:+r.teto_pct||0, bonus_final_pct:+r.bonus_final_pct||0, bonus_final_rs:+r.bonus_final_rs||0, sem_ads:String(r.sem_ads||'').trim() }); }); }
+          progresso_metas:+r.progresso_metas||0, teto_pct:+r.teto_pct||0, bonus_final_pct:+r.bonus_final_pct||0, bonus_final_rs:+r.bonus_final_rs||0, sem_ads:String(r.sem_ads||'').trim(), fechado_em:String(r.fechado_em||'').trim() }); }); }
         const comissaoDet=[]; const wsCd=wb.Sheets['ComissaoDetalhe'];
         if(wsCd){ XLSX.utils.sheet_to_json(wsCd,{defval:null}).forEach(r=>{ if(!r.operacao)return; comissaoDet.push(r); }); }
-        resolve({rows,skuMon,skuMkt,skuMktMon,top10,top10em,dev,ano,obs,minDate,maxDate,totalRows,months,detalhe,ads,adsCamp,adsDia,estoque,produtos,acomp,acompItens,skuCad,comissao,comissaoDet});
+        const afiliadosDia=wb.Sheets.AfiliadosDia?XLSX.utils.sheet_to_json(wb.Sheets.AfiliadosDia,{defval:null}):[];
+        const afiliadosFonte=wb.Sheets.AfiliadosFonte?XLSX.utils.sheet_to_json(wb.Sheets.AfiliadosFonte,{defval:null}):[];
+        resolve({rows,skuMon,skuMkt,skuMktMon,top10,top10em,dev,ano,obs,minDate,maxDate,totalRows,months,detalhe,ads,adsCamp,adsDia,estoque,produtos,acomp,acompItens,skuCad,comissao,comissaoDet,afiliadosDia,afiliadosFonte});
 
       }catch(err){
         console.error('parseXLSX error:',err);
@@ -8282,6 +8525,8 @@ function saveNewDash(){
         newHTML = replaceJSVar(newHTML, 'ADS',          safeJSON(ADS));
         newHTML = replaceJSVar(newHTML, 'ADS_CAMP',     safeJSON(ADS_CAMP));
         newHTML = replaceJSVar(newHTML, 'ADS_DIA',      safeJSON(ADS_DIA));
+        newHTML = replaceJSVar(newHTML, 'AFILIADOS_DIA', safeJSON(AFILIADOS_DIA));
+        newHTML = replaceJSVar(newHTML, 'AFILIADOS_FONTE', safeJSON(AFILIADOS_FONTE));
         newHTML = replaceJSVar(newHTML, 'ESTOQUE',      safeJSON(ESTOQUE));
         newHTML = replaceJSVar(newHTML, 'PRODUTOS',     safeJSON(PRODUTOS));
         newHTML = replaceJSVar(newHTML, 'ACOMP',        safeJSON(ACOMP));
@@ -8289,6 +8534,7 @@ function saveNewDash(){
         newHTML = replaceJSVar(newHTML, 'CAD_SKU',      safeJSON(CAD_SKU));
         newHTML = replaceJSVar(newHTML, 'COMISSAO',     safeJSON(COMISSAO));
         newHTML = replaceJSVar(newHTML, 'COMISSAO_DET', safeJSON(COMISSAO_DET));
+        newHTML = replaceJSVar(newHTML, 'METAS_FONTE', safeJSON(METAS_FONTE));
 
         // Update SHORTS default dates
         newHTML = newHTML.replace(
@@ -11768,10 +12014,13 @@ renderAll();
       if(!r.ok) return;
       var d=await r.json();
       if(d.ads) ADS=d.ads; if(d.adsCamp) ADS_CAMP=d.adsCamp; if(d.adsDia) ADS_DIA=d.adsDia;
+      if(d.afiliadosDia) AFILIADOS_DIA=d.afiliadosDia; if(d.afiliadosFonte) AFILIADOS_FONTE=d.afiliadosFonte;
       if(d.estoque) ESTOQUE=d.estoque; if(d.produtos) PRODUTOS=d.produtos;
       if(d.acomp) ACOMP=d.acomp; if(d.acompItens) ACOMP_ITENS=d.acompItens;
       if(d.skuCad) CAD_SKU=d.skuCad;
       if(d.comissao) COMISSAO=d.comissao; if(d.comissaoDet) COMISSAO_DET=d.comissaoDet;
+      if(Array.isArray(d.operacoes) && typeof METAS_GESTORES!=='undefined') METAS_GESTORES=Object.fromEntries(d.operacoes.map(o=>[o.empresa+'|'+o.marketplace,o.gestor]));
+      if(typeof METAS_FONTE!=='undefined') METAS_FONTE={atualizadoEm:d._sync||'',origem:'Base sincronizada'};
       if(d.fullRel && typeof FULL_REL!=='undefined') FULL_REL=d.fullRel;   // relação do Full (só as operações do gestor)
       if(d.envios && typeof ENVIOS!=='undefined') ENVIOS=d.envios;
       if(d.custos && typeof CUSTOS!=='undefined' && d.custos.custos){ CUSTOS=d.custos; }   // custos op + afi/lives (Ads vem do dataset)
