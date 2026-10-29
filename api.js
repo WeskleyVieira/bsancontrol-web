@@ -114,6 +114,13 @@ async function rotaGET(u, user) {
     sql += " ORDER BY d.risco DESC";
     return (await dbx.all(sql, args)).map(mapDem);
   }
+  // pedidos de reaplicação dos últimos 14 dias (o painel mostra o estado na tarefa) — gestor só vê os dele
+  if (u.pathname === "/api/comandos") {
+    await garanteComandos();
+    const w = ["criado_em >= ?"], args = [new Date(Date.now() - 14 * 864e5).toISOString()];
+    if (user && user.perfil === "gestor") { w.push("gestor=?"); args.push(user.gestor_ref); }
+    return await dbx.all("SELECT id, criado_em, pedido_por, demanda_id, empresa, anuncio, estado, resultado, atualizado_em FROM comandos WHERE " + w.join(" AND ") + " ORDER BY criado_em DESC", args);
+  }
   if (u.pathname === "/api/vendas-agregado") {
     const de = q.de || "0000-00-00", ate = q.ate || "9999-99-99", t0 = Date.now();
     const w = ["data>=?", "data<=?", "status LIKE '%venda%'"], args = [de, ate];
@@ -323,6 +330,12 @@ async function garantePrecoNovo() { if (_colPreco) return; try { await dbx.exec(
   for (const c of ["preco_antes REAL", "preco_depois REAL", "lucro_dia_antes REAL", "lucro_dia_depois REAL", "un_dia_antes REAL", "un_dia_depois REAL", "aplicou TEXT", "dias INTEGER", "detalhe TEXT"])
     try { await dbx.exec("ALTER TABLE resultados ADD COLUMN " + c); } catch (e) { }
   _colPreco = true; }
+// fila de comandos do painel → PC (fila-comandos.js). Mesma tabela nos dois lados; criada por quem chegar primeiro.
+let _colCmd = false;
+async function garanteComandos() { if (_colCmd) return;
+  await dbx.exec(`CREATE TABLE IF NOT EXISTS comandos (id TEXT PRIMARY KEY, criado_em TEXT, pedido_por TEXT, perfil TEXT, gestor TEXT, tipo TEXT,
+    demanda_id TEXT, empresa TEXT, anuncio TEXT, estado TEXT, resultado TEXT, atualizado_em TEXT)`);
+  _colCmd = true; }
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   try {
@@ -387,6 +400,27 @@ const server = http.createServer(async (req, res) => {
       // espelha na planilha Google da operação (o bot lê de lá). Assíncrono: não segura a resposta.
       try { require("./espelho-planilhas").agendarPorDemanda(dbx, o.demanda_id); } catch (e) { console.error("[planilhas] " + e.message); }
       return J(res, { ok: true, reacaoH });
+    }
+    // ── POST /api/comandos (29/10/2026) — botão "Reaplicar" de uma tarefa "Promo · Execução falhou" ──
+    // O online NÃO executa nada: só enfileira um pedido. Quem executa é o fila-comandos.js no PC (onde moram os tokens do ML), que
+    // aceita UM tipo de pedido (reaplicar a promoção de um anúncio). Conta e anúncio vêm da TAREFA no banco, nunca do cliente.
+    if (req.method === "POST" && u.pathname === "/api/comandos") {
+      const user = userDe(req);
+      if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
+      const o = await body(req);
+      if (o.tipo !== "reaplicar_promo") return J(res, { ok: false, erro: "tipo de comando não permitido" }, 400);
+      const dem = await dbx.get("SELECT id, gestor, empresa, canal, anuncio_id, tipo FROM demandas WHERE id=?", [String(o.demanda_id || "")]);
+      if (!dem || !/^promo\|/.test(dem.id) || dem.canal !== "Mercado Livre" || !/execução falhou/i.test(dem.tipo || "") || !/^MLB\d{6,}$/.test(dem.anuncio_id || ""))
+        return J(res, { ok: false, erro: "esta tarefa não aceita reaplicação automática" }, 400);
+      if (user && user.perfil === "gestor" && dem.gestor !== user.gestor_ref) return J(res, { ok: false, erro: "fora do seu escopo" }, 403);
+      await garanteComandos();
+      const aberto = await dbx.get("SELECT * FROM comandos WHERE demanda_id=? AND estado IN ('pendente','rodando') ORDER BY criado_em DESC LIMIT 1", [dem.id]);
+      if (aberto) return J(res, { ok: true, comando: aberto, repetido: true });
+      const cmd = { id: crypto.randomUUID(), criado_em: new Date().toISOString(), pedido_por: (user && user.nome) || "local", perfil: (user && user.perfil) || "", gestor: dem.gestor,
+        tipo: "reaplicar_promo", demanda_id: dem.id, empresa: dem.empresa, anuncio: dem.anuncio_id, estado: "pendente", resultado: "", atualizado_em: new Date().toISOString() };
+      await dbx.run("INSERT INTO comandos(id,criado_em,pedido_por,perfil,gestor,tipo,demanda_id,empresa,anuncio,estado,resultado,atualizado_em) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+        [cmd.id, cmd.criado_em, cmd.pedido_por, cmd.perfil, cmd.gestor, cmd.tipo, cmd.demanda_id, cmd.empresa, cmd.anuncio, cmd.estado, cmd.resultado, cmd.atualizado_em]);
+      return J(res, { ok: true, comando: cmd });
     }
     // ── POST /api/envios (coord/direção sobe a planilha de envios → salva na nuvem) ──
     if (req.method === "POST" && u.pathname === "/api/envios") {
