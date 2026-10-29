@@ -2396,21 +2396,21 @@ let GER_APUB='campanha'; // visão da aba Publicidade: 'campanha' | 'anuncio'
 let GER_CSORT={col:'inv',dir:-1}, GER_CFILT=''; // ordenação/filtro da tabela de campanhas
 const _normMLB=id=>{const d=String(id||'').replace(/\D/g,'');return d?'MLB'+d:'';};
 // ── chave de cruzamento Ads × venda (por anúncio), CIENTE DO CANAL ──
-// ML: normaliza MLB (o report varia o formato). Magalu/Shopee: casam por SKU (o Ads traz o SKU do
-// vendedor — no Magalu nativo, na Shopee traduzido do item_id pelo mapa de catálogo do pipeline).
+// ML: normaliza MLB (o report varia o formato). Magalu: casa por SKU (o relatório já traz o SKU).
+// Shopee: casa pelo id do anúncio. O coletor grava o item_id (ex.: 40015866072), e a venda também.
+// O afiliado da Shopee continua gravado pelo SKU e fica de fora desta chave: já saiu no líquido.
 // Demais (Amazon/TikTok): id EXATO (ASIN/product_id), sem reduzir a dígitos — evita colisão
 // (ex.: dois ASINs com os mesmos dígitos).
-// Se o Ads da Shopee vier sem SKU (sem mapa), o anuncio_id fica o id cru e simplesmente não casa:
-// cai no nível operação, como antes — sem regressão.
 const _ehMagalu=m=>/magazine|magalu/i.test(String(m||''));
 const _ehShopee=m=>/shopee/i.test(String(m||''));
 const _ehML=m=>/mercado livre/i.test(String(m||''));
 function _adKeyVenda(mkt,anuncio,sku){
   if(_ehML(mkt)) return _normMLB(anuncio);
-  if(_ehMagalu(mkt)||_ehShopee(mkt)) return String(sku||'').trim().toUpperCase();
+  if(_ehMagalu(mkt)) return String(sku||'').trim().toUpperCase();
+  if(_ehShopee(mkt)) return String(anuncio||'').trim().toUpperCase()||String(sku||'').trim().toUpperCase();
   return String(anuncio||'').trim().toUpperCase();
 }
-function _adKeyAds(mkt,anuncio){ // no Ads do Magalu/Shopee o anuncio_id já vem como SKU do vendedor
+function _adKeyAds(mkt,anuncio){
   if(_ehML(mkt)) return _normMLB(anuncio);
   return String(anuncio||'').trim().toUpperCase();
 }
@@ -2647,7 +2647,7 @@ function _planoAcoes(emp,mkt,ps,pe){
   const adsIdx=(typeof _adsIndex==='function')?_adsIndex(emp,mkt,ps,pe):{};
   if(Object.keys(adsIdx).length){
     const vmap={}; (A.linhas||[]).forEach(r=>{const k=_adKeyVenda(mkt,r.anuncio,r.sku);if(!k)return;const v=vmap[k]||(vmap[k]={fat:0,mc:0,liq:0,tit:''});v.fat+=+r.fat||0;v.mc+=+r.mc||0;v.liq+=+r.liq||0;if(!v.tit&&r.tit)v.tit=r.tit;});
-    Object.keys(adsIdx).forEach(k=>{const a=adsIdx[k];if(!(a.inv>0))return;const v=vmap[k]||{fat:0,mc:0,liq:0,tit:''};
+    Object.keys(adsIdx).forEach(k=>{const a=adsIdx[k];if(!(a.inv>0)||/afiliad/i.test(String(a.fonte||'')+' '+String(a.campanha||'')))return;const v=vmap[k]||{fat:0,mc:0,liq:0,tit:''};
       const _b=mcBase(mkt,v.fat,v.liq);const mcp=_b?100*v.mc/_b:0;const acos=a.recAds>0?100*a.inv/a.recAds:Infinity;
       const ver=_adsVerAnuncio({inv:a.inv,recAds:a.recAds,impr:a.impr,cli:a.cli,vd:a.vd,vi:a.vi,fat:v.fat,mc:v.mc,mcp,acos});
       if(ver.estado==='queima') push('Ads: queima',k,v.tit,'ACOS '+(isFinite(acos)?acos.toFixed(0)+'%':'∞')+' · invest '+brl(a.inv),ver.acao.t, a.inv);
@@ -2747,7 +2747,7 @@ function _renderGerDiag(A,B,mkt){
   if(Object.keys(adsIdx).length){
     const vmap={},titmap={};
     (A.linhas||[]).forEach(r=>{const k=_adKeyVenda(mkt,r.anuncio,r.sku);if(!k)return;const o=vmap[k]||(vmap[k]={fat:0,mc:0,liq:0});o.fat+=+r.fat||0;o.mc+=+r.mc||0;o.liq+=+r.liq||0;if(r.tit&&!titmap[k])titmap[k]=r.tit;});
-    adsArr=Object.keys(adsIdx).map(k=>{const a=adsIdx[k],v=vmap[k]||{fat:0,mc:0,liq:0};const _b=mcBase(mkt,v.fat,v.liq);const mcp=_b?100*v.mc/_b:0;const acos=a.recAds>0?100*a.inv/a.recAds:(a.inv>0?Infinity:0);const resultado=a.recAds*(mcp/100)-a.inv;const ver=_adsVerAnuncio({inv:a.inv,recAds:a.recAds,impr:a.impr,cli:a.cli,vd:a.vd,vi:a.vi,fat:v.fat,mc:v.mc,mcp,acos});return {mlb:k,tit:titmap[k]||a.tit||'',inv:a.inv,recAds:a.recAds,mcp,acos,resultado,estado:ver.estado,acao:ver.acao};}).filter(o=>o.inv>0||o.recAds>0);
+    adsArr=Object.keys(adsIdx).filter(k=>!/afiliad/i.test(String(adsIdx[k].fonte||'')+' '+String(adsIdx[k].campanha||''))).map(k=>{const a=adsIdx[k],v=vmap[k]||{fat:0,mc:0,liq:0};const _b=mcBase(mkt,v.fat,v.liq);const mcp=_b?100*v.mc/_b:0;const acos=a.recAds>0?100*a.inv/a.recAds:(a.inv>0?Infinity:0);const resultado=a.recAds*(mcp/100)-a.inv;const ver=_adsVerAnuncio({inv:a.inv,recAds:a.recAds,impr:a.impr,cli:a.cli,vd:a.vd,vi:a.vi,fat:v.fat,mc:v.mc,mcp,acos});return {mlb:k,tit:titmap[k]||a.tit||'',inv:a.inv,recAds:a.recAds,mcp,acos,resultado,estado:ver.estado,acao:ver.acao};}).filter(o=>o.inv>0||o.recAds>0);
     adsInvTot=adsArr.reduce((s,o)=>s+o.inv,0);
   }
   const adsQ=adsArr.filter(o=>o.estado==='queima').sort((a,b)=>a.resultado-b.resultado);
@@ -2844,6 +2844,32 @@ function _renderGerDiag(A,B,mkt){
 
   body.innerHTML=h;
 }
+// Shopee: o Ads é do item. Na visão por SKU, reparte o gasto de cada item pela fatia de faturamento
+// dos SKUs que venderam nele. Afiliado fica de fora: a comissão já saiu no líquido.
+function _shopeeAdsPorSku(linhas,adsIdx){
+  const itemSku={};
+  (linhas||[]).forEach(r=>{
+    const item=String(r.anuncio||'').trim().toUpperCase();
+    const sku=String(r.sku||'').trim().toUpperCase();
+    if(!item||!sku) return;
+    const b=itemSku[item]||(itemSku[item]={});
+    const o=b[sku]||(b[sku]={fat:0,qtd:0});
+    o.fat+=+r.fat||0; o.qtd+=+r.qtd||0;
+  });
+  const out={};
+  Object.keys(itemSku).forEach(item=>{
+    const ad=adsIdx[item];
+    if(!ad||/afiliad/i.test(String(ad.fonte||'')+' '+String(ad.campanha||''))) return;
+    const parts=itemSku[item], skus=Object.keys(parts);
+    const totF=skus.reduce((s,k)=>s+parts[k].fat,0), totQ=skus.reduce((s,k)=>s+parts[k].qtd,0);
+    skus.forEach(sku=>{
+      const share=totF>0?parts[sku].fat/totF:(totQ>0?parts[sku].qtd/totQ:1/skus.length);
+      const o=out[sku]||(out[sku]={inv:0,recAds:0,impr:0,cli:0,vd:0,vi:0,tit:ad.tit||'',campanha:ad.campanha||'',fonte:ad.fonte||''});
+      o.inv+=ad.inv*share; o.recAds+=ad.recAds*share; o.impr+=ad.impr*share; o.cli+=ad.cli*share; o.vd+=ad.vd*share; o.vi+=ad.vi*share;
+    });
+  });
+  return out;
+}
 function _renderGerProdutos(A,B,mkt){
   const kp=document.getElementById('gp-kpis'), al=document.getElementById('gp-alerts'), tb=document.getElementById('gp-tbl');
   const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
@@ -2865,12 +2891,15 @@ function _renderGerProdutos(A,B,mkt){
   arr.forEach(o=>{ o.aF=cF[o.k]; const _b=mcBase(mkt,o.fat,o.liq); o.mcp=_b?100*o.mc/_b:0;
     o.shareFat=100*o.fat/totFat; o.shareMC=totMC?100*o.mc/totMC:0; o.shareVol=100*o.qtd/totQtd; o.ticket=o.qtd?o.fat/o.qtd:0;
     o.adsPct=o.qtd?100*o.adsU/o.qtd:0; o.devPct=o.qtd?100*o.devU/o.qtd:0; });
-  // join com Ads (por anúncio) — investimento e ACOS reais da campanha
+  // join com Ads. Shopee casa pelo id do anúncio; Por SKU reparte esse gasto pela fatia de cada SKU.
   const _emp=(GER_OP||'').split('||')[0]; const _pr=(typeof getR==='function')?getR():['',''];
   const QMAP=porAnuncio?_histSaudMap(_emp,mkt,_pr[0]):{}; // margem saudável histórica (p/ sinal Queima de margem)
-  const adsIdx=porAnuncio?_adsIndex(_emp,mkt,_pr[0],_pr[1]):{};
-  const hasAds=Object.keys(adsIdx).length>0;
-  arr.forEach(o=>{ const ad=adsIdx[_adKeyVenda(mkt,o.anuncio,o.sku)]; o.adsInv=ad?ad.inv:0; o.adsRec=ad?ad.recAds:0;
+  const separaAds=porAnuncio||_ehShopee(mkt)||_ehMagalu(mkt);
+  const adsIdx=separaAds?_adsIndex(_emp,mkt,_pr[0],_pr[1]):{};
+  const rateioSku=(!porAnuncio&&_ehShopee(mkt))?_shopeeAdsPorSku(linhas,adsIdx):null;
+  const hasAds=Object.keys(rateioSku||adsIdx).length>0;
+  const _adsPago=ad=>ad&&!/afiliad/i.test(String(ad.fonte||'')+' '+String(ad.campanha||''))?ad:null;
+  arr.forEach(o=>{ const ad=_adsPago(rateioSku?rateioSku[String(o.sku||'').trim().toUpperCase()]:adsIdx[_adKeyVenda(mkt,o.anuncio,o.sku)]); o.adsInv=ad?ad.inv:0; o.adsRec=ad?ad.recAds:0;
     o.acos=o.adsRec>0?100*o.adsInv/o.adsRec:(o.adsInv>0?Infinity:null);
     o.mcPosAds=o.mc-(o.adsInv||0);
     { const _bf=mcBase(mkt,o.fat,o.liq); o.mcpFinal=_bf?100*o.mcPosAds/_bf:0; }
@@ -2986,7 +3015,7 @@ function _renderGerProdutos(A,B,mkt){
   h+='</tbody>'; tb.innerHTML=h;
   _GP_LIN=lin; _GP_HASADS=hasAds; _GP_POR=porAnuncio;
   const leg=document.getElementById('gp-legenda');
-  if(leg) leg.innerHTML=`O número de baixo em <b>Qtd</b>, <b>Faturamento</b> e <b>Margem</b> é a parte deste ${porAnuncio?'anúncio':'SKU'} no total da operação. ${hasAds?'<b>Fat. Ads</b> é o que o relatório atribuiu à campanha · <b>Invest. Ads</b> é o gasto · <b>TACOS</b> = gasto ÷ faturamento do anúncio · <b>MC s/ Ads</b> é o lucro antes da mídia e <b>MC final</b> é o que sobra depois. A situação usa a margem final. ':'A visão por SKU não separa o Ads: o investimento vem por anúncio. '}${lin.length} ${porAnuncio?'anúncios':'SKUs'}.`;
+  if(leg) leg.innerHTML=`O número de baixo em <b>Qtd</b>, <b>Faturamento</b> e <b>Margem</b> é a parte deste ${porAnuncio?'anúncio':'SKU'} no total da operação. ${hasAds?'<b>Fat. Ads</b> é o que o relatório atribuiu à campanha · <b>Invest. Ads</b> é o gasto · <b>TACOS</b> = gasto ÷ faturamento do '+(porAnuncio?'anúncio':'SKU')+' · <b>MC s/ Ads</b> é o lucro antes da mídia e <b>MC final</b> é o que sobra depois. A situação usa a margem final.'+(!porAnuncio&&_ehShopee(mkt)?' No Por SKU o gasto do anúncio é repartido pela fatia de faturamento de cada SKU.':' '):'A visão por SKU não separa o Ads: o investimento vem por anúncio. '}${lin.length} ${porAnuncio?'anúncios':'SKUs'}.`;
 }
 let _GP_LIN=[], _GP_HASADS=false, _GP_POR=true;
 function exportGerProdutosCSV(){
