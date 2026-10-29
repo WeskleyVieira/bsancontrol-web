@@ -105,7 +105,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);min-hei
 .nav-wrapper{background:var(--bg2);border-bottom:1px solid var(--bdr);position:sticky;top:58px;z-index:490;display:flex;align-items:stretch;}
 .nav{display:flex;flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 4px;}
 .nav::-webkit-scrollbar{display:none;}
-.nav-scroll-btn{flex-shrink:0;width:32px;background:var(--bg2);border:none;border-bottom:none;color:var(--t3);font-size:18px;cursor:pointer;padding:0;transition:color .15s;display:none;}
+.nav-scroll-btn{flex-shrink:0;width:32px;background:var(--bg2);border:none;border-bottom:none;color:var(--t3);font-size:18px;cursor:pointer;padding:0;transition:color .15s;display:none;align-items:center;justify-content:center;}
 .nav-scroll-btn:hover{color:var(--a2);}
 .ntab{padding:12px 15px;font-family:inherit;font-size:13px;font-weight:600;color:var(--t3);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .16s,border-color .16s;white-space:nowrap;}
 .ntab:hover{color:var(--t2);}
@@ -342,7 +342,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);min-hei
   /* Nav — horizontal scroll with larger touch targets */
   .nav-wrapper{top:52px;}
   .nav{padding:0 4px;}
-  .nav-scroll-btn{display:flex;align-items:center;justify-content:center;}
+  .nav-scroll-btn{align-items:center;justify-content:center;}
   .ntab{padding:10px 12px;font-size:12px;}
 
   /* Date + compare bars */
@@ -2032,7 +2032,15 @@ let PONTO_SEL = (()=>{ try{ return localStorage.getItem('bc_ponto')||''; }catch(
 const noPonto = r => !PONTO_SEL || r.ponto===PONTO_SEL;
 const fr =(s,e)=>ROWS.filter(r=>r.date>=s&&r.date<=e&&noPonto(r));
 const fsk=(s,e)=>SKU_MON.filter(r=>r.mes>=s.slice(0,7)&&r.mes<=e.slice(0,7));
-const agg=rows=>rows.reduce((o,r)=>({fat:o.fat+r.fat,liq:o.liq+r.liq,ctp:o.ctp+r.ctp,imp:o.imp+r.imp,mc:o.mc+r.mc,qtd:o.qtd+r.qtd}),{fat:0,liq:0,ctp:0,imp:0,mc:0,qtd:0});
+const agg=rows=>rows.reduce((o,r)=>{
+  o.fat+=+r.fat||0; o.liq+=+r.liq||0; o.ctp+=+r.ctp||0; o.imp+=+r.imp||0; o.mc+=+r.mc||0; o.qtd+=+r.qtd||0;
+  if(r.fatMetas==null||r.fatMetas==='') o._semFatMetas=true; else o.fatMetas+=+r.fatMetas||0;
+  return o;
+},{fat:0,liq:0,ctp:0,imp:0,mc:0,qtd:0,fatMetas:0,_semFatMetas:false});
+function periodoDias(s,e){ if(!s||!e) return 0; return Math.round((new Date(e+'T12:00:00')-new Date(s+'T12:00:00'))/864e5)+1; }
+function nomeCanal(m){ const s=String(m||'').trim(); if(/tik\s*tok/i.test(s)) return 'TikTok Shop'; if(/^kwai(\s+shop)?$/i.test(s)) return 'Kwai'; return s; }
+function unificaCanais(arr){ if(!Array.isArray(arr)) return; for(const r of arr){ if(r&&r.mkt) r.mkt=nomeCanal(r.mkt); } }
+const META_MARGEM=15;
 function by(rows,key){
   const m={};
   rows.forEach(r=>{if(!m[r[key]])m[r[key]]={fat:0,liq:0,ctp:0,imp:0,mc:0,mcReal:0,qtd:0};const o=m[r[key]];o.fat+=r.fat;o.liq+=r.liq;o.ctp+=r.ctp;o.imp+=r.imp;o.mc+=r.mc;o.mcReal+=(r.mcReal||0);o.qtd+=r.qtd;});
@@ -2067,6 +2075,8 @@ function linReg(y){
 
 // ═══════ KPI BUILDER ═══════
 // Order: Faturamento → Volume → Margem R$ → Margem %
+function fatDe(t){ if(!t) return 0; return t._semFatMetas?t.fat:t.fatMetas; }
+function fatNota(t){ return t&&!t._semFatMetas?'vendas finalizadas, mesma base da meta':'inclui pendente e devolução'; }
 function buildKPIRow(tot,d,cmpTot){
   const taxas=tot.fat-tot.liq;
   // Direção: variação do período ATUAL em relação ao de comparação (baseline = cv)
@@ -2076,10 +2086,10 @@ function buildKPIRow(tot,d,cmpTot){
     {eye:'Volume · Unidades',val:tot.qtd.toLocaleString('pt-BR'),pct:null,sub:`${Math.round(tot.qtd/d)} un/dia`,c:'#facc15',cv:cmpTot?.qtd,cur:tot.qtd,
       tip:'vol'},
     // 2. FATURAMENTO
-    {eye:'Faturamento',val:brlK(tot.fat),pct:null,sub:`${brl(Math.round(tot.fat/d))}/dia`,c:'#00c2a8',cv:cmpTot?.fat,cur:tot.fat,
+    {eye:'Faturamento',val:brlK(fatDe(tot)),pct:null,sub:`${fatNota(tot)} · ${brl(Math.round(fatDe(tot)/d))}/dia`,c:'#00c2a8',cv:fatDe(cmpTot),cur:fatDe(tot),
       tip:'fat'},
-    // 3. MARGEM R$
-    {eye:'Margem de Contribuição',val:brlK(tot.mc),pct:pct(tot.mc,tot.fat),sub:`${brl(Math.round(tot.mc/d))}/dia`,c:'#34d399',cv:cmpTot?.mc,cur:tot.mc,pctColor:'#34d399',
+    // 3. MARGEM R$ — teto (mc_comissao). A real fica na DRE; a da comissão, na aba Comissão.
+    {eye:'Margem com teto',val:brlK(tot.mc),pct:pct(tot.mc,tot.fat),sub:`sobre todo o faturamento · ${brl(Math.round(tot.mc/d))}/dia`,c:'#34d399',cv:cmpTot?.mc,cur:tot.mc,pctColor:'#34d399',
       tip:'mc'},
   ].map(k=>`<div class="kpi">
     <div class="kpi-glow" style="background:${k.c}"></div>
@@ -2125,11 +2135,11 @@ function renderOverview(){
   const skuMap=bySku(fsk(s,e));const top1=Object.entries(skuMap).sort((a,b)=>b[1].qtd-a[1].qtd)[0];
   renderDiagnosis(rows,tot,d);
   document.getElementById('insights').innerHTML=[
-    {icon:'🏆',t:'Empresa Líder',b:`<strong style="color:var(--a2)">${bestEmp?.[0]||'–'}</strong> lidera com ${brlK(bestEmp?.[1].fat||0)} em faturamento. MC: <strong>${pct(bestEmp?.[1].mc||0,bestEmp?.[1].fat||1)}</strong> (${brlK(bestEmp?.[1].mc||0)}).`},
+    {icon:'🏆',t:'Empresa Líder',b:`<strong style="color:var(--a2)">${bestEmp?.[0]||'–'}</strong> lidera com ${brlK(bestEmp?.[1].fat||0)} em faturamento. Margem com teto: <strong>${pct(bestEmp?.[1].mc||0,bestEmp?.[1].fat||1)}</strong> (${brlK(bestEmp?.[1].mc||0)}).`},
     {icon:'📦',t:'Produto Campeão',b:`<strong style="color:var(--a2)">${top1?.[0]||'–'}</strong> — ${top1?.[1].qtd||0} unidades vendidas, ${brlK(top1?.[1].fat||0)} faturado. MC: ${pct(top1?.[1].mc||0,top1?.[1].fat||1)}.`},
-    {icon:'🛒',t:'Canal Líder',b:`<strong style="color:var(--a2)">${bestMkt?.[0]||'–'}</strong> — ${brlK(bestMkt?.[1].fat||0)} (${pct(bestMkt?.[1].fat||0,tot.fat)} do total). MC: ${pct(bestMkt?.[1].mc||0,bestMkt?.[1].fat||1)}.`},
-    {icon:'⚠️',t:'Canal de Maior Risco',b:`<strong style="color:var(--neg)">${worstMC?.[0]||'–'}</strong> tem a menor margem: <strong>${pct(worstMC?.[1].mc||0,worstMC?.[1].fat||1)}</strong> de MC (${brlK(worstMC?.[1].mc||0)}). Avalie rentabilidade.`},
-    {icon:'💎',t:'Canal Mais Rentável',b:`<strong style="color:var(--pos)">${bestMC?.[0]||'–'}</strong> tem a maior margem: <strong>${pct(bestMC?.[1].mc||0,bestMC?.[1].fat||1)}</strong> de MC (${brlK(bestMC?.[1].mc||0)}).`},
+    {icon:'🛒',t:'Canal Líder',b:`<strong style="color:var(--a2)">${bestMkt?.[0]||'–'}</strong> — ${brlK(bestMkt?.[1].fat||0)} (${pct(bestMkt?.[1].fat||0,tot.fat)} do total). Margem com teto: ${pct(bestMkt?.[1].mc||0,bestMkt?.[1].fat||1)}.`},
+    {icon:'⚠️',t:'Canal de Maior Risco',b:`<strong style="color:var(--neg)">${worstMC?.[0]||'–'}</strong> tem a menor margem com teto: <strong>${pct(worstMC?.[1].mc||0,worstMC?.[1].fat||1)}</strong> (${brlK(worstMC?.[1].mc||0)}). Avalie rentabilidade.`},
+    {icon:'💎',t:'Canal Mais Rentável',b:`<strong style="color:var(--pos)">${bestMC?.[0]||'–'}</strong> tem a maior margem com teto: <strong>${pct(bestMC?.[1].mc||0,bestMC?.[1].fat||1)}</strong> (${brlK(bestMC?.[1].mc||0)}).`},
     {icon:'↩️',t:'Devoluções no Período',b:devBody}
   ].map(i=>`<div class="insight-card"><div class="insight-icon">${i.icon}</div><div class="insight-title">${i.t}</div><div class="insight-body">${i.b}</div></div>`).join('');
 
@@ -2317,7 +2327,7 @@ function renderDRE(){
   const resVal=sel?V.res:resTotal, resFat=sel?V.fat:fatTotal;
   kp.innerHTML=
     kpi(resLbl, brl(resVal), (resFat?(100*resVal/resFat).toFixed(1):'0')+'% do faturamento', resVal>=0?'#22c55e':'#f87171', resVal>=0?'#22c55e':'#ef5350')+
-    kpi('Margem de Contribuição', brl(V.mc), (V.fat?(100*V.mc/V.fat).toFixed(1):'0')+'% da receita', null, '#34d399')+
+    kpi('Margem real', brl(V.mc), (V.fat?(100*V.mc/V.fat).toFixed(1):'0')+'% da receita · antes dos custos do gestor', null, '#34d399')+
     kpi('Investimento em Ads', brl(V.inv), (V.fat?(100*V.inv/V.fat).toFixed(1):'0')+'% do faturamento (TACOS)', '#f59e0b', '#f59e0b')+
     kpi('Ponto de Equilíbrio', semCustos?'—':brl(be), semCustos?'carregue os custos':'faturamento p/ zerar', null, '#4f8ef7');
 
@@ -2329,7 +2339,7 @@ function renderDRE(){
     ['(−) Impostos',X.imp,true,false],
     ['(−) Custo do produto (CMV)',X.ctp,true,false],
     ['(−) Frete / motoboy',outros,true,false],
-    ['= Margem de Contribuição',X.mc,false,true],
+    ['= Margem real',X.mc,false,true],
     ['(−) Ads / Afiliados / Lives',X.inv,true,false],
     ['= MC líquida',X.mc-X.inv,false,false],
     ['(−) Custos operacionais fixos',X.cop,true,false],
@@ -7869,8 +7879,9 @@ const rows=fr(s,e);const tot=agg(rows);
   const isDown=reg.m<0;
   const trendMult=isDown?Math.max(0.7,1+trendPct/100):Math.min(1.4,1+trendPct/100);
   const alertEl=document.getElementById('proj-alert');
-  alertEl.textContent=isDown?`⚠ Tendência de QUEDA: faturamento caindo ~${brl(abs(reg.m))}/dia. Acumulado: -${abs(trendPct).toFixed(1)}%. Compras ajustadas para baixo.`:`✅ Tendência de ALTA: faturamento crescendo ~${brl(reg.m)}/dia. Acumulado: +${trendPct.toFixed(1)}%. Compras ajustadas para cima.`;
-  alertEl.className=`alert ${isDown?'alert-w':'alert-g'} mb`;
+  const longo=periodoDias(s,e)>45;
+  alertEl.textContent=longo?`Janela de ${periodoDias(s,e)} dias. Os totais e a média ficam nos cartões. O veredito de alta ou queda fica calado acima de 45 dias.`:(isDown?`⚠ Tendência de QUEDA: faturamento caindo ~${brl(abs(reg.m))}/dia. Acumulado: -${abs(trendPct).toFixed(1)}%. Compras ajustadas para baixo.`:`✅ Tendência de ALTA: faturamento crescendo ~${brl(reg.m)}/dia. Acumulado: +${trendPct.toFixed(1)}%. Compras ajustadas para cima.`);
+  alertEl.className=longo?'alert mb':`alert ${isDown?'alert-w':'alert-g'} mb`;
   // KPI order: Fat → Vol → MC
   // Split period in half to show trend direction
   const midDates=dates.slice(0,Math.floor(dates.length/2));
@@ -7891,7 +7902,7 @@ const rows=fr(s,e);const tot=agg(rows);
   document.getElementById('mkt-trends').innerHTML=mktNames.sort((a,b)=>byMkt[b].fat-byMkt[a].fat).map(m=>{
     const ms=dates.map(dt=>{const r2=rows.filter(r=>r.date===dt&&r.mkt===m);return r2.reduce((s,r)=>s+r.fat,0);});
     const vv=ms.filter(v=>v>0);const r2=linReg(vv);const cp=vv[0]>0?(r2.m/vv[0]*100):0;
-    return`<div class="trend-row"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${MKT_C[m]};margin-right:6px;flex-shrink:0"></span><span class="trend-lbl">${m}</span><div class="trend-bw"><div class="trend-b" style="width:${byMkt[m].fat/maxMktFat*100}%;background:${MKT_C[m]}"></div></div><span class="trend-val" style="color:${r2.m<0?'var(--neg)':'var(--pos)'}">${brlK(byMkt[m].fat)}</span><span class="trend-bdg"><span class="bdg ${r2.m<0?'bdg-dn':'bdg-up'}">${r2.m<0?'▼':'▲'} ${abs(cp).toFixed(1)}%/dia</span></span></div>`;
+    return`<div class="trend-row"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${MKT_C[m]};margin-right:6px;flex-shrink:0"></span><span class="trend-lbl">${m}</span><div class="trend-bw"><div class="trend-b" style="width:${byMkt[m].fat/maxMktFat*100}%;background:${MKT_C[m]}"></div></div><span class="trend-val" style="color:${r2.m<0?'var(--neg)':'var(--pos)'}">${brlK(byMkt[m].fat)}</span>${longo?'':`<span class="trend-bdg"><span class="bdg ${r2.m<0?'bdg-dn':'bdg-up'}">${r2.m<0?'▼':'▲'} ${abs(cp).toFixed(1)}%/dia</span></span>`}</div>`;
   }).join('');
   document.getElementById('repos-note').innerHTML=`Cobertura alvo: <strong>${COVER} dias</strong> · Segurança: <strong>+20%</strong> · Tendência: <strong style="color:${isDown?'var(--neg)':'var(--pos)'}">${isDown?'▼ -'+abs(((1-trendMult)*100)).toFixed(0):' ▲ +'+((trendMult-1)*100).toFixed(0)}%</strong> · Pedido Final = Projeção ${COVER}d × 1.2 × fator tendência.<br>
   <span style="color:var(--t3)">ℹ Faturamento/Volume por SKU são do <strong>período exato selecionado</strong> (batem com Vendas/Raio-X). Média/dia = sobre <strong>${dSku} dias com vendas</strong> no período. O <strong>Pedido Final é demanda projetada</strong> — desconte o estoque atual e pedidos em trânsito antes de comprar.</span>`;
@@ -8218,18 +8229,23 @@ async function handleFile(file){
     window._projCache=null; window._custosCache=null; window._skuMktIdxKey=null;
     projAllRows=[]; skuRentAllRows=[]; skuMktIndex={}; mktSkuIndex={};
     // Update date range
-    const s=result.minDate||ROWS[0]?.date;
-    const e=result.maxDate||ROWS[ROWS.length-1]?.date;
+    const sAll=result.minDate||ROWS[0]?.date;
+    const eAll=result.maxDate||ROWS[ROWS.length-1]?.date;
+    const mes=(eAll||'').slice(0,7);
+    const s=mes?mes+'-01':sAll;
+    const e=eAll;
     if(s&&e){
       document.getElementById('d-start').value=s;
       document.getElementById('d-end').value=e;
-      SHORTS.all=[s,e];
+      SHORTS.all=[sAll,eAll];
+      _activeShortcutKey=mes;
       // (atalhos de mês são reconstruídos por buildSHORTS/buildMonthShortcuts logo abaixo)
     }
     document.getElementById('hdr-src').textContent='📊 '+file.name;
     // Rebuild month shortcuts with new data
     if(result.months) AVAILABLE_MONTHS.splice(0,AVAILABLE_MONTHS.length,...result.months);
     buildSHORTS();
+    if(mes && SHORTS[mes] && e && e<SHORTS[mes][1]) SHORTS[mes]=[mes+'-01', e];
     buildMonthShortcuts();
     const totFat=result.rows.reduce((a,r)=>a+r.fat,0);
     const totMC=result.rows.reduce((a,r)=>a+r.mc,0);
@@ -8920,12 +8936,11 @@ const TOOLTIPS = {
     ]
   },
   mc: {
-    title: '📊 Margem de Contribuição (MC)',
-    def: 'O que sobra do faturamento depois de pagar o custo do produto, os impostos e as taxas da plataforma. É o lucro disponível para cobrir despesas fixas e gerar resultado.',
+    title: '📊 Margem com teto',
+    def: 'É a margem com teto (mc da comissão), depois do custo do produto, dos impostos e das taxas. A margem real aparece na DRE. A margem da comissão, na aba Comissão, ainda desconta Full, Minha página e deslocamento.',
     actions: [
-      {cls:'ok',  text:'✅ Acima de 22%: operação rentável. Mantenha o padrão.'},
-      {cls:'warn',text:'⚠️ Entre 12–22%: zona de atenção. Revise custos e preços.'},
-      {cls:'bad', text:'🔴 Abaixo de 12%: operação em risco. Ação imediata necessária.'}
+      {cls:'ok',  text:'✅ Na meta de 15% ou acima: a mesma régua da fila do Acompanhamento.'},
+      {cls:'warn',text:'⚠️ Abaixo de 15%: abaixo da meta. Revise custos e preços.'}
     ]
   },
   ctp: {
@@ -9001,17 +9016,13 @@ function renderDiagnosis(rows, tot, d){
   const items = [];
 
   // 1. MC% geral
-  if(mcPct < 12){
-    items.push({t:'bad', icon:'🚨', label:'Margem Crítica no Período',
-      text:`A Margem de Contribuição geral está em <strong>${mcPct.toFixed(1)}%</strong> — abaixo do mínimo saudável de 12%. Parte das vendas pode estar sendo feita no prejuízo.`,
-      action:'Ação imediata: revise precificação e identifique quais produtos estão puxando a margem para baixo.'});
-  } else if(mcPct < 20){
-    items.push({t:'warn', icon:'⚠️', label:'Margem Abaixo do Ideal',
-      text:`MC% em <strong>${mcPct.toFixed(1)}%</strong>. A operação está lucrando, mas há espaço para melhorar — o ideal é acima de 20%.`,
+  if(mcPct < META_MARGEM){
+    items.push({t:'warn', icon:'⚠️', label:'Margem com teto abaixo da meta',
+      text:`A margem com teto está em <strong>${mcPct.toFixed(1)}%</strong>. A régua é uma só: <strong>${META_MARGEM}%</strong>, a mesma da fila do Acompanhamento.`,
       action:'Ação recomendada: analise os canais na aba Marketplaces e o produto no Raio-X.'});
   } else {
-    items.push({t:'ok', icon:'✅', label:'Margem de Contribuição Saudável',
-      text:`MC% em <strong>${mcPct.toFixed(1)}%</strong> — acima do benchmark de 20%. A operação está gerando resultado positivo.`,
+    items.push({t:'ok', icon:'✅', label:'Margem com teto na meta',
+      text:`A margem com teto está em <strong>${mcPct.toFixed(1)}%</strong>, na meta de ${META_MARGEM}% ou acima.`,
       action:'Continue monitorando mês a mês para garantir a consistência.'});
   }
 
@@ -9024,7 +9035,7 @@ function renderDiagnosis(rows, tot, d){
   });
 
   // 3. Canal com MC% muito baixo (mas positivo)
-  const lowMkt = mktArr.filter(([m,g])=>g.mc>=0 && g.mc/mcBase(m,g.fat,g.liq)*100 < 12);
+  const lowMkt = mktArr.filter(([m,g])=>g.mc>=0 && g.mc/mcBase(m,g.fat,g.liq)*100 < META_MARGEM);
   lowMkt.forEach(([m,g])=>{
     items.push({t:'warn', icon:'⚠️', label:`${m}: Margem Baixa (${pct(g.mc,mcBase(m,g.fat,g.liq))})`,
       text:`O canal ${m} fatura ${brlK(g.fat)} mas com margem de apenas ${pct(g.mc,mcBase(m,g.fat,g.liq))}. As taxas deste canal podem estar consumindo muito.`,
@@ -9049,7 +9060,7 @@ function renderDiagnosis(rows, tot, d){
 
   // 6. Volume caindo (regression check)
   const dMap = byDate(rows); const dates = Object.keys(dMap).sort();
-  if(dates.length > 6){
+  if(dates.length > 6 && periodoDias(ds,de)<=45){
     const half = Math.floor(dates.length/2);
     const firstHalf = dates.slice(0,half).reduce((s,dt)=>s+dMap[dt].fat,0)/half;
     const lastHalf  = dates.slice(half).reduce((s,dt)=>s+dMap[dt].fat,0)/(dates.length-half);
@@ -9125,20 +9136,20 @@ function openExec(){
 
   document.getElementById('exec-period').textContent = fmtR(s,e) + ' · ' + d + ' dias';
 
-  const mcStat = mcPct>20?'exec-status-g':mcPct>12?'exec-status-w':'exec-status-r';
-  const mcMsg  = mcPct>20?'✅ Margem saudável':mcPct>12?'⚠️ Margem em atenção':'🔴 Margem crítica';
+  const mcStat = mcPct>=META_MARGEM?'exec-status-g':'exec-status-w';
+  const mcMsg  = mcPct>=META_MARGEM?'✅ Na meta de 15%':'⚠️ Abaixo da meta de 15%';
 
   document.getElementById('exec-content').innerHTML = `
     <div class="exec-grid">
       <div class="exec-card">
         <div class="exec-card-accent" style="background:#00c2a8"></div>
         <div class="exec-eye">Faturamento</div>
-        <div class="exec-val">${brlK(tot.fat)}</div>
-        <div class="exec-sub">${brl(Math.round(tot.fat/d))}/dia · ${tot.qtd.toLocaleString('pt-BR')} unidades</div>
+        <div class="exec-val">${brlK(fatDe(tot))}</div>
+        <div class="exec-sub">${fatNota(tot)} · ${brl(Math.round(fatDe(tot)/d))}/dia · ${tot.qtd.toLocaleString('pt-BR')} unidades</div>
       </div>
       <div class="exec-card">
         <div class="exec-card-accent" style="background:#34d399"></div>
-        <div class="exec-eye">Margem de Contribuição</div>
+        <div class="exec-eye">Margem com teto</div>
         <div class="exec-val">${brlK(tot.mc)}</div>
         <div class="exec-sub">${mcPct.toFixed(1)}% do faturamento</div>
         <div class="exec-status ${mcStat}">${mcMsg}</div>
@@ -9296,7 +9307,14 @@ const NAV_PAGES = [
   {id:'dre',         label:'DRE'},
 ];
 
-function updateNavOverflow(){ /* obsoleto: overflow da nav agora é 100% via CSS scroll */ }
+function updateNavOverflow(){
+  const nav=document.getElementById('main-nav');
+  const left=document.getElementById('nav-left'), right=document.getElementById('nav-right');
+  if(!nav||!left||!right) return;
+  const show=nav.scrollWidth>nav.clientWidth+2;
+  left.style.display=show?'flex':'none';
+  right.style.display=show?'flex':'none';
+}
 
 function toggleNavMore(){
   document.getElementById('nav-dropdown').classList.toggle('open');
@@ -10357,6 +10375,7 @@ function fixStickyBar(){
     const hdr=document.querySelector('.hdr'), nav=document.querySelector('.nav-wrapper'), dbar=document.querySelector('.dbar');
     if(hdr&&nav) nav.style.top=(hdr.offsetHeight-1)+'px';
     if(hdr&&nav&&dbar) dbar.style.top=(hdr.offsetHeight+nav.offsetHeight-2)+'px';
+    updateNavOverflow();
   }catch(e){}
 }
 window.addEventListener('load',fixStickyBar);
@@ -10575,7 +10594,7 @@ function resetEmpresaSelects(){
   }));
 }
 function setPonto(p){ PONTO_SEL=p; try{localStorage.setItem('bc_ponto',p);}catch(e){} resetEmpresaSelects(); renderAll(); }
-function renderAll(){ populatePontoLens(); renderPageOnly(activePage); }
+function renderAll(){ unificaCanais(ROWS); unificaCanais(DETALHE); unificaCanais(SKU_MKT); unificaCanais(SKU_MKT_MON); unificaCanais(ADS); unificaCanais(ADS_CAMP); unificaCanais(ADS_DIA); populatePontoLens(); renderPageOnly(activePage); }
 
 // ═══════════════════════════════════════════════════════════════
 // DIÁRIO — pulso operacional dia a dia (comparações mesmo-pra-mesmo)
@@ -10765,7 +10784,12 @@ function diarioMedianVol(excludeDate){
   const mid=Math.floor(vals.length/2);
   return vals.length%2 ? vals[mid] : (vals[mid-1]+vals[mid])/2;
 }
+function _hojeCalendario(){
+  try{ return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
+  catch(e){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+}
 function diarioIsPartial(date){
+  if(date && date===_hojeCalendario()) return true;
   const v=diarioDailyVol()[date]||0;
   const med=diarioMedianVol(date);
   return med>0 && v < med*0.5;
@@ -11064,7 +11088,7 @@ function renderDiario(){
   const cardsEl=document.getElementById('diario-cards');
   cardsEl.style.gridTemplateColumns='';
   cardsEl.innerHTML=
-    diarioCard2('📅 O Dia · '+WD_SHORT[dWdMon(ref)], fmtBr(ref), 'diario_cards',
+    diarioCard2('📅 O Dia · '+WD_SHORT[dWdMon(ref)]+(diarioIsPartial(ref)?' · em andamento':''), fmtBr(ref), 'diario_cards',
        cur, ontem,'vs Ontem', semp,'vs Sem. ant.')
    +diarioCard2('🗓️ A Semana (até hoje)',
        `${fmtBrS(P.week[0])} → ${fmtBrS(P.week[1])}`, '',
@@ -11651,24 +11675,27 @@ function setForecastHorizon(h,btn){
 }
 
 function buildMetaKpiCard(tot){
-  const now=new Date();
-  const curMes=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const fim=(typeof getR==='function'&&getR()[1])||'';
+  const curMes=String(fim).slice(0,7);
+  if(!/^\d{4}-\d{2}$/.test(curMes)) return '';
   const metaFat=getMetaValue('all','all',curMes,'fat');
   if(!metaFat) return '';
-  const mesRows=ROWS.filter(r=>r.date.slice(0,7)===curMes);
+  const mesRows=ROWS.filter(r=>String(r.date).slice(0,7)===curMes);
   const mesAgg=agg(mesRows);
-  const pctAt=metaFat>0?(mesAgg.fat/metaFat*100):0;
+  const fatBase=fatDe(mesAgg);
+  const pctAt=metaFat>0?(fatBase/metaFat*100):0;
   const col=pctAt>=100?'#34d399':pctAt>=75?'#fbbf24':'#f87171';
-  const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-  // Projeção usa dias COM DADOS no mês (dados podem estar atrasados vs calendário)
+  const [yy,mm]=curMes.split('-').map(Number);
+  const daysInMonth=new Date(yy,mm,0).getDate();
   const diasComDados=new Set(mesRows.map(r=>r.date)).size;
-  const projetado=diasComDados>0?(mesAgg.fat/diasComDados)*daysInMonth:0;
+  const projetado=diasComDados>0?(fatBase/diasComDados)*daysInMonth:0;
+  const nomeMes=(typeof PT_MONTHS_MAP!=='undefined'&&PT_MONTHS_MAP[curMes.slice(5)])||curMes;
   return `<div class="kpi" style="border-color:${col}33;cursor:pointer" onclick="goPage('metas',document.getElementById('nav-metas'))">
     <div class="kpi-glow" style="background:${col}"></div>
-    <div class="kpi-eye" style="color:${col}">Meta do Mês · Fat.</div>
+    <div class="kpi-eye" style="color:${col}">Meta de ${nomeMes}</div>
     <div class="kpi-val" style="font-size:22px">${pctAt.toFixed(1)}%</div>
-    <div class="kpi-pct" style="color:var(--t2)">${brlK(mesAgg.fat)} de ${brlK(metaFat)}</div>
-    <div class="kpi-sub">Projetado: ${brlK(projetado)}</div>
+    <div class="kpi-pct" style="color:var(--t2)">${brlK(fatBase)} de ${brlK(metaFat)}</div>
+    <div class="kpi-sub">Projetado: ${brlK(projetado)} · ${fatNota(mesAgg)}</div>
     <div class="kpi-accent" style="background:${col}"></div>
   </div>`;
 }
@@ -12099,10 +12126,13 @@ renderAll();
     try{ TOP10={}; TOP10_EM={}; }catch(e){}
     var months=[...new Set(ROWS.map(function(r){return (r.date||'').slice(0,7);}))].filter(Boolean).sort();
     var ds=ROWS.map(function(r){return r.date;}).filter(Boolean).sort();
-    var s=ds[0], e=ds[ds.length-1];
-    if(s&&e){ var a=document.getElementById('d-start'),b=document.getElementById('d-end'); if(a)a.value=s; if(b)b.value=e; try{SHORTS.all=[s,e];}catch(_){ } }
+    var sAll=ds[0], eAll=ds[ds.length-1];
+    var mes=(eAll||'').slice(0,7);
+    var s=mes?mes+'-01':sAll, e=eAll;
+    if(s&&e){ var a=document.getElementById('d-start'),b=document.getElementById('d-end'); if(a)a.value=s; if(b)b.value=e; try{SHORTS.all=[sAll,eAll];}catch(_){ } try{_activeShortcutKey=mes;}catch(_){ } }
     try{ if(typeof AVAILABLE_MONTHS!=='undefined') AVAILABLE_MONTHS.splice(0,AVAILABLE_MONTHS.length,...months); }catch(_){}
     try{ buildSHORTS(); }catch(_){}
+    try{ if(mes && typeof SHORTS!=='undefined' && SHORTS[mes] && e && e<SHORTS[mes][1]) SHORTS[mes]=[mes+'-01', e]; }catch(_){}
     try{ buildMonthShortcuts(); }catch(_){}
     try{ renderAll(); }catch(err){ console.error('renderAll',err); }
     try{ updateScopeChip(); }catch(_){}
