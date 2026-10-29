@@ -9,6 +9,7 @@ const dbx = require("./dbx");
 // token do cache-bust: hash do DATABASE_URL (quem tem a conexão pode limpar — zero config novo)
 const BUST_TOKEN = crypto.createHash("sha256").update(process.env.DATABASE_URL || "sem-db").digest("hex");
 const { hashSenha, verificaSenha, assinaToken, verificaToken } = require("./auth");
+const { consultaVendas } = require("./vendas-pagina");
 
 const PORT = process.env.PORT || 8787;
 const SENHA_PADRAO = "bsan@2026";   // quem ainda tem essa é obrigado a trocar no 1º acesso
@@ -133,6 +134,48 @@ async function rotaGET(u, user) {
     const porOp = await dbx.all("SELECT empresa, canal, ROUND(SUM(COALESCE(receita_n,receita))) fat, ROUND(SUM(COALESCE(mc_comissao_n,mc_comissao))) mc, COUNT(*) n FROM vendas" + W + " GROUP BY empresa, canal ORDER BY mc DESC", args);
     return { periodo: [de, ate], ms: Date.now() - t0, kpi, por_operacao: porOp };
   }
+  // Página de 50. O KPI usa o mesmo filtro da tabela, sem o recorte de status (os cartões contam todos).
+  if (u.pathname === "/api/vendas") {
+    const t0 = Date.now();
+    const c = consultaVendas(q);
+    const fat = "COALESCE(receita_n,receita)";
+    const par = (n, v) => ({ n: +n || 0, v: Math.round((+v || 0) * 100) / 100 });
+    const kpiRow = await dbx.get(`SELECT COUNT(*) n,
+        SUM(CASE WHEN status IN ('venda','venda_com_troca') THEN 1 ELSE 0 END) n_fin,
+        SUM(CASE WHEN status='pendente' THEN 1 ELSE 0 END) n_pen,
+        SUM(CASE WHEN status='cancelada' THEN 1 ELSE 0 END) n_can,
+        SUM(CASE WHEN status='devolvida' THEN 1 ELSE 0 END) n_dev,
+        SUM(CASE WHEN status='extravio' THEN 1 ELSE 0 END) n_ext,
+        SUM(${fat}) fat,
+        SUM(CASE WHEN status IN ('venda','venda_com_troca') THEN ${fat} ELSE 0 END) fat_fin,
+        SUM(CASE WHEN status='pendente' THEN ${fat} ELSE 0 END) fat_pen,
+        SUM(CASE WHEN status='cancelada' THEN ${fat} ELSE 0 END) fat_can,
+        SUM(CASE WHEN status='devolvida' THEN ${fat} ELSE 0 END) fat_dev,
+        SUM(CASE WHEN status='extravio' THEN ${fat} ELSE 0 END) fat_ext
+      FROM vendas WHERE ${c.base}`, c.baseArgs);
+    const tot = await dbx.get(`SELECT COUNT(*) n, SUM(${fat}) fat FROM vendas WHERE ${c.where}`, c.args);
+    const linhas = (await dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto, sku, anuncio_id AS anuncio, titulo AS tit, pedido AS ped,
+        qtd, ${fat} AS fat, COALESCE(liquido_n,liquido) AS liq, COALESCE(ctp_n,ctp) AS ctp, COALESCE(imposto_n,imposto) AS imp,
+        COALESCE(mc_comissao_n,mc_comissao) AS mc, fonte_liquido AS fonte, status AS stat
+      FROM vendas WHERE ${c.where} ORDER BY ${c.order} LIMIT ? OFFSET ?`, c.args.concat([c.limite, c.offset]))).map(o => {
+      o.date = String(o.date || "").slice(0, 10);
+      for (const k of ["qtd", "fat", "liq", "ctp", "imp", "mc"]) o[k] = Math.round((+o[k] || 0) * 100) / 100;
+      return o;
+    });
+    const emps = await dbx.all(`SELECT DISTINCT empresa e FROM vendas WHERE ${c.base} AND empresa IS NOT NULL ORDER BY empresa`, c.baseArgs);
+    const mkts = await dbx.all(`SELECT DISTINCT canal m FROM vendas WHERE ${c.base} AND canal IS NOT NULL ORDER BY canal`, c.baseArgs);
+    const n = +tot.n || 0;
+    return {
+      periodo: [q.de || null, q.ate || null], ms: Date.now() - t0,
+      kpi: {
+        total: par(kpiRow.n, kpiRow.fat), finalizadas: par(kpiRow.n_fin, kpiRow.fat_fin),
+        pendente: par(kpiRow.n_pen, kpiRow.fat_pen), cancelada: par(kpiRow.n_can, kpiRow.fat_can),
+        devolvida: par(kpiRow.n_dev, kpiRow.fat_dev), extravio: par(kpiRow.n_ext, kpiRow.fat_ext)
+      },
+      total: n, fat: par(0, tot.fat).v, paginas: Math.max(1, Math.ceil(n / c.limite)), pagina: c.pagina, limite: c.limite,
+      empresas: emps.map(r => r.e).filter(Boolean), canais: mkts.map(r => r.m).filter(Boolean), linhas
+    };
+  }
   // ── /api/dataset — datasets do painel (ROWS/DETALHE/agregados) escopados por PONTO, janela de meses ──
   if (u.pathname === "/api/dataset") {
     const t0 = Date.now();
@@ -151,22 +194,26 @@ async function rotaGET(u, user) {
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const mapMoney = (a, campos) => a.map(o => { for (const c of campos) o[c] = r2(o[c]); return o; });
     // AGREGADOS via GROUP BY no banco (retorna ~11k linhas, não as 37k cruas) — carga inicial leve.
-    // O DETALHE (linha a linha, pesado) é lazy: /api/detalhe, só quando Raio-X/Panorama precisam.
+    // O DETALHE (linha a linha, pesado) é lazy: /api/detalhe, só quando Raio-X ou Gerencial abrem.
     const rows = mapMoney(await dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto,
         SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(liquido_n,liquido)) AS liq, SUM(COALESCE(ctp_n,ctp)) AS ctp, SUM(COALESCE(imposto_n,imposto)) AS imp,
         SUM(COALESCE(mc_comissao_n,mc_comissao)) AS mc, SUM(COALESCE(mc_real_n,mc_real)) AS "mcReal", SUM(qtd) AS qtd, COUNT(*) AS ped,
         SUM(COALESCE(publicidade_n,publicidade,0)) AS pub, SUM(COALESCE(afiliados_n,afiliados,0)) AS afil,
+        SUM(CASE WHEN LOWER(TRIM(COALESCE(status,'')))='devolvida' THEN 1 ELSE 0 END) AS "devN",
+        SUM(CASE WHEN LOWER(TRIM(COALESCE(status,'')))='devolvida' THEN COALESCE(receita_n,receita) ELSE 0 END) AS "devFat",
         SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' THEN COALESCE(receita_n,receita) ELSE 0 END AS DOUBLE PRECISION)) AS "fatMetas",
         SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' OR LOWER(TRIM(status))='devolvida' THEN COALESCE(mc_comissao_n,mc_comissao,mc_real_n,mc_real,0) ELSE 0 END AS DOUBLE PRECISION)) AS "mcMetas"
-      FROM vendas ${W} GROUP BY data, empresa, canal, ponto`, args), ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd", "fatMetas", "mcMetas", "pub", "afil"]);
-    rows.forEach(o => { o.ped = +o.ped; });
+      FROM vendas ${W} GROUP BY data, empresa, canal, ponto`, args), ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd", "fatMetas", "mcMetas", "pub", "afil", "devFat"]);
+    rows.forEach(o => { o.ped = +o.ped; o.devN = +o.devN || 0; });
     const skuMon = mapMoney(await dbx.all(`SELECT competencia AS mes, sku AS "SKU", SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(liquido_n,liquido)) AS liq,
         SUM(COALESCE(ctp_n,ctp)) AS ctp, SUM(COALESCE(imposto_n,imposto)) AS imp, SUM(COALESCE(mc_real_n,mc_real)) AS mc, SUM(qtd) AS qtd FROM vendas ${W} GROUP BY competencia, sku`, args), ["fat", "liq", "ctp", "imp", "mc", "qtd"]);
     const skuMkt = mapMoney(await dbx.all(`SELECT canal AS mkt, sku, SUM(qtd) AS qtd, SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(mc_real_n,mc_real)) AS mc,
         SUM(COALESCE(liquido_n,liquido)) AS liq FROM vendas ${W} GROUP BY canal, sku`, args), ["qtd", "fat", "mc", "liq"]);
     const skuMktMon = mapMoney(await dbx.all(`SELECT competencia AS mes, canal AS mkt, sku, SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(mc_real_n,mc_real)) AS mc,
         SUM(qtd) AS qtd, SUM(COALESCE(liquido_n,liquido)) AS liq FROM vendas ${W} GROUP BY competencia, canal, sku`, args), ["fat", "mc", "qtd", "liq"]);
+    const ex = await dbx.get("SELECT MIN(data) min, MAX(data) max FROM vendas");
     return { periodo: [de, ate], ms: Date.now() - t0,
+      extremos: [ex && ex.min ? String(ex.min).slice(0, 10) : de, ex && ex.max ? String(ex.max).slice(0, 10) : ate],
       contagem: { rows: rows.length, skuMon: skuMon.length, skuMkt: skuMkt.length, skuMktMon: skuMktMon.length },
       rows, skuMon, skuMkt, skuMktMon };
   }
