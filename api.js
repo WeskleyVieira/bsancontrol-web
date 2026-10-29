@@ -129,8 +129,8 @@ async function rotaGET(u, user) {
     const de = q.de || "0000-00-00", ate = q.ate || "9999-99-99", t0 = Date.now();
     const w = ["data>=?", "data<=?", "status LIKE '%venda%'"], args = [de, ate];
     const W = " WHERE " + w.join(" AND ");
-    const kpi = await dbx.get("SELECT COUNT(*) n, ROUND(SUM(receita)) fat, ROUND(SUM(mc_comissao)) mc FROM vendas" + W, args);
-    const porOp = await dbx.all("SELECT empresa, canal, ROUND(SUM(receita)) fat, ROUND(SUM(mc_comissao)) mc, COUNT(*) n FROM vendas" + W + " GROUP BY empresa, canal ORDER BY mc DESC", args);
+    const kpi = await dbx.get("SELECT COUNT(*) n, ROUND(SUM(COALESCE(receita_n,receita))) fat, ROUND(SUM(COALESCE(mc_comissao_n,mc_comissao))) mc FROM vendas" + W, args);
+    const porOp = await dbx.all("SELECT empresa, canal, ROUND(SUM(COALESCE(receita_n,receita))) fat, ROUND(SUM(COALESCE(mc_comissao_n,mc_comissao))) mc, COUNT(*) n FROM vendas" + W + " GROUP BY empresa, canal ORDER BY mc DESC", args);
     return { periodo: [de, ate], ms: Date.now() - t0, kpi, por_operacao: porOp };
   }
   // ── /api/dataset — datasets do painel (ROWS/DETALHE/agregados) escopados por PONTO, janela de meses ──
@@ -153,19 +153,19 @@ async function rotaGET(u, user) {
     // AGREGADOS via GROUP BY no banco (retorna ~11k linhas, não as 37k cruas) — carga inicial leve.
     // O DETALHE (linha a linha, pesado) é lazy: /api/detalhe, só quando Raio-X/Panorama precisam.
     const rows = mapMoney(await dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto,
-        SUM(receita) AS fat, SUM(liquido) AS liq, SUM(ctp) AS ctp, SUM(imposto) AS imp,
-        SUM(mc_comissao) AS mc, SUM(mc_real) AS "mcReal", SUM(qtd) AS qtd, COUNT(*) AS ped,
-        SUM(COALESCE(publicidade,0)) AS pub, SUM(COALESCE(afiliados,0)) AS afil,
-        SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' THEN receita ELSE 0 END AS DOUBLE PRECISION)) AS "fatMetas",
-        SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' OR LOWER(TRIM(status))='devolvida' THEN COALESCE(mc_comissao,mc_real,0) ELSE 0 END AS DOUBLE PRECISION)) AS "mcMetas"
+        SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(liquido_n,liquido)) AS liq, SUM(COALESCE(ctp_n,ctp)) AS ctp, SUM(COALESCE(imposto_n,imposto)) AS imp,
+        SUM(COALESCE(mc_comissao_n,mc_comissao)) AS mc, SUM(COALESCE(mc_real_n,mc_real)) AS "mcReal", SUM(qtd) AS qtd, COUNT(*) AS ped,
+        SUM(COALESCE(publicidade_n,publicidade,0)) AS pub, SUM(COALESCE(afiliados_n,afiliados,0)) AS afil,
+        SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' THEN COALESCE(receita_n,receita) ELSE 0 END AS DOUBLE PRECISION)) AS "fatMetas",
+        SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' OR LOWER(TRIM(status))='devolvida' THEN COALESCE(mc_comissao_n,mc_comissao,mc_real_n,mc_real,0) ELSE 0 END AS DOUBLE PRECISION)) AS "mcMetas"
       FROM vendas ${W} GROUP BY data, empresa, canal, ponto`, args), ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd", "fatMetas", "mcMetas", "pub", "afil"]);
     rows.forEach(o => { o.ped = +o.ped; });
-    const skuMon = mapMoney(await dbx.all(`SELECT competencia AS mes, sku AS "SKU", SUM(receita) AS fat, SUM(liquido) AS liq,
-        SUM(ctp) AS ctp, SUM(imposto) AS imp, SUM(mc_real) AS mc, SUM(qtd) AS qtd FROM vendas ${W} GROUP BY competencia, sku`, args), ["fat", "liq", "ctp", "imp", "mc", "qtd"]);
-    const skuMkt = mapMoney(await dbx.all(`SELECT canal AS mkt, sku, SUM(qtd) AS qtd, SUM(receita) AS fat, SUM(mc_real) AS mc,
-        SUM(liquido) AS liq FROM vendas ${W} GROUP BY canal, sku`, args), ["qtd", "fat", "mc", "liq"]);
-    const skuMktMon = mapMoney(await dbx.all(`SELECT competencia AS mes, canal AS mkt, sku, SUM(receita) AS fat, SUM(mc_real) AS mc,
-        SUM(qtd) AS qtd, SUM(liquido) AS liq FROM vendas ${W} GROUP BY competencia, canal, sku`, args), ["fat", "mc", "qtd", "liq"]);
+    const skuMon = mapMoney(await dbx.all(`SELECT competencia AS mes, sku AS "SKU", SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(liquido_n,liquido)) AS liq,
+        SUM(COALESCE(ctp_n,ctp)) AS ctp, SUM(COALESCE(imposto_n,imposto)) AS imp, SUM(COALESCE(mc_real_n,mc_real)) AS mc, SUM(qtd) AS qtd FROM vendas ${W} GROUP BY competencia, sku`, args), ["fat", "liq", "ctp", "imp", "mc", "qtd"]);
+    const skuMkt = mapMoney(await dbx.all(`SELECT canal AS mkt, sku, SUM(qtd) AS qtd, SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(mc_real_n,mc_real)) AS mc,
+        SUM(COALESCE(liquido_n,liquido)) AS liq FROM vendas ${W} GROUP BY canal, sku`, args), ["qtd", "fat", "mc", "liq"]);
+    const skuMktMon = mapMoney(await dbx.all(`SELECT competencia AS mes, canal AS mkt, sku, SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(mc_real_n,mc_real)) AS mc,
+        SUM(qtd) AS qtd, SUM(COALESCE(liquido_n,liquido)) AS liq FROM vendas ${W} GROUP BY competencia, canal, sku`, args), ["fat", "mc", "qtd", "liq"]);
     return { periodo: [de, ate], ms: Date.now() - t0,
       contagem: { rows: rows.length, skuMon: skuMon.length, skuMkt: skuMkt.length, skuMktMon: skuMktMon.length },
       rows, skuMon, skuMkt, skuMktMon };
@@ -189,7 +189,7 @@ async function rotaGET(u, user) {
     // 137 MB para 249 MB e estouravam os 512 MB do plano free (exit 134, OOM, 502 no ar).
     // A abertura de custos mora em /api/abertura, que é escopado a UMA operação.
     const raw = await dbx.all(`SELECT data, empresa, canal, ponto, sku, anuncio_id, titulo, pedido,
-        qtd, receita, liquido, ctp, imposto, mc_real, mc_comissao, fonte_liquido, status FROM vendas WHERE ${w.join(" AND ")}`, args);
+        qtd, COALESCE(receita_n,receita) AS receita, COALESCE(liquido_n,liquido) AS liquido, COALESCE(ctp_n,ctp) AS ctp, COALESCE(imposto_n,imposto) AS imposto, COALESCE(mc_real_n,mc_real) AS mc_real, COALESCE(mc_comissao_n,mc_comissao) AS mc_comissao, fonte_liquido, status FROM vendas WHERE ${w.join(" AND ")}`, args);
     const detalhe = raw.map(v => ({ date: v.data, emp: v.empresa, mkt: v.canal, sku: v.sku, tit: v.titulo, ped: v.pedido,
       anuncio: v.anuncio_id, qtd: r2(v.qtd), fat: r2(v.receita), liq: r2(v.liquido), ctp: r2(v.ctp), imp: r2(v.imposto),
       mc: r2(v.mc_comissao), mccom: r2(v.mc_comissao), mcReal: r2(v.mc_real), fonte: v.fonte_liquido, stat: v.status, ponto: v.ponto }));
@@ -209,9 +209,9 @@ async function rotaGET(u, user) {
     if (q.de) { w.push("data>=?"); args.push(q.de); }
     if (q.ate) { w.push("data<=?"); args.push(q.ate); }
     const r2 = n => Math.round((+n || 0) * 100) / 100;
-    const raw = await dbx.all(`SELECT data, canal, sku, pedido, preco_cheio, desconto, comissao, tarifas,
-        frete, reembolso, afiliados, publicidade, bonus_flex, custo_motoboy, custo_fatura,
-        subsidios, copart_frete, acerto_vapt, repasse_flash, forma_entrega, veio_de_ads
+    const raw = await dbx.all(`SELECT data, canal, sku, pedido, COALESCE(preco_cheio_n,preco_cheio) AS preco_cheio, COALESCE(desconto_n,desconto) AS desconto, COALESCE(comissao_n,comissao) AS comissao, COALESCE(tarifas_n,tarifas) AS tarifas,
+        COALESCE(frete_n,frete) AS frete, COALESCE(reembolso_n,reembolso) AS reembolso, COALESCE(afiliados_n,afiliados) AS afiliados, COALESCE(publicidade_n,publicidade) AS publicidade, COALESCE(bonus_flex_n,bonus_flex) AS bonus_flex, COALESCE(custo_motoboy_n,custo_motoboy) AS custo_motoboy, COALESCE(custo_fatura_n,custo_fatura) AS custo_fatura,
+        COALESCE(subsidios_n,subsidios) AS subsidios, COALESCE(copart_frete_n,copart_frete) AS copart_frete, COALESCE(acerto_vapt_n,acerto_vapt) AS acerto_vapt, COALESCE(repasse_flash_n,repasse_flash) AS repasse_flash, forma_entrega, veio_de_ads
       FROM vendas WHERE ${w.join(" AND ")}`, args);
     const PAR = [["pcheio", "preco_cheio"], ["desc", "desconto"], ["comis", "comissao"], ["tarif", "tarifas"],
       ["freteC", "frete"], ["reemb", "reembolso"], ["afil", "afiliados"], ["pub", "publicidade"],
@@ -264,8 +264,8 @@ async function rotaGET(u, user) {
     const args = [emp, mkt, anuncio || sku, d0.toISOString().slice(0, 7), ref];
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const linhas = (await dbx.all(`SELECT competencia AS mes, sku, SUM(qtd) AS qtd, COUNT(*) AS ped,
-        SUM(receita) AS fat, SUM(liquido) AS liq, SUM(imposto) AS imp, SUM(ctp) AS ctp, SUM(mc_real) AS mc,
-        SUM(ABS(COALESCE(comissao,0))) AS comis, SUM(ABS(COALESCE(tarifas,0))) AS tarif
+        SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(liquido_n,liquido)) AS liq, SUM(COALESCE(imposto_n,imposto)) AS imp, SUM(COALESCE(ctp_n,ctp)) AS ctp, SUM(COALESCE(mc_real_n,mc_real)) AS mc,
+        SUM(ABS(COALESCE(comissao_n,comissao,0))) AS comis, SUM(ABS(COALESCE(tarifas_n,tarifas,0))) AS tarif
       FROM vendas WHERE ${w.join(" AND ")} GROUP BY competencia, sku ORDER BY competencia, sku`, args))
       .map(o => ({ mes: o.mes, sku: o.sku, qtd: +o.qtd || 0, ped: +o.ped || 0, fat: r2(o.fat), liq: r2(o.liq),
         imp: r2(o.imp), ctp: r2(o.ctp), mc: r2(o.mc), comis: r2(o.comis), tarif: r2(o.tarif) }));
