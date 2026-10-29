@@ -23,11 +23,14 @@ function assinaToken(payload, horas = 12) {
 }
 function verificaToken(token) {
   try {
-    const [h, b, s] = (token || "").split(".");
-    const sig = crypto.createHmac("sha256", SECRET).update(h + "." + b).digest("base64url");
-    if (sig !== s) return null;
+    const partes = String(token || "").split(".");
+    if (partes.length !== 3 || !partes[0] || !partes[1] || !partes[2]) return null;
+    const [h, b, s] = partes;
+    const sig = crypto.createHmac("sha256", SECRET).update(h + "." + b).digest();
+    const got = Buffer.from(s, "base64url");
+    if (got.length !== sig.length || !crypto.timingSafeEqual(got, sig)) return null;
     const p = unb64(b);
-    if (p.exp && p.exp < Date.now()) return null;
+    if (typeof p.exp !== "number" || p.exp < Date.now()) return null;
     return p;
   } catch (e) { return null; }
 }

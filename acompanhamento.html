@@ -2735,9 +2735,18 @@ function _adsInvOper(emp,mkt,ps,pe){
 function gerSub(id){ GER_SUB=id; renderGerencial(); }
 function abrirGuiaGer(){ const m=document.getElementById('ger-guia-modal'); if(m) m.style.display='block'; }
 function fecharGuiaGer(){ const m=document.getElementById('ger-guia-modal'); if(m) m.style.display='none'; }
+function opsDoGestorLogado(){
+  const u=(typeof BCAUTH!=='undefined'&&BCAUTH.user)?BCAUTH.user:null;
+  if(!u||u.perfil!=='gestor') return null;
+  const map=(typeof METAS_GESTORES==='object'&&METAS_GESTORES)||{};
+  const ref=u.gestor_ref||'';
+  if(!ref) return [];
+  return Object.keys(map).filter(k=>map[k]===ref).map(k=>{const i=k.indexOf('|');return {emp:k.slice(0,i),mkt:k.slice(i+1)};}).filter(o=>o.emp&&o.mkt);
+}
+function linhaDaCarteira(r,ops){ if(!ops) return true; return ops.some(o=>o.emp===r.emp&&nomeCanal(o.mkt)===nomeCanal(r.mkt)); }
 function onGerEmp(){ // troca de empresa: repovoa marketplaces daquela empresa (cascata) e zera a operação
   const emp=document.getElementById('ger-sel-emp').value, mktSel=document.getElementById('ger-sel-mkt');
-  const base=(typeof DETALHE!=='undefined'&&Array.isArray(DETALHE))?DETALHE.filter(noPonto):[];
+  const base=(typeof DETALHE!=='undefined'&&Array.isArray(DETALHE))?DETALHE.filter(noPonto).filter(r=>linhaDaCarteira(r,opsDoGestorLogado())):[];
   const mkts=[...new Set(base.filter(r=>!emp||r.emp===emp).map(r=>r.mkt))].filter(Boolean).sort();
   mktSel.innerHTML='<option value="">— marketplace —</option>'+mkts.map(m=>`<option value="${m}">${m}</option>`).join('');
   GER_OP=''; _gvResetFiltros(); renderGerencial();
@@ -3786,7 +3795,11 @@ function ac2BuildDemandas(){
     o.fat+=(+r.fat||0); o.mc+=(r.mccom!=null?+r.mccom:+r.mc||0); o.qtd+=(+r.qtd||0); });
   const out=[];
   Object.values(agg).forEach(o=>{ if(o.fat<=0) return; const mcPct=o.mc/o.fat;
-    const dono=AC2_GESTOR[o.emp+'|'+o.mkt]; if(!dono) return;            // só operações com dono mapeado
+    const chave=o.emp+'|'+o.mkt;
+    const mapa=(typeof METAS_GESTORES==='object'&&METAS_GESTORES)||AC2_GESTOR;
+    const dono=mapa[chave]; if(!dono) return;                         // só operações com dono mapeado
+    const eu=(typeof BCAUTH!=='undefined'&&BCAUTH.user&&BCAUTH.user.perfil==='gestor')?(BCAUTH.user.gestor_ref||''):'';
+    if(eu&&dono!==eu) return;                                          // fallback local não mostra a conta de outro gestor
     if(mcPct>=AC2_META) return;                                          // saudável, não é demanda
     const tipo = mcPct<0 ? 'Estancamento de Prejuízo' : 'Correção de Margem';
     const risco = Math.round(o.fat*(AC2_META-mcPct));
@@ -5890,7 +5903,7 @@ async function bcPwdSubmit(ev){ ev.preventDefault(); const btn=document.getEleme
   try{
     const r=await authFetch('/api/trocar-senha',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({senha_atual:atual,senha_nova:nova})});
     const d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.erro||('HTTP '+r.status));
-    const u=BCAUTH.user; if(u){ u.trocar=false; try{localStorage.setItem('bc_user',JSON.stringify(u));}catch(e){} }   // não força de novo
+    const u=BCAUTH.user; if(u){ u.trocar=false; try{ if(d.token) localStorage.setItem('bc_token',d.token); localStorage.setItem('bc_user',JSON.stringify(u)); }catch(e){} }   // token novo, sem a trava de troca
     document.getElementById('bc-pwd').classList.remove('on'); bcRenderAuthBar(); bcPosLogin();
   }catch(e){ err.textContent='⚠️ '+(/atual incorreta|400/i.test(e.message)?'Senha atual incorreta.':e.message); btn.disabled=false; btn.textContent='Salvar'; }
   return false;
@@ -7064,7 +7077,8 @@ function renderGerencial(){
   // gerSub() (ex.: gerPFilt força 'produtos' ao filtrar anúncios) — sem isto o painel ficava num
   // estado impossível: sub de Gestão com a barra de Acompanhamento e o seletor escondido.
   if(!GER_GRUPO[GER_SUB]) GER_SUB='panorama';   // sub-aba inexistente (ex.: 'acomp', que virou aba própria)
-  const base=(typeof DETALHE!=='undefined'&&Array.isArray(DETALHE))?DETALHE.filter(noPonto):[];
+  const carteira=opsDoGestorLogado();
+  const base=(typeof DETALHE!=='undefined'&&Array.isArray(DETALHE))?DETALHE.filter(noPonto).filter(r=>linhaDaCarteira(r,carteira)):[];
   // popular o seletor de EMPRESA uma vez; o de marketplace é preenchido em cascata por onGerEmp()
   if(empSel.dataset.n!==String(base.length)){
     const emps=[...new Set(base.map(r=>r.emp))].filter(Boolean).sort();
@@ -7076,7 +7090,7 @@ function renderGerencial(){
   // mesmo sem dado a barra do MODO precisa ser pintada — senão, antes de carregar/logar, os botões
   // Gestão/Acompanhamento ficam congelados e o seletor de operação aparece onde não se aplica.
   // (era o último caminho de saída que ainda não repintava; o de "sem operação" já foi corrigido)
-  if(!base.length&&GER_SUB!=='metas'){ const msg=painelOnline()?(window._detLoaded?'Sem venda neste recorte.':'Carregando as vendas da operação.'):'Carregue os dados de vendas para usar o Gerencial.'; vazio.style.display='block'; vazio.innerHTML=msg; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); _gerPainel(); _gerSubHighlight(); return; }
+  if(!base.length&&GER_SUB!=='metas'){ const msg=(carteira&&!carteira.length)?'Nenhuma operação atribuída a você.':(painelOnline()?(window._detLoaded?'Sem venda neste recorte.':'Carregando as vendas da operação.'):'Carregue os dados de vendas para usar o Gerencial.'); vazio.style.display='block'; vazio.innerHTML=msg; kp.innerHTML='';al.innerHTML='';corpo.style.display='none';['c-ger-dia','c-ger-mod','c-ger-ads'].forEach(dc); _gerPainel(); _gerSubHighlight(); return; }
   // Acompanhamento é visão de COORDENADOR (todas as operações) — não depende de escolher operação
   if(GER_SUB==='acomp'){
     vazio.style.display='none'; corpo.style.display='none';
@@ -10404,7 +10418,12 @@ function setS(k,btn){
 }
 function toggleCmp(){cmpMode=!cmpMode;document.getElementById('ctog').classList.toggle('on',cmpMode);document.getElementById('cinputs').classList.toggle('show',cmpMode);renderAll();}
 function goPage(id,btn){
-  if(id==='dre' && typeof DRE_HASH!=='undefined' && DRE_HASH && !_dreOK){_pedirSenhaDRE(btn);return;}
+  if(id==='dre'){
+    const online=typeof painelOnline==='function'&&painelOnline();
+    const u=(typeof BCAUTH!=='undefined'&&BCAUTH.user)?BCAUTH.user:null;
+    if(online&&(!u||u.perfil!=='direcao')) return;
+    if(typeof DRE_HASH!=='undefined'&&DRE_HASH&&!_dreOK){_pedirSenhaDRE(btn);return;}
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   // Only remove 'on' from main nav buttons (not dropdown), then re-add
   NAV_PAGES.forEach(p=>{
@@ -10580,12 +10599,10 @@ function renderPageOnly(id){
 function populatePontoLens(){
   const el=document.getElementById('ponto-lens'); if(!el) return;
   const pts=[...new Set((ROWS||[]).map(r=>r.ponto).filter(Boolean))].sort();
-  const ehGestor=(typeof BCAUTH!=='undefined' && BCAUTH.user && BCAUTH.user.perfil==='gestor');   // gestor não tem visão "Grupo" (só coord/direção)
-  if(pts.length<2){ el.style.display='none'; PONTO_SEL=''; return; }         // 1 ponto só: sem toggle (já vê o dele)
-  if(ehGestor){ if(!pts.includes(PONTO_SEL)) PONTO_SEL=pts[0]; }             // gestor fica sempre num ponto específico
-  else if(PONTO_SEL && !pts.includes(PONTO_SEL)){ PONTO_SEL=''; try{localStorage.setItem('bc_ponto','');}catch(e){} }
+  if(pts.length<2){ el.style.display='none'; PONTO_SEL=''; return; }         // 1 ponto só: sem toggle
+  if(PONTO_SEL && !pts.includes(PONTO_SEL)){ PONTO_SEL=''; try{localStorage.setItem('bc_ponto','');}catch(e){} }
   el.style.display='inline-flex';
-  const opts=(ehGestor?[]:[['','Grupo']]).concat(pts.map(p=>[p,p]));         // sem "Grupo" p/ gestor
+  const opts=[['','Grupo']].concat(pts.map(p=>[p,p]));
   el.innerHTML=opts.map(([v,l])=>{const on=PONTO_SEL===v;return `<button type="button" onclick="setPonto('${v}')" style="border:none;background:${on?'var(--a)':'transparent'};color:${on?'#fff':'var(--t2)'};font-size:12px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;">${l}</button>`;}).join('');
   try{ updateScopeChip(); }catch(e){}
 }
@@ -12147,7 +12164,8 @@ renderAll();
     var u=(typeof BCAUTH!=='undefined'?BCAUTH.user:null);
     function hide(id){ var x=document.getElementById(id); if(x)x.style.display='none'; }
     try{ var ub=document.querySelector('.upload-btn'); if(ub)ub.style.display='none'; }catch(e){}   // online: dados vêm da API, sem upload de xlsx
-    if(u && u.perfil==='gestor'){ hide('nav-dre'); hide('env-upload-box'); }   // gestor: só DRE oculto; comissão fica (filtrada pra dele); upload só coord/direção
+    if(!u || u.perfil!=='direcao') hide('nav-dre');   // DRE só a direção; coordenação vê o resto
+    if(u && u.perfil==='gestor') hide('env-upload-box');   // upload de envios só coord/direção; comissão do gestor fica, filtrada
     if(u && u.perfil==='direcao'){ var ab=document.getElementById('btn-admin'); if(ab)ab.style.display='inline-block'; }   // admin de usuários só p/ Direção
   }
   async function bcCarrega(silencioso){

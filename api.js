@@ -39,20 +39,24 @@ let _geracao = Date.now();
 const etagDe = k => 'W/"' + _geracao.toString(36) + '-' + crypto.createHash("sha1").update(k).digest("hex").slice(0, 12) + '"';
 function gzCacheGet(k) { const e = _gzCache.get(k); if (e && Date.now() - e.t < GZ_TTL) { _gzCache.delete(k); _gzCache.set(k, e); return e.buf; } if (e) _gzCache.delete(k); return null; }
 function gzCacheSet(k, buf) { let tot = buf.length; for (const e of _gzCache.values()) tot += e.buf.length; while (tot > GZ_CAP && _gzCache.size) { const first = _gzCache.keys().next().value; tot -= _gzCache.get(first).buf.length; _gzCache.delete(first); } _gzCache.set(k, { t: Date.now(), buf }); }
-// ponto(s) em que um gestor opera (1 ou 2) — restringe a visão dele; direção/coord veem tudo
-async function pontosDoGestor(gestorRef) {
-  const rs = await dbx.all("SELECT DISTINCT v.ponto p FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=?", [gestorRef]);
-  return rs.map(r => r.p).filter(Boolean);
-}
-async function restringePontos(user, where, args) {
-  if (!user || user.perfil !== "gestor") return;
-  const pts = await pontosDoGestor(user.gestor_ref);
-  if (!pts.length) { where.push("1=0"); return; } // sem carteira nunca significa acesso a toda a base
-  where.push("ponto IN (" + pts.map(() => "?").join(",") + ")");
-  args.push(...pts);
+// Abas macro (dataset, detalhe, vendas-agregado) mostram o grupo ao gestor.
+// Gerencial, Acompanhamento e comissão cortam pela operação. Carteira vazia nesses cortes devolve vazio.
+async function operacaoDoGestor(user, emp, mkt) {
+  if (!user || user.perfil !== "gestor") return true;
+  if (!user.gestor_ref || !emp || !mkt) return false;
+  const r = await dbx.get("SELECT 1 AS ok FROM operacoes WHERE gestor=? AND empresa=? AND marketplace=?", [user.gestor_ref, emp, mkt]);
+  return !!r;
 }
 const body = req => new Promise(r => { let b = ""; req.on("data", c => b += c); req.on("end", () => { try { r(JSON.parse(b || "{}")); } catch (e) { r({}); } }); });
-const userDe = req => { const h = req.headers["authorization"] || ""; return verificaToken(h.replace(/^Bearer\s+/i, "")); };
+// Relê ativo e perfil no banco. O token só prova a assinatura; o perfil de doze horas atrás não vale.
+async function sessaoDe(req) {
+  const h = req.headers["authorization"] || "";
+  const tok = verificaToken(h.replace(/^Bearer\s+/i, ""));
+  if (!tok) return null;
+  const us = await dbx.get("SELECT id, nome, perfil, gestor_ref, ativo FROM usuarios WHERE id=?", [tok.id]);
+  if (!us || !+us.ativo) return { recusado: 401, erro: "não autenticado" };
+  return { id: us.id, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref, trocar: tok.trocar === true };
+}
 
 // demanda do banco → modelo que o Acompanhamento (ac2) consome
 const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa, mkt: r.canal, ponto: r.ponto, gestor: r.gestor, sku: r.sku, anuncio: r.anuncio_id,
@@ -109,7 +113,7 @@ async function rotaGET(u, user) {
       LEFT JOIN promo_validacao pv ON pv.demanda_id=d.id`;
     const args = [], w = [];
     if (q.mes) { w.push("d.competencia=?"); args.push(q.mes); }   // ?mes opcional; sem ele devolve todos os meses — o painel filtra por período no cliente (segue o filtro do topo)
-    if (user && user.perfil === "gestor") { w.push("d.gestor=?"); args.push(user.gestor_ref); }
+    if (user && user.perfil === "gestor") { if (!user.gestor_ref) w.push("1=0"); else { w.push("d.gestor=?"); args.push(user.gestor_ref); } }
     if (w.length) sql += " WHERE " + w.join(" AND ");
     sql += " ORDER BY d.risco DESC";
     return (await dbx.all(sql, args)).map(mapDem);
@@ -118,13 +122,12 @@ async function rotaGET(u, user) {
   if (u.pathname === "/api/comandos") {
     await garanteComandos();
     const w = ["criado_em >= ?"], args = [new Date(Date.now() - 14 * 864e5).toISOString()];
-    if (user && user.perfil === "gestor") { w.push("gestor=?"); args.push(user.gestor_ref); }
+    if (user && user.perfil === "gestor") { if (!user.gestor_ref) w.push("1=0"); else { w.push("gestor=?"); args.push(user.gestor_ref); } }
     return await dbx.all("SELECT id, criado_em, pedido_por, demanda_id, empresa, anuncio, estado, resultado, atualizado_em FROM comandos WHERE " + w.join(" AND ") + " ORDER BY criado_em DESC", args);
   }
   if (u.pathname === "/api/vendas-agregado") {
     const de = q.de || "0000-00-00", ate = q.ate || "9999-99-99", t0 = Date.now();
     const w = ["data>=?", "data<=?", "status LIKE '%venda%'"], args = [de, ate];
-    await restringePontos(user, w, args);
     const W = " WHERE " + w.join(" AND ");
     const kpi = await dbx.get("SELECT COUNT(*) n, ROUND(SUM(receita)) fat, ROUND(SUM(mc_comissao)) mc FROM vendas" + W, args);
     const porOp = await dbx.all("SELECT empresa, canal, ROUND(SUM(receita)) fat, ROUND(SUM(mc_comissao)) mc, COUNT(*) n FROM vendas" + W + " GROUP BY empresa, canal ORDER BY mc DESC", args);
@@ -144,7 +147,6 @@ async function rotaGET(u, user) {
       de = de || dt.toISOString().slice(0, 10);
     }
     const w = ["data>=?", "data<=?"]; const args = [de, ate];
-    await restringePontos(user, w, args);
     const W = "WHERE " + w.join(" AND ");
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const mapMoney = (a, campos) => a.map(o => { for (const c of campos) o[c] = r2(o[c]); return o; });
@@ -181,7 +183,6 @@ async function rotaGET(u, user) {
       de = de || dt.toISOString().slice(0, 10);
     }
     const w = ["data>=?", "data<=?"]; const args = [de, ate];
-    await restringePontos(user, w, args);
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     // ⚠ NÃO acrescentar colunas aqui. Este endpoint devolve a base INTEIRA (148k linhas em out/2026);
     // cada campo a mais é multiplicado por isso. Medido: 16 campos de abertura levavam o pico de
@@ -203,12 +204,10 @@ async function rotaGET(u, user) {
     const t0 = Date.now();
     const emp = q.emp || "", mkt = q.mkt || "";
     if (!emp || !mkt) return { erro: "informe emp e mkt" };
+    if (!(await operacaoDoGestor(user, emp, mkt))) return { periodo: [q.de || null, q.ate || null], n: 0, abertura: [] };
     const w = ["empresa=?", "canal=?"], args = [emp, mkt];
     if (q.de) { w.push("data>=?"); args.push(q.de); }
     if (q.ate) { w.push("data<=?"); args.push(q.ate); }
-    if (user && user.perfil === "gestor") { const pts = await pontosDoGestor(user.gestor_ref);
-      if (pts.length) { w.push("ponto IN (" + pts.map(() => "?").join(",") + ")"); args.push(...pts); }
-      else return { periodo: [q.de || null, q.ate || null], n: 0, abertura: [] }; }
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const raw = await dbx.all(`SELECT data, canal, sku, pedido, preco_cheio, desconto, comissao, tarifas,
         frete, reembolso, afiliados, publicidade, bonus_flex, custo_motoboy, custo_fatura,
@@ -260,11 +259,9 @@ async function rotaGET(u, user) {
     const meses = Math.max(2, Math.min(24, parseInt(q.meses || "13", 10)));
     const ref = /^\d{4}-\d{2}$/.test(q.ate || "") ? q.ate : new Date().toISOString().slice(0, 7);
     const d0 = new Date(ref + "-01T00:00:00Z"); d0.setUTCMonth(d0.getUTCMonth() - (meses - 1));
+    if (!(await operacaoDoGestor(user, emp, mkt))) return { anuncio, sku, ate: ref, linhas: [] };
     const w = ["empresa=?", "canal=?", anuncio ? "anuncio_id=?" : "sku=?", "status LIKE '%venda%'", "competencia>=?", "competencia<=?"];
     const args = [emp, mkt, anuncio || sku, d0.toISOString().slice(0, 7), ref];
-    if (user && user.perfil === "gestor") { const pts = await pontosDoGestor(user.gestor_ref);
-      if (!pts.length) return { linhas: [] };
-      w.push("ponto IN (" + pts.map(() => "?").join(",") + ")"); args.push(...pts); }
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const linhas = (await dbx.all(`SELECT competencia AS mes, sku, SUM(qtd) AS qtd, COUNT(*) AS ped,
         SUM(receita) AS fat, SUM(liquido) AS liq, SUM(imposto) AS imp, SUM(ctp) AS ctp, SUM(mc_real) AS mc,
@@ -284,29 +281,23 @@ async function rotaGET(u, user) {
     got.operacoes = await dbx.all("SELECT empresa, marketplace, gestor FROM operacoes" +
       (user && user.perfil === "gestor" ? " WHERE gestor=?" : ""),
       user && user.perfil === "gestor" ? [user.gestor_ref] : []);
-    if (user && user.perfil === "gestor") {   // gestor: dados do(s) ponto(s) dele; comissão só das operações dele
-      const pts = new Set(await pontosDoGestor(user.gestor_ref));
-      const opm = {};   // op (emp|mkt) → ponto dominante
-      (await dbx.all("SELECT empresa, canal, ponto, COUNT(*) n FROM vendas GROUP BY empresa, canal, ponto ORDER BY n DESC")).forEach(r => { const k = r.empresa + "|" + r.canal; if (!(k in opm)) opm[k] = r.ponto; });
-      const porOp = r => pts.has(opm[(r.emp || "") + "|" + (r.mkt || "")]);
-      if (got.ads) got.ads = got.ads.filter(porOp);
-      if (got.adsCamp) got.adsCamp = got.adsCamp.filter(porOp);
-      if (got.adsDia) got.adsDia = got.adsDia.filter(porOp);
-      if (got.fullRel && got.fullRel.contas) {   // relação do Full: chave "empresa|canal" → só as operações do ponto dele
-        const c = {}; for (const k in got.fullRel.contas) if (pts.has(opm[k])) c[k] = got.fullRel.contas[k];
-        got.fullRel = { ...got.fullRel, contas: c };
-      }
-      if (got.estoque) got.estoque = got.estoque.filter(r => pts.has(r.ponto));
-      if (got.produtos) got.produtos = got.produtos.filter(r => pts.has(r.ponto));
-      if (got.envios) { const empm = {}; (await dbx.all("SELECT empresa, ponto, COUNT(*) n FROM vendas GROUP BY empresa, ponto ORDER BY n DESC")).forEach(r => { if (!(r.empresa in empm)) empm[r.empresa] = r.ponto; }); got.envios = got.envios.filter(r => pts.has(empm[r.empresa])); }
+    if (user && user.perfil === "gestor") {   // macro (ads, estoque, envios) fica o grupo; comissão e acompanhamento, só a operação dele
       const opGestor = {}; (await dbx.all("SELECT empresa, marketplace, gestor FROM operacoes")).forEach(o => { opGestor[o.empresa + " · " + o.marketplace] = o.gestor; });
-      const afProprio = r => opGestor[r.emp + " · " + r.mkt] === user.gestor_ref;
+      const daMinha = r => !!user.gestor_ref && opGestor[r.operacao] === user.gestor_ref;
+      const afProprio = r => !!user.gestor_ref && opGestor[r.emp + " · " + r.mkt] === user.gestor_ref;
+      if (got.acomp) got.acomp = got.acomp.filter(daMinha);
+      if (got.acompItens) got.acompItens = got.acompItens.filter(daMinha);
       if (got.afiliadosDia) got.afiliadosDia = got.afiliadosDia.filter(afProprio);
       if (got.afiliadosFonte) got.afiliadosFonte = got.afiliadosFonte.filter(afProprio);
-      if (got.comissao) got.comissao = got.comissao.filter(r => opGestor[r.operacao] === user.gestor_ref);
-      if (got.comissaoDet) got.comissaoDet = got.comissaoDet.filter(r => opGestor[r.operacao] === user.gestor_ref);
-      delete got.custos;   // custos/DRE é financeiro — gestor não vê
+      if (got.comissao) got.comissao = got.comissao.filter(r => daMinha(r));
+      if (got.comissaoDet) got.comissaoDet = got.comissaoDet.filter(r => daMinha(r));
+      const skus = new Set(user.gestor_ref ? (await dbx.all("SELECT DISTINCT v.sku sku FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=?", [user.gestor_ref])).map(r => String(r.sku || "").toUpperCase()) : []);
+      if (got.skuCad && typeof got.skuCad === "object" && !Array.isArray(got.skuCad)) {
+        const f = {}; for (const k of Object.keys(got.skuCad)) if (skus.has(String(k).toUpperCase())) f[k] = got.skuCad[k];
+        got.skuCad = f;
+      }
     }
+    if (user && user.perfil !== "direcao") delete got.custos;   // DRE só a direção; coordenação e gestor não recebem o blob
     const mx = await dbx.get("SELECT MAX(atualizado) m FROM datasets");   // carimbo do último db-sync (frescor)
     return { ms: Date.now() - t0, ...got, _sync: (mx && mx.m) ? mx.m : null };
   }
@@ -350,15 +341,21 @@ const server = http.createServer(async (req, res) => {
       const b = await body(req);
       const us = await dbx.get("SELECT * FROM usuarios WHERE email=? AND ativo=1", [String(b.email || "").toLowerCase()]);
       if (!us || !verificaSenha(b.senha || "", us.senha)) return J(res, { ok: false, erro: "credenciais inválidas" }, 401);
-      const token = assinaToken({ id: us.id, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref });
-      const trocar = verificaSenha(SENHA_PADRAO, us.senha);   // ainda na senha padrão → front força a troca
+      const trocar = verificaSenha(SENHA_PADRAO, us.senha);   // ainda na senha padrão → o token só serve para trocá-la
+      const token = assinaToken({ id: us.id, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref, ...(trocar ? { trocar: true } : {}) });
       let ponto = null;   // ponto do gestor (só p/ a lente visual começar nele; não restringe dados)
       if (us.perfil === "gestor") { const pr = await dbx.get("SELECT v.ponto p, COUNT(*) n FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=? GROUP BY v.ponto ORDER BY n DESC", [us.gestor_ref]); ponto = pr ? pr.p : null; }
       return J(res, { ok: true, token, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref, ponto, trocar });
     }
+    let user = null;
+    if (u.pathname.startsWith("/api/")) {
+      const s = await sessaoDe(req);
+      if (s && s.recusado) return J(res, { ok: false, erro: s.erro }, s.recusado);
+      if (s && s.trocar && u.pathname !== "/api/trocar-senha") return J(res, { ok: false, erro: "troque a senha para continuar" }, 403);
+      if (s && !s.recusado) user = s;
+    }
     // ── POST /api/trocar-senha (usuário logado troca a própria senha) ──
     if (req.method === "POST" && u.pathname === "/api/trocar-senha") {
-      const user = userDe(req);
       if (!user) return J(res, { ok: false, erro: "não autenticado" }, 401);
       const o = await body(req);
       const us = await dbx.get("SELECT * FROM usuarios WHERE id=? AND ativo=1", [user.id]);
@@ -367,15 +364,15 @@ const server = http.createServer(async (req, res) => {
       if (nova.length < 6) return J(res, { ok: false, erro: "a nova senha precisa de ao menos 6 caracteres" }, 400);
       if (verificaSenha(nova, us.senha)) return J(res, { ok: false, erro: "a nova senha não pode ser igual à atual" }, 400);
       await dbx.run("UPDATE usuarios SET senha=? WHERE id=?", [hashSenha(nova), us.id]);
-      return J(res, { ok: true });
+      const token = assinaToken({ id: us.id, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref });
+      return J(res, { ok: true, token });
     }
     // ── POST /api/tratativas (gestor registra; calcula reação) ──
     if (req.method === "POST" && u.pathname === "/api/tratativas") {
-      const user = userDe(req);
       if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
       const o = await body(req);
       const dem = await dbx.get("SELECT criado_em, gestor FROM demandas WHERE id=?", [o.demanda_id]);
-      if (user && user.perfil === "gestor" && dem && dem.gestor !== user.gestor_ref) return J(res, { ok: false, erro: "fora do seu escopo" }, 403);
+      if (user && user.perfil === "gestor" && (!user.gestor_ref || !dem || dem.gestor !== user.gestor_ref)) return J(res, { ok: false, erro: "fora do seu escopo" }, 403);
       // QUEM CARIMBA A HORA É O SERVIDOR, nunca o cliente. O painel manda `registrado_em` com o
       // relógio da máquina do gestor; aceitá-lo deixava a data de registro — e a `reacao_h`, que é
       // a métrica de agilidade — reescrevíveis por quem mudasse a data do próprio computador.
@@ -405,14 +402,13 @@ const server = http.createServer(async (req, res) => {
     // O online NÃO executa nada: só enfileira um pedido. Quem executa é o fila-comandos.js no PC (onde moram os tokens do ML), que
     // aceita UM tipo de pedido (reaplicar a promoção de um anúncio). Conta e anúncio vêm da TAREFA no banco, nunca do cliente.
     if (req.method === "POST" && u.pathname === "/api/comandos") {
-      const user = userDe(req);
       if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
       const o = await body(req);
       if (o.tipo !== "reaplicar_promo") return J(res, { ok: false, erro: "tipo de comando não permitido" }, 400);
       const dem = await dbx.get("SELECT id, gestor, empresa, canal, anuncio_id, tipo FROM demandas WHERE id=?", [String(o.demanda_id || "")]);
       if (!dem || !/^promo\|/.test(dem.id) || dem.canal !== "Mercado Livre" || !/execução falhou/i.test(dem.tipo || "") || !/^MLB\d{6,}$/.test(dem.anuncio_id || ""))
         return J(res, { ok: false, erro: "esta tarefa não aceita reaplicação automática" }, 400);
-      if (user && user.perfil === "gestor" && dem.gestor !== user.gestor_ref) return J(res, { ok: false, erro: "fora do seu escopo" }, 403);
+      if (user && user.perfil === "gestor" && (!user.gestor_ref || !dem || dem.gestor !== user.gestor_ref)) return J(res, { ok: false, erro: "fora do seu escopo" }, 403);
       await garanteComandos();
       const aberto = await dbx.get("SELECT * FROM comandos WHERE demanda_id=? AND estado IN ('pendente','rodando') ORDER BY criado_em DESC LIMIT 1", [dem.id]);
       if (aberto) return J(res, { ok: true, comando: aberto, repetido: true });
@@ -424,7 +420,6 @@ const server = http.createServer(async (req, res) => {
     }
     // ── POST /api/envios (coord/direção sobe a planilha de envios → salva na nuvem) ──
     if (req.method === "POST" && u.pathname === "/api/envios") {
-      const user = userDe(req);
       if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
       if (user && user.perfil === "gestor") return J(res, { ok: false, erro: "sem permissão (só coordenação/direção)" }, 403);
       const o = await body(req);
@@ -436,7 +431,6 @@ const server = http.createServer(async (req, res) => {
     }
     // ── POST /api/custos (coord/direção sobem custos operacionais + afi/lives; Ads já vem do dataset) ──
     if (req.method === "POST" && u.pathname === "/api/custos") {
-      const user = userDe(req);
       if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
       if (user && user.perfil === "gestor") return J(res, { ok: false, erro: "sem permissão (só coordenação/direção)" }, 403);
       const o = await body(req);
@@ -447,7 +441,6 @@ const server = http.createServer(async (req, res) => {
     }
     // ── ADMIN de usuários (SÓ Direção) ──
     if (u.pathname.startsWith("/api/admin/")) {
-      const user = userDe(req);
       if ((AUTH_REQ && !user) || (user && user.perfil !== "direcao")) return J(res, { ok: false, erro: "acesso só de administrador (Direção)" }, 403);
       if (req.method === "GET" && u.pathname === "/api/admin/usuarios") {
         const us = await dbx.all("SELECT id, nome, email, perfil, gestor_ref, ativo, senha FROM usuarios ORDER BY perfil, nome");
@@ -474,13 +467,14 @@ const server = http.createServer(async (req, res) => {
     }
     // ── GET da API ──
     if (req.method === "GET" && u.pathname.startsWith("/api/")) {
-      const user = userDe(req);
       if (AUTH_REQ && u.pathname !== "/api/health" && !user) return J(res, { erro: "não autenticado" }, 401);
       // cache (gzip) das rotas pesadas, por escopo (perfil+gestor) — 1º acesso busca, demais são instantâneos
       const pesada = (u.pathname === "/api/dataset" || u.pathname === "/api/detalhe" || u.pathname === "/api/extras");
       const aceitaGz = /\bgzip\b/.test(String(req.headers["accept-encoding"] || ""));
       // cache por escopo (dados do gestor são restritos ao ponto dele; direção/coord compartilham)
-      const ckey = u.pathname + u.search + "#" + (user ? user.perfil + ":" + (user.gestor_ref || "") : "anon");
+      const macro = u.pathname === "/api/dataset" || u.pathname === "/api/detalhe";
+      const escopo = macro ? "grupo" : (user ? user.perfil + ":" + (user.gestor_ref || "") : "anon");
+      const ckey = u.pathname + u.search + "#" + escopo;
       const etag = pesada ? etagDe(ckey) : null, vers = etag ? { ETag: etag, "Cache-Control": "private, no-cache" } : {};
       if (etag && String(req.headers["if-none-match"] || "") === etag) { res.writeHead(304, vers); return res.end(); }   // não mudou: o navegador usa a cópia dele
       if (pesada && aceitaGz) { const hit = gzCacheGet(ckey); if (hit) { res.writeHead(200, Object.assign({ "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "HIT" }, vers)); return res.end(hit); } }
