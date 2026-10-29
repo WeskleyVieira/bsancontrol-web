@@ -10361,8 +10361,9 @@ function onMktSelChange(){
 let _perTarget='main', _perSelS=null, _perSelE=null, _perViewY=2026, _perViewM=0;
 const _PC_MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function _hojeData(){
-  // "hoje" dos atalhos relativos (30d, Este mês, Este ano) = ÚLTIMA DATA COM VENDA na base,
-  // não o fim do mês corrente. Antes usava SHORTS.all[1] (= último dia do mês) e puxava dias sem dado.
+  // "hoje" dos atalhos (30d, Este mês, Este ano) é a última venda da base inteira.
+  // Não pode seguir só o recorte carregado: senão "Este mês" muda depois de abrir setembro.
+  if(window._bcUltimaVenda) return String(window._bcUltimaVenda).slice(0,10);
   if(typeof ROWS!=='undefined' && ROWS.length){ const m=diarioMaxDate(); if(m) return m; }
   return (typeof SHORTS!=='undefined' && SHORTS.all) ? SHORTS.all[1] : new Date().toISOString().slice(0,10);
 }
@@ -10379,7 +10380,7 @@ function aplicarPeriodo(s,e,target){
   if(target==='cmp'){ document.getElementById('d2-start').value=s; document.getElementById('d2-end').value=e; updatePerLabel(); renderAll(); return; }
   document.getElementById('d-start').value=s; document.getElementById('d-end').value=e;
   updatePerLabel();
-  if(typeof window.bcGarantePeriodo==='function'){ window.bcGarantePeriodo(s,e).then(function(){ renderAll(); }); return; }
+  if(typeof window.bcGarantePeriodo==='function'){ window.bcGarantePeriodo(s,e).then(function(){ renderAll(); }, function(){ renderAll(); }); return; }
   renderAll();
 }
 function perPreset(k){
@@ -10484,7 +10485,7 @@ function setS(k,btn){
   document.getElementById('d-start').value=s;
   document.getElementById('d-end').value=e;
   window._suppressShortcutClear = false;
-  if(typeof window.bcGarantePeriodo==='function'){ window.bcGarantePeriodo(s,e).then(function(){ renderAll(); }); return; }
+  if(typeof window.bcGarantePeriodo==='function'){ window.bcGarantePeriodo(s,e).then(function(){ renderAll(); }, function(){ renderAll(); }); return; }
   renderAll();
 }
 function toggleCmp(){cmpMode=!cmpMode;document.getElementById('ctog').classList.toggle('on',cmpMode);document.getElementById('cinputs').classList.toggle('show',cmpMode);renderAll();}
@@ -12238,6 +12239,7 @@ renderAll();
     try{ if(sAll&&eAll) SHORTS.all=[sAll,eAll]; }catch(_){}
     try{ if(!op.manter && mes && typeof SHORTS!=='undefined' && SHORTS[mes] && e && e<SHORTS[mes][1]) SHORTS[mes]=[mes+'-01', e]; }catch(_){}
     if(d.periodo){ _bcDe=String(d.periodo[0]||''); _bcAte=String(d.periodo[1]||''); }
+    if(eAll && (!window._bcUltimaVenda || String(eAll)>String(window._bcUltimaVenda))) window._bcUltimaVenda=String(eAll).slice(0,10);
     try{ buildMonthShortcuts(); }catch(_){}
     if(op.render!==false){ try{ renderAll(); }catch(err){ console.error('renderAll',err); } }
     try{ updateScopeChip(); }catch(_){}
@@ -12304,13 +12306,18 @@ renderAll();
   }
   async function bcGarantePeriodo(s,e){
     s=String(s||''); e=String(e||'');
-    if(_bcDe && _bcAte && s>=_bcDe && e<=_bcAte) return;
-    var r=await authFetch('/api/dataset?de='+encodeURIComponent(s)+'&ate='+encodeURIComponent(e),{cache:'no-cache'});
-    if(!r.ok) return;
-    var d=await r.json();
-    bcAplicaDataset(d,{manter:true,render:false});
-    _detLoaded=false; window._detLoaded=false; _detDe=''; _detAte='';
-    if(typeof activePage!=='undefined' && (activePage==='raiox'||activePage==='gerencial')) await bcCarregaDetalhe(true);
+    try{
+      if(s&&e&&!(_bcDe&&_bcAte&&s>=_bcDe&&e<=_bcAte)){
+        var de=(_bcDe&&_bcDe<s)?_bcDe:s, ate=(_bcAte&&_bcAte>e)?_bcAte:e;
+        var r=await authFetch('/api/dataset?de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate),{cache:'no-cache'});
+        if(r.ok){
+          var d=await r.json();
+          bcAplicaDataset(d,{manter:true,render:false});
+          _detLoaded=false; window._detLoaded=false; _detDe=''; _detAte='';
+        }
+      }
+      if(typeof activePage!=='undefined' && (activePage==='raiox'||activePage==='gerencial')) await bcCarregaDetalhe();
+    }catch(err){ console.error('periodo',err); }
   }
   window.bcCarregaDetalhe = bcCarregaDetalhe;
   window.bcGarantePeriodo = bcGarantePeriodo;
