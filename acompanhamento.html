@@ -1965,7 +1965,7 @@ function buildSHORTS(){
 }
 buildSHORTS();
 const EMP_C={'Bsan Shop':'#00c2a8','Jowcase':'#4f8ef7','Mary Kase':'#a78bfa','Pesseguinho Store':'#f472b6','Powerfull Imports':'#fb923c','Powerfull Filial':'#f59e0b','Powerfull':'#fb923c'};
-const MKT_C={'Mercado Livre':'#facc15','Amazon':'#fb923c','Shopee':'#f472b6','TikTok Shop':'#818cf8','Tik Tok Shop':'#818cf8','Shein':'#f43f5e','Magazine Luiza':'#f97316','Temu':'#a78bfa','Kwai':'#38bdf8','Kwai Shop':'#38bdf8'};
+const MKT_C={'Mercado Livre':'#facc15','Amazon':'#fb923c','Shopee':'#f472b6','TikTok Shop':'#818cf8','Shein':'#f43f5e','Magazine Luiza':'#f97316','Temu':'#a78bfa','Kwai Shop':'#38bdf8'};
 const CP=['#00c2a8','#4f8ef7','#a78bfa','#f472b6','#fb923c','#facc15','#34d399','#38bdf8'];
 
 const brl =v=>'R$\u00a0'+v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
@@ -2038,7 +2038,8 @@ const agg=rows=>rows.reduce((o,r)=>{
   return o;
 },{fat:0,liq:0,ctp:0,imp:0,mc:0,qtd:0,fatMetas:0,_semFatMetas:false});
 function periodoDias(s,e){ if(!s||!e) return 0; return Math.round((new Date(e+'T12:00:00')-new Date(s+'T12:00:00'))/864e5)+1; }
-function nomeCanal(m){ const s=String(m||'').trim(); if(/tik\s*tok/i.test(s)) return 'TikTok Shop'; if(/^kwai(\s+shop)?$/i.test(s)) return 'Kwai'; return s; }
+const CANAIS_NOME=['Amazon','Kwai Shop','Magazine Luiza','Mercado Livre','Shein','Shopee','Temu','TikTok Shop'];
+function nomeCanal(m){ const s=String(m||'').trim(); if(/tik\s*tok/i.test(s)) return 'TikTok Shop'; if(/^kwai(\s+shop)?$/i.test(s)) return 'Kwai Shop'; return s; }
 function unificaCanais(arr){ if(!Array.isArray(arr)) return; for(const r of arr){ if(r&&r.mkt) r.mkt=nomeCanal(r.mkt); } }
 const META_MARGEM=15;
 function by(rows,key){
@@ -7682,7 +7683,7 @@ function renderMarketplaces(){
   }
   if(mktSel && mktSel.options.length<=1){
     const _pm=new Set((ROWS||[]).filter(noPonto).map(r=>r.mkt));
-    Object.keys(MKT_C).filter(m=>!PONTO_SEL||_pm.has(m)).forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;mktSel.appendChild(o);});
+    CANAIS_NOME.filter(m=>_pm.has(m)).forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;mktSel.appendChild(o);});
   }
   renderMktContent();
 }
@@ -10539,6 +10540,7 @@ function renderEstoque(){
 }
 
 function renderPageOnly(id){
+  unificaCanais(ROWS); unificaCanais(DETALHE); unificaCanais(SKU_MKT); unificaCanais(SKU_MKT_MON); unificaCanais(ADS); unificaCanais(ADS_CAMP); unificaCanais(ADS_DIA);
   // Dependências de UI compartilhadas (atalhos de mês)
   buildSHORTS();
   buildMonthShortcuts();
@@ -11373,7 +11375,7 @@ function renderDiarioRelation(arr){
     if(!right&&high) return '#22d3ee'; // nicho rentável
     return '#f87171';                  // pouco de tudo
   };
-  const MKT_ABBR={'Mercado Livre':'ML','Magazine Luiza':'Magalu','Tik Tok Shop':'TikTok','Kwai Shop':'Kwai'};
+  const MKT_ABBR={'Mercado Livre':'ML','Magazine Luiza':'Magalu','TikTok Shop':'TikTok','Kwai Shop':'Kwai'};
   const shortMkt=m=>MKT_ABBR[m]||m;
   const shortEmp=e=>e.split(' ')[0];
   const pts=ops.map(o=>({
