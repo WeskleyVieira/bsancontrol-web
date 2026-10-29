@@ -3147,7 +3147,7 @@ function _renderGerProdutos(A,B,mkt){
   const movMk=o=>o.mov==='novo'?' <span style="color:#4f8ef7;font-size:9px;font-family:\'DM Mono\',monospace" title="novo no período">novo</span>':(o.mov>0?` <span style="color:#22c55e;font-size:10px" title="subiu de relevância: ${o.antF}→${o.aF}">▲</span>`:(o.mov<0?` <span style="color:#f87171;font-size:10px" title="caiu de relevância: ${o.antF}→${o.aF}">▼</span>`:''));
   const devMk=o=>o.devPct>5?` <span style="color:#f59e0b;font-size:9px" title="Devolução: ${o.devPct.toFixed(0)}% (${o.devU}un devolvida(s))">↩${o.devPct.toFixed(0)}%</span>`:'';
   const parte=v=>`<div style="font-size:10px;color:var(--t3);margin-top:1px">${(+v||0).toFixed(1).replace('.',',')}%</div>`;
-  const mcCell=(rs,pct,bold,share)=>`<td class="r"><span style="font-weight:${bold?700:600};color:${rs<0?'#f87171':'var(--t1)'}">${brl(rs)}</span><div style="font-size:9.5px;margin-top:1px">${mcPct(pct,1)}</div>${share!=null?`<div style="font-size:10px;color:var(--t3)">${(+share||0).toFixed(1).replace('.',',')}% da margem</div>`:''}</td>`;
+  const mcCell=(rs,pct,bold,share)=>`<td class="r"><span style="font-weight:${bold?700:600};color:${rs<0?'#f87171':'var(--t1)'}">${brl2(rs)}</span><div style="font-size:9.5px;margin-top:1px">${mcPct(pct,1)}</div>${share!=null?`<div style="font-size:10px;color:var(--t3)">${(+share||0).toFixed(1).replace('.',',')}% da margem</div>`:''}</td>`;
   const tacosCell=o=>{ if(!(o.fat>0)||!(o.adsInv>0)) return '<span style="color:var(--t3)">—</span>'; const t=100*o.adsInv/o.fat; const cor=o.mcpFinal!=null&&t>o.mcp?'#f87171':(t>=8?'#f59e0b':'var(--t1)'); return `<span style="color:${cor};font-weight:600">${t.toFixed(1).replace('.',',')}%</span>`; };
   const ncol=9+(hasAds?4:0);
   let h=`<thead><tr><th onclick="gerPSort('tit')" style="cursor:pointer;user-select:none;${stk}" title="ordenar">${porAnuncio?'Anúncio':'SKU'}${scc('tit')}</th>`
@@ -3174,14 +3174,14 @@ function _renderGerProdutos(A,B,mkt){
     h+=`<tr><td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(o.tit)}">${esc(o.tit||'—')}<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--t3)">${porAnuncio?idHtml:esc(o.sku||'')}${movMk(o)}${devMk(o)}</div></td>`
       +`<td>${relBadge(o.aF)}</td>`
       +`<td class="r">${o.qtd.toLocaleString('pt-BR')}${parte(o.shareVol)}</td>`
-      +`<td class="r">${brl(o.fat)}${parte(o.shareFat)}</td>`
+      +`<td class="r">${brl2(o.fat)}${parte(o.shareFat)}</td>`
       +`<td class="r" style="color:var(--t2)">${brl2(precoUn)}</td>`
       +`<td class="r" style="color:${custoUn>0?'var(--t2)':'var(--t3)'}" title="custo do produto por unidade">${custoUn>0?brl2(custoUn):'—'}</td>`
       +`<td class="r" style="color:${mcUn<0?'#f87171':'var(--t1)'}">${brl2(mcUn)}</td>`
       +(hasAds
         ? mcCell(o.mc,o.mcp,false,o.shareMC)
-          +`<td class="r" style="color:var(--t2)">${o.adsRec>0?brl(o.adsRec):'—'}</td>`
-          +`<td class="r" style="color:${o.adsInv>0?'#f87171':'var(--t3)'}">${o.adsInv>0?brl(o.adsInv):'—'}</td>`
+          +`<td class="r" style="color:var(--t2)">${o.adsRec>0?brl2(o.adsRec):'—'}</td>`
+          +`<td class="r" style="color:${o.adsInv>0?'#f87171':'var(--t3)'}">${o.adsInv>0?brl2(o.adsInv):'—'}</td>`
           +`<td class="r">${tacosCell(o)}</td>`
           +mcCell(o.mcPosAds,(o.mcpFinal!=null?o.mcpFinal:o.mcp),true,shareFin)
         : mcCell(o.mc,o.mcp,true,o.shareMC))
@@ -3194,10 +3194,10 @@ function _renderGerProdutos(A,B,mkt){
     const tacT=tF>0&&tInv>0?(100*tInv/tF).toFixed(1).replace('.',',')+'%':'—';
     h+=`<tr style="font-weight:700;background:var(--surf2);"><td>Total da visão</td><td></td>`
       +`<td class="r">${tQ.toLocaleString('pt-BR')}${parte(pQ)}</td>`
-      +`<td class="r">${brl(tF)}${parte(pF)}</td><td></td><td></td><td></td>`
+      +`<td class="r">${brl2(tF)}${parte(pF)}</td><td></td><td></td><td></td>`
       +(hasAds
-        ? `<td class="r">${brl(tMc)}${parte(pMc)}</td><td class="r">${tRec?brl(tRec):'—'}</td><td class="r" style="color:#f87171">${tInv?brl(tInv):'—'}</td><td class="r">${tacT}</td><td class="r">${brl(tFin)}${parte(pFin)}</td>`
-        : `<td class="r">${brl(tMc)}${parte(pMc)}</td>`)
+        ? `<td class="r">${brl2(tMc)}${parte(pMc)}</td><td class="r">${tRec?brl2(tRec):'—'}</td><td class="r" style="color:#f87171">${tInv?brl2(tInv):'—'}</td><td class="r">${tacT}</td><td class="r">${brl2(tFin)}${parte(pFin)}</td>`
+        : `<td class="r">${brl2(tMc)}${parte(pMc)}</td>`)
       +`<td></td></tr>`;
   }
   if(!lin.length) h+=`<tr><td colspan="${ncol}" style="text-align:center;color:var(--t3);padding:24px">${_gpQuery?'Nada encontrado.':'Sem vendas no período para esta operação.'}</td></tr>`;
