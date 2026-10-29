@@ -907,7 +907,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
         <button class="stab" id="trend-tab-mc" onclick="setTrendMetric('mc',this)">Margem</button>
       </div>
     </div>
-    <canvas id="c-ov-trend" height="49" style="box-sizing: border-box; display: block; height: 49px; width: 1175px;" width="1175"></canvas>
+    <div style="position:relative;height:280px;margin-top:8px;"><canvas id="c-ov-trend"></canvas></div>
   </div>
 </div>
 
@@ -1221,7 +1221,7 @@ body.light .per-pop{box-shadow:0 14px 44px rgba(0,0,0,.16);}
     <div class="cc"><div class="cc-hdr"><div><div class="cc-title" id="mkt-bar-title">Faturamento por Período</div><div class="cc-sub" id="mkt-bar-sub">Comparativo mensal</div></div></div><canvas id="c-mkt-bar" height="220"></canvas></div>
     <div class="cc"><div class="cc-hdr"><div><div class="cc-title" id="mkt-mc-title">MC% por Período</div></div></div><canvas id="c-mkt-mc" height="220"></canvas></div>
   </div>
-  <div class="sl">Top 10 Campeões por Canal</div>
+  <div class="sl">Top 10 por operação</div>
   <div class="champ-grid" id="champ-grid"></div>
 </div>
 
@@ -2498,6 +2498,17 @@ function _adsDiaMap(){
 }
 // Ads da operação (chave "emp||mkt") no período [s,e]
 function _adsOpPer(k,s,e){ const o=_adsDiaMap().porDia[k]; if(!o) return 0; let t=0; for(const d in o){ if(d>=s&&d<=e) t+=o[d]; } return t; }
+function _afilOpMes(emp,mkt,s,e){
+  if(!Array.isArray(ADS)||!s||!e) return 0;
+  const ms=String(s).slice(0,7), me=String(e).slice(0,7);
+  return ADS.reduce((t,a)=>{
+    if(a.emp!==emp||a.mkt!==mkt) return t;
+    if(!/afiliad/i.test(String(a.fonte||'')+' '+String(a.campanha||''))) return t;
+    const c=String(a.comp||a.data||'').slice(0,7);
+    if(!c||c<ms||c>me) return t;
+    return t+(+a.inv||0);
+  },0);
+}
 // operação que investiu em Ads em algum dos 3 meses anteriores e está sem Ads coletado neste mês → margem aparece inflada
 function _adsFaltando(k,mes){ const m=_adsDiaMap().mesInv[k]||{}; if(m[mes]>0) return false; const [y,mm]=mes.split('-').map(Number);
   for(let i=1;i<=3;i++){ const ant=new Date(Date.UTC(y,mm-1-i,1)).toISOString().slice(0,7); if(m[ant]>0) return true; } return false; }
@@ -7209,6 +7220,28 @@ function renderRaioX(){
     + vered.map(v=>`<div style="padding:8px 12px;background:var(--surf);border:1px solid var(--bdr2);border-left:3px solid ${v.c};border-radius:8px;font-size:12.5px;margin-bottom:6px;font-family:'Inter',sans-serif;">${v.t}</div>`).join('');
 }
 
+function top10PorOperacao(s,e,empF,mktF){
+  if(typeof painelOnline==='function' && painelOnline() && !window._detLoaded) return null;
+  if(!Array.isArray(DETALHE)||!DETALHE.length) return [];
+  const map={};
+  DETALHE.forEach(r=>{
+    if(r.date<s||r.date>e||!noPonto(r)) return;
+    if(empF&&r.emp!==empF) return;
+    if(mktF&&r.mkt!==mktF) return;
+    if(!/venda/i.test(String(r.stat||'venda'))) return;
+    const emp=r.emp, mkt=r.mkt, sku=String(r.sku||'(sem sku)');
+    if(!emp||!mkt) return;
+    const k=emp+'||'+mkt;
+    const g=map[k]||(map[k]={emp,mkt,fat:0,qtd:0,mc:0,liq:0,skus:{}});
+    g.fat+=+r.fat||0; g.qtd+=+r.qtd||0; g.mc+=+r.mc||0; g.liq+=+r.liq||0;
+    const sk=g.skus[sku]||(g.skus[sku]={n:sku,q:0,f:0});
+    sk.q+=+r.qtd||0; sk.f+=+r.fat||0;
+  });
+  return Object.values(map).filter(g=>(g.fat||0)>0||(g.qtd||0)>0).map(g=>({
+    emp:g.emp, mkt:g.mkt, fat:g.fat, qtd:g.qtd, mc:g.mc, liq:g.liq,
+    items:Object.values(g.skus).sort((a,b)=>b.q-a.q||b.f-a.f).slice(0,10).map(it=>({n:it.n,q:Math.round(it.q),f:Math.round(it.f)}))
+  })).sort((a,b)=>a.mkt.localeCompare(b.mkt)||b.fat-a.fat);
+}
 function renderMarketplaces(){
   // Build select options once
   const empSel=document.getElementById('mkt-sel-emp');
@@ -7332,77 +7365,34 @@ function renderMktContent(){
     }}
   });
 
-  // ── Champion cards ──
-  // FIX: antes o top de SKUs vinha de SKU_MKT (acumulado do ano inteiro) multiplicado pela
-  // participação da empresa no período — um número híbrido sem significado. Agora a base de SKUs
-  // vem de SKU_MKT_MON filtrada pelos meses do período selecionado; só o rateio por empresa
-  // permanece como aproximação (a base mensal não tem dimensão empresa), sinalizado com ≈.
-  const champCards = [];
-  const _champMthSet=new Set(cmpMths);
-  const _champSkuByMkt={};
-  SKU_MKT_MON.forEach(r=>{
-    if(!_champMthSet.has(r.mes)) return;
-    if(!_champSkuByMkt[r.mkt]) _champSkuByMkt[r.mkt]={};
-    const o=_champSkuByMkt[r.mkt];
-    if(!o[r.sku]) o[r.sku]={n:r.sku,q:0,f:0};
-    o[r.sku].q+=r.qtd; o[r.sku].f+=r.fat;
-  });
-  const _topSkuList=mkt=>Object.values(_champSkuByMkt[mkt]||{}).sort((a,b)=>b.q-a.q);
-
-  activeMkts.forEach(mkt=>{
-    const empList = _empVal ? [_empVal] : Object.keys(EMP_C).filter(e=>TOP10_EM[e+'||'+mkt]);
-
-    if(empList.length === 0){
-      // Card único do canal: top10 real dos meses do período (sem rateio)
-      const g=byMkt[mkt]||{fat:0,qtd:0,mc:0,liq:0};
-      const mp=pctN(g.mc,mcBase(mkt,g.fat,g.liq));
-      const items=_topSkuList(mkt).slice(0,10)
-        .map(it=>({n:it.n,q:Math.round(it.q),f:Math.round(it.f)}));
-      if(items.length>0) champCards.push({mkt,emp:null,g,mp,items});
-    } else {
-      empList.forEach(emp=>{
-        const key=emp+'||'+mkt;
-        // Financial totals from period-filtered rows
-        const empMktRows=rows.filter(r=>r.emp===emp&&r.mkt===mkt);
-        if(empMktRows.length===0) return;
-        const g=empMktRows.reduce((o,r)=>({fat:o.fat+r.fat,mc:o.mc+r.mc,qtd:o.qtd+r.qtd,liq:o.liq+r.liq}),{fat:0,mc:0,qtd:0,liq:0});
-        if(g.fat===0) return;
-        const mp=pctN(g.mc,mcBase(mkt,g.fat,g.liq));
-        // Rateio: participação da empresa no canal dentro do período
-        const mktTotFat=rows.filter(r=>r.mkt===mkt).reduce((a,r)=>a+r.fat,0);
-        const scale=mktTotFat>0?g.fat/mktTotFat:0;
-        const skuItems=_topSkuList(mkt)
-          .map(r=>({n:r.n,q:Math.round(r.q*scale),f:Math.round(r.f*scale)}))
-          .filter(r=>r.q>0)
-          .slice(0,10);
-        const usedScale=skuItems.length>0&&scale<0.999;
-        const items=skuItems.length>0?skuItems:(TOP10_EM[key]||[]);
-        if(items.length>0) champCards.push({mkt,emp,g,mp,items,approx:usedScale});
-      });
-    }
-  });
-  document.getElementById('champ-grid').innerHTML=champCards.map(({mkt,emp,g,mp,items,approx})=>`
-    <div class="champ-card">
+  // ── Top 10 real por operação (empresa · canal), a partir do detalhe do período ──
+  const champOps=top10PorOperacao(s,e,_empVal,_mktVal);
+  const champEl=document.getElementById('champ-grid');
+  if(champOps==null){
+    champEl.innerHTML='<div style="padding:24px;color:var(--t2);font-family:Inter,sans-serif">Carregando o ranking por operação.</div>';
+  } else if(!champOps.length){
+    champEl.innerHTML='<div style="padding:24px;color:var(--t2);font-family:Inter,sans-serif">Nenhuma venda neste recorte.</div>';
+  } else champEl.innerHTML=champOps.map(g=>{
+    const mp=pctN(g.mc,mcBase(g.mkt,g.fat,g.liq));
+    return `<div class="champ-card">
       <div class="champ-hd">
-        <div class="champ-dot" style="background:${MKT_C[mkt]}"></div>
+        <div class="champ-dot" style="background:${MKT_C[g.mkt]||'#888'}"></div>
         <div style="flex:1;min-width:0">
-          <div class="champ-nm">${mkt}</div>
-          ${emp?`<div style="font-size:10px;font-weight:700;color:${EMP_C[emp]||'#888'};margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${EMP_C[emp]};margin-right:4px;vertical-align:middle"></span>${emp}
-          </div>`:''}
+          <div class="champ-nm">${g.emp}</div>
+          <div style="font-size:10px;font-weight:700;color:${MKT_C[g.mkt]||'#888'};margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.mkt}</div>
         </div>
         <div class="champ-fat">${brlK(g.fat)}</div>
       </div>
       <div style="font-size:10px;color:var(--t3);padding:4px 0 8px;display:flex;gap:10px">
-        <span>${g.qtd.toFixed(0)} un</span>
+        <span>${Math.round(g.qtd)} un</span>
         <span style="color:${mcCor(mp)};font-weight:700">MC ${mp.toFixed(1)}%</span>
       </div>
-      ${approx?`<div style="font-size:9.5px;color:var(--t3);padding-bottom:6px">≈ top do canal nos meses do período · unidades rateadas pela participação da empresa (aproximação)</div>`:''}
-      ${items.slice(0,10).map((it,ii)=>`<div class="champ-item">
+      ${g.items.map((it,ii)=>`<div class="champ-item">
         <div class="champ-sku">${ii===0?'🥇':ii===1?'🥈':ii===2?'🥉':'#'+(ii+1)} ${it.n}</div>
-        <div class="champ-qty">${approx?'≈':''}${it.q} un</div>
+        <div class="champ-qty">${it.q} un</div>
       </div>`).join('')}
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ═══════════ PERFORMANCE ═══════════
@@ -9130,6 +9120,7 @@ function renderOvTrend(){
     },
     options:{
       responsive: true,
+      maintainAspectRatio: false,
       animation:{duration:300},
       interaction:{mode:'index',intersect:false},
       plugins:{
@@ -10676,7 +10667,7 @@ function renderDiarioVeredito(ref,cur,ontem,semp){
   </div>`;
 }
 
-// Monta o dataset de operações do período selecionado (roster completo, mesmo as zeradas),
+// Monta o dataset de operações que venderam no recorte (faturamento ou quantidade). A comparação entra só nessas.
 // com métricas do período atual (c) e do baseline de comparação (p, já com divisor de média aplicado).
 function diarioBuildOps(){
   const ref=document.getElementById('diario-ref')?.value;
@@ -10687,9 +10678,7 @@ function diarioBuildOps(){
   if(S.ok){
     const cM=diarioAggByOp(S.cur[0],S.cur[1],emp,mkt);
     const pM=diarioAggByOp(S.prev[0],S.prev[1],emp,mkt);
-    // roster completo respeitando filtro
-    const roster=new Set([...Object.keys(cM),...Object.keys(pM)]);
-    for(const r of ROWS){ if(emp&&r.emp!==emp)continue; if(mkt&&r.mkt!==mkt)continue; roster.add(r.emp+'||'+r.mkt); }
+    const roster=new Set(Object.keys(cM).filter(k=>{ const o=cM[k]; return (o.fat||0)>0 || (o.qtd||0)>0; }));
     arr=[...roster].map(k=>{
       const i=k.indexOf('||'),e0=k.slice(0,i),m0=k.slice(i+2);
       const c=cM[k]||{qtd:0,ped:0,fat:0,mc:0};
@@ -10891,6 +10880,7 @@ function renderDiarioRelation(arr){
   if(charts[id]){charts[id].destroy();delete charts[id];}
   const ctx=document.getElementById(id); if(!ctx) return;
   const ops=arr.filter(o=>o.c.fat>0);
+  const rng=(()=>{ try{ const S=diarioSelection(document.getElementById('diario-ref')?.value); return S.ok?S.cur:['','']; }catch(e){ return ['','']; } })();
   // limiares dos quadrantes
   const medFat=diarioMedian(ops.map(o=>o.c.fat));
   const totFat=ops.reduce((s,o)=>s+o.c.fat,0), totMC=ops.reduce((s,o)=>s+o.c.mc,0);
@@ -10912,6 +10902,8 @@ function renderDiarioRelation(arr){
     r:8+Math.sqrt(o.c.qtd/maxVol)*30,
     label:o.mkt+' · '+o.emp, short:shortMkt(o.mkt)+'·'+shortEmp(o.emp), emp:o.emp, mkt:o.mkt,
     vol:o.c.qtd, ped:o.c.ped, mc:o.c.mc, ticket:o.c.ticket,
+    ads:o.c.ads||0, mcAntes:o.c.mcAntes!=null?o.c.mcAntes:o.c.mc,
+    afil:_afilOpMes(o.emp,o.mkt,rng[0],rng[1]),
     color:colorFor(o.c.fat,o.c.mcpct)
   }));
   const _dl=typeof ChartDataLabels!=='undefined'?[ChartDataLabels]:[];
@@ -10957,7 +10949,21 @@ function renderDiarioRelation(arr){
           backgroundColor:'rgba(8,12,18,.78)',borderRadius:4,padding:{top:2,bottom:2,left:5,right:5},
           formatter:(v)=>v.short},
         tooltip:{callbacks:{title:c=>c[0].raw.label,label:c=>{const p=c.raw;
-          return [`Faturamento: ${brl(p.x)}`,`Margem: ${p.y.toFixed(1)}%  ·  MC ${brl(p.mc)}`,`Pedidos: ${Math.round(p.ped)}  ·  Unidades: ${Math.round(p.vol)}`,`Ticket por pedido: ${brl(p.ticket)}`];}}}},
+          const tacos=p.x>0?100*(p.ads||0)/p.x:0;
+          const tacosAf=p.x>0?100*((p.ads||0)+(p.afil||0))/p.x:0;
+          const antes=p.x>0?100*(p.mcAntes||0)/p.x:0;
+          const pp=antes-p.y;
+          const tik=/tik\s*tok/i.test(p.mkt||'');
+          return [
+            `Faturamento: ${brl(p.x)}`,
+            `Margem depois do Ads: ${p.y.toFixed(1)}%  ·  MC ${brl(p.mc)}`,
+            `Ads no recorte: ${brl(p.ads||0)}`+(tik&&!(p.ads>0)?' · já saiu no repasse':''),
+            `Afiliados no mês: ${brl(p.afil||0)}`,
+            `TACOS no recorte: ${tacos.toFixed(1)}%`+(p.afil>0?` · com afiliados do mês ${tacosAf.toFixed(1)}%`:''),
+            `Margem sacrificada com Ads: ${brl(p.ads||0)} · ${pp.toFixed(1)} p.p.`,
+            `Pedidos: ${Math.round(p.ped)}  ·  Unidades: ${Math.round(p.vol)}`,
+            `Ticket por pedido: ${brl(p.ticket)}`
+          ];}}}},
       scales:{
         x:{title:{display:true,text:'Faturamento (R$)',color:tc,font:{size:11}},
            ticks:{color:tc,font:{size:10},callback:v=>brlK(v)},grid:{color:gc}},
@@ -11696,7 +11702,7 @@ renderAll();
       if(!r.ok) return;
       var d=await r.json();
       DETALHE = d.detalhe||[]; _detLoaded=true; window._detLoaded=true;
-      if(typeof activePage!=='undefined' && (activePage==='overview'||activePage==='vendas'||activePage==='raiox'||activePage==='gerencial')){ try{ renderPageOnly(activePage); }catch(e){} }
+      if(typeof activePage!=='undefined' && (activePage==='overview'||activePage==='vendas'||activePage==='raiox'||activePage==='gerencial'||activePage==='marketplaces')){ try{ renderPageOnly(activePage); }catch(e){} }
     }catch(e){ console.error('detalhe',e); }
   }
   window.bcCarregaDetalhe = bcCarregaDetalhe;
