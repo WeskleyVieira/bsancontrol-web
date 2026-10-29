@@ -8408,7 +8408,7 @@ const TOOLTIPS = {
     title: '📅 Os cards do topo',
     def: 'Cada card compara um período com seu equivalente anterior, sempre "mesmo contra mesmo": o Dia contra ontem e contra o mesmo dia da semana passada; a Semana (até hoje) contra a semana anterior e a mesma semana do mês passado; o Mês (até hoje) contra os mesmos dias do mês passado. As setas verdes = subiu, vermelhas = caiu.',
     actions: [
-      {cls:'ok',  text:'✅ Olhe primeiro o Faturamento e a MC (margem em R$).'},
+      {cls:'ok',  text:'✅ Olhe primeiro o Faturamento e a MC (margem em R$). MC pré-Ads é antes da mídia; MC pós-Ads é o que sobra. A diferença é o impacto do Ads.'},
       {cls:'warn',text:'⚠️ "Até hoje" = período parcial comparado com o mesmo número de dias do período anterior (comparação justa).'},
       {cls:'warn',text:'ℹ️ "pp" = pontos percentuais: é a variação da margem %. Ex: 20% → 21% = +1pp (não +5%).'},
       {cls:'bad', text:'🔴 Vermelho em vários cards = queda consistente, não só do dia.'}
@@ -10420,8 +10420,10 @@ function diarioAggByOp(s,e,emp,mkt){
 }
 function diarioMetrics(a){
   const ped=a.ped||0;
-  return{qtd:a.qtd,ped,fat:a.fat,mc:a.mc,mcAntes:a.mcAntes!=null?a.mcAntes:a.mc,ads:a.ads||0,
+  const antes=a.mcAntes!=null?a.mcAntes:a.mc;
+  return{qtd:a.qtd,ped,fat:a.fat,mc:a.mc,mcAntes:antes,ads:a.ads||0,
     mcpct:a.fat>0?a.mc/a.fat*100:0,
+    mcpctAntes:a.fat>0?antes/a.fat*100:0,
     ticket:ped>0?a.fat/ped:0};   // ticket médio = faturamento por pedido
 }
 
@@ -10429,7 +10431,9 @@ const DIARIO_METRICS=[
   {k:'ped',   label:'Pedidos',      fmt:v=>Math.round(v).toLocaleString('pt-BR'), kind:'num'},
   {k:'qtd',   label:'Unidades',     fmt:v=>Math.round(v).toLocaleString('pt-BR'), kind:'num'},
   {k:'fat',   label:'Faturamento',  fmt:v=>brl(v),               kind:'money'},
+  {k:'mcAntes', label:'MC pré-Ads (R$)', fmt:v=>brl(v),          kind:'money'},
   {k:'mc',    label:'MC pós-Ads (R$)', fmt:v=>brl(v),            kind:'money'},
+  {k:'mcpctAntes', label:'MC % pré-Ads', fmt:v=>v.toFixed(1)+'%', kind:'pp'},
   {k:'mcpct', label:'MC % pós-Ads',    fmt:v=>v.toFixed(1)+'%',  kind:'pp'},
   {k:'ticket',label:'Ticket médio', fmt:v=>brl(v),               kind:'money'},
 ];
@@ -10660,7 +10664,9 @@ function renderDiarioVeredito(ref,cur,ontem,semp){
     <div style="display:flex;gap:12px;flex-wrap:wrap;flex:1">
       ${chip('Pedidos',Math.round(cur.ped).toLocaleString('pt-BR'),cur.ped,ontem.ped)}
       ${chip('Unidades',Math.round(cur.qtd).toLocaleString('pt-BR'),cur.qtd,ontem.qtd)}
+      ${chip('MC pré-Ads',brl(cur.mcAntes),cur.mcAntes,ontem.mcAntes)}
       ${chip('MC pós-Ads',brl(cur.mc),cur.mc,ontem.mc)}
+      ${chip('MC % pré-Ads',cur.mcpctAntes.toFixed(1)+'%',cur.mcpctAntes,ontem.mcpctAntes,'pp')}
       ${chip('MC % pós-Ads',cur.mcpct.toFixed(1)+'%',cur.mcpct,ontem.mcpct,'pp')}
       ${chip('Ticket médio',brl(cur.ticket),cur.ticket,ontem.ticket)}
     </div>
@@ -10702,7 +10708,7 @@ function renderDiarioClassificacao(){
   diarioSyncMetaControls();
   const subEl=document.getElementById('diario-class-sub');
   if(subEl){ const mesC=S.ok?S.cur[1].slice(0,7):''; const falt=mesC?arr.filter(o=>_adsFaltando(o.emp+'||'+o.mkt,mesC)).map(o=>o.emp+' · '+o.mkt):[];
-    subEl.innerHTML=`${S.title} · ${S.sub} · margem já com o Ads descontado · clique num indicador para reordenar · nº pequeno = posição (e movimento vs comparativo)`
+    subEl.innerHTML=`${S.title} · ${S.sub} · MC pré-Ads ao lado da pós-Ads: a diferença é o impacto da mídia · clique num indicador para reordenar · nº pequeno = posição (e movimento vs comparativo)`
       +(falt.length?`<div style="color:#f59e0b;margin-top:4px;">⚠️ Ads deste mês ainda não coletado em: ${falt.join(', ')} — a margem delas aparece maior do que é.</div>`:''); }
 
   const W=diarioGetWeights();
@@ -10717,7 +10723,9 @@ function renderDiarioClassificacao(){
     {k:'ped',   label:'Pedidos', kind:'num'},
     {k:'qtd',   label:'Unidades',kind:'num'},
     {k:'fat',   label:'Faturamento', kind:'money'},
+    {k:'mcAntes', label:'MC pré-Ads', kind:'money'},
     {k:'mc',    label:'MC pós-Ads', kind:'money'},
+    {k:'mcpctAntes', label:'MC % pré-Ads', kind:'pp'},
     {k:'mcpct', label:'MC % pós-Ads', kind:'pp'},
     {k:'ticket',label:'Ticket médio', kind:'money'},
   ];
@@ -10787,25 +10795,27 @@ function renderDiarioClassificacao(){
       <td style="text-align:right;font-weight:800;font-size:15px;color:${sortKey==='nota'?'var(--a2)':'var(--t1)'}">${o.nota.toFixed(0)}${sortKey!=='nota'?`<div style="font-size:10px;color:var(--t3);font-weight:400;margin-top:2px">${posCur.nota[key]}º geral</div>`:''}</td>
       ${COLS.map(c=>{
         if(inactive&&c.kind!=='pp') return `<td style="text-align:right;color:var(--t3)">—</td>`;
+        const tirou=c.k==='mcpct'?`<div style="font-size:10px;color:var(--t3);font-weight:500;margin-top:1px">Ads tirou ${(o.c.mcpctAntes-(o.c.mcpct||0)).toFixed(1)} p.p.</div>`:'';
         return `<td style="text-align:right">
           <div style="font-weight:600">${fmtVal(o.c[c.k]||0,c.kind)} ${deltaInline(o.c[c.k]||0,o.p[c.k]||0,c.kind)}</div>
+          ${tirou}
           ${posLine(key,c.k)}
         </td>`;
       }).join('')}
     </tr>`;
   }).join('');
 
-  const tcRaw=arr.reduce((s,o)=>({qtd:s.qtd+o.c.qtd,ped:s.ped+(o.c.ped||0),fat:s.fat+o.c.fat,mc:s.mc+o.c.mc}),{qtd:0,ped:0,fat:0,mc:0});
-  const tpRaw=arr.reduce((s,o)=>({qtd:s.qtd+o.p.qtd,ped:s.ped+(o.p.ped||0),fat:s.fat+o.p.fat,mc:s.mc+o.p.mc}),{qtd:0,ped:0,fat:0,mc:0});
+  const tcRaw=arr.reduce((s,o)=>({qtd:s.qtd+o.c.qtd,ped:s.ped+(o.c.ped||0),fat:s.fat+o.c.fat,mc:s.mc+o.c.mc,mcAntes:s.mcAntes+(o.c.mcAntes!=null?o.c.mcAntes:o.c.mc)}),{qtd:0,ped:0,fat:0,mc:0,mcAntes:0});
+  const tpRaw=arr.reduce((s,o)=>({qtd:s.qtd+o.p.qtd,ped:s.ped+(o.p.ped||0),fat:s.fat+o.p.fat,mc:s.mc+o.p.mc,mcAntes:s.mcAntes+(o.p.mcAntes!=null?o.p.mcAntes:o.p.mc)}),{qtd:0,ped:0,fat:0,mc:0,mcAntes:0});
   const tc=diarioMetrics(tcRaw), tp=diarioMetrics(tpRaw);
   const totalRow=`<tr style="background:var(--surf2);border-top:2px solid var(--bdr2);font-weight:700">
     <td></td><td></td><td style="text-align:left">TOTAL${(document.getElementById('diario-sel-emp').value||document.getElementById('diario-sel-mkt').value)?' (filtrado)':''}</td>
     <td></td>
-    ${COLS.map(c=>`<td style="text-align:right"><div>${fmtVal(tc[c.k],c.kind)} ${deltaInline(tc[c.k],tp[c.k],c.kind)}</div></td>`).join('')}
+    ${COLS.map(c=>`<td style="text-align:right"><div>${fmtVal(tc[c.k],c.kind)} ${deltaInline(tc[c.k],tp[c.k],c.kind)}</div>${c.k==='mcpct'?`<div style="font-size:10px;color:var(--t3);font-weight:500;margin-top:1px">Ads tirou ${(tc.mcpctAntes-tc.mcpct).toFixed(1)} p.p.</div>`:''}</td>`).join('')}
   </tr>`;
 
   document.getElementById('tbl-diario-class').innerHTML=
-    head+'<tbody>'+(body||`<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--t3)">Sem dados para o período.</td></tr>`)+(body?totalRow:'')+'</tbody>';
+    head+'<tbody>'+(body||`<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--t3)">Sem dados para o período.</td></tr>`)+(body?totalRow:'')+'</tbody>';
 
   const wp=document.getElementById('diario-weights-panel');
   if(wp){
