@@ -2338,7 +2338,7 @@ function renderDRE(){
     ['(−) Comissão / tarifas do marketplace',comis,true,false],
     ['= Líquido recebido',X.liq,false,false],
     ['(−) Impostos',X.imp,true,false],
-    ['(−) Custo do produto (CMV)',X.ctp,true,false],
+    ['(−) Custo do produto (CMV)<span style="font-weight:500;color:var(--t3);font-size:11px"> · Precifique de hoje, um custo por SKU, sem a data da venda</span>',X.ctp,true,false],
     ['(−) Frete / motoboy',outros,true,false],
     ['= Margem real',X.mc,false,true],
     ['(−) Ads / Afiliados / Lives',X.inv,true,false],
@@ -6709,7 +6709,7 @@ function _renderGerComissao(){
       tr('(−) Comissão e tarifas do canal', +d.DreComissao, 'neg');
       tr('= Líquido recebido', +d.DreLiquido, '');
       tr('(−) Impostos', +d.DreImposto, 'neg');
-      tr('(−) Custo do produto (CMV)', +d.DreCmv, 'neg');
+      tr('(−) Custo do produto (CMV) <span style="font-weight:500;color:var(--t3);font-size:11px">· Precifique de hoje, um custo por SKU, sem a data da venda</span>', +d.DreCmv, 'neg');
       tr('(−) Frete e demais', +d.DreFrete, 'neg');
       const dev=+d.DreDevolucao||0;
       tr((dev<0?'(−) ':'(+) ')+'Devoluções concluídas', dev, dev<0?'neg':'');
@@ -6726,7 +6726,7 @@ function _renderGerComissao(){
     tr('(−) Outros'+chipF(d.OutrosCustos_fonte), outros, 'neg');
     tr('= Margem da comissão', margem, 'tot');
     dre+='</tbody></table>';
-    if(!temDre) dre+='<div style="font-size:11px;color:var(--t3);margin-top:6px;">Comissão do canal, imposto, CMV e frete não estão nesta foto do mês. A margem e o bônus já são os da comissão.</div>';
+    if(!temDre) dre+='<div style="font-size:11px;color:var(--t3);margin-top:6px;">Comissão do canal, imposto, CMV e frete não estão nesta foto do mês. A margem e o bônus já são os da comissão. O custo do produto é o da Precifique de hoje, um por SKU, sem a data da venda.</div>';
     const afil=+d.Afiliados||+linha.afiliados||0;
     dre+='<div style="font-size:11px;color:var(--t3);margin-top:6px;">Afiliados '+brl(afil)+chipF(d.Afiliados_fonte)+' · entram no TACOS e já estão na margem.</div>';
     const hist=R.filter(x=>x.operacao===_COM_OP).sort((a,b)=>a.mes<b.mes?-1:a.mes>b.mes?1:0);
@@ -7624,7 +7624,7 @@ function renderRaioX(){
   const devUn=devol.reduce((a,r)=>a+(+r.qtd||0),0), taxaDev=un?100*devUn/un:0;
 
   // identidade
-  document.getElementById('rx-id').innerHTML=`<div style="font-size:16px;font-weight:800;line-height:1.2">${esc(tit)}</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--t2);margin-top:3px">${esc(sku)} &nbsp;·&nbsp; preço médio ${brl2(precoMed)} &nbsp;·&nbsp; custo unit. ${brl2(custoUn)}</div>`;
+  document.getElementById('rx-id').innerHTML=`<div style="font-size:16px;font-weight:800;line-height:1.2">${esc(tit)}</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--t2);margin-top:3px">${esc(sku)} &nbsp;·&nbsp; preço médio ${brl2(precoMed)} &nbsp;·&nbsp; custo unit. ${brl2(custoUn)} · Precifique de hoje</div>`;
 
   // KPIs
   const kc=(rot,val,sub)=>`<div class="kpi"><div class="kpi-eye">${rot}</div><div class="kpi-val">${val}</div><div style="font-size:11px;color:var(--t2);margin-top:4px">${sub||'&nbsp;'}</div></div>`;
@@ -7633,7 +7633,7 @@ function renderRaioX(){
     kc('Receita',brl2(fat),'preço médio '+brl2(precoMed))+
     kc('MC (R$)',brl2(mc),'')+
     kc('MC %',mcp.toFixed(1)+'%','')+
-    kc('Custo unit.',brl2(custoUn),'CTP total '+brl2(ctp));
+    kc('Custo unit.',brl2(custoUn),'Precifique de hoje · CTP '+brl2(ctp));
 
   // evolução mensal (barras HTML)
   const porMes={}; vendas.forEach(r=>{const m=(r.date||'').slice(0,7); if(!m)return; (porMes[m]=porMes[m]||{un:0,mc:0}); porMes[m].un+=+r.qtd||0; porMes[m].mc+=+(r.mcReal!=null?r.mcReal:r.mc)||0;});
@@ -8963,7 +8963,7 @@ const TOOLTIPS = {
   },
   ctp: {
     title: '🏷️ Custo do Produto (CTP)',
-    def: 'Custo de aquisição ou produção dos produtos vendidos. Quanto menor como % do faturamento, melhor a margem. Inclui o custo unitário × quantidade vendida.',
+    def: 'Custo de aquisição ou produção dos produtos vendidos, pela Precifique de hoje: um custo por SKU, sem a data da venda. Quanto menor como % do faturamento, melhor a margem. Inclui o custo unitário × quantidade vendida.',
     actions: [
       {cls:'ok',  text:'✅ Abaixo de 50% do faturamento: saudável.'},
       {cls:'warn',text:'⚠️ Acima de 60%: margem apertada. Negocie melhores preços com fornecedores.'},
