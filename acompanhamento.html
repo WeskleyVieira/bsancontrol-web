@@ -1063,6 +1063,7 @@ body.bc-shell{--bc-button-ink:#182034}body.bc-shell.light{--bc-button-ink:#fff}.
 .bc-identity-tag[data-identity-kind=empresa]{font-weight:600;border-left:2px solid var(--identity-color);padding-left:9px}
 .bc-identity-tag>.bc-identity-marker{display:none!important}
 .bc-identity-tag[data-identity-kind=marketplace]{background:color-mix(in srgb,var(--identity-color) 5%,var(--bc-surface))}
+.bc-settlement-tag{display:block;width:max-content;max-width:100%;margin:5px 0 0 auto;padding:2px 7px;border:1px solid color-mix(in srgb,var(--bc-attention) 28%,var(--bc-border));border-radius:5px;background:color-mix(in srgb,var(--bc-attention) 8%,var(--bc-surface));color:var(--bc-attention);font:500 12px/1.5 Inter,Segoe UI,sans-serif;white-space:nowrap;letter-spacing:0}
 </style></head>
 <body><div id="bc-dataload" style="position:fixed;inset:0;z-index:9990;background:#0d1119;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:Inter,system-ui,sans-serif;color:#8891a8"><div class="sp"></div><div id="bc-dataload-txt">Carregando…</div></div>
 
@@ -7951,7 +7952,7 @@ function renderVendas(){
       +`<td style="text-align:right">${r.qtd}</td>`
       +`<td style="text-align:right;font-weight:600">${brl2(r.fat)}</td>`
       +`<td style="text-align:right;color:var(--t2)" title="o que a plataforma reteve = Valor venda − Líquido">${brl2(r.fat-r.liq)}</td>`
-      +`<td style="text-align:right" title="fonte: ${esc(r.fonte)}">${brl2(r.liq)}${provis(r.fonte)?' <span style="color:#facc15" title="valor provisório — ainda não liquidado pela plataforma">●</span>':''}</td>`
+      +`<td style="text-align:right" title="fonte: ${esc(r.fonte)}">${brl2(r.liq)}${provis(r.fonte)?' <small class="bc-settlement-tag" title="Valor provisório; pode mudar após a liquidação pela plataforma.">Em liquidação</small>':''}</td>`
       +`<td style="text-align:right;color:var(--t2)">${brl2(r.imp)}</td>`
       +`<td style="text-align:right;color:var(--t2)">${brl2(r.ctp)}</td>`
       +`<td style="text-align:right;font-weight:600">${brl2(r.mc)}</td>`
@@ -8228,12 +8229,12 @@ function _renderGerVendas(rows, mkt){
       else if(c.k==='subs'||c.k==='vapt'||c.k==='copart'){ cor=raw>=0?'#22c55e':'#f87171'; }
       h+=`<td style="text-align:right;color:${cor}">${brl2(val)}</td>`;
     });
-    h+=`<td style="text-align:right" title="fonte: ${esc(r.fonte)}">${brl2(r.liq)}${provis(r.fonte)?' <span style="color:#facc15" title="provisório">●</span>':''}</td>`
+    h+=`<td style="text-align:right" title="fonte: ${esc(r.fonte)}">${brl2(r.liq)}${provis(r.fonte)?' <small class="bc-settlement-tag" title="Valor provisório; pode mudar após a liquidação pela plataforma.">Em liquidação</small>':''}</td>`
       +`<td style="text-align:right;color:var(--t2)">${brl2(-r.imp)}</td>`
       +`<td style="text-align:right;color:var(--t2)">${brl2(-r.ctp)}</td>`
       +`<td style="text-align:right;font-weight:600;color:${r.mc>=0?'var(--t1)':'#f87171'}">${brl2(r.mc)}</td>`
       +`<td style="text-align:right">${mcPct(p,1)}</td>`
-      +`<td>${(provis(r.fonte)&&(r.stat==='venda'||!r.stat))?'<span style="color:#facc15;font-weight:600;font-size:11px;" title="Ainda em liquidação. A próxima coleta troca só o que a plataforma de fato cobrou.">Em liquidação</span>':statBadge(r.stat)}</td>`
+      +`<td>${statBadge(r.stat)}</td>`
       +'</tr>';
   });
   h+='</tbody>';

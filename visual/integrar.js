@@ -1,6 +1,9 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const css=fs.readFileSync(path.join(__dirname,'areas.css'),'utf8').replace(/\r\n/g,'\n'),js=fs.readFileSync(path.join(__dirname,'areas.js'),'utf8').replace(/\r\n/g,'\n');new vm.Script(js);
 function presentation(html){
+ // O estado do repasse fica junto do líquido, sem substituir a situação da venda.
+ html=html.replace(/<span style="color:#facc15" title="(?:valor provisório — ainda não liquidado pela plataforma|provisório)">●<\/span>/g,'<small class="bc-settlement-tag" title="Valor provisório; pode mudar após a liquidação pela plataforma.">Em liquidação</small>');
+ html=html.replace("${(provis(r.fonte)&&(r.stat==='venda'||!r.stat))?'<span style=\"color:#facc15;font-weight:600;font-size:11px;\" title=\"Ainda em liquidação. A próxima coleta troca só o que a plataforma de fato cobrou.\">Em liquidação</span>':statBadge(r.stat)}","${statBadge(r.stat)}");
  const companies=/^const EMP_C=\{[^\n]*\};/m;if(!companies.test(html))throw Error('Paleta de empresas mudou');html=html.replace(companies,line=>line.replace(/('Bsan Shop':)'#[a-f\d]{6}'/i,"$1'#ac83e8'").replace(/('Jowcase':)'#[a-f\d]{6}'/i,"$1'#63cddd'").replace(/('Pesseguinho Store':)'#[a-f\d]{6}'/i,"$1'#efb293'"));
  html=html.replace("card('Bsan','Bsan','#00c2a8')","card('Bsan','Bsan',EMP_C['Bsan Shop'])");
  const money=/^const brl =v=>[^\n]*;/m;if(!money.test(html))throw Error('Formato monetário mudou');html=html.replace(money,"const brl =v=>v==null||v===''||!Number.isFinite(Number(v))?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:2});");

@@ -34,3 +34,4 @@ body.bc-shell{--bc-button-ink:#182034}body.bc-shell.light{--bc-button-ink:#fff}.
 .bc-identity-tag[data-identity-kind=empresa]{font-weight:600;border-left:2px solid var(--identity-color);padding-left:9px}
 .bc-identity-tag>.bc-identity-marker{display:none!important}
 .bc-identity-tag[data-identity-kind=marketplace]{background:color-mix(in srgb,var(--identity-color) 5%,var(--bc-surface))}
+.bc-settlement-tag{display:block;width:max-content;max-width:100%;margin:5px 0 0 auto;padding:2px 7px;border:1px solid color-mix(in srgb,var(--bc-attention) 28%,var(--bc-border));border-radius:5px;background:color-mix(in srgb,var(--bc-attention) 8%,var(--bc-surface));color:var(--bc-attention);font:500 12px/1.5 Inter,Segoe UI,sans-serif;white-space:nowrap;letter-spacing:0}
