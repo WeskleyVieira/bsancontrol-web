@@ -11,6 +11,7 @@ const BUST_TOKEN = crypto.createHash("sha256").update(process.env.DATABASE_URL |
 const { hashSenha, verificaSenha, assinaToken, verificaToken } = require("./auth");
 const { consultaVendas } = require("./vendas-pagina");
 const lancamento = require("./lancamento");
+const writeStore = require("./datasets-versionados");
 
 const PORT = process.env.PORT || 8787;
 const SENHA_PADRAO = "bsan@2026";   // quem ainda tem essa é obrigado a trocar no 1º acesso
@@ -84,6 +85,8 @@ const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa,
 
 async function rotaGET(u, user) {
   const q = Object.fromEntries(u.searchParams);
+  const entrada = u.pathname.match(/^\/api\/lancamentos\/(envios|custos|comissao)$/);
+  if (entrada) return writeStore.ler(dbx, entrada[1], user);
   if (u.pathname === "/api/health") {
     const v = await dbx.get("SELECT COUNT(*) n FROM vendas");
     const d = await dbx.get("SELECT COUNT(*) n FROM demandas");
@@ -323,9 +326,11 @@ async function rotaGET(u, user) {
   // ── /api/extras — datasets não-vendas (Ads/Estoque/Comissão/Produtos/…) escopados por ponto ──
   if (u.pathname === "/api/extras") {
     const t0 = Date.now();
-    const dsr = await dbx.all("SELECT nome, json FROM datasets");
+    const dsr = await dbx.all("SELECT nome, json, atualizado FROM datasets");
     const got = {};
     for (const r of dsr) { try { got[r.nome] = JSON.parse(r.json); } catch (e) {} }
+    got._versions = {};
+    for (const tipo of ["envios", "custos", "comissao"]) if (user && lancamento.podeLancar(user.perfil, tipo)) got._versions[tipo] = writeStore.versao(tipo, dsr.find(r => r.nome === tipo) || null);
     // Metas usa o vínculo atual do servidor, em vez do mapa estático da página.
     got.operacoes = await dbx.all("SELECT empresa, marketplace, gestor FROM operacoes" +
       (user && user.perfil === "gestor" ? " WHERE gestor=?" : ""),
@@ -467,48 +472,16 @@ const server = http.createServer(async (req, res) => {
         [cmd.id, cmd.criado_em, cmd.pedido_por, cmd.perfil, cmd.gestor, cmd.tipo, cmd.demanda_id, cmd.empresa, cmd.anuncio, cmd.estado, cmd.resultado, cmd.atualizado_em]);
       return J(res, { ok: true, comando: cmd });
     }
-    // Lançamento: gestor não grava. Coordenação grava só envios. Direção grava envios, custos e comissão.
-    if (req.method === "POST" && u.pathname === "/api/envios") {
-      if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
-      if (!user || !lancamento.podeLancar(user.perfil, "envios")) return J(res, { ok: false, erro: "sem permissão para lançar envios" }, 403);
+    // O pacote só é substituído se a versão lida ainda é a do banco.
+    if (req.method === "POST" && ["/api/envios", "/api/custos", "/api/comissao"].includes(u.pathname)) {
+      const tipo = u.pathname.slice(5);
+      writeStore.autorizar(tipo, user);
       const o = await body(req);
-      const rows = Array.isArray(o.rows) ? o.rows : [];
-      const erro = lancamento.validarEnvios(rows);
-      if (erro) return J(res, { ok: false, erro }, 400);
-      await dbx.run("INSERT INTO datasets(nome,json,atualizado) VALUES(?,?,?) ON CONFLICT(nome) DO UPDATE SET json=EXCLUDED.json, atualizado=EXCLUDED.atualizado",
-        ["envios", JSON.stringify(rows), new Date().toISOString()]);
-      for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k); _geracao = Date.now();
-      return J(res, { ok: true, n: rows.length });
-    }
-    if (req.method === "POST" && u.pathname === "/api/custos") {
-      if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
-      if (!user || !lancamento.podeLancar(user.perfil, "custos")) return J(res, { ok: false, erro: "sem permissão para lançar custos" }, 403);
-      const o = await body(req);
-      const custos = lancamento.pacoteCustos(o.custos || {});
-      const erro = lancamento.validarCustos(custos);
-      if (erro) return J(res, { ok: false, erro }, 400);
-      await dbx.run("INSERT INTO datasets(nome,json,atualizado) VALUES(?,?,?) ON CONFLICT(nome) DO UPDATE SET json=EXCLUDED.json, atualizado=EXCLUDED.atualizado",
-        ["custos", JSON.stringify(custos), new Date().toISOString()]);
-      for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k); _geracao = Date.now();
-      return J(res, { ok: true });
-    }
-    if (req.method === "POST" && u.pathname === "/api/comissao") {
-      if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
-      if (!user || !lancamento.podeLancar(user.perfil, "comissao")) return J(res, { ok: false, erro: "sem permissão para lançar comissão" }, 403);
-      const o = await body(req);
-      const linhas = Array.isArray(o.linhas) ? o.linhas : [];
-      const erro = lancamento.validarComissao(linhas);
-      if (erro) return J(res, { ok: false, erro }, 400);
-      let antes = [];
-      try { const atual = await dbx.get("SELECT json FROM datasets WHERE nome=?", ["comissao"]); antes = atual && atual.json ? JSON.parse(atual.json) : []; }
-      catch (e) { return J(res, { ok: false, erro: "não consegui ler a comissão já gravada" }, 500); }
-      const fechada = lancamento.comissaoFechadaIntacta(antes, linhas);
-      if (fechada) return J(res, { ok: false, erro: fechada }, 400);
-      const agora = new Date().toISOString();
-      await dbx.run("INSERT INTO datasets(nome,json,atualizado) VALUES(?,?,?) ON CONFLICT(nome) DO UPDATE SET json=EXCLUDED.json, atualizado=EXCLUDED.atualizado",
-        ["comissao", JSON.stringify(linhas), agora]);
-      for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k); _geracao = Date.now();
-      return J(res, { ok: true, n: linhas.length });
+      const dados = tipo === "envios" ? o.rows : tipo === "custos" ? o.custos : o.linhas;
+      const salvo = await writeStore.gravar(dbx, tipo, dados, o.versao, user);
+      for (const k of [..._gzCache.keys()]) if (k.startsWith("/api/extras")) _gzCache.delete(k);
+      _geracao = Math.max(Date.now(), _geracao + 1);
+      return J(res, salvo);
     }
     // ── ADMIN de usuários (SÓ Direção) ──
     if (u.pathname.startsWith("/api/admin/")) {
@@ -565,10 +538,11 @@ const server = http.createServer(async (req, res) => {
       const ct = ext === ".html" ? "text/html; charset=utf-8" : ext === ".js" ? "text/javascript" : ext === ".xlsx" ? "application/octet-stream" : "text/plain";
       res.writeHead(200, { "Content-Type": ct }); res.end(d);
     });
-  } catch (e) { J(res, { erro: e.message }, 500); }
+  } catch (e) { J(res, { ok: false, codigo: e.codigo || "ERRO_INTERNO", erro: e.message }, e.status || 500); }
 });
-server.listen(PORT, () => {
+server.listen(PORT, process.env.BC_QA_NO_WORKER === "1" ? "127.0.0.1" : undefined, () => {
   console.log(`BsanControl 2.0 API · http://localhost:${PORT} · banco: ${dbx.IS_PG ? "Postgres" : "SQLite"} · auth: ${AUTH_REQ ? "exigido" : "dev (aberto)"}`);
+  if (process.env.BC_QA_NO_WORKER === "1") return; // Homologação isolada, sem espelhamento externo.
   const espelho = require("./espelho-planilhas");
   const pulso = () => espelho.drenar(dbx).catch(e => console.error("[planilhas] " + e.message));
   setTimeout(pulso, 1500);
