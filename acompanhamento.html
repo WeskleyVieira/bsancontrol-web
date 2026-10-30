@@ -890,12 +890,12 @@ body.light #met-root .met-page{--met-muted:#4b5563;--met-ok:#065f46;--met-danger
 <div class="modal" id="modal">
   <div class="modal-box">
     <div class="modal-title">⬆ Atualizar Dados</div>
-    <div class="modal-sub">Arraste <strong style="color:var(--a2)">os três de uma vez</strong> — Vendas (consolidado), <b>custos_2026</b> e <b>envios_2026</b>. Identifico cada um pelo conteúdo, em qualquer ordem; pode mandar só um também.<br>Depois de carregar você pode <strong>salvar uma nova versão HTML</strong> com tudo embutido.</div>
+    <div class="modal-sub">Arraste Vendas (consolidado) e <b>custos_2026</b>. Identifico cada um pelo conteúdo. Envios entram pelo formulário da aba Envios.<br>Depois de carregar você pode <strong>salvar uma nova versão HTML</strong> com tudo embutido.</div>
     <div class="drop-zone" id="dropzone">
       <input type="file" accept=".xlsx,.xls" id="file-inp" multiple onclick="this.value=''" onchange="handleFiles(this.files)">
       <div class="drop-icon">📊</div>
       <div class="drop-lbl">Arraste aqui ou <strong>clique para selecionar</strong></div>
-      <div class="drop-hint">Vários .xlsx de uma vez · Vendas · Custos · Envios</div>
+      <div class="drop-hint">Vários .xlsx de uma vez · Vendas · Custos</div>
     </div>
     <div id="load-check" style="display:none;margin-top:12px;padding:10px 12px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px;"></div>
     <div class="modal-status ok" id="modal-status">✅ <strong>1852</strong> agregações · <strong>74.411</strong> linhas · 2026-01-01 → 2026-07-20<br><span style="color:var(--a2)">Fat: R$3172.8K · MC: R$634.1K · 1983 SKUs</span></div>
@@ -1114,11 +1114,15 @@ body.light #met-root .met-page{--met-muted:#4b5563;--met-ok:#065f46;--met-danger
 <!-- ═══════════ ENVIOS (fluxo de saída — input manual) ═══════════ -->
 <div id="page-envios" class="page">
   <div class="perf-fbar" id="env-filter-bar" style="flex-wrap:wrap;gap:10px;">
-    <div style="display:flex;align-items:center;gap:8px;" id="env-upload-box">
-      <span class="pf-lbl">Fluxo de envios</span>
-      <label for="env-inp" style="background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:7px 14px;cursor:pointer;">📦 Carregar envios_2026.xlsx</label>
-      <input id="env-inp" type="file" accept=".xlsx,.xls" style="display:none;" onchange="carregarEnvios(this.files[0])">
-      <span id="env-status" style="font-family:'Inter',sans-serif;font-size:12px;color:var(--t2);"></span>
+    <div id="env-upload-box" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;width:100%;">
+      <label style="font-size:11px;color:var(--t2)">Data<br><input id="env-f-data" type="date" onchange="envPreencheContagem()" style="background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 10px;"></label>
+      <label style="font-size:11px;color:var(--t2)">Empresa<br><select id="env-f-emp" class="abc-select" style="min-width:160px;" onchange="envPreencheContagem()"></select></label>
+      <label style="font-size:11px;color:var(--t2)">Plataforma<br><select id="env-f-plat" class="abc-select" style="min-width:150px;" onchange="envPreencheContagem()"></select></label>
+      <label style="font-size:11px;color:var(--t2)">Coleta<br><input id="env-f-coleta" type="number" min="0" step="1" value="0" style="width:72px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+      <label style="font-size:11px;color:var(--t2)">Flex<br><input id="env-f-flex" type="number" min="0" step="1" value="0" style="width:72px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+      <label style="font-size:11px;color:var(--t2)">Full<br><input id="env-f-full" type="number" min="0" step="1" value="0" style="width:72px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+      <button type="button" onclick="envLancar()" style="background:var(--a);color:#041210;border:none;border-radius:8px;font-weight:700;padding:8px 14px;cursor:pointer;">Salvar envio</button>
+      <span id="env-status" style="font-size:12px;color:var(--t2);"></span>
     </div>
     <div style="display:flex;align-items:center;gap:14px;margin-left:auto;flex-wrap:wrap;">
       <div style="display:flex;align-items:center;gap:8px;"><span class="pf-lbl">Empresa</span><select id="env-sel-emp" class="abc-select" style="min-width:140px;" onchange="renderEnvios()"><option value="">Todas</option></select></div>
@@ -1293,6 +1297,23 @@ body.light #met-root .met-page{--met-muted:#4b5563;--met-ok:#065f46;--met-danger
   <!-- Sub-aba COMISSÃO — bônus dos gestores por operação × mês (visão de coordenador) -->
   <div id="ger-sub-metas" style="display:none;"><div id="met-root"></div></div>
   <div id="ger-sub-comissao" style="display:none;">
+    <div id="com-lancar-box" class="cc" style="margin-top:14px;">
+      <div class="cc-title">Lançar comissão</div>
+      <div class="cc-sub">A direção grava a linha do mês. O painel não recalcula o bônus. Mês com carimbo de fechado não aceita troca.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:10px;">
+        <label style="font-size:11px;color:var(--t2)">Mês<br><input id="com-f-mes" type="month" style="background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 10px;"></label>
+        <label style="font-size:11px;color:var(--t2)">Operação<br><select id="com-f-op" class="abc-select" style="min-width:220px;"></select></label>
+        <label style="font-size:11px;color:var(--t2)">Faturamento<br><input id="com-f-fat" type="number" step="0.01" style="width:110px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+        <label style="font-size:11px;color:var(--t2)">Margem cont.<br><input id="com-f-margem" type="number" step="0.01" style="width:110px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+        <label style="font-size:11px;color:var(--t2)">MC%<br><input id="com-f-mc" type="number" step="0.01" style="width:80px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+        <label style="font-size:11px;color:var(--t2)">TACOS%<br><input id="com-f-tacos" type="number" step="0.01" style="width:80px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+        <label style="font-size:11px;color:var(--t2)">Progresso<br><input id="com-f-prog" type="number" step="0.1" style="width:80px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+        <label style="font-size:11px;color:var(--t2)">Teto %<br><input id="com-f-teto" type="number" step="0.001" style="width:80px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+        <label style="font-size:11px;color:var(--t2)">Bônus R$<br><input id="com-f-bonus" type="number" step="0.01" style="width:100px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+        <button type="button" onclick="comLancar()" style="background:var(--a);color:#041210;border:none;border-radius:8px;font-weight:700;padding:8px 14px;cursor:pointer;">Salvar comissão</button>
+        <span id="com-status" style="font-size:12px;color:var(--t2);"></span>
+      </div>
+    </div>
     <div id="com-ctrl" style="margin-top:14px;"></div>
     <div id="com-kpis" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px;"></div>
     <div id="com-tbl" style="margin-top:16px;"></div>
@@ -1649,6 +1670,40 @@ body.light #met-root .met-page{--met-muted:#4b5563;--met-ok:#065f46;--met-danger
       <span id="dre-custos-status" style="font-family:'Inter',sans-serif;font-size:12px;color:var(--t2);"></span>
     </div>
   </div>
+  <div id="dre-lancar-box" class="cc" style="margin-top:14px;">
+    <div class="cc-title">Lançar custo</div>
+    <div class="cc-sub">A planilha continua substituindo o pacote inteiro. Aqui entra uma linha. O percentual do rateio é de 0 a 100 e a soma do ponto fecha 100.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:10px;">
+      <label style="font-size:11px;color:var(--t2)">Mês<br><input id="dre-f-mes" type="month" onchange="dreListaMes()" style="background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 10px;"></label>
+      <label style="font-size:11px;color:var(--t2)">Tipo<br><select id="dre-f-bloco" class="abc-select" onchange="dreCampos()"><option value="direto">Custo direto</option><option value="compartilhado">Custo compartilhado</option><option value="invest">Afiliados e lives</option><option value="box">Box Wyl</option><option value="rateio">Rateio do ponto</option></select></label>
+    </div>
+    <div id="dre-campos-direto" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:8px;">
+      <label style="font-size:11px;color:var(--t2)">Ponto<br><select id="dre-f-ponto" class="abc-select"></select></label>
+      <label style="font-size:11px;color:var(--t2)">Empresa<br><select id="dre-f-emp" class="abc-select" style="min-width:160px;"></select></label>
+      <label style="font-size:11px;color:var(--t2)">Valor<br><input id="dre-f-valor" type="number" min="0" step="0.01" style="width:110px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+    </div>
+    <div id="dre-campos-compartilhado" style="display:none;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:8px;">
+      <label style="font-size:11px;color:var(--t2)">Ponto<br><select id="dre-f-ponto-c" class="abc-select"></select></label>
+      <label style="font-size:11px;color:var(--t2)">Valor do bolo<br><input id="dre-f-valor-c" type="number" min="0" step="0.01" style="width:120px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+    </div>
+    <div id="dre-campos-invest" style="display:none;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:8px;">
+      <label style="font-size:11px;color:var(--t2)">Empresa<br><select id="dre-f-emp-i" class="abc-select" style="min-width:160px;"></select></label>
+      <label style="font-size:11px;color:var(--t2)">Canal<br><select id="dre-f-canal" class="abc-select"></select></label>
+      <label style="font-size:11px;color:var(--t2)">Afiliados<br><input id="dre-f-afi" type="number" min="0" step="0.01" value="0" style="width:100px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+      <label style="font-size:11px;color:var(--t2)">Lives<br><input id="dre-f-live" type="number" min="0" step="0.01" value="0" style="width:100px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+    </div>
+    <div id="dre-campos-box" style="display:none;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:8px;">
+      <label style="font-size:11px;color:var(--t2)">Faturamento<br><input id="dre-f-fat" type="number" min="0" step="0.01" style="width:120px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+      <label style="font-size:11px;color:var(--t2)">Custos<br><input id="dre-f-box" type="number" min="0" step="0.01" style="width:120px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>
+    </div>
+    <div id="dre-campos-rateio" style="display:none;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:8px;">
+      <label style="font-size:11px;color:var(--t2)">Ponto<br><select id="dre-f-ponto-rt" class="abc-select" onchange="dreRateioCampos()"></select></label>
+      <div id="dre-rateio-emps" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
+    <div style="margin-top:10px;"><button type="button" onclick="dreLancar()" style="background:var(--a);color:#041210;border:none;border-radius:8px;font-weight:700;padding:8px 14px;cursor:pointer;">Salvar custo</button></div>
+    <div id="dre-lista" style="margin-top:10px;font-size:12px;color:var(--t2);display:flex;flex-direction:column;gap:4px;"></div>
+  </div>
+
 
   <div class="kpi-row" id="dre-kpis" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px;"></div>
 
@@ -2237,6 +2292,376 @@ let CUSTOS = null; // { rateio:{ponto:{emp:pct}}, custos:[{mes,ponto,emp,tipo,va
 const _numBR = v => { if(typeof v==='number')return v; let s=String(v==null?'':v).replace(/[^\d,.-]/g,''); if(!s)return 0; if(s.includes(',')&&s.includes('.')){s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');}else if(s.includes(','))s=s.replace(',','.'); const x=parseFloat(s); return isNaN(x)?0:x; };
 const _S = v => String(v==null?'':v).trim();
 
+
+const Lancamento=(function(){
+// lancamento.js — encaixa um lançamento na lista que já está na nuvem.
+// O painel e o servidor usam as mesmas funções. Um lançamento não apaga o resto.
+"use strict";
+const S = v => String(v == null ? "" : v).trim();
+const num = v => {
+  const n = Number(String(v == null ? "" : v).replace(",", "."));
+  return Number.isFinite(n) ? n : NaN;
+};
+
+function podeLancar(perfil, tipo) {
+  if (perfil === "direcao") return tipo === "envios" || tipo === "custos" || tipo === "comissao";
+  if (perfil === "coordenacao") return tipo === "envios";
+  return false;
+}
+
+function mesclarEnvio(lista, linha) {
+  const rows = Array.isArray(lista) ? lista.map(r => Object.assign({}, r)) : [];
+  const nova = {
+    data: S(linha.data).slice(0, 10),
+    empresa: S(linha.empresa),
+    plataforma: S(linha.plataforma),
+    coleta: num(linha.coleta) || 0,
+    flex: num(linha.flex) || 0,
+    full: num(linha.full) || 0
+  };
+  const i = rows.findIndex(r => r.data === nova.data && r.empresa === nova.empresa && r.plataforma === nova.plataforma);
+  if (i >= 0) rows[i] = nova;
+  else rows.push(nova);
+  return rows;
+}
+
+function validarEnvios(rows) {
+  if (!Array.isArray(rows) || !rows.length) return "A lista de envios chegou vazia.";
+  for (const r of rows) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(S(r.data))) return "Cada envio precisa de uma data.";
+    if (!S(r.empresa) || !S(r.plataforma)) return "Cada envio precisa de empresa e plataforma.";
+    for (const c of ["coleta", "flex", "full"]) {
+      const n = num(r[c]);
+      if (!Number.isFinite(n) || n < 0) return "Coleta, flex e full são quantidades a partir de zero.";
+    }
+  }
+  return "";
+}
+
+function pacoteCustos(c) {
+  const o = c && typeof c === "object" && !Array.isArray(c) ? c : {};
+  const rateio = {};
+  if (o.rateio && typeof o.rateio === "object" && !Array.isArray(o.rateio)) {
+    Object.keys(o.rateio).forEach(p => {
+      rateio[p] = {};
+      Object.keys(o.rateio[p] || {}).forEach(e => { rateio[p][e] = +o.rateio[p][e] || 0; });
+    });
+  }
+  return {
+    rateio,
+    custos: Array.isArray(o.custos) ? o.custos.map(x => Object.assign({}, x)) : [],
+    investimento: Array.isArray(o.investimento) ? o.investimento.map(x => Object.assign({}, x)) : [],
+    boxwyl: Array.isArray(o.boxwyl) ? o.boxwyl.map(x => Object.assign({}, x)) : []
+  };
+}
+
+function mesclarCusto(pacote, linha) {
+  const p = pacoteCustos(pacote);
+  const mes = S(linha.mes).slice(0, 7);
+  if (linha.bloco === "direto" || linha.bloco === "compartilhado") {
+    const tipo = linha.bloco;
+    const emp = tipo === "compartilhado" ? "" : S(linha.emp);
+    const ponto = S(linha.ponto);
+    const nova = { mes, ponto, emp, tipo, valor: num(linha.valor) || 0 };
+    let i = Number.isInteger(linha.idx) ? linha.idx : -1;
+    if (linha.remover) {
+      if (i >= 0 && i < p.custos.length) p.custos.splice(i, 1);
+      return p;
+    }
+    if (!(i >= 0 && i < p.custos.length)) i = p.custos.findIndex(c => c.mes === mes && c.tipo === tipo && c.ponto === ponto && S(c.emp) === emp);
+    if (i >= 0) p.custos[i] = nova;
+    else p.custos.push(nova);
+    return p;
+  }
+  if (linha.bloco === "invest") {
+    const emp = S(linha.emp), canal = S(linha.canal);
+    let i = Number.isInteger(linha.idx) ? linha.idx : p.investimento.findIndex(x => x.mes === mes && x.emp === emp && S(x.canal) === canal);
+    if (linha.remover) {
+      if (i >= 0 && i < p.investimento.length) p.investimento.splice(i, 1);
+      return p;
+    }
+    const prev = i >= 0 && i < p.investimento.length ? p.investimento[i] : {};
+    const nova = { mes, emp, canal, ads: num(prev.ads) || 0, afi: num(linha.afi) || 0, live: num(linha.live) || 0 };
+    if (i >= 0 && i < p.investimento.length) p.investimento[i] = nova;
+    else p.investimento.push(nova);
+    return p;
+  }
+  if (linha.bloco === "box") {
+    let i = Number.isInteger(linha.idx) ? linha.idx : p.boxwyl.findIndex(x => x.mes === mes);
+    if (linha.remover) {
+      if (i >= 0 && i < p.boxwyl.length) p.boxwyl.splice(i, 1);
+      return p;
+    }
+    const nova = { mes, fat: num(linha.fat) || 0, custos: num(linha.custos) || 0 };
+    if (i >= 0 && i < p.boxwyl.length) p.boxwyl[i] = nova;
+    else p.boxwyl.push(nova);
+    return p;
+  }
+  if (linha.bloco === "rateio") {
+    const mapa = {};
+    (linha.pares || []).forEach(par => {
+      const emp = S(par.emp);
+      if (!emp) return;
+      mapa[emp] = (num(par.percentual) || 0) / 100;
+    });
+    p.rateio[S(linha.ponto)] = mapa;
+    return p;
+  }
+  return p;
+}
+
+function validarCustos(c) {
+  const p = pacoteCustos(c);
+  const tem = p.custos.length || p.investimento.length || p.boxwyl.length || Object.keys(p.rateio).length;
+  if (!tem) return "O pacote de custos chegou vazio.";
+  for (const linha of p.custos) {
+    if (!/^\d{4}-\d{2}$/.test(S(linha.mes))) return "Cada custo precisa do mês.";
+    if (linha.tipo !== "direto" && linha.tipo !== "compartilhado") return "O custo é direto ou compartilhado.";
+    if (!S(linha.ponto)) return "Cada custo precisa do ponto.";
+    if (linha.tipo === "direto" && !S(linha.emp)) return "O custo direto precisa da empresa.";
+    if (!Number.isFinite(num(linha.valor)) || num(linha.valor) < 0) return "O valor do custo precisa ser um número.";
+  }
+  for (const linha of p.investimento) {
+    if (!/^\d{4}-\d{2}$/.test(S(linha.mes)) || !S(linha.emp)) return "Afiliados e lives precisam de mês e empresa.";
+  }
+  for (const linha of p.boxwyl) {
+    if (!/^\d{4}-\d{2}$/.test(S(linha.mes))) return "Box Wyl precisa do mês.";
+  }
+  for (const ponto of Object.keys(p.rateio)) {
+    const vals = Object.values(p.rateio[ponto] || {});
+    if (!vals.length) continue;
+    const soma = vals.reduce((a, b) => a + (+b || 0), 0);
+    if (Math.abs(soma - 1) > 0.001) return "O rateio de cada ponto tem de somar 100%.";
+  }
+  return "";
+}
+
+function mesFechado(lista, mes) {
+  return (lista || []).some(r => r.mes === mes && S(r.fechado_em));
+}
+
+function mesclarComissao(lista, linha) {
+  const rows = Array.isArray(lista) ? lista.map(r => Object.assign({}, r)) : [];
+  const mes = S(linha.mes).slice(0, 7);
+  const operacao = S(linha.operacao);
+  if (mesFechado(rows, mes)) return { erro: "Esse mês já foi fechado. O bônus pago fica como está.", linhas: lista || [] };
+  const i = rows.findIndex(r => r.mes === mes && r.operacao === operacao);
+  const prev = i >= 0 ? rows[i] : {};
+  const nova = Object.assign({}, prev, {
+    mes, operacao,
+    faturamento: num(linha.faturamento) || 0,
+    margem_cont: num(linha.margem_cont) || 0,
+    mc_pct: num(linha.mc_pct) || 0,
+    tacos_pct: num(linha.tacos_pct) || 0,
+    progresso_metas: num(linha.progresso_metas) || 0,
+    teto_pct: num(linha.teto_pct) || 0,
+    bonus_final_rs: num(linha.bonus_final_rs) || 0,
+    fechado_em: ""
+  });
+  if (i >= 0) rows[i] = nova;
+  else rows.push(nova);
+  return { erro: "", linhas: rows };
+}
+
+function validarComissao(linhas) {
+  if (!Array.isArray(linhas) || !linhas.length) return "A lista de comissão chegou vazia.";
+  for (const r of linhas) {
+    if (!/^\d{4}-\d{2}$/.test(S(r.mes)) || !S(r.operacao)) return "Cada comissão precisa de mês e operação.";
+    if (!Number.isFinite(num(r.bonus_final_rs))) return "O bônus precisa ser um número.";
+  }
+  return "";
+}
+
+function comissaoFechadaIntacta(antes, depois) {
+  for (const a of (antes || []).filter(r => S(r.fechado_em))) {
+    const b = (depois || []).find(r => r.mes === a.mes && r.operacao === a.operacao);
+    if (!b || S(b.fechado_em) !== S(a.fechado_em)) return "Um mês fechado não pode sair nem mudar de carimbo.";
+    if (Math.round((+a.bonus_final_rs) * 100) !== Math.round((+b.bonus_final_rs) * 100)) return "O bônus de um mês fechado fica como foi pago.";
+  }
+  return "";
+}
+
+
+return { podeLancar, mesclarEnvio, validarEnvios, pacoteCustos, mesclarCusto, validarCustos, mesclarComissao, validarComissao, comissaoFechadaIntacta };
+})();
+function lancamentoPronto(){
+  if(typeof painelOnline==='function' && painelOnline()) return window._bcExtrasOk===true;
+  return true;
+}
+function _lancEsc(t){ return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function _lancOpts(el, vals, ph){
+  if(!el) return;
+  const cur=el.value;
+  el.innerHTML='<option value="">'+_lancEsc(ph)+'</option>'+vals.map(v=>'<option value="'+_lancEsc(v)+'">'+_lancEsc(v)+'</option>').join('');
+  if(vals.indexOf(cur)>=0) el.value=cur;
+}
+function envOpcoes(){
+  const emp=document.getElementById('env-f-emp'), plat=document.getElementById('env-f-plat');
+  if(!emp||!plat) return;
+  const emps=Object.keys(typeof PONTO_ENV!=='undefined'?PONTO_ENV:{});
+  const plats=(typeof CANAIS_NOME!=='undefined'?CANAIS_NOME.slice():[]);
+  (Array.isArray(ENVIOS)?ENVIOS:[]).forEach(r=>{
+    if(r.empresa && emps.indexOf(r.empresa)<0) emps.push(r.empresa);
+    if(r.plataforma && plats.indexOf(r.plataforma)<0) plats.push(r.plataforma);
+  });
+  _lancOpts(emp, emps.sort(), 'Empresa');
+  _lancOpts(plat, plats, 'Plataforma');
+}
+function envPreencheContagem(){
+  const data=(document.getElementById('env-f-data')||{}).value||'';
+  const empresa=(document.getElementById('env-f-emp')||{}).value||'';
+  const plataforma=(document.getElementById('env-f-plat')||{}).value||'';
+  const r=(Array.isArray(ENVIOS)?ENVIOS:[]).find(x=>x.data===data && x.empresa===empresa && x.plataforma===plataforma);
+  ['coleta','flex','full'].forEach(k=>{ const el=document.getElementById('env-f-'+k); if(el && document.activeElement!==el) el.value=r?r[k]:0; });
+}
+async function envLancar(){
+  const st=document.getElementById('env-status');
+  const dizer=(t,cor)=>{ if(st){ st.textContent=t; st.style.color=cor||'var(--t2)'; } };
+  if(!lancamentoPronto() || !Array.isArray(ENVIOS)){ dizer('A lista de envios ainda está chegando.','#f59e0b'); return; }
+  const linha={
+    data:(document.getElementById('env-f-data')||{}).value,
+    empresa:(document.getElementById('env-f-emp')||{}).value,
+    plataforma:(document.getElementById('env-f-plat')||{}).value,
+    coleta:(document.getElementById('env-f-coleta')||{}).value,
+    flex:(document.getElementById('env-f-flex')||{}).value,
+    full:(document.getElementById('env-f-full')||{}).value
+  };
+  const prox=Lancamento.mesclarEnvio(ENVIOS, linha);
+  const erro=Lancamento.validarEnvios(prox);
+  if(erro){ dizer(erro,'#f87171'); return; }
+  ENVIOS=prox;
+  if(typeof renderEnvios==='function') renderEnvios();
+  if(window.bcSalvaEnvios){
+    try{ await window.bcSalvaEnvios(ENVIOS); dizer('Salvo. O mesmo dia, empresa e plataforma substitui só essa linha.','#22c55e'); }
+    catch(e){ dizer(e.message||String(e),'#f87171'); }
+  } else dizer('Lançado nesta tela.','#22c55e');
+}
+function dreEmpresas(){
+  const s=new Set(Object.keys(typeof PONTO_ENV!=='undefined'?PONTO_ENV:{}));
+  (CUSTOS&&CUSTOS.custos||[]).forEach(c=>{ if(c.emp) s.add(c.emp); });
+  (typeof ROWS!=='undefined'?ROWS:[]).forEach(r=>{ if(r.emp) s.add(r.emp); });
+  return [...s].sort();
+}
+function drePontos(){
+  const s=new Set(['Bsan','Powerfull']);
+  if(CUSTOS&&CUSTOS.rateio) Object.keys(CUSTOS.rateio).forEach(p=>s.add(p));
+  (CUSTOS&&CUSTOS.custos||[]).forEach(c=>{ if(c.ponto) s.add(c.ponto); });
+  return [...s];
+}
+function dreCampos(){
+  const b=(document.getElementById('dre-f-bloco')||{}).value||'direto';
+  ['direto','compartilhado','invest','box','rateio'].forEach(k=>{
+    const el=document.getElementById('dre-campos-'+k);
+    if(el) el.style.display=k===b?'flex':'none';
+  });
+  if(b==='rateio') dreRateioCampos();
+  dreListaMes();
+}
+function dreRateioCampos(){
+  const box=document.getElementById('dre-rateio-emps');
+  const ponto=(document.getElementById('dre-f-ponto-rt')||{}).value||'';
+  if(!box) return;
+  const mapa=(CUSTOS&&CUSTOS.rateio&&CUSTOS.rateio[ponto])||{};
+  const emps=new Set(Object.keys(mapa));
+  Object.keys(typeof PONTO_ENV!=='undefined'?PONTO_ENV:{}).forEach(e=>{ if((PONTO_ENV[e]||'')===ponto) emps.add(e); });
+  box.innerHTML=[...emps].sort().map(e=>{
+    const pct=mapa[e]!=null?Math.round((+mapa[e])*1000)/10:'';
+    return '<label style="font-size:11px;color:var(--t2)">'+_lancEsc(e)+'<br><input data-emp="'+_lancEsc(e)+'" type="number" min="0" max="100" step="0.1" value="'+pct+'" style="width:88px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t1);padding:7px 8px;"></label>';
+  }).join('') || '<span style="font-size:12px;color:var(--t3)">Escolha o ponto.</span>';
+}
+function dreListaMes(){
+  const el=document.getElementById('dre-lista');
+  if(!el) return;
+  const mes=(document.getElementById('dre-f-mes')||{}).value||'';
+  if(!CUSTOS){ el.innerHTML=''; return; }
+  const linhas=[];
+  (CUSTOS.custos||[]).forEach((c,i)=>{ if(c.mes===mes) linhas.push('<div>'+_lancEsc(c.tipo)+' · '+_lancEsc(c.ponto)+' · '+_lancEsc(c.emp||'—')+' · '+_lancEsc(c.valor)+' <button type="button" onclick="dreApagar(\'custo\','+i+')">Apagar</button></div>'); });
+  (CUSTOS.investimento||[]).forEach((c,i)=>{ if(c.mes===mes) linhas.push('<div>afiliados/lives · '+_lancEsc(c.emp)+' · '+_lancEsc(c.canal||'')+' · afi '+_lancEsc(c.afi)+' · lives '+_lancEsc(c.live)+' <button type="button" onclick="dreApagar(\'invest\','+i+')">Apagar</button></div>'); });
+  (CUSTOS.boxwyl||[]).forEach((c,i)=>{ if(c.mes===mes) linhas.push('<div>Box Wyl · fat '+_lancEsc(c.fat)+' · custos '+_lancEsc(c.custos)+' <button type="button" onclick="dreApagar(\'box\','+i+')">Apagar</button></div>'); });
+  el.innerHTML=linhas.length?linhas.join(''):'<span style="color:var(--t3)">Nenhuma linha neste mês.</span>';
+}
+async function dreGravar(pacote, ok){
+  const erro=Lancamento.validarCustos(pacote);
+  const st=document.getElementById('dre-custos-status');
+  if(erro){ if(st){ st.textContent=erro; st.style.color='#f87171'; } return; }
+  if(!lancamentoPronto()){ if(st){ st.textContent='Os custos ainda estão chegando.'; st.style.color='#f59e0b'; } return; }
+  CUSTOS=pacote;
+  if(typeof renderDRE==='function') renderDRE();
+  dreListaMes();
+  if(window.bcSalvaCustos){
+    try{ await window.bcSalvaCustos(CUSTOS); if(st){ st.textContent=ok; st.style.color='#22c55e'; } }
+    catch(e){ if(st){ st.textContent=e.message||String(e); st.style.color='#f87171'; } }
+  } else if(st){ st.textContent='Lançado nesta tela.'; st.style.color='#22c55e'; }
+}
+async function dreLancar(){
+  const bloco=(document.getElementById('dre-f-bloco')||{}).value;
+  const mes=(document.getElementById('dre-f-mes')||{}).value;
+  let linha={ bloco, mes };
+  if(bloco==='direto') linha=Object.assign(linha,{ ponto:(document.getElementById('dre-f-ponto')||{}).value, emp:(document.getElementById('dre-f-emp')||{}).value, valor:(document.getElementById('dre-f-valor')||{}).value });
+  if(bloco==='compartilhado') linha=Object.assign(linha,{ ponto:(document.getElementById('dre-f-ponto-c')||{}).value, valor:(document.getElementById('dre-f-valor-c')||{}).value });
+  if(bloco==='invest') linha=Object.assign(linha,{ emp:(document.getElementById('dre-f-emp-i')||{}).value, canal:(document.getElementById('dre-f-canal')||{}).value, afi:(document.getElementById('dre-f-afi')||{}).value, live:(document.getElementById('dre-f-live')||{}).value });
+  if(bloco==='box') linha=Object.assign(linha,{ fat:(document.getElementById('dre-f-fat')||{}).value, custos:(document.getElementById('dre-f-box')||{}).value });
+  if(bloco==='rateio'){
+    const ponto=(document.getElementById('dre-f-ponto-rt')||{}).value;
+    const pares=[...document.querySelectorAll('#dre-rateio-emps input')].map(el=>({ emp:el.getAttribute('data-emp'), percentual:el.value }));
+    linha={ bloco:'rateio', ponto, pares };
+  }
+  await dreGravar(Lancamento.mesclarCusto(CUSTOS, linha), 'Custo salvo. A planilha continua podendo substituir o pacote inteiro.');
+}
+async function dreApagar(tipo, idx){
+  const bloco=tipo==='invest'?'invest':(tipo==='box'?'box':'direto');
+  const atual=(tipo==='invest'?(CUSTOS.investimento||[])[idx]:tipo==='box'?(CUSTOS.boxwyl||[])[idx]:(CUSTOS.custos||[])[idx])||{};
+  await dreGravar(Lancamento.mesclarCusto(CUSTOS, { bloco: tipo==='custo'?atual.tipo:bloco, idx, remover:true, mes:atual.mes }), 'Linha apagada.');
+}
+function drePrepara(){
+  _lancOpts(document.getElementById('dre-f-ponto'), drePontos(), 'Ponto');
+  _lancOpts(document.getElementById('dre-f-ponto-c'), drePontos(), 'Ponto');
+  _lancOpts(document.getElementById('dre-f-ponto-rt'), drePontos(), 'Ponto');
+  _lancOpts(document.getElementById('dre-f-emp'), dreEmpresas(), 'Empresa');
+  _lancOpts(document.getElementById('dre-f-emp-i'), dreEmpresas(), 'Empresa');
+  _lancOpts(document.getElementById('dre-f-canal'), (typeof CANAIS_NOME!=='undefined'?CANAIS_NOME.slice():[]), 'Canal');
+  const mes=document.getElementById('dre-f-mes');
+  if(mes && !mes.value && typeof getR==='function') mes.value=String(getR()[0]||'').slice(0,7);
+  dreCampos();
+}
+function comOps(){
+  const s=new Set();
+  (Array.isArray(COMISSAO)?COMISSAO:[]).forEach(r=>{ if(r.operacao) s.add(r.operacao); });
+  (typeof ROWS!=='undefined'?ROWS:[]).forEach(r=>{ if(r.emp&&r.mkt) s.add(r.emp+' · '+r.mkt); });
+  return [...s].sort();
+}
+function comPrepara(){
+  _lancOpts(document.getElementById('com-f-op'), comOps(), 'Operação');
+  const mes=document.getElementById('com-f-mes');
+  if(mes && !mes.value && typeof _COM_MES!=='undefined' && _COM_MES) mes.value=_COM_MES;
+}
+async function comLancar(){
+  const st=document.getElementById('com-status');
+  const dizer=(t,cor)=>{ if(st){ st.textContent=t; st.style.color=cor||'var(--t2)'; } };
+  if(!lancamentoPronto() || !Array.isArray(COMISSAO)){ dizer('A comissão ainda está chegando.','#f59e0b'); return; }
+  const linha={
+    mes:(document.getElementById('com-f-mes')||{}).value,
+    operacao:(document.getElementById('com-f-op')||{}).value,
+    faturamento:(document.getElementById('com-f-fat')||{}).value,
+    margem_cont:(document.getElementById('com-f-margem')||{}).value,
+    mc_pct:(document.getElementById('com-f-mc')||{}).value,
+    tacos_pct:(document.getElementById('com-f-tacos')||{}).value,
+    progresso_metas:(document.getElementById('com-f-prog')||{}).value,
+    teto_pct:(document.getElementById('com-f-teto')||{}).value,
+    bonus_final_rs:(document.getElementById('com-f-bonus')||{}).value
+  };
+  const r=Lancamento.mesclarComissao(COMISSAO, linha);
+  if(r.erro){ dizer(r.erro,'#f87171'); return; }
+  const erro=Lancamento.validarComissao(r.linhas);
+  if(erro){ dizer(erro,'#f87171'); return; }
+  COMISSAO=r.linhas;
+  if(typeof _renderGerComissao==='function') _renderGerComissao();
+  if(window.bcSalvaComissao){
+    try{ await window.bcSalvaComissao(COMISSAO); dizer('Comissão salva. O mês fechado não entra nessa troca. O painel não recalcula o bônus.','#22c55e'); }
+    catch(e){ dizer(e.message||String(e),'#f87171'); }
+  } else dizer('Lançado nesta tela.','#22c55e');
+}
+
 async function carregarCustos(file){
   const st=document.getElementById('dre-custos-status');
   if(!file){return;}
@@ -2409,7 +2834,7 @@ function renderDRE(){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ENVIOS — pulso do fluxo de saída (input manual: envios_2026.xlsx)
+// ENVIOS — pulso do fluxo de saída (formulário: data, empresa, plataforma, coleta, flex, full)
 // data | plataforma | empresa | coleta | flex | full
 // ═══════════════════════════════════════════════════════════════
 let ENVIOS = null;
@@ -2439,7 +2864,6 @@ async function carregarEnvios(file){
     st.textContent='✓ '+ENVIOS.length+' registros · até '+([...new Set(ENVIOS.map(r=>r.data))].sort().pop());
     st.style.color='#22c55e';
     renderEnvios();
-    if(window.bcSalvaEnvios){ try{ await window.bcSalvaEnvios(ENVIOS); st.textContent+=' · salvo na nuvem ✓'; }catch(e){ st.textContent+=' · ⚠️ falha ao salvar: '+(e.message||e); } }   // online: persiste pra todos
   }catch(e){ st.textContent='❌ '+e.message; st.style.color='#f87171'; }
 }
 const MOD=[['coleta','Coleta','#4f8ef7'],['flex','Flex','#f59e0b'],['full','Full','#22c55e']];
@@ -2451,9 +2875,10 @@ let ENV_VIEW = 'periodo'; // 'periodo' = agrega o período selecionado · 'dia' 
 function envView(v){ ENV_VIEW=v; renderEnvios(); }
 const PONTO_ENV = {'Bsan Shop':'Bsan','Jowcase':'Bsan','Mary Kase':'Bsan','Pesseguinho Store':'Bsan','Powerfull Imports':'Powerfull','Powerfull Filial':'Powerfull'};
 function renderEnvios(){
+  if(typeof envOpcoes==='function') envOpcoes();
   const empty=document.getElementById('env-empty'), kp=document.getElementById('env-kpis');
   const alertEl=document.getElementById('env-alerts'), cards=document.getElementById('env-cards');
-  if(!ENVIOS||!ENVIOS.length){empty.style.display='block';empty.innerHTML='Carregue o <b>envios_2026.xlsx</b> (botão acima) para ver o fluxo de envios.';kp.innerHTML='';alertEl.innerHTML='';cards.innerHTML='';['c-env-trend','c-env-modal','c-env-plat','c-env-emp'].forEach(dc);return;}
+  if(!ENVIOS||!ENVIOS.length){empty.style.display='block';empty.innerHTML='Registre o dia no formulário acima para ver o fluxo de envios.';kp.innerHTML='';alertEl.innerHTML='';cards.innerHTML='';['c-env-trend','c-env-modal','c-env-plat','c-env-emp'].forEach(dc);return;}
   empty.style.display='none';
   const datas=[...new Set(ENVIOS.map(r=>r.data))].sort();
   const [ps,pe]=getR();
@@ -6629,6 +7054,7 @@ function _metCharts(M,diarioOk){
 function comMes(v){ _COM_MES=v; _COM_OP=''; renderGerencial(); }
 function comOp(op){ _COM_OP=(_COM_OP===op?'':op); renderGerencial(); }
 function _renderGerComissao(){
+  if(typeof comPrepara==='function') comPrepara();
   if(typeof dc==='function') dc('c-com-dre');
   const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   const brl=v=>'R$ '+(Math.round((+v||0)*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -8261,6 +8687,7 @@ async function handleFiles(list){
     try{
       if(t==='vendas')await handleFile(f);
       else if(t==='custos')await carregarCustos(f);
+      else if(typeof painelOnline==='function' && painelOnline()) avisos.push({cor:'#f59e0b',txt:'Envios entram pelo formulário da aba Envios. Este arquivo não foi gravado.'});
       else await carregarEnvios(f);
     }catch(e){avisos.push({cor:'#f87171',txt:'❌ erro ao ler <b>'+f.name+'</b>: '+e.message});continue;}
     const dp=antes[t],dd=_ldEstado(t);
@@ -10490,6 +10917,8 @@ function setS(k,btn){
 }
 function toggleCmp(){cmpMode=!cmpMode;document.getElementById('ctog').classList.toggle('on',cmpMode);document.getElementById('cinputs').classList.toggle('show',cmpMode);renderAll();}
 function goPage(id,btn){
+  if(id==='envios' && typeof envOpcoes==='function') envOpcoes();
+  if(id==='dre' && typeof drePrepara==='function') drePrepara();
   if(id==='dre'){
     const online=typeof painelOnline==='function'&&painelOnline();
     const u=(typeof BCAUTH!=='undefined'&&BCAUTH.user)?BCAUTH.user:null;
@@ -12251,7 +12680,8 @@ renderAll();
     function hide(id){ var x=document.getElementById(id); if(x)x.style.display='none'; }
     try{ var ub=document.querySelector('.upload-btn'); if(ub)ub.style.display='none'; }catch(e){}   // online: dados vêm da API, sem upload de xlsx
     if(!u || u.perfil!=='direcao') hide('nav-dre');   // DRE só a direção; coordenação vê o resto
-    if(u && u.perfil==='gestor') hide('env-upload-box');   // upload de envios só coord/direção; comissão do gestor fica, filtrada
+    if(!u || (u.perfil!=='coordenacao' && u.perfil!=='direcao')) hide('env-upload-box');
+    if(!u || u.perfil!=='direcao') hide('com-lancar-box');
     if(u && u.perfil==='direcao'){ var ab=document.getElementById('btn-admin'); if(ab)ab.style.display='inline-block'; }   // admin de usuários só p/ Direção
   }
   async function bcCarrega(silencioso){
@@ -12355,7 +12785,9 @@ renderAll();
       if(Array.isArray(d.operacoes) && typeof METAS_GESTORES!=='undefined') METAS_GESTORES=Object.fromEntries(d.operacoes.map(o=>[o.empresa+'|'+o.marketplace,o.gestor]));
       if(typeof METAS_FONTE!=='undefined') METAS_FONTE={atualizadoEm:d._sync||'',origem:'Base sincronizada'};
       if(d.fullRel && typeof FULL_REL!=='undefined') FULL_REL=d.fullRel;   // relação do Full (só as operações do gestor)
-      if(d.envios && typeof ENVIOS!=='undefined') ENVIOS=d.envios;
+      if(typeof ENVIOS!=='undefined') ENVIOS=Array.isArray(d.envios)?d.envios:(ENVIOS||[]);
+      if(typeof COMISSAO!=='undefined' && !Array.isArray(COMISSAO)) COMISSAO=[];
+      window._bcExtrasOk=true;
       if(d.custos && typeof CUSTOS!=='undefined' && d.custos.custos){ CUSTOS=d.custos; }   // custos op + afi/lives (Ads vem do dataset)
       if(d._sync){ _syncAtual=d._sync; try{ var el=document.getElementById('hdr-src'); if(el){ var mins=Math.round((Date.now()-new Date(d._sync).getTime())/60000); var rel=mins<1?'agora':(mins<60?('há '+mins+' min'):(mins<1440?('há '+Math.round(mins/60)+'h'):('há '+Math.round(mins/1440)+'d'))); el.textContent='🔄 Atualizado '+rel; el.title='última sincronização: '+new Date(d._sync).toLocaleString('pt-BR'); } }catch(e){} }
       _extLoaded=true;
@@ -12385,6 +12817,10 @@ renderAll();
   // coord/direção sobem o custos_2026.xlsx na plataforma (custos op + afi/lives; Ads já vem do dataset)
   window.bcSalvaCustos = async function(custos){
     var r=await authFetch('/api/custos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({custos:custos})});
+    var d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.erro||('HTTP '+r.status)); return d;
+  };
+  window.bcSalvaComissao = async function(linhas){
+    var r=await authFetch('/api/comissao',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({linhas:linhas})});
     var d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.erro||('HTTP '+r.status)); return d;
   };
   // ── ADMIN de usuários (só Direção) ──
