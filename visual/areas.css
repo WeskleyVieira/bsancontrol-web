@@ -35,3 +35,27 @@ body.bc-shell{--bc-button-ink:#182034}body.bc-shell.light{--bc-button-ink:#fff}.
 .bc-identity-tag>.bc-identity-marker{display:none!important}
 .bc-identity-tag[data-identity-kind=marketplace]{background:color-mix(in srgb,var(--identity-color) 5%,var(--bc-surface))}
 .bc-settlement-tag{display:block;width:max-content;max-width:100%;margin:5px 0 0 auto;padding:2px 7px;border:1px solid color-mix(in srgb,var(--bc-attention) 28%,var(--bc-border));border-radius:5px;background:color-mix(in srgb,var(--bc-attention) 8%,var(--bc-surface));color:var(--bc-attention);font:500 12px/1.5 Inter,Segoe UI,sans-serif;white-space:nowrap;letter-spacing:0}
+/* Escala compartilhada com Metas. O contexto define a hierarquia; dados não mudam. */
+body.bc-shell{--bc-font:Inter,"Segoe UI",sans-serif;--bc-font-code:"DM Mono",ui-monospace,monospace;--bc-text-base:14px;--bc-text-support:13px;--bc-text-caption:12px;--bc-text-section:17px;--bc-text-title:22px;font-family:var(--bc-font);font-size:var(--bc-text-base);line-height:1.7}
+body.bc-shell *{font-family:var(--bc-font)!important}
+body.bc-shell :is(.bc-technical,code,kbd,samp),body.bc-shell .bc-technical *{font-family:var(--bc-font-code)!important;font-variant-numeric:tabular-nums}
+body.bc-shell .bc-type-caption{font-size:var(--bc-text-caption)!important;line-height:1.6!important}
+body.bc-shell .bc-type-bold{font-weight:700!important}
+body.bc-shell :is(.bc-area,.bc-com-root,#met-root,.bc-entry-dialog,.bc-viz-dialog,.bc-com-zoom,.met-ampliado){font-size:var(--bc-text-base);line-height:1.7}
+body.bc-shell .bc-area :is(.cc-title,.bc-compact-title),body.bc-shell .bc-com-root h3{font-size:var(--bc-text-section)!important;font-weight:600!important;line-height:1.4!important;letter-spacing:0!important}
+body.bc-shell :is(.bc-com-root,.bc-entry-head,.bc-viz-dialog,.bc-com-zoom) h2{font-size:var(--bc-text-title)!important;line-height:1.3!important;font-weight:700!important;letter-spacing:-.4px}
+body.bc-shell .bc-area :is(.sl,.pf-lbl,.cc-sub,.kpi-sub,.bc-metric-copy){font-size:var(--bc-text-support)!important;line-height:1.7!important;letter-spacing:0!important}
+body.bc-shell .bc-metrics :is(.bc-metric-label,.kpi-eye),body.bc-shell .bc-com-kpi h3{font-size:16px!important;line-height:1.5!important;font-weight:600!important;text-transform:none!important;letter-spacing:0!important}
+body.bc-shell .bc-metrics :is(.bc-metric-value,.kpi-val),body.bc-shell .bc-com-kpi>strong{font-size:clamp(28px,3vw,36px)!important;line-height:1.3!important;font-weight:700!important;letter-spacing:-.7px;font-variant-numeric:tabular-nums}
+body.bc-shell .bc-com-kpi p{font-size:14px;line-height:1.7}
+body.bc-shell .bc-area :is(.bval,.bpct,.rv,.trend-val,.champ-fat,.champ-qty,.canal-mc-rs,.canal-row-val,.env-metric-dl,.abc-cell-count,.abc-cell-val,#diario-refinfo,#diario-placar){font-variant-numeric:tabular-nums;letter-spacing:0}
+body.bc-shell :is(.bc-area,.bc-com-root,#met-root) table{font-size:13px!important;font-variant-numeric:tabular-nums;line-height:1.6}
+body.bc-shell :is(.bc-area,.bc-com-root,#met-root) table :is(td,th){font-size:13px!important;line-height:1.6!important}
+body.bc-shell :is(.bc-area,.bc-com-root,#met-root) table thead th{font-size:12px!important;font-weight:600!important}
+body.bc-shell :is(.bc-area,.bc-com-root,#met-root) table small{font-size:12px!important;line-height:1.6!important}
+body.bc-shell :is(.bc-entry-dialog,#bc-env-dialog) :is(input,select,textarea){font-size:14px!important;line-height:1.5}
+body.bc-shell :is(.bc-entry-dialog,#bc-env-dialog) label{font-size:13px!important;line-height:1.6}
+body.bc-shell .bc-metrics{grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))!important}
+body.bc-shell .bc-metrics :is(.bc-metric-value,.kpi-val),body.bc-shell .bc-com-kpi>strong{overflow-wrap:normal;word-break:normal}
+@media(min-width:701px) and (max-width:1399px){body.bc-shell .bc-metrics:has(>:nth-child(4):last-child){grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:700px){body.bc-shell .bc-metrics{grid-template-columns:minmax(0,1fr)!important}body.bc-shell .bc-metrics :is(.bc-metric-value,.kpi-val),body.bc-shell .bc-com-kpi>strong{font-size:30px!important}}
