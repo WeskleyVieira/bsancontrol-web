@@ -8,7 +8,7 @@
 <title>Bsan Control</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <style>
 :root{
@@ -3248,7 +3248,7 @@ let _GP_LIN=[], _GP_HASADS=false, _GP_POR=true;
 function exportGerProdutosCSV(){
   const rows=_GP_LIN||[];
   if(!rows.length){ alert('Nenhum anúncio na visão atual.'); return; }
-  const csvEsc=t=>{ const s=String(t==null?'':t); return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const csvEsc=t=>{ let s=String(t==null?'':t); if(/^[=+\-@]/.test(s)) s="'"+s; return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
   const n2=v=> (v==null||!isFinite(+v))?'':(+v).toFixed(2);
   const cab=['Titulo',_GP_POR?'Anuncio':'SKU','Relevancia','Qtd','Part_volume_%','Faturamento','Part_faturamento_%','Preco_un','Custo_un','Margem_un','MC_antes_Ads','MC_antes_%','Part_margem_%'];
   if(_GP_HASADS) cab.push('Faturamento_Ads','Investimento_Ads','TACOS_%','ACOS_%','MC_final','MC_final_%','Part_margem_final_%');
@@ -3724,7 +3724,7 @@ function exportGerPublicidadeCSV(){
   const exp=_GA_EXP||{rows:[]};
   const rows=exp.rows||[];
   if(!rows.length){ alert('Nenhuma linha na visão atual.'); return; }
-  const csvEsc=t=>{ const s=String(t==null?'':t); return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const csvEsc=t=>{ let s=String(t==null?'':t); if(/^[=+\-@]/.test(s)) s="'"+s; return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
   const n2=v=>(v==null||!isFinite(+v))?'':(+v).toFixed(2);
   let cab, lin;
   if(exp.tipo==='tiktok'){
@@ -4407,9 +4407,9 @@ function ac2MostraFotos(imgs, nivel){
   ov.innerHTML=`<div class="a2f-box"><div class="a2f-top"><b>${imgs.length===1?'Imagem pronta':imgs.length+' imagens prontas'}</b>
       <span>Copiar e colar no WhatsApp Web (Ctrl+V) · ou baixar</span>
       ${imgs.length>1?'<button onclick="ac2BaixaFotos()">⬇ Baixar todas</button>':''}<button onclick="document.getElementById('a2-fotos').classList.remove('on')">Fechar</button></div>
-    <div class="a2f-lista">${imgs.map((x,i)=>`<div class="a2f-it"><div class="a2f-it-h"><b>${i+1}. ${x.titulo}</b>
+    <div class="a2f-lista">${imgs.map((x,i)=>`<div class="a2f-it"><div class="a2f-it-h"><b>${i+1}. ${ac2Esc(x.titulo)}</b>
       <button onclick="ac2CopiaFoto(${i},this)">📋 Copiar</button><a download="${nome(i)}" href="${x.url}">⬇ Baixar</a></div>
-      <img src="${x.url}" alt="${x.titulo}"></div>`).join('')}</div></div>`;
+      <img src="${x.url}" alt="${ac2Esc(x.titulo)}"></div>`).join('')}</div></div>`;
   ov.classList.add('on');
 }
 async function ac2CopiaFoto(i, btn){
@@ -4832,8 +4832,8 @@ function ac2Coord(){
       <td class="r">${numGo(o.m.rec.length,'#a855f7','recobrar',o.g,'Abrir as que pedem nova ação')}</td>
       <td class="r" style="color:${o.m.risco>0?'#f59e0b':'var(--t3)'}">${o.m.risco>0?AC2_BRLk(o.m.risco):'–'}</td>
       <td class="r" style="color:${o.m.maior==null?'var(--t3)':'#dc2626'}">${ac2AtrLbl(o.m.maior)}</td>
-      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)" title="${o.comece?String(o.comece.i.titulo||o.comece.i.sku).replace(/"/g,'')+' — '+o.comece.por:''}">${o.comece
-        ? `<span style="color:${ac2TipoDe(o.comece.i.tipo).cor};font-weight:700">${ac2TipoDe(o.comece.i.tipo).curto}</span> · ${String(o.comece.i.titulo||o.comece.i.sku).slice(0,34)} <span style="color:var(--t3)">(${o.comece.por})</span>`
+      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)" title="${o.comece?ac2Esc(String(o.comece.i.titulo||o.comece.i.sku)+' — '+o.comece.por):''}">${o.comece
+        ? `<span style="color:${ac2TipoDe(o.comece.i.tipo).cor};font-weight:700">${ac2TipoDe(o.comece.i.tipo).curto}</span> · ${ac2Esc(String(o.comece.i.titulo||o.comece.i.sku).slice(0,34))} <span style="color:var(--t3)">(${ac2Esc(o.comece.por)})</span>`
         : '<span style="color:#22c55e">em dia ✓</span>'}</td>
       <td class="r"><button class="a2-cob" onclick="event.stopPropagation();ac2CopiaCobranca('${esc(o.g)}',this)" title="Copia a mensagem de cobrança deste gestor para colar no WhatsApp">📋 Copiar cobrança</button></td>
     </tr>`).join('');
@@ -5033,14 +5033,14 @@ function ac2HistHTML(ctx, skuSel, k){
     }
   } else if(atual) corpo += `<div class="vd-hist-falta">Sem vendas nos meses anteriores — não há histórico para comparar; vale só a meta.</div>`;
   const chips = skus.length > 1 ? `<div class="vd-hist-lab">SKU deste anúncio · clique para ver um só</div><div class="vd-hist-chips">${['',...skus].map(sk =>
-      `<button class="${(skuSel||'')===sk?'on':''}" onclick="event.stopPropagation();ac2.histSku('${k}','${encodeURIComponent(sk)}')">${sk||'Todos os SKUs'}</button>`).join('')}</div>` : '';
+      `<button class="${(skuSel||'')===sk?'on':''}" onclick="event.stopPropagation();ac2.histSku('${k}','${encodeURIComponent(sk)}')">${ac2Esc(sk)||'Todos os SKUs'}</button>`).join('')}</div>` : '';
   // 4 — mês a mês, recolhido; com a margem TOTAL em R$ de cada mês (o lucro, não só a %)
   const linhas = meses.slice().reverse().map(m => { const u = ac2Uni(m), cur = m.mes===comp;
     return `<tr${cur?' class="vd-hist-cur"':''}><td>${ac2Rot(m.mes)}${cur&&ctx.parcial?' · parcial':''}</td><td class="r">${Math.round(m.qtd)}</td>
       <td class="r"><b>${ac2Brl(u.preco)}</b></td><td class="r">${ac2Brl(u.plat)}</td><td class="r">${ac2Brl(u.imp)}</td><td class="r">${ac2Brl(u.ctp)}</td>
       <td class="r">${ac2Brl(u.marg)}</td><td class="r" style="color:${corPct(u.pct)};font-weight:700">${ac2Pc(u.pct)}</td>
       <td class="r"><b>${ac2BrlK(m.mc)}</b></td></tr>`; }).join('');
-  return `<div class="vd-h" style="margin-top:12px">Histórico · ${i.anuncio ? 'anúncio '+i.anuncio : 'SKU '+(i.sku||'')}${skuSel?' · '+skuSel:''}</div>
+  return `<div class="vd-h" style="margin-top:12px">Histórico · ${i.anuncio ? 'anúncio '+ac2Esc(i.anuncio) : 'SKU '+ac2Esc(i.sku||'')}${skuSel?' · '+ac2Esc(skuSel):''}</div>
     ${chips}${corpo}
     <details class="vd-ev"><summary>Mês a mês · ${meses.length} meses<span class="vd-abre"><span class="vd-abre-a">Abrir</span><span class="vd-abre-f">Fechar</span></span></summary>
       <div class="tbl-wrap" style="max-height:260px;margin-top:6px"><table class="tbl a2-tbl vd-t"><thead><tr>
@@ -5065,7 +5065,7 @@ function ac2RegistroHTML(i){
   if(!i.registro) return pi.txt ? `<div class="vd-reg vd-reg-no"><b>Sem registro do gestor.</b> <span style="color:${pi.cor}">${pi.txt}</span></div>` : '';
   const r = i.registro, quando = r.em ? new Date(r.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
   return `<div class="vd-reg"><div class="vd-reg-h">Registro do gestor${r.gestor?' · '+ac2Esc(r.gestor):''}${quando?' · '+quando:''}${r.n>1?' · '+r.n+' registros (mostrando o último)':''}${pi.txt?` · <span style="color:${pi.cor}">${pi.txt}</span>`:''}</div>
-    <div><b>Ação:</b> ${ac2Esc(r.acao)}${r.precoNovo?' · <b>Novo preço:</b> '+ac2Brl(r.precoNovo):''}${r.ate?' · <b>Retorno até:</b> '+r.ate.split('-').reverse().join('/'):''}${r.causa?' · <b>Causa:</b> '+ac2Esc(r.causa):''}</div>${(()=>{ const c=ac2ChecagemTxt(i); return c?`<div class="vd-reg-ck" style="color:${c.ok?'#16a34a':'#dc2626'}"><b>Preço no anúncio:</b> ${c.txt}</div>`:''; })()}${r.obs?`<div class="vd-reg-obs">"${ac2Esc(r.obs)}"</div>`:''}${ac2EfeitoHTML(i)}</div>`;
+    <div><b>Ação:</b> ${ac2Esc(r.acao)}${r.precoNovo?' · <b>Novo preço:</b> '+ac2Brl(r.precoNovo):''}${r.ate?' · <b>Retorno até:</b> '+r.ate.split('-').reverse().join('/'):''}${r.causa?' · <b>Causa:</b> '+ac2Esc(r.causa):''}</div>${(()=>{ const c=ac2ChecagemTxt(i); return c?`<div class="vd-reg-ck" style="color:${c.ok?'#16a34a':'#dc2626'}"><b>Preço no anúncio:</b> ${ac2Esc(c.txt)}</div>`:''; })()}${r.obs?`<div class="vd-reg-obs">"${ac2Esc(r.obs)}"</div>`:''}${ac2EfeitoHTML(i)}</div>`;
 }
 // EFEITO medido (verificar-tratativas.js, recalculado a cada carga): antes × depois do registro
 const AC2_COR_DESF = { 'Resolvido':'#16a34a', 'Justificado':'#16a34a', 'Progrediu':'#3b82f6', 'Sem efeito':'#f59e0b', 'Piorou':'#dc2626', 'Sem venda':'#94a3b8', 'Aguardando':'#94a3b8',
@@ -5085,7 +5085,7 @@ function ac2PainelDevolucao(i){
   const lin = dv.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r => `<tr><td>${String(r.date||'').split('-').reverse().join('/')}</td>
     <td style="font-family:ui-monospace,monospace;font-size:10px">${r.ped||''}</td><td>${ac2Esc(r.sku||'')}</td><td class="r">${ac2Brl(+r.fat||0)}</td>
     <td class="r" style="color:${(+(r.mcReal!=null?r.mcReal:r.mc)||0)<0?'#dc2626':'var(--t1)'}">${ac2Brl(+(r.mcReal!=null?r.mcReal:r.mc)||0)}</td></tr>`).join('');
-  return `<div class="vd-h">Devoluções · ${i.anuncio || i.sku || ''}</div>${ac2RegistroHTML(i)}
+  return `<div class="vd-h">Devoluções · ${ac2Esc(i.anuncio || i.sku || '')}</div>${ac2RegistroHTML(i)}
     <div class="vd-ver"><div>${ac2Esc(i.causa||'')} em ${ac2Rot(comp)}. O que a devolução custou ao vendedor: <b>${ac2Brl(Math.min(0,perda))}</b> (frete de volta e tarifas que não voltaram; a mercadoria volta ao estoque).</div>
       <div><b>Preço não resolve devolução.</b> Cheque nesta ordem: o produto chega como o anúncio promete (fotos, medidas, voltagem, cor)? A embalagem protege? Há defeito de lote? A transportadora atrasa ou avaria? O motivo do comprador está na plataforma, em cada devolução.</div></div>
     ${lin ? `<div class="tbl-wrap" style="max-height:220px"><table class="tbl a2-tbl vd-t"><thead><tr><th>Data</th><th>Nº da venda</th><th>SKU</th><th class="r">Valor</th><th class="r">Resultado</th></tr></thead><tbody>${lin}</tbody></table></div>`
@@ -5242,7 +5242,7 @@ function ac2PainelVendas(i, k){
       <td class="r" style="color:${mcR<0?'#dc2626':'#22c55e'}">${ac2Brl(mcR)}</td>
       <td class="r" style="color:${corD(pcV)};font-weight:700">${ac2Pc(pcV)}${cmp}</td></tr>`; }).join('');
   const precos = ptsOrd.slice(0,5).map(([p,n])=>`${ac2Brl(p)} × ${n}`).join(' · ') + (ptsOrd.length>5?` · +${ptsOrd.length-5} preços`:'');
-  return `<div class="vd-h">Decisão · ${i.anuncio || i.sku || ''}</div>
+  return `<div class="vd-h">Decisão · ${ac2Esc(i.anuncio || i.sku || '')}</div>
     <div class="vd-atalhos">${linkRx}</div>
     ${ac2RegistroHTML(i)}
     <div class="vd-ver">${ve.map(x=>`<div>${x}</div>`).join('')}</div>
@@ -5680,12 +5680,12 @@ function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(ful
   // o contexto — mas um gestor toca várias operações, e sem isso a tarefa não diz de quem ela é.
   const conta=`<span class="a2-ic">${i.empresa} · ${i.mkt}</span>`;
   const tratada=i.estado==='trat'; const resolvido=i.funcionou===true;
-  const estTag=resolvido?`<span class="a2-tag est" style="background:rgba(34,197,94,.14);color:#16a34a;border:1px solid rgba(34,197,94,.35)">✅ resolvido${i.trat?' · '+i.trat:''}</span>`:tratada?`<span class="a2-tag est" title="${i.registro?ac2Esc(i.registro.acao+(i.registro.causa?' · causa: '+i.registro.causa:'')+(i.registro.obs?' — '+i.registro.obs:'')):''}" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">✓ tratada${i.trat?' · '+i.trat:''}</span>`:`<span class="a2-tag est">a diagnosticar</span>`;
-  const causaTag=(i.causa&&i.causa!=='—')?`<span class="a2-tag causa" style="opacity:.85">${i.causa}</span>`:'';
+  const estTag=resolvido?`<span class="a2-tag est" style="background:rgba(34,197,94,.14);color:#16a34a;border:1px solid rgba(34,197,94,.35)">✅ resolvido${i.trat?' · '+ac2Esc(i.trat):''}</span>`:tratada?`<span class="a2-tag est" title="${i.registro?ac2Esc(i.registro.acao+(i.registro.causa?' · causa: '+i.registro.causa:'')+(i.registro.obs?' — '+i.registro.obs:'')):''}" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">✓ tratada${i.trat?' · '+ac2Esc(i.trat):''}</span>`:`<span class="a2-tag est">a diagnosticar</span>`;
+  const causaTag=(i.causa&&i.causa!=='—')?`<span class="a2-tag causa" style="opacity:.85">${ac2Esc(i.causa)}</span>`:'';
   const prog=(i.mcDepois!=null)?` <span style="color:${i.mcDepois>=i.meta?'#22c55e':'#f59e0b'}">→ ${i.mcDepois}%</span>`:'';
   const online=(ac2._fonte||'').indexOf('API')>=0;
   const btn=(online&&i.id&&!tratada)?`<button class="a2-trbtn" onclick="event.stopPropagation();ac2.tratar(this.dataset.id)" data-id="${encodeURIComponent(i.id)}">registrar</button>`:'';
-  const anuncio=i.anuncio?`<span class="a2-tag" style="font-family:ui-monospace,monospace;letter-spacing:.2px">${i.anuncio}</span>`:'';
+  const anuncio=i.anuncio?`<span class="a2-tag" style="font-family:ui-monospace,monospace;letter-spacing:.2px">${ac2Esc(i.anuncio)}</span>`:'';
   // a contagem de vendas vira BOTÃO: leva ao Raio-X do SKU já escopado na empresa e no canal.
   // Sem poder abrir as vendas, a demanda é uma afirmação que o gestor não tem como conferir.
   // a contagem de vendas abre, ALI MESMO, a quebra do dinheiro desta demanda.
@@ -5705,7 +5705,7 @@ function ac2itemRow(i,full){ const sev=i.mcPct<0?'alta':'media'; const dono=(ful
     : '📈 <b>Suba a margem até a meta</b> — revise o preço, o custo da ficha ou o gasto de Ads deste anúncio.';
   return `<div class="a2-it ${sev}"><div class="str"></div><div class="a2-ib">`
     +`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${conta}${estTag}${dono}</div>`
-    +`<div class="tt" title="${(i.titulo||'').replace(/"/g,'')}">${i.sku} — ${i.titulo||''}</div>`
+    +`<div class="tt" title="${ac2Esc(i.titulo||'')}">${ac2Esc(i.sku)} — ${ac2Esc(i.titulo||'')}</div>`
     +`<div class="a2-mt"><span class="a2-tag ${i.mcPct<0?'pz':'tp'}">${i.tipo}</span>${ac2TipoDe(i.tipo).k==='devolucao' ? `<span class="a2-tag">devolução ${i.mcPct}% <span style="opacity:.6">(normal da operação ${i.meta}%)</span></span>` : `<span class="a2-tag">margem ${i.mcPct}%${prog} <span style="opacity:.6">(meta ${i.meta}%)</span></span>`}${(()=>{ const pi=ac2PrazoInfo(i); return pi.txt ? `<span class="a2-tag" style="color:${pi.cor};border-color:${pi.cor}">${pi.txt}</span>` : ''; })()}${causaTag}<span class="a2-tag">fat ${AC2_BRLk(i.fat)}</span>${vendas}${anuncio}${i.estado==='fora'?'<span class="a2-tag" style="border-color:#64748b;color:#94a3b8" title="Depois do recálculo dos dados esta tarefa deixou de ser problema. O registro do gestor foi mantido.">saiu da régua após recálculo · registro mantido</span>':''}</div>`
     +(tratada?'':`<div class="a2-acao">${acao}</div>`)
     +`<div class="a2-vd" id="${_vk}"></div>`
@@ -5963,7 +5963,7 @@ ac2.tratar=function(encId){ const id=decodeURIComponent(encId); const it=ac2.DEM
     ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('on');}); }
   const opt=arr=>arr.map(o=>`<option>${o}</option>`).join(''); const OP=bcOpcoes(it.tipo);
   ov.innerHTML=`<div class="bct-card"><h3>Registrar tratativa</h3>
-    <div class="bct-sub"><b>${it.sku}</b> — ${(it.titulo||'').slice(0,60)}<br>${it.empresa} · ${it.mkt} · margem ${it.mcPct}% (meta ${it.meta}%) · ${AC2_BRLk(it.risco)} em risco</div>
+    <div class="bct-sub"><b>${ac2Esc(it.sku)}</b> — ${ac2Esc((it.titulo||'').slice(0,60))}<br>${ac2Esc(it.empresa)} · ${ac2Esc(it.mkt)} · margem ${it.mcPct}% (meta ${it.meta}%) · ${AC2_BRLk(it.risco)} em risco</div>
     <div class="bct-f"><label>O que você fez</label><select id="bct-acao" onchange="bcTratarAcao()">${opt(OP.acoes)}</select></div>
     <div class="bct-f" id="bct-preco-f"><label>Novo preço de venda (R$)</label><input id="bct-preco" inputmode="decimal" placeholder="ex.: 32,90"></div>
     <div class="bct-f" id="bct-ate-f"><label>Até quando espera o retorno?</label><input id="bct-ate" type="date"></div>
@@ -6931,7 +6931,7 @@ function _gfLinhasEnvio(rel){
 }
 function exportGerFullCSV(emp, mkt){
   const rel=(FULL_REL&&FULL_REL.contas)?FULL_REL.contas[emp+'|'+mkt]:null; if(!rel) return;
-  const csvEsc=t=>{ const s=String(t==null?'':t); return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const csvEsc=t=>{ let s=String(t==null?'':t); if(/^[=+\-@]/.test(s)) s="'"+s; return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
   const cab=['Prioridade','MLB que recebe','SKU','Produto','QTD A ENVIAR','Precisava','Tendencia','Vd 31d','Vd 16d','Vd 8d','% Full','Aptas','A caminho','Dias p/ zerar','Experiencia','Olist (ponto)','Por que'];
   const lin=[];
   _gfLinhasEnvio(rel).forEach(L=>{
@@ -7303,7 +7303,7 @@ function renderVendas(){
   const vcard=(key,lbl,cor)=>{const b=key==='total'?bk.total:bk[key];const sk=key==='total'?'':key;const active=(_vndStatus===sk);return `<div onclick="vndSetStatus('${sk}')" style="cursor:pointer;background:var(--surf);border:1.5px solid ${active?cor:'var(--bdr2)'};border-radius:12px;padding:12px 14px;box-shadow:${active?'0 0 0 1px '+cor+' inset':'none'};"><div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${cor};margin-bottom:6px;">${lbl}</div><div style="font-size:24px;font-weight:800;color:var(--t1);line-height:1;">${b.n.toLocaleString('pt-BR')}</div><div style="font-size:11px;color:var(--t2);margin-top:5px;">${brl2(b.v)}</div></div>`;};
   kpiEl.innerHTML=vcard('total','Total','#00c2a8')+vcard('finalizadas','Finalizadas','#22c55e')+vcard('pendente','Pendentes','#facc15')+vcard('cancelada','Canceladas','#8891a8')+vcard('devolvida','Devoluções','#f87171')+vcard('extravio','Extravios','#c084fc');
   const _nb=document.getElementById('vnd-neg-btn');if(_nb){_nb.style.borderColor=_vndNeg?'#f87171':'var(--bdr2)';_nb.style.color=_vndNeg?'#f87171':'var(--t1)';}
-  const esc=t=>String(t==null?'':t).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+  const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   const dot=(c,n)=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c||'#888'};margin-right:6px;vertical-align:middle;"></span>${esc(n)}`;
   const statBadge=st=>{
     const cor={venda:'#22c55e',venda_com_troca:'#22c55e',pendente:'#facc15',devolvida:'#f87171',cancelada:'#8891a8'}[st]||'#888';
@@ -7418,7 +7418,7 @@ function exportVendasCSV(){
   const rows=online?(((window._vndUltima&&window._vndUltima.linhas)||[]).slice()):vndFiltrado().sort((a,b)=>b.date.localeCompare(a.date));
   if(!rows.length){alert('Nenhuma venda no filtro atual.');return;}
   const cab=['Data','Empresa','Marketplace','Pedido','ID_anuncio','SKU','Titulo','Qtd','Valor_venda','Custo_plataforma','Liquido','Custo_CTP','Imposto','MC_RS','MC_pct','Fonte_liquido','Status'];
-  const esc=t=>{const s=String(t==null?'':t);return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+  const esc=t=>{let s=String(t==null?'':t);if(/^[=+\-@]/.test(s)) s="'"+s;return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
   const linhas=rows.map(r=>{const _b=mcBase(r.mkt,r.fat,r.liq);const p=_b?(100*r.mc/_b).toFixed(1):'0';return [r.date,r.emp,r.mkt,r.ped,r.anuncio||'',r.sku,r.tit,r.qtd,r.fat,(r.fat-r.liq).toFixed(2),r.liq,r.ctp,r.imp,r.mc,p,r.fonte,r.stat].map(esc).join(';');});
   const csv='﻿'+cab.join(';')+'\n'+linhas.join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
@@ -7646,7 +7646,7 @@ function _renderGerVendas(rows, mkt){
 function exportGerVendasCSV(){
   const rows=_GV_ROWS||[];
   if(!rows.length){alert('Nenhuma venda na operação atual.');return;}
-  const esc=t=>{const s=String(t==null?'':t);return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+  const esc=t=>{let s=String(t==null?'':t);if(/^[=+\-@]/.test(s)) s="'"+s;return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
   const cols=_GV_COLS&&_GV_COLS.length?_GV_COLS:[{k:'fat',l:'Valor venda'},{k:'custop',l:'Custo plataforma'}];
   const valCol=(c,r)=>{ if(c.k==='fat')return r.fat; if(c.k==='custop')return (r.fat-r.liq).toFixed(2); return r[c.k]!=null?r[c.k]:0; };
   const cab=['Data','Pedido','SKU','Titulo','Qtd','Envio','Ads',...cols.map(c=>c.l.replace(/\s+/g,'_')),'Liquido','Imposto','CTP','MC_RS','MC_pct','Status'];

@@ -544,4 +544,10 @@ const server = http.createServer(async (req, res) => {
     });
   } catch (e) { J(res, { erro: e.message }, 500); }
 });
-server.listen(PORT, () => console.log(`BsanControl 2.0 API · http://localhost:${PORT} · banco: ${dbx.IS_PG ? "Postgres" : "SQLite"} · auth: ${AUTH_REQ ? "exigido" : "dev (aberto)"}`));
+server.listen(PORT, () => {
+  console.log(`BsanControl 2.0 API · http://localhost:${PORT} · banco: ${dbx.IS_PG ? "Postgres" : "SQLite"} · auth: ${AUTH_REQ ? "exigido" : "dev (aberto)"}`);
+  const espelho = require("./espelho-planilhas");
+  const pulso = () => espelho.drenar(dbx).catch(e => console.error("[planilhas] " + e.message));
+  setTimeout(pulso, 1500);
+  setInterval(pulso, 4000);
+});

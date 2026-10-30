@@ -1,6 +1,6 @@
 // dbx.js — camada de banco DUAL-MODE: SQLite local (node:sqlite) OU Postgres (se DATABASE_URL). Interface async.
 // Local (dev/teste): nada a instalar. Nuvem (Render): DATABASE_URL setado → usa Postgres (dep 'pg').
-const path = require("path");
+const path = require("path"), fs = require("fs");
 // credencial: env DATABASE_URL, ou arquivo git-ignored db_config.json (a senha NUNCA no código/git)
 if (!process.env.DATABASE_URL) { try { const c = require("./db_config.json"); if (/^postgres/i.test(c.DATABASE_URL || "")) process.env.DATABASE_URL = c.DATABASE_URL; } catch (e) {} }
 const IS_PG = !!process.env.DATABASE_URL;
@@ -9,13 +9,19 @@ let impl;
 if (IS_PG) {
   // 'pg' normalmente vem do node_modules (Render). Local: o npm trava no Drive, então instalamos em
   // ~/.bsancontrol/deps/node_modules — fallback acha lá sem precisar de NODE_PATH.
-  const { Pool } = (() => { try { return require("pg"); }
+  const { Pool, Client } = (() => { try { return require("pg"); }
     catch (e) { return require(path.join(require("os").homedir(), ".bsancontrol", "deps", "node_modules", "pg")); } })();
+  // O pooler apresenta a cadeia "Supabase Root 2021 CA", que o Node não traz na loja padrão.
+  // Verificar com essa raiz é o modo que o pooler aceita. PGSSL=0 desliga o TLS só no SQLite/local.
+  const sslPg = () => process.env.PGSSL === "0" ? false : { rejectUnauthorized: true, ca: fs.readFileSync(path.join(__dirname, "supabase-ca.pem")) };
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.PGSSL === "0" ? false : { rejectUnauthorized: false },
+    ssl: sslPg(),
     max: 6,
   });
+  // A carga longa não usa o pooler de transação (6543): ele devolve a conexão no fim de cada
+  // statement. A porta 5432 no mesmo host é a sessão, que segura o BEGIN até o COMMIT.
+  const urlSessao = cs => String(cs).replace(/:6543(\/|\?|$)/, ":5432$1");
   const conv = sql => { let i = 0; return sql.replace(/\?/g, () => "$" + (++i)); }; // ?,?  →  $1,$2
   impl = {
     pg: true,
@@ -33,7 +39,38 @@ if (IS_PG) {
         await pool.query(baseInsert + " VALUES " + vals + " " + conflict, chunk.flat());
       }
     },
-    begin: async () => {}, commit: async () => {}, // no-op (o bulk já é transacional por statement)
+    begin: async () => {}, commit: async () => {}, // no-op de propósito: a transação de verdade é withTransaction, num cliente só
+    withTransaction: async (fn) => {
+      const client = new Client({ connectionString: urlSessao(process.env.DATABASE_URL), ssl: sslPg() });
+      await client.connect();
+      const q = (sql, p = []) => client.query(conv(sql), p);
+      const bulk = async (baseInsert, rows, conflict = "") => {
+        if (!rows.length) return;
+        const cols = rows[0].length;
+        for (let i = 0; i < rows.length; i += 500) {
+          const chunk = rows.slice(i, i + 500);
+          const vals = chunk.map((_, r) => "(" + Array.from({ length: cols }, (_, c) => "$" + (r * cols + c + 1)).join(",") + ")").join(",");
+          await client.query(baseInsert + " VALUES " + vals + " " + conflict, chunk.flat());
+        }
+      };
+      try {
+        await client.query("BEGIN");
+        await client.query("SET LOCAL statement_timeout = 0");
+        await client.query("SET LOCAL idle_in_transaction_session_timeout = 0");
+        const out = await fn({
+          all: async (sql, p = []) => (await q(sql, p)).rows,
+          get: async (sql, p = []) => (await q(sql, p)).rows[0] || null,
+          run: async (sql, p = []) => { await q(sql, p); },
+          exec: async (sql) => { await client.query(sql); },
+          bulk
+        });
+        await client.query("COMMIT");
+        return out;
+      } catch (e) {
+        try { await client.query("ROLLBACK"); } catch (_) {}
+        throw e;
+      } finally { await client.end(); }
+    },
     close: () => pool.end(),
   };
 } else {
@@ -58,6 +95,30 @@ if (IS_PG) {
       db.exec("BEGIN"); for (const r of rows) st.run(...r); db.exec("COMMIT");
     },
     begin: async () => db.exec("BEGIN"), commit: async () => db.exec("COMMIT"),
+    withTransaction: async (fn) => {
+      const bulk = async (baseInsert, rows, conflict = "") => {
+        if (!rows.length) return;
+        const cols = rows[0].length;
+        const ph = "(" + Array.from({ length: cols }, () => "?").join(",") + ")";
+        const st = db.prepare(baseInsert + " VALUES " + ph + " " + conflict.replace(/EXCLUDED\./g, "excluded."));
+        for (const r of rows) st.run(...r);
+      };
+      db.exec("BEGIN");
+      try {
+        const out = await fn({
+          all: async (sql, p = []) => db.prepare(sql).all(...p),
+          get: async (sql, p = []) => db.prepare(sql).get(...p) || null,
+          run: async (sql, p = []) => { db.prepare(sql).run(...p); },
+          exec: async (sql) => { db.exec(sql); },
+          bulk
+        });
+        db.exec("COMMIT");
+        return out;
+      } catch (e) {
+        try { db.exec("ROLLBACK"); } catch (_) {}
+        throw e;
+      }
+    },
     close: () => db.close(),
   };
 }

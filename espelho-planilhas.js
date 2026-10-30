@@ -136,19 +136,49 @@ async function sincronizarOperacao(dbx, empresa, canal, opts = {}) {
   return Object.assign(m, { url: r.url });
 }
 
-// Para o servidor: a partir do id da tarefa registrada, atualiza a planilha daquela operação.
-// Junta registros em rajada (o gestor registra várias seguidas) num envio só, 8 s depois do último.
-const _pend = new Map();
+// A tratativa entra na fila do banco na hora. O processo pode cair: a linha continua lá.
+// O envio espera 8 s sem registro novo da mesma operação, para juntar a rajada, e só apaga a
+// linha depois que a planilha aceita. Uma falha deixa a linha para a próxima tentativa.
+let _tabelaPronto = new WeakSet();
+async function garantirOutbox(dbx) {
+  if (_tabelaPronto.has(dbx)) return;
+  await dbx.exec("CREATE TABLE IF NOT EXISTS espelho_outbox (operacao TEXT PRIMARY KEY, empresa TEXT NOT NULL, canal TEXT NOT NULL, pedido_em TEXT NOT NULL, tentativas INTEGER NOT NULL DEFAULT 0, ultimo_erro TEXT)");
+  _tabelaPronto.add(dbx);
+}
+async function enfileirar(dbx, demandaId) {
+  const d = await dbx.get("SELECT empresa, canal FROM demandas WHERE id=?", [demandaId]);
+  if (!d) return;
+  await garantirOutbox(dbx);
+  const agora = new Date().toISOString();
+  await dbx.run("INSERT INTO espelho_outbox (operacao, empresa, canal, pedido_em, tentativas, ultimo_erro) VALUES (?,?,?,?,0,NULL) ON CONFLICT (operacao) DO UPDATE SET pedido_em=EXCLUDED.pedido_em, tentativas=0, ultimo_erro=NULL",
+    [opDe(d.empresa, d.canal), d.empresa, d.canal, agora]);
+}
 function agendarPorDemanda(dbx, demandaId) {
-  if (!config()) return;
-  dbx.get("SELECT empresa, canal FROM demandas WHERE id=?", [demandaId]).then(d => {
-    if (!d) return; const k = opDe(d.empresa, d.canal);
-    clearTimeout(_pend.get(k));
-    _pend.set(k, setTimeout(() => { _pend.delete(k);
-      sincronizarOperacao(dbx, d.empresa, d.canal).catch(e => console.error("[planilhas] " + k + ": " + e.message)); }, 8000));
-  }).catch(e => console.error("[planilhas] " + e.message));
+  if (!config()) return Promise.resolve();
+  return enfileirar(dbx, demandaId).catch(e => console.error("[planilhas] " + e.message));
+}
+let _drenando = false;
+async function drenar(dbx, opts = {}) {
+  if (_drenando) return;
+  _drenando = true;
+  try {
+    await garantirOutbox(dbx);
+    const corte = new Date(Date.now() - 8000).toISOString();
+    const rows = await dbx.all("SELECT operacao, empresa, canal, pedido_em, tentativas FROM espelho_outbox WHERE pedido_em <= ? AND tentativas < 8 ORDER BY pedido_em", [corte]);
+    const enviar = opts.enviar || ((empresa, canal) => sincronizarOperacao(dbx, empresa, canal));
+    for (const row of rows) {
+      try {
+        const r = await enviar(row.empresa, row.canal);
+        if (r && r.pulado) continue;
+        await dbx.run("DELETE FROM espelho_outbox WHERE operacao=? AND pedido_em=?", [row.operacao, row.pedido_em]);
+      } catch (e) {
+        await dbx.run("UPDATE espelho_outbox SET tentativas=tentativas+1, ultimo_erro=? WHERE operacao=? AND pedido_em=?", [String(e.message || e).slice(0, 300), row.operacao, row.pedido_em]);
+        console.error("[planilhas] " + row.operacao + ": " + e.message);
+      }
+    }
+  } finally { _drenando = false; }
 }
 
 const listar = cfg => chamar(cfg || config(), { acao: "listar" });
 
-module.exports = { config, montarOperacao, sincronizarOperacao, agendarPorDemanda, listar, desdePadrao };
+module.exports = { config, montarOperacao, sincronizarOperacao, agendarPorDemanda, drenar, listar, desdePadrao };
