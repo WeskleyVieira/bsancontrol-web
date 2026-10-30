@@ -16,6 +16,8 @@ const FORCAR = process.argv.includes("--forcar");
 const _destino = process.argv.slice(2).find(a => !a.startsWith("--"));
 const OUT = path.resolve(_destino || path.join(os.homedir(), "bsancontrol-web"));
 let html = fs.readFileSync(SRC, "utf8");
+// Atualiza o padrão visual de forma idempotente, mantendo dados e funções existentes.
+html = require("./visual/integrar").apply(html);
 const antes = (html.length / 1024 / 1024).toFixed(1);
 
 // ── 1) remove os dados embutidos (cada um é 1 linha; vira vazio, o loader preenche da API) ──
@@ -346,6 +348,8 @@ if (fs.existsSync(_alvo) && !FORCAR) {
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, "acompanhamento.html"), html);
 const copy = f => fs.copyFileSync(path.join(__dirname, f), path.join(OUT, f));
+fs.mkdirSync(path.join(OUT, "visual"), { recursive: true });
+for (const f of ["areas.js", "areas.css", "integrar.js"]) fs.copyFileSync(path.join(__dirname, "visual", f), path.join(OUT, "visual", f));
 copy("api.js"); copy("dbx.js"); copy("auth.js"); copy("espelho-planilhas.js"); copy("lancamento.js"); copy("supabase-ca.pem"); copy("vendas-pagina.js"); copy("datasets-versionados.js");
 fs.writeFileSync(path.join(OUT, "package.json"), JSON.stringify({
   name: "bsancontrol-web", private: true, version: "1.0.0",
