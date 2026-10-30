@@ -50,6 +50,20 @@ function bcVisualMetrics(root){
  }
  for(const grid of root.querySelectorAll('.cc-grid'))grid.classList.add('bc-layout-grid');
 }
+// A cor identifica a origem; o nome continua sendo o identificador acessível.
+function bcVisualIdentities(root){
+ for(const table of root.querySelectorAll('table')){
+  if(!bcVisualVisible(table))continue;
+  const headers=[...table.querySelectorAll('thead tr:last-child th')].map(e=>e.textContent.replace(/[▾▴⇅]/g,'').trim().toLowerCase());
+  if(!headers.includes('empresa')&&!headers.includes('marketplace'))continue;
+  for(const row of table.querySelectorAll('tbody tr'))for(const td of row.cells){
+   const kind=headers[td.cellIndex];if(kind!=='empresa'&&kind!=='marketplace'||td.querySelector(':scope > .bc-identity-tag'))continue;
+   const marker=td.firstElementChild;if(!marker||marker.tagName!=='SPAN'||marker.style.borderRadius!=='50%')continue;
+   const tag=document.createElement('span');tag.className='bc-identity-tag';tag.dataset.identityKind=kind;tag.style.setProperty('--identity-color',marker.style.backgroundColor||'#91a0b7');
+   marker.classList.add('bc-identity-marker');marker.setAttribute('aria-hidden','true');while(td.firstChild)tag.append(td.firstChild);td.append(tag);
+  }
+ }
+}
 function bcVisualTables(root,spec){
  for(const table of root.querySelectorAll('table')){let wrap=table.parentElement;if(!wrap.classList.contains('bc-table-scroll')){if(wrap.matches('.tbl-wrap,[style*="overflow:auto"],[style*="overflow-x:auto"]'))wrap.classList.add('bc-table-scroll');else{const next=document.createElement('div');next.className='bc-table-scroll';table.before(next);next.append(table);wrap=next;}}
   if(!table.getAttribute('aria-label')&&!table.querySelector('caption'))table.setAttribute('aria-label',spec.title+' · demonstrativo');
@@ -84,7 +98,7 @@ function bcVisualZoom(canvas,button,spec){const chart=bcVisualChart(canvas);if(!
  const values=document.getElementById('bc-viz-values');values.replaceChildren();const table=document.createElement('table'),head=document.createElement('thead'),tr=document.createElement('tr');for(const name of ['Período ou categoria','Indicador','Valor']){const th=document.createElement('th');th.textContent=name;tr.append(th);}head.append(tr);table.append(head);const body=document.createElement('tbody');for(const row of bcVisualChartRows(chart)){const tr=document.createElement('tr');for(const value of [row.label,row.series,row.value]){const td=document.createElement('td');td.textContent=value;tr.append(td);}body.append(tr);}table.append(body);values.append(table);for(const s of Object.values(chart.options.scales||{}))if(s.ticks)s.ticks.font={...s.ticks.font,size:15};dialog.showModal();document.getElementById('bc-viz-close').focus();requestAnimationFrame(()=>{chart.resize();chart.update('none');});}
 function bcVisualZoomClose(focus=true){const q=BCVisual.zoom;if(!q)return;BCVisual.zoom=null;const d=document.getElementById('bc-viz-dialog');if(document.fullscreenElement===d)document.exitFullscreen?.().catch(()=>{});if(q.mark.isConnected)q.mark.replaceWith(q.frame);else q.frame.remove();document.body.style.overflow=q.overflow;if(d.open)d.close();if(bcVisualChart(q.canvas)===q.chart){for(const s of Object.values(q.chart.options.scales||{}))if(s.ticks)s.ticks.font={...s.ticks.font,size:12};q.chart.resize();q.chart.update('none');}if(focus&&q.button.isConnected)q.button.focus({preventScroll:true});}
 function bcVisualUtility(){for(const e of document.querySelectorAll('.modal-box,.bca-card,.bcl-card,.bct-card,.exec-box,.guide-box,#ac2-modal .a2-modal,.a2-dialog'))if(bcVisualVisible(e))e.classList.add('bc-utility-surface');}
-function bcVisualRefresh(){BCVisual.pending=false;if(BCVisual.zoom&&!bcVisualVisible(BCVisual.zoom.mark.parentElement))bcVisualZoomClose(false);for(const [key,spec]of Object.entries(BCAreas)){const root=document.querySelector(spec.selector);if(!root)continue;root.classList.add('bc-area');root.dataset.bcArea=key;if(!bcVisualVisible(root))continue;BCVisual.areas.add(key);bcVisualGuide(root,spec);bcVisualMetrics(root);bcVisualTypography(root);bcVisualFilterBars(root);bcVisualTables(root,spec);bcVisualCharts(root,spec);}bcVisualUtility();}
+function bcVisualRefresh(){BCVisual.pending=false;if(BCVisual.zoom&&!bcVisualVisible(BCVisual.zoom.mark.parentElement))bcVisualZoomClose(false);for(const [key,spec]of Object.entries(BCAreas)){const root=document.querySelector(spec.selector);if(!root)continue;root.classList.add('bc-area');root.dataset.bcArea=key;if(!bcVisualVisible(root))continue;BCVisual.areas.add(key);bcVisualGuide(root,spec);bcVisualMetrics(root);bcVisualTypography(root);bcVisualFilterBars(root);bcVisualTables(root,spec);bcVisualCharts(root,spec);}bcVisualIdentities(document);bcVisualUtility();}
 function bcVisualSchedule(){if(BCVisual.pending)return;BCVisual.pending=true;queueMicrotask(bcVisualRefresh);}
 function bcVisualStart(){document.body.classList.add('bc-visual-complete');bcVisualRefresh();new MutationObserver(records=>{if(records.some(r=>r.type==='attributes'||[...r.addedNodes,...r.removedNodes].some(n=>n.nodeType===1&&!n.matches?.('.bc-viz-tools,.bc-reading-guide'))))bcVisualSchedule();}).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden']});new MutationObserver(bcVisualSchedule).observe(document.body,{attributes:true,attributeFilter:['class']});document.addEventListener('click',()=>{if(BCVisual.zoom&&!BCVisual.zoom.canvas.isConnected)bcVisualZoomClose(false);bcVisualSchedule();},true);document.addEventListener('change',bcVisualSchedule,true);window.addEventListener('resize',bcVisualSchedule);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bcVisualStart);else bcVisualStart();

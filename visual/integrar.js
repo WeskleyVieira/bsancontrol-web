@@ -1,6 +1,8 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const css=fs.readFileSync(path.join(__dirname,'areas.css'),'utf8').replace(/\r\n/g,'\n'),js=fs.readFileSync(path.join(__dirname,'areas.js'),'utf8').replace(/\r\n/g,'\n');new vm.Script(js);
 function presentation(html){
+ const companies=/^const EMP_C=\{[^\n]*\};/m;if(!companies.test(html))throw Error('Paleta de empresas mudou');html=html.replace(companies,line=>line.replace(/('Bsan Shop':)'#[a-f\d]{6}'/i,"$1'#ac83e8'").replace(/('Jowcase':)'#[a-f\d]{6}'/i,"$1'#63cddd'").replace(/('Pesseguinho Store':)'#[a-f\d]{6}'/i,"$1'#efb293'"));
+ html=html.replace("card('Bsan','Bsan','#00c2a8')","card('Bsan','Bsan',EMP_C['Bsan Shop'])");
  const money=/^const brl =v=>[^\n]*;/m;if(!money.test(html))throw Error('Formato monetário mudou');html=html.replace(money,"const brl =v=>v==null||v===''||!Number.isFinite(Number(v))?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:2});");
  const compact=/^const brlK=v=>\{[\s\S]*?\n\};/m;if(!compact.test(html)&&!html.includes('const brlK=v=>brl(v);'))throw Error('Formato compacto mudou');html=html.replace(compact,'const brlK=v=>brl(v);');
  const percent=/^const pct =\(n,d\)=>[^\n]*;/m;if(!percent.test(html))throw Error('Formato percentual mudou');html=html.replace(percent,"const pct =(n,d)=>d===0?'—':(n/d*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';");

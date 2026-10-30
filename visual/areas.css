@@ -29,3 +29,8 @@ body.bc-shell.light{--bc-good:#23714e;--bc-bad:#a83948;--bc-attention:#866014;--
 body.bc-shell{--bc-button-ink:#182034}body.bc-shell.light{--bc-button-ink:#fff}.bc-utility-surface .bcl-btn,.bc-area button[style*="background:var(--a)"],.bc-area button[style*="background: var(--a)"]{color:var(--bc-button-ink)!important}
 
 .bc-area .bc-filter-empty,.bc-area .bc-context-label-hidden{display:none!important}.bc-shell .brand-logo{background:var(--bc-accent)!important;color:var(--bc-button-ink)!important}
+/* Identidade de empresa e marketplace: texto neutro, cor apenas como apoio. */
+.bc-identity-tag{--identity-color:#91a0b7;display:inline-flex;align-items:center;max-width:100%;padding:4px 10px;border:1px solid color-mix(in srgb,var(--identity-color) 30%,var(--bc-border));border-radius:6px;background:color-mix(in srgb,var(--identity-color) 7%,var(--bc-surface));color:var(--bc-text);font:500 13px/1.5 Inter,Segoe UI,sans-serif;white-space:nowrap;letter-spacing:0}
+.bc-identity-tag[data-identity-kind=empresa]{font-weight:600;border-left:2px solid var(--identity-color);padding-left:9px}
+.bc-identity-tag>.bc-identity-marker{display:none!important}
+.bc-identity-tag[data-identity-kind=marketplace]{background:color-mix(in srgb,var(--identity-color) 5%,var(--bc-surface))}
