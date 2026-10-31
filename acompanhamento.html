@@ -2345,10 +2345,10 @@ function buildKPIRow(tot,d,cmpTot){
     {eye:'Volume · Unidades',val:tot.qtd.toLocaleString('pt-BR'),pct:null,sub:`${Math.round(tot.qtd/d)} un/dia`,c:'#facc15',cv:cmpTot?.qtd,cur:tot.qtd,
       tip:'vol'},
     // 2. FATURAMENTO
-    {eye:'Faturamento',val:brlK(fatDe(tot)),pct:null,sub:`${fatNota(tot)} · ${brl(Math.round(fatDe(tot)/d))}/dia`,c:'#00c2a8',cv:fatDe(cmpTot),cur:fatDe(tot),
+    {eye:'Faturamento',val:brlK(fatDe(tot)),pct:null,sub:`${fatNota(tot)} · ${brl(fatDe(tot)/d)}/dia`,c:'#00c2a8',cv:fatDe(cmpTot),cur:fatDe(tot),
       tip:'fat'},
     // 3. MARGEM R$ — teto (mc_comissao). A real fica na DRE; a da comissão, na aba Comissão.
-    {eye:'Margem com teto',val:brlK(tot.mc),pct:pct(tot.mc,tot.fat),sub:`sobre todo o faturamento · ${brl(Math.round(tot.mc/d))}/dia`,c:'#34d399',cv:cmpTot?.mc,cur:tot.mc,pctColor:'#34d399',
+    {eye:'Margem com teto',val:brlK(tot.mc),pct:pct(tot.mc,fatDe(tot)),sub:`sobre as vendas finalizadas · ${brl(tot.mc/d)}/dia`,c:'#34d399',cv:cmpTot?.mc,cur:tot.mc,pctColor:'#34d399',
       tip:'mc'},
   ].map(k=>`<div class="kpi">
     <div class="kpi-glow" style="background:${k.c}"></div>
@@ -3557,6 +3557,7 @@ function _histSaudMap(emp,mkt,refISO){
 }
 // verdadeiro quando a margem atual (mcp, pré-Ads) caiu > erosão vs a saudável histórica (hist em %), p/ produto A/B com margem ≥piso
 function _isQueimaMargem(aF,mcp,hist){ return (aF==='A'||aF==='B') && hist!=null && mcp>=QM_PISO && mcp < hist-QM_EROSAO_PP; }
+const PISO_ADS_DIAG=10;   // margem mínima depois do Ads (= faixa "baixa" do Diagnóstico)
 function _renderGerDiag(A,B,mkt){
   const resumo=document.getElementById('gd-resumo'), body=document.getElementById('gd-body');
   if(!body) return;
@@ -3570,17 +3571,35 @@ function _renderGerDiag(A,B,mkt){
   atual.forEach(o=>{ const p=antMap[o.k]; o.antFat=p?p.fat:null; const dm=devMap[o.k]||{dev:0,tot:0}; o.devTaxa=dm.tot>0?100*dm.dev/dm.tot:0; o.devN=dm.dev;
     o.saude=o.mcp<0?'prej':(o.mcp<10?'baixa':(o.mcp<20?'media':'saud')); });
   // buckets de AÇÃO (exclusivos, prioridade) — relevância = o.aF (Pareto de faturamento)
-  const BK={estanca:[],corrija:[],queima:[],proteja:[],escale:[],escondido:[],peso:[],maturacao:[]};
+  const BK={estanca:[],corrija:[],adscome:[],queima:[],proteja:[],escale:[],escondido:[],peso:[],maturacao:[]};
   const _prDiag=(typeof getR==='function')?getR():['','']; const _psDiag=_prDiag[0]||'', _peDiag=_prDiag[1]||'';
   const QMAP=_histSaudMap((GER_OP||'').split('||')[0],mkt,_psDiag); // margem saudável histórica por anúncio (emp+mkt, antes do período)
+  // MARGEM PÓS-ADS (31/10/2026, Weskley): a saúde que decide a ação é o lucro depois do Ads. O pré-Ads continua dizendo a CAUSA:
+  // pré abaixo do piso = preço/custo (Ads não resolve); pré saudável e pós abaixo do piso = o Ads está comendo a margem.
+  // Gasto de Ads por anúncio = o mesmo índice da Publicidade (afiliado fica de fora: a comissão já saiu no líquido).
+  const _adsIdxD=(typeof _adsIndex==='function')?_adsIndex((GER_OP||'').split('||')[0],mkt,_psDiag,_peDiag):{};
+  const _adsUsado=new Set();
+  atual.slice().sort((a,b)=>b.fat-a.fat).forEach(o=>{
+    const k=_adKeyVenda(mkt,o.anuncio,o.sku), a=k&&!_adsUsado.has(k)?_adsIdxD[k]:null;
+    const afil=a&&/afiliad/i.test(String(a.fonte||'')+' '+String(a.campanha||''));
+    if(a&&!afil) _adsUsado.add(k);
+    o.adsInv=(a&&!afil)?(+a.inv||0):0; o.adsRec=(a&&!afil)?(+a.recAds||0):0;
+    o.base=mcBase(mkt,o.fat,o.liq); o.mcpPos=o.base?100*(o.mc-o.adsInv)/o.base:0; o.tacos=o.base?100*o.adsInv/o.base:0;
+    // teto de Ads que mantém o pós-Ads no piso: TACOS máx = pré − piso → gasto que cabe, corte e ROAS-alvo da campanha
+    o.adsCabe=Math.max(0,o.base*(o.mcp-PISO_ADS_DIAG)/100); o.adsCorte=Math.max(0,o.adsInv-o.adsCabe);
+    // cabe menos de 1/4 do gasto atual → o ROAS-alvo vira número absurdo (≥ 74 visto em 31/10): a recomendação é pausar
+    o.roasAlvo=o.adsCabe>=0.25*o.adsInv&&o.adsCabe>0.01&&o.adsRec>0?o.adsRec/o.adsCabe:null;
+  });
   atual.forEach(o=>{
     let b; const hs=QMAP[o.k];
     if(o.saude==='prej') b='estanca';
     // relevância C + saúde baixa = candidato a peso morto; mas se o produto é NOVO, vai p/ maturação (trabalhar, não descartar)
     else if(o.saude==='baixa') b=(o.aF==='C')?(_isNovo(o.sku,_peDiag)?'maturacao':'peso'):'corrija';
+    // ADS COMENDO: o produto se paga (pré ≥ piso), mas o gasto de Ads leva o pós-Ads abaixo do piso
+    else if(o.adsInv>0&&o.mcpPos<PISO_ADS_DIAG) b='adscome';
     // QUEIMA: ainda com margem (≥10%) e relevante (A/B), mas caindo vs a saudável histórica → agir antes de virar prejuízo
     else if(_isQueimaMargem(o.aF,o.mcp,hs)){ b='queima'; o.histSaud=hs; }
-    else if(o.saude==='saud') b=(o.aF==='A'?'proteja':(o.aF==='B'?'escale':'escondido'));
+    else if(o.mcpPos>=20) b=(o.aF==='A'?'proteja':(o.aF==='B'?'escale':'escondido'));   // saudável DEPOIS do Ads
     else b=null; // média (10–20) sem queima: sem ação urgente, aparece só na aba Anúncios
     if(b){ o.bucket=b; BK[b].push(o); }
   });
@@ -3612,11 +3631,15 @@ function _renderGerDiag(A,B,mkt){
   const totPot=BK.corrija.reduce((s,o)=>s+pot(o),0);
   const qmLoss=o=>Math.max(0,o.fat*((o.histSaud-o.mcp)/100)); // R$ de margem perdida vs a saudável histórica
   const totQueima=BK.queima.reduce((s,o)=>s+qmLoss(o),0);
+  const totAdsCorte=BK.adscome.reduce((s,o)=>s+o.adsCorte,0);
+  const _pc=v=>v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
+  const mcTxt=(o,cor)=>o.adsInv>0?`<b style="color:${cor}">${_pc(o.mcpPos)}</b> <span style="color:var(--t3)">pós-Ads (pré ${_pc(o.mcp)})</span>`:`<b style="color:${cor}">${_pc(o.mcp)}</b>`;
   const chip=(lbl,val,cor)=>`<div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:10px;padding:9px 13px;min-width:112px;"><div style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin-bottom:4px;">${lbl}</div><div style="font-size:15px;font-weight:800;color:${cor||'var(--t1)'};line-height:1;">${val}</div></div>`;
   if(resumo) resumo.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="font-weight:800;color:var(--t1);font-size:14px;">🔍 Diagnóstico da operação</div><div style="display:flex;gap:8px;"><button onclick="abrirGuiaGer()" style="background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;color:var(--t2);font-size:12px;padding:5px 11px;cursor:pointer;white-space:nowrap;">ⓘ Como ler</button></div></div><div style="display:flex;flex-wrap:wrap;gap:8px;">
     ${chip('Anúncios',atual.length.toLocaleString('pt-BR'))}
     ${chip('🩹 Prejuízo p/ estancar',brlN(totPrej),totPrej<0?'#dc2626':'#22c55e')}
     ${chip('🔴 Lucro escapando (→20%)',brlN(totPot),'#f59e0b')}
+    ${BK.adscome.length?chip('📣 Ads comendo a margem',brlN(totAdsCorte),'#fb923c'):''}
     ${BK.queima.length?chip('🛡️ Queima de margem',brlN(totQueima),'#e879f9'):''}
     ${chip('⭐ Estrelas',BK.proteja.length)}
     ${chip('🚀 P/ escalar',BK.escale.length)}
@@ -3650,18 +3673,28 @@ function _renderGerDiag(A,B,mkt){
   h+=lista('🔴','Corrija a margem','#f59e0b',BK.corrija.slice().sort((a,b)=>pot(b)-pot(a)),
      'Vende bem, lucra pouco (&lt;10%). Renegociar custo ou subir preço.',
      o=>`${brlN(o.fat)} · <b style="color:#f59e0b">${o.mcp.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</b> · <span style="color:var(--t3)">→20%: +${brlN(pot(o))}</span>`,'Corrigir');
+  // ADS COMENDO A MARGEM — o produto se paga, o Ads não: teto de gasto que segura o pós-Ads no piso (TACOS máx = pré − piso)
+  { const it=BK.adscome.slice().sort((a,b)=>b.adsCorte-a.adsCorte), max=8;
+    const dir=o=>`${_pc(o.mcp)} → <b style="color:#fb923c">${_pc(o.mcpPos)}</b> · Ads ${brlN(o.adsInv)} · cabe ${brlN(o.adsCabe)} · <b>corte ${brlN(o.adsCorte)}</b> · `+
+      (o.roasAlvo!=null?`ROAS-alvo ≥ ${o.roasAlvo.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}`:`<span style="color:#dc2626">pausar</span>`);
+    const corpo=it.length?it.slice(0,max).map(o=>linha(o,dir(o))).join(''):`<div style="padding:6px 0;color:var(--t3);font-size:12px;">nada aqui 👍</div>`;
+    const mais=it.length>max?`<div onclick="gerSub('ads')" style="font-size:11px;color:var(--a2);padding-top:6px;cursor:pointer;">+${it.length-max} outros — ver na Publicidade ›</div>`:'';
+    h+=`<div class="cc" style="margin-top:12px;border-left:3px solid #fb923c;"><div class="cc-hdr" style="margin-bottom:6px;align-items:center;"><div>
+      <div class="cc-title">📣 Ads comendo a margem <span style="color:var(--t3);font-weight:500;font-size:11px;">· ${it.length}</span></div>
+      <div class="cc-sub">O produto se paga (margem pré-Ads ≥ ${PISO_ADS_DIAG}%), mas o Ads leva o lucro abaixo de ${PISO_ADS_DIAG}%. O preço está certo — o ajuste é no Ads: gastar no máximo o que <b>cabe</b> (Ads até a margem pré-Ads − ${PISO_ADS_DIAG}% do faturamento). <b>ROAS-alvo</b> = receita do Ads ÷ o que cabe: suba o ROAS-alvo da campanha até ele; sem receita de Ads atribuída, pausar.</div></div>
+      ${it.length?`<span onclick="gerSub('ads')" style="cursor:pointer;color:var(--a2);font-size:11px;white-space:nowrap;">abrir Publicidade ›</span>`:''}</div>${corpo}${mais}</div>`; }
   h+=lista('🛡️','Queima de margem','#e879f9',BK.queima.slice().sort((a,b)=>qmLoss(b)-qmLoss(a)),
      `Relevante e ainda com margem, mas caindo &gt;${QM_EROSAO_PP}pp vs a saudável histórica — agir antes de virar prejuízo (preço, custo da ficha ou gasto de Ads).`,
      o=>`${brlN(o.fat)} · <b style="color:#e879f9">${o.mcp.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</b> <span style="color:var(--t3)">↓ de ~${o.histSaud.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}% · perde ${brlN(qmLoss(o))}</span>`,'Queima');
   h+=lista('⭐','Proteja as estrelas','#22c55e',BK.proteja.slice().sort((a,b)=>b.fat-a.fat),
-     'Relevante e saudável. Garantir estoque, vigiar concorrência e margem.',
-     o=>`${brlN(o.fat)} · <b style="color:#22c55e">${o.mcp.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</b> · ${o.qtd}un`,'Estrela');
+     'Relevante e saudável DEPOIS do Ads (≥20%). Garantir estoque, vigiar concorrência e margem.',
+     o=>`${brlN(o.fat)} · ${mcTxt(o,'#22c55e')} · ${o.qtd}un`,'Estrela');
   h+=lista('🚀','Pronto pra escalar','#4f8ef7',BK.escale.slice().sort((a,b)=>b.mc-a.mc),
-     'Margem saudável, relevância média. Investir em exposição/Ads.',
-     o=>`${brlN(o.fat)} · <b style="color:#22c55e">${o.mcp.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</b> · MC ${brlN(o.mc)}`,'Escalar');
+     'Margem saudável depois do Ads (≥20%), relevância média. Investir em exposição/Ads.',
+     o=>`${brlN(o.fat)} · ${mcTxt(o,'#22c55e')} · MC ${brlN(o.mc-o.adsInv)}${o.adsInv>0?' pós-Ads':''}`,'Escalar');
   h+=lista('💡','Bom e escondido','#c77dff',BK.escondido.slice().sort((a,b)=>b.mcp-a.mcp),
      'Margem ótima mas vende pouco. Expor / testar campanha.',
-     o=>`<b style="color:#22c55e">${o.mcp.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</b> · só ${o.qtd}un · ${brlN(o.fat)}`,'Nicho');
+     o=>`${mcTxt(o,'#22c55e')} · só ${o.qtd}un · ${brlN(o.fat)}`,'Nicho');
   const _idadeSku=s=>{ const u=String(s||'').toUpperCase(); const a=CAD_SKU[u], b=_firstSkuMap()[u]; const d=[a,b].filter(Boolean).sort()[0]; return d?Math.round((new Date((_peDiag||'')+'T12:00:00')-new Date(d+'T12:00:00'))/86400000):null; };
   h+=lista('🌱','Em maturação (novos)','#22c55e',BK.maturacao.slice().sort((a,b)=>b.fat-a.fat),
      `Baixa relevância/margem, mas produto NOVO (≤${NOVO_DIAS}d). Trabalhar (anúncio, tráfego, preço) — não descartar.`,
@@ -8184,9 +8217,10 @@ function _renderGerVendas(rows, mkt){
   // botão MC negativa (estado)
   const negBtn=document.getElementById('gv-neg-btn'); if(negBtn){negBtn.style.borderColor=_gvNeg?'#f87171':'var(--bdr2)';negBtn.style.color=_gvNeg?'#f87171':'var(--t1)';}
   const filtrado=!!(_gvQuery||_gvNeg);
-  // ── totais (do que está em vista) ──
-  const T={n:ord.length,qtd:0,fat:0,pcheio:0,desc:0,comis:0,tarif:0,frete:0,flex:0,subs:0,copart:0,vapt:0,afil:0,pub:0,motoboy:0,fatura:0,reemb:0,repasse:0,liq:0,imp:0,ctp:0,mc:0,base:0};
-  ord.forEach(r=>{T.qtd+=r.qtd;T.fat+=r.fat;T.pcheio+=r.pcheio||0;T.desc+=r.desc||0;T.comis+=r.comis||0;T.tarif+=r.tarif||0;T.frete+=r.freteC||0;T.flex+=r.flex||0;T.subs+=r.subs||0;T.copart+=r.copart||0;T.vapt+=r.vapt||0;T.afil+=r.afil||0;T.pub+=r.pub||0;T.motoboy+=r.motoboy||0;T.fatura+=r.fatura||0;T.reemb+=r.reemb||0;T.repasse+=r.repasse||0;T.liq+=r.liq;T.imp+=r.imp;T.ctp+=r.ctp;T.mc+=r.mc;T.base+=mcBase(r.mkt,r.fat,r.liq);});
+  // ── totais (do que está em vista) — só VENDAS FINALIZADAS (30/10/2026: mesma base da meta; a lista segue com todos os status) ──
+  const ordFin=ord.filter(r=>/venda/i.test(String(r.stat||'venda')));
+  const T={n:ordFin.length,qtd:0,fat:0,pcheio:0,desc:0,comis:0,tarif:0,frete:0,flex:0,subs:0,copart:0,vapt:0,afil:0,pub:0,motoboy:0,fatura:0,reemb:0,repasse:0,liq:0,imp:0,ctp:0,mc:0,base:0};
+  ordFin.forEach(r=>{T.qtd+=r.qtd;T.fat+=r.fat;T.pcheio+=r.pcheio||0;T.desc+=r.desc||0;T.comis+=r.comis||0;T.tarif+=r.tarif||0;T.frete+=r.freteC||0;T.flex+=r.flex||0;T.subs+=r.subs||0;T.copart+=r.copart||0;T.vapt+=r.vapt||0;T.afil+=r.afil||0;T.pub+=r.pub||0;T.motoboy+=r.motoboy||0;T.fatura+=r.fatura||0;T.reemb+=r.reemb||0;T.repasse+=r.repasse||0;T.liq+=r.liq;T.imp+=r.imp;T.ctp+=r.ctp;T.mc+=r.mc;T.base+=mcBase(r.mkt,r.fat,r.liq);});
   const mcpTot=T.base?100*T.mc/T.base:0;
   if(title) title.textContent='🧾 Vendas da operação — '+((aberto||isMagalu||isTemu)?('abertura de custos'+(isAmz?' (Amazon)':isML?' (Mercado Livre)':isShopee?' (Shopee)':isMagalu?' (Magazine Luiza)':isTikTok?' (TikTok Shop)':isShein?' (Shein)':isTemu?' (Temu)':'')):'custo da plataforma');
   if(sub) sub.innerHTML = (isML
@@ -12874,7 +12908,9 @@ function bcNavMatch(r,includePoint=true){
  const point=bcNavPoint(emp,mkt,r.ponto||'');
  return (!includePoint||!PONTO_SEL||point===PONTO_SEL)&&(!BCNav.company||emp===BCNav.company)&&(!BCNav.marketplace||mkt===BCNav.marketplace);
 }
-function bcNavOverview(r){return !BCNav.ready||activePage!=='overview'||bcNavMatch(r);}
+// Visão Geral e Projeção leem ROWS por fr(): o contexto do cabeçalho (empresa · marketplace) vale nas duas (30/10/2026 — a
+// Projeção mostrava o grupo inteiro com "Bsan Shop · Mercado Livre" escolhido)
+function bcNavOverview(r){return !BCNav.ready||(activePage!=='overview'&&activePage!=='projecao')||bcNavMatch(r);}
 function bcNavFilterCommission(list){return !BCNav.ready?list:list.filter(r=>{const [emp,mkt]=String(r.operacao||'').split(' · ');return bcNavMatch({emp,mkt});});}
 function bcNavNeedsDetail(page=activePage){return page==='raiox'||(page==='gerencial'&&!['metas','comissao'].includes(GER_SUB));}
 function bcNavSetSelect(id,value,empty=''){
@@ -13808,7 +13844,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         try{
           var txt=document.getElementById('bc-dataload-txt');
           if(txt && tent>1) txt.textContent='Servidor acordando… tentativa '+tent+' de 3';
-          r=await authFetch('/api/dataset?meses=1',{cache:'no-cache'});
+          r=await authFetch('/api/dataset?meses=2',{cache:'no-cache'});   // mês atual + o anterior (comparação padrão)
           if(r.ok) break;
           ultimoErro=new Error('HTTP '+r.status); r=null;
         }catch(err){ ultimoErro=err; r=null; }
@@ -13831,9 +13867,29 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     }
   }
   var _detLoaded=false, _detDe='', _detAte='';
+  // JANELA DE COMPARAÇÃO (30/10/2026): o período sozinho deixava o Gerencial comparando com ZERO (Panorama "0.0% vs R$ 0,00",
+  // Perdendo/Ganhando tração sempre 0). Inclui o período comparado (personalizado ou o anterior de mesmo tamanho).
+  function bcJanelaComp(s,e){
+    try{
+      var c=null;
+      if(typeof cmpMode!=='undefined'&&cmpMode&&typeof getR2==='function'){ var r2=getR2(); if(r2&&r2[0]) c=r2[0]; }
+      if(!c&&typeof _gerAnterior==='function'){ var p=_gerAnterior(s,e); if(p&&p[0]) c=p[0]; }
+      if(c&&c<s) s=c;
+    }catch(err){}
+    return [s,e];
+  }
+  // O DETALHE também precisa de HISTÓRICO: "novo" = 1ª venda há ≤ 60 dias e a Queima de margem compara com a mediana dos
+  // meses saudáveis anteriores. Com só o período, todo anúncio parecia novo e a Queima ficava em 0. 6 meses (antes eram 24).
+  var DET_HIST_DIAS=183;
+  function bcJanelaDetalhe(s,e){
+    var j=bcJanelaComp(s,e), d=new Date(s+'T12:00:00'); d.setDate(d.getDate()-DET_HIST_DIAS);
+    var h=d.toISOString().slice(0,10);
+    return [h<j[0]?h:j[0], e];
+  }
   async function bcCarregaDetalhe(forcar){
     var a=document.getElementById('d-start'), b=document.getElementById('d-end');
     var s=(a&&a.value)||'', e=(b&&b.value)||'';
+    if(s&&e){ var jd=bcJanelaDetalhe(s,e); s=jd[0]; e=jd[1]; }
     if(!forcar && _detLoaded && _detDe && _detAte && s>=_detDe && e<=_detAte) return;
     try{
       var url=s&&e?('/api/detalhe?de='+encodeURIComponent(s)+'&ate='+encodeURIComponent(e)):'/api/detalhe?meses=1';
@@ -13841,12 +13897,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       if(!r.ok) return;
       var d=await r.json();
       DETALHE = d.detalhe||[]; _detLoaded=true; window._detLoaded=true;
+      try{ _FIRST_SKU=null; }catch(err){}   // 1ª venda de cada SKU sai do DETALHE — recalcula com a janela nova
       _detDe=(d.periodo&&d.periodo[0])||s; _detAte=(d.periodo&&d.periodo[1])||e;
       if(typeof activePage!=='undefined' && (activePage==='raiox'||activePage==='gerencial')){ try{ renderPageOnly(activePage); }catch(err){} }
     }catch(e){ console.error('detalhe',e); }
   }
   async function bcGarantePeriodo(s,e){
     s=String(s||''); e=String(e||'');
+    if(s&&e){ var jc=bcJanelaComp(s,e); s=jc[0]; e=jc[1]; }   // agregados também levam o período comparado
     try{
       if(s&&e&&!(_bcDe&&_bcAte&&s>=_bcDe&&e<=_bcAte)){
         var de=(_bcDe&&_bcDe<s)?_bcDe:s, ate=(_bcAte&&_bcAte>e)?_bcAte:e;

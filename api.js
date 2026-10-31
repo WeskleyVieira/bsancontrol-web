@@ -134,15 +134,15 @@ async function rotaGET(u, user) {
     const de = q.de || "0000-00-00", ate = q.ate || "9999-99-99", t0 = Date.now();
     const w = ["data>=?", "data<=?", "status LIKE '%venda%'"], args = [de, ate];
     const W = " WHERE " + w.join(" AND ");
-    const kpi = await dbx.get("SELECT COUNT(*) n, ROUND(SUM(COALESCE(receita_n,receita))) fat, ROUND(SUM(COALESCE(mc_comissao_n,mc_comissao))) mc FROM vendas" + W, args);
-    const porOp = await dbx.all("SELECT empresa, canal, ROUND(SUM(COALESCE(receita_n,receita))) fat, ROUND(SUM(COALESCE(mc_comissao_n,mc_comissao))) mc, COUNT(*) n FROM vendas" + W + " GROUP BY empresa, canal ORDER BY mc DESC", args);
+    const kpi = await dbx.get("SELECT COUNT(*) n, ROUND(SUM(CAST(COALESCE(receita_n,CAST(receita AS NUMERIC)) AS DOUBLE PRECISION))) fat, ROUND(SUM(CAST(COALESCE(mc_comissao_n,CAST(mc_comissao AS NUMERIC)) AS DOUBLE PRECISION))) mc FROM vendas" + W, args);
+    const porOp = await dbx.all("SELECT empresa, canal, ROUND(SUM(CAST(COALESCE(receita_n,CAST(receita AS NUMERIC)) AS DOUBLE PRECISION))) fat, ROUND(SUM(CAST(COALESCE(mc_comissao_n,CAST(mc_comissao AS NUMERIC)) AS DOUBLE PRECISION))) mc, COUNT(*) n FROM vendas" + W + " GROUP BY empresa, canal ORDER BY mc DESC", args);
     return { periodo: [de, ate], ms: Date.now() - t0, kpi, por_operacao: porOp };
   }
   // Página de 50. O KPI usa o mesmo filtro da tabela, sem o recorte de status (os cartões contam todos).
   if (u.pathname === "/api/vendas") {
     const t0 = Date.now();
     const c = consultaVendas(q);
-    const fat = "COALESCE(receita_n,receita)";
+    const fat = "CAST(COALESCE(receita_n,CAST(receita AS NUMERIC)) AS DOUBLE PRECISION)";
     const par = (n, v) => ({ n: +n || 0, v: Math.round((+v || 0) * 100) / 100 });
     const [kpiRow, linhas] = await Promise.all([
       dbx.get(`SELECT COUNT(*) n,
@@ -159,8 +159,8 @@ async function rotaGET(u, user) {
         SUM(CASE WHEN status='extravio' THEN ${fat} ELSE 0 END) fat_ext
       FROM vendas WHERE ${c.base}`, c.baseArgs),
       dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto, sku, anuncio_id AS anuncio, titulo AS tit, pedido AS ped,
-        qtd, ${fat} AS fat, COALESCE(liquido_n,liquido) AS liq, COALESCE(ctp_n,ctp) AS ctp, COALESCE(imposto_n,imposto) AS imp,
-        COALESCE(mc_comissao_n,mc_comissao) AS mc, fonte_liquido AS fonte, status AS stat
+        qtd, ${fat} AS fat, CAST(COALESCE(liquido_n,CAST(liquido AS NUMERIC)) AS DOUBLE PRECISION) AS liq, CAST(COALESCE(ctp_n,CAST(ctp AS NUMERIC)) AS DOUBLE PRECISION) AS ctp, CAST(COALESCE(imposto_n,CAST(imposto AS NUMERIC)) AS DOUBLE PRECISION) AS imp,
+        CAST(COALESCE(mc_comissao_n,CAST(mc_comissao AS NUMERIC)) AS DOUBLE PRECISION) AS mc, fonte_liquido AS fonte, status AS stat
       FROM vendas WHERE ${c.where} ORDER BY ${c.order} LIMIT ? OFFSET ?`, c.args.concat([c.limite, c.offset]))
     ]);
     linhas.forEach(o => {
@@ -200,22 +200,34 @@ async function rotaGET(u, user) {
     const mapMoney = (a, campos) => a.map(o => { for (const c of campos) o[c] = r2(o[c]); return o; });
     // AGREGADOS via GROUP BY no banco (retorna ~11k linhas, não as 37k cruas) — carga inicial leve.
     // O DETALHE (linha a linha, pesado) é lazy: /api/detalhe, só quando Raio-X ou Gerencial abrem.
+    // BASE = VENDAS FINALIZADAS (30/10/2026, Weskley): faturamento, custos, margem, unidades e pedidos contam só
+    // venda/venda_com_troca — a mesma base da meta e da comissão. Pendente (devolução/mediação em andamento),
+    // devolvida e extravio ficam fora e seguem à parte (devN/devFat/devMc). mcMetas continua a regra da comissão
+    // (venda + devolvida). V(): a coluna exata (_n, NUMERIC) com a antiga como reserva — sem o CAST o Postgres somava em float4.
+    const V = c => `CAST(COALESCE(${c}_n,CAST(${c} AS NUMERIC)) AS DOUBLE PRECISION)`;
+    const FIN = "LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%'";
+    const SF = c => `SUM(CASE WHEN ${FIN} THEN ${V(c)} ELSE 0 END)`;
+    const DEV = "LOWER(TRIM(COALESCE(status,'')))='devolvida'";
     const rows = mapMoney(await dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto,
-        SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(liquido_n,liquido)) AS liq, SUM(COALESCE(ctp_n,ctp)) AS ctp, SUM(COALESCE(imposto_n,imposto)) AS imp,
-        SUM(COALESCE(mc_comissao_n,mc_comissao)) AS mc, SUM(COALESCE(mc_real_n,mc_real)) AS "mcReal", SUM(qtd) AS qtd, COUNT(*) AS ped,
-        SUM(COALESCE(publicidade_n,publicidade,0)) AS pub, SUM(COALESCE(afiliados_n,afiliados,0)) AS afil,
-        SUM(CASE WHEN LOWER(TRIM(COALESCE(status,'')))='devolvida' THEN 1 ELSE 0 END) AS "devN",
-        SUM(CASE WHEN LOWER(TRIM(COALESCE(status,'')))='devolvida' THEN COALESCE(receita_n,receita) ELSE 0 END) AS "devFat",
-        SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' THEN COALESCE(receita_n,receita) ELSE 0 END AS DOUBLE PRECISION)) AS "fatMetas",
-        SUM(CAST(CASE WHEN LOWER(COALESCE(NULLIF(TRIM(status),''),'venda')) LIKE '%venda%' OR LOWER(TRIM(status))='devolvida' THEN COALESCE(mc_comissao_n,mc_comissao,mc_real_n,mc_real,0) ELSE 0 END AS DOUBLE PRECISION)) AS "mcMetas"
-      FROM vendas ${W} GROUP BY data, empresa, canal, ponto`, args), ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd", "fatMetas", "mcMetas", "pub", "afil", "devFat"]);
+        ${SF("receita")} AS fat, ${SF("liquido")} AS liq, ${SF("ctp")} AS ctp, ${SF("imposto")} AS imp,
+        ${SF("mc_comissao")} AS mc, ${SF("mc_real")} AS "mcReal",
+        SUM(CASE WHEN ${FIN} THEN qtd ELSE 0 END) AS qtd, SUM(CASE WHEN ${FIN} THEN 1 ELSE 0 END) AS ped,
+        SUM(CASE WHEN ${FIN} THEN CAST(COALESCE(publicidade_n,CAST(publicidade AS NUMERIC),0) AS DOUBLE PRECISION) ELSE 0 END) AS pub,
+        SUM(CASE WHEN ${FIN} THEN CAST(COALESCE(afiliados_n,CAST(afiliados AS NUMERIC),0) AS DOUBLE PRECISION) ELSE 0 END) AS afil,
+        SUM(CASE WHEN ${DEV} THEN 1 ELSE 0 END) AS "devN",
+        SUM(CASE WHEN ${DEV} THEN ${V("receita")} ELSE 0 END) AS "devFat",
+        SUM(CASE WHEN ${DEV} THEN ${V("mc_comissao")} ELSE 0 END) AS "devMc",
+        ${SF("receita")} AS "fatMetas",
+        SUM(CAST(CASE WHEN ${FIN} OR ${DEV} THEN COALESCE(mc_comissao_n,CAST(mc_comissao AS NUMERIC),mc_real_n,CAST(mc_real AS NUMERIC),0) ELSE 0 END AS DOUBLE PRECISION)) AS "mcMetas"
+      FROM vendas ${W} GROUP BY data, empresa, canal, ponto`, args), ["fat", "liq", "ctp", "imp", "mc", "mcReal", "qtd", "fatMetas", "mcMetas", "pub", "afil", "devFat", "devMc"]);
     rows.forEach(o => { o.ped = +o.ped; o.devN = +o.devN || 0; });
-    const skuMon = mapMoney(await dbx.all(`SELECT competencia AS mes, sku AS "SKU", SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(liquido_n,liquido)) AS liq,
-        SUM(COALESCE(ctp_n,ctp)) AS ctp, SUM(COALESCE(imposto_n,imposto)) AS imp, SUM(COALESCE(mc_real_n,mc_real)) AS mc, SUM(qtd) AS qtd FROM vendas ${W} GROUP BY competencia, sku`, args), ["fat", "liq", "ctp", "imp", "mc", "qtd"]);
-    const skuMkt = mapMoney(await dbx.all(`SELECT canal AS mkt, sku, SUM(qtd) AS qtd, SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(mc_real_n,mc_real)) AS mc,
-        SUM(COALESCE(liquido_n,liquido)) AS liq FROM vendas ${W} GROUP BY canal, sku`, args), ["qtd", "fat", "mc", "liq"]);
-    const skuMktMon = mapMoney(await dbx.all(`SELECT competencia AS mes, canal AS mkt, sku, SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(mc_real_n,mc_real)) AS mc,
-        SUM(qtd) AS qtd, SUM(COALESCE(liquido_n,liquido)) AS liq FROM vendas ${W} GROUP BY competencia, canal, sku`, args), ["fat", "mc", "qtd", "liq"]);
+    const WF = W + " AND " + FIN;
+    const skuMon = mapMoney(await dbx.all(`SELECT competencia AS mes, sku AS "SKU", SUM(${V("receita")}) AS fat, SUM(${V("liquido")}) AS liq,
+        SUM(${V("ctp")}) AS ctp, SUM(${V("imposto")}) AS imp, SUM(${V("mc_real")}) AS mc, SUM(qtd) AS qtd FROM vendas ${WF} GROUP BY competencia, sku`, args), ["fat", "liq", "ctp", "imp", "mc", "qtd"]);
+    const skuMkt = mapMoney(await dbx.all(`SELECT canal AS mkt, sku, SUM(qtd) AS qtd, SUM(${V("receita")}) AS fat, SUM(${V("mc_real")}) AS mc,
+        SUM(${V("liquido")}) AS liq FROM vendas ${WF} GROUP BY canal, sku`, args), ["qtd", "fat", "mc", "liq"]);
+    const skuMktMon = mapMoney(await dbx.all(`SELECT competencia AS mes, canal AS mkt, sku, SUM(${V("receita")}) AS fat, SUM(${V("mc_real")}) AS mc,
+        SUM(qtd) AS qtd, SUM(${V("liquido")}) AS liq FROM vendas ${WF} GROUP BY competencia, canal, sku`, args), ["fat", "mc", "qtd", "liq"]);
     const ex = await dbx.get("SELECT MIN(data) min, MAX(data) max FROM vendas");
     return { periodo: [de, ate], ms: Date.now() - t0,
       extremos: [ex && ex.min ? String(ex.min).slice(0, 10) : de, ex && ex.max ? String(ex.max).slice(0, 10) : ate],
@@ -241,7 +253,7 @@ async function rotaGET(u, user) {
     // 137 MB para 249 MB e estouravam os 512 MB do plano free (exit 134, OOM, 502 no ar).
     // A abertura de custos mora em /api/abertura, que é escopado a UMA operação.
     const raw = await dbx.all(`SELECT data, empresa, canal, ponto, sku, anuncio_id, titulo, pedido,
-        qtd, COALESCE(receita_n,receita) AS receita, COALESCE(liquido_n,liquido) AS liquido, COALESCE(ctp_n,ctp) AS ctp, COALESCE(imposto_n,imposto) AS imposto, COALESCE(mc_real_n,mc_real) AS mc_real, COALESCE(mc_comissao_n,mc_comissao) AS mc_comissao, fonte_liquido, status FROM vendas WHERE ${w.join(" AND ")}`, args);
+        qtd, CAST(COALESCE(receita_n,CAST(receita AS NUMERIC)) AS DOUBLE PRECISION) AS receita, CAST(COALESCE(liquido_n,CAST(liquido AS NUMERIC)) AS DOUBLE PRECISION) AS liquido, CAST(COALESCE(ctp_n,CAST(ctp AS NUMERIC)) AS DOUBLE PRECISION) AS ctp, CAST(COALESCE(imposto_n,CAST(imposto AS NUMERIC)) AS DOUBLE PRECISION) AS imposto, CAST(COALESCE(mc_real_n,CAST(mc_real AS NUMERIC)) AS DOUBLE PRECISION) AS mc_real, CAST(COALESCE(mc_comissao_n,CAST(mc_comissao AS NUMERIC)) AS DOUBLE PRECISION) AS mc_comissao, fonte_liquido, status FROM vendas WHERE ${w.join(" AND ")}`, args);
     const detalhe = raw.map(v => ({ date: v.data, emp: v.empresa, mkt: v.canal, sku: v.sku, tit: v.titulo, ped: v.pedido,
       anuncio: v.anuncio_id, qtd: r2(v.qtd), fat: r2(v.receita), liq: r2(v.liquido), ctp: r2(v.ctp), imp: r2(v.imposto),
       mc: r2(v.mc_comissao), mccom: r2(v.mc_comissao), mcReal: r2(v.mc_real), fonte: v.fonte_liquido, stat: v.status, ponto: v.ponto }));
@@ -261,9 +273,9 @@ async function rotaGET(u, user) {
     if (q.de) { w.push("data>=?"); args.push(q.de); }
     if (q.ate) { w.push("data<=?"); args.push(q.ate); }
     const r2 = n => Math.round((+n || 0) * 100) / 100;
-    const raw = await dbx.all(`SELECT data, canal, sku, pedido, COALESCE(preco_cheio_n,preco_cheio) AS preco_cheio, COALESCE(desconto_n,desconto) AS desconto, COALESCE(comissao_n,comissao) AS comissao, COALESCE(tarifas_n,tarifas) AS tarifas,
-        COALESCE(frete_n,frete) AS frete, COALESCE(reembolso_n,reembolso) AS reembolso, COALESCE(afiliados_n,afiliados) AS afiliados, COALESCE(publicidade_n,publicidade) AS publicidade, COALESCE(bonus_flex_n,bonus_flex) AS bonus_flex, COALESCE(custo_motoboy_n,custo_motoboy) AS custo_motoboy, COALESCE(custo_fatura_n,custo_fatura) AS custo_fatura,
-        COALESCE(subsidios_n,subsidios) AS subsidios, COALESCE(copart_frete_n,copart_frete) AS copart_frete, COALESCE(acerto_vapt_n,acerto_vapt) AS acerto_vapt, COALESCE(repasse_flash_n,repasse_flash) AS repasse_flash, forma_entrega, veio_de_ads
+    const raw = await dbx.all(`SELECT data, canal, sku, pedido, CAST(COALESCE(preco_cheio_n,CAST(preco_cheio AS NUMERIC)) AS DOUBLE PRECISION) AS preco_cheio, CAST(COALESCE(desconto_n,CAST(desconto AS NUMERIC)) AS DOUBLE PRECISION) AS desconto, CAST(COALESCE(comissao_n,CAST(comissao AS NUMERIC)) AS DOUBLE PRECISION) AS comissao, CAST(COALESCE(tarifas_n,CAST(tarifas AS NUMERIC)) AS DOUBLE PRECISION) AS tarifas,
+        CAST(COALESCE(frete_n,CAST(frete AS NUMERIC)) AS DOUBLE PRECISION) AS frete, CAST(COALESCE(reembolso_n,CAST(reembolso AS NUMERIC)) AS DOUBLE PRECISION) AS reembolso, CAST(COALESCE(afiliados_n,CAST(afiliados AS NUMERIC)) AS DOUBLE PRECISION) AS afiliados, CAST(COALESCE(publicidade_n,CAST(publicidade AS NUMERIC)) AS DOUBLE PRECISION) AS publicidade, CAST(COALESCE(bonus_flex_n,CAST(bonus_flex AS NUMERIC)) AS DOUBLE PRECISION) AS bonus_flex, CAST(COALESCE(custo_motoboy_n,CAST(custo_motoboy AS NUMERIC)) AS DOUBLE PRECISION) AS custo_motoboy, CAST(COALESCE(custo_fatura_n,CAST(custo_fatura AS NUMERIC)) AS DOUBLE PRECISION) AS custo_fatura,
+        CAST(COALESCE(subsidios_n,CAST(subsidios AS NUMERIC)) AS DOUBLE PRECISION) AS subsidios, CAST(COALESCE(copart_frete_n,CAST(copart_frete AS NUMERIC)) AS DOUBLE PRECISION) AS copart_frete, CAST(COALESCE(acerto_vapt_n,CAST(acerto_vapt AS NUMERIC)) AS DOUBLE PRECISION) AS acerto_vapt, CAST(COALESCE(repasse_flash_n,CAST(repasse_flash AS NUMERIC)) AS DOUBLE PRECISION) AS repasse_flash, forma_entrega, veio_de_ads
       FROM vendas WHERE ${w.join(" AND ")}`, args);
     const PAR = [["pcheio", "preco_cheio"], ["desc", "desconto"], ["comis", "comissao"], ["tarif", "tarifas"],
       ["freteC", "frete"], ["reemb", "reembolso"], ["afil", "afiliados"], ["pub", "publicidade"],
@@ -316,8 +328,8 @@ async function rotaGET(u, user) {
     const args = [emp, mkt, anuncio || sku, d0.toISOString().slice(0, 7), ref];
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const linhas = (await dbx.all(`SELECT competencia AS mes, sku, SUM(qtd) AS qtd, COUNT(*) AS ped,
-        SUM(COALESCE(receita_n,receita)) AS fat, SUM(COALESCE(liquido_n,liquido)) AS liq, SUM(COALESCE(imposto_n,imposto)) AS imp, SUM(COALESCE(ctp_n,ctp)) AS ctp, SUM(COALESCE(mc_real_n,mc_real)) AS mc,
-        SUM(ABS(COALESCE(comissao_n,comissao,0))) AS comis, SUM(ABS(COALESCE(tarifas_n,tarifas,0))) AS tarif
+        SUM(CAST(COALESCE(receita_n,CAST(receita AS NUMERIC)) AS DOUBLE PRECISION)) AS fat, SUM(CAST(COALESCE(liquido_n,CAST(liquido AS NUMERIC)) AS DOUBLE PRECISION)) AS liq, SUM(CAST(COALESCE(imposto_n,CAST(imposto AS NUMERIC)) AS DOUBLE PRECISION)) AS imp, SUM(CAST(COALESCE(ctp_n,CAST(ctp AS NUMERIC)) AS DOUBLE PRECISION)) AS ctp, SUM(CAST(COALESCE(mc_real_n,CAST(mc_real AS NUMERIC)) AS DOUBLE PRECISION)) AS mc,
+        SUM(ABS(CAST(COALESCE(comissao_n,CAST(comissao AS NUMERIC),0) AS DOUBLE PRECISION))) AS comis, SUM(ABS(CAST(COALESCE(tarifas_n,CAST(tarifas AS NUMERIC),0) AS DOUBLE PRECISION))) AS tarif
       FROM vendas WHERE ${w.join(" AND ")} GROUP BY competencia, sku ORDER BY competencia, sku`, args))
       .map(o => ({ mes: o.mes, sku: o.sku, qtd: +o.qtd || 0, ped: +o.ped || 0, fat: r2(o.fat), liq: r2(o.liq),
         imp: r2(o.imp), ctp: r2(o.ctp), mc: r2(o.mc), comis: r2(o.comis), tarif: r2(o.tarif) }));
