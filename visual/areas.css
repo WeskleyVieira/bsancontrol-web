@@ -59,3 +59,47 @@ body.bc-shell .bc-metrics{grid-template-columns:repeat(auto-fit,minmax(min(300px
 body.bc-shell .bc-metrics :is(.bc-metric-value,.kpi-val),body.bc-shell .bc-com-kpi>strong{overflow-wrap:normal;word-break:normal}
 @media(min-width:701px) and (max-width:1399px){body.bc-shell .bc-metrics:has(>:nth-child(4):last-child){grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:700px){body.bc-shell .bc-metrics{grid-template-columns:minmax(0,1fr)!important}body.bc-shell .bc-metrics :is(.bc-metric-value,.kpi-val),body.bc-shell .bc-com-kpi>strong{font-size:30px!important}}
+/* Fidelidade à proposta: sub-abas em botões, conta organizada e período por intenção. */
+.bc-shell .bc-header-top>.bc-menu>summary,.bc-shell .bc-header-top>#theme-btn{border:1px solid var(--bc-border);background:var(--bc-surface);border-radius:8px;padding:9px 13px;min-height:44px}
+.bc-shell .bc-account>summary{display:flex;gap:9px;align-items:center;text-align:left}
+.bc-shell .bc-account .bc-avatar{background:var(--a3);color:var(--bc-accent);border:0}
+.bc-shell .brand-logo{background:transparent!important;color:var(--bc-accent)!important;border:1px solid var(--bc-accent);border-radius:10px;width:34px;height:34px}
+.bc-shell .bc-account>.bc-menu-panel{width:290px;min-width:0;padding:8px;box-shadow:0 12px 30px #0003}
+.bc-shell .bc-account #bc-authbar{display:none!important}
+.bc-user-profile{padding:12px 12px 14px;margin-bottom:6px;border-bottom:1px solid var(--bc-border)}
+.bc-user-profile strong,.bc-user-profile span{display:block;font-size:14px;line-height:1.6}.bc-user-profile span{font-size:13px;color:var(--bc-accent)}
+.bc-user-profile p{font-size:12px;line-height:1.6;margin:7px 0 0;color:var(--bc-muted)}
+.bc-shell .bc-account #bc-user-menu button{display:block;width:100%;min-height:44px;padding:11px 12px!important;border:0!important;background:transparent!important;color:var(--bc-text)!important;text-align:left;border-radius:6px;font:500 14px/1.5 Inter,Segoe UI,sans-serif;white-space:normal}
+.bc-shell .bc-account #bc-user-menu button:hover{background:var(--a3)!important}.bc-shell .bc-account #bc-user-menu #bc-user-logout{margin-top:6px;border-top:1px solid var(--bc-border)!important;border-radius:0 0 6px 6px}
+.bc-shell .bc-account #bc-user-menu button:disabled{opacity:.5;cursor:default}.bc-shell .bc-account #bc-user-menu [hidden]{display:none!important}
+.bc-access-dialog{width:min(460px,calc(100vw - 32px));padding:24px;background:var(--bc-surface);color:var(--bc-text);border:1px solid var(--bc-border);border-radius:12px}.bc-access-dialog::backdrop{background:#050a12b3}.bc-access-dialog h2{font-size:22px;margin:0 0 18px}.bc-access-dialog dl{display:grid;gap:7px;margin:0 0 20px}.bc-access-dialog dt{font-size:12px;color:var(--bc-muted)}.bc-access-dialog dd{font-size:14px;margin:0 0 10px}.bc-access-dialog button{min-height:44px;padding:9px 16px;background:var(--bc-raised);color:var(--bc-text);border:1px solid var(--bc-border);border-radius:8px}
+.bc-shell .bc-secondary{justify-content:flex-start!important;align-items:center!important;gap:8px!important;width:100%;margin-left:0!important;margin-right:auto;padding:0 0 14px!important;flex-basis:100%;border-bottom:1px solid var(--bc-border)}
+.bc-shell .bc-secondary .dshort,.bc-shell .bc-secondary .dshort[aria-current=page]{border:1px solid transparent!important;border-radius:8px!important;background:transparent!important;color:var(--bc-muted)!important;padding:10px 13px!important;min-height:44px;font-size:13px!important}
+.bc-shell .bc-secondary .dshort[aria-current=page]{border-color:var(--bc-accent)!important;background:var(--a3)!important;color:var(--bc-text)!important}
+.bc-shell .bc-secondary .dshort:hover{background:var(--a3)!important;color:var(--bc-text)!important}
+.bc-area #ac2-root :is(.a2-lvb,.a2-subb){border:1px solid transparent!important;border-radius:8px!important;background:transparent!important;color:var(--bc-muted)!important;min-height:44px;box-shadow:none!important}
+.bc-area #ac2-root :is(.a2-lvb,.a2-subb).on{border:1px solid var(--bc-accent)!important;border-radius:8px!important;background:var(--a3)!important;color:var(--bc-text)!important}
+.bc-area #ac2-root :is(.a2-lvb,.a2-subb):hover:not(:disabled){background:var(--a3)!important}.bc-area #ac2-root .a2-lvb small{margin-left:6px}.bc-area #ac2-root .a2-lv{gap:7px;flex-wrap:wrap}
+.bc-shell .bc-range-v2 .bc-period-trigger{min-height:50px}.bc-period-trigger-text{display:flex;flex-direction:column;gap:3px;min-width:0;text-align:left}.bc-period-trigger-text strong{font-size:13px;font-weight:600}.bc-period-trigger-text #bc-range-label{font-size:12px!important;color:var(--bc-muted);white-space:normal}
+.bc-shell .bc-range-v2>.bc-period-panel{width:560px;padding:22px;gap:16px;max-height:min(760px,calc(100dvh - 48px));overflow:auto;z-index:300}
+.bc-period-heading h2{font-size:19px!important;line-height:1.4}.bc-period-heading p{font-size:13px;color:var(--bc-muted);line-height:1.6;margin:7px 0 0}
+.bc-period-modes{display:flex;gap:4px;padding:4px;border:1px solid var(--bc-border);border-radius:9px;background:var(--bc-raised)}
+.bc-shell .bc-period-modes button{flex:1;width:auto;min-height:40px;padding:8px 10px;font-size:13px;background:transparent;border:1px solid transparent!important;text-align:center}
+.bc-shell .bc-period-modes button[aria-pressed=true]{background:var(--bc-surface);border-color:var(--bc-accent)!important;color:var(--bc-accent)}
+.bc-period-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.bc-shell .bc-period-quick button{border:1px solid var(--bc-border)!important;border-radius:8px;min-height:84px;padding:11px 10px;background:var(--bc-surface);text-align:left;width:100%;color:var(--bc-text);display:flex;flex-direction:column;justify-content:center;gap:6px}
+.bc-period-quick button strong{font-size:13px;font-weight:600;line-height:1.4}.bc-period-quick button small{font-size:12px;line-height:1.5;color:var(--bc-muted)}
+.bc-shell .bc-period-quick button[aria-pressed=true]{border-color:var(--bc-accent)!important;background:var(--a3)}
+.bc-range-v2 [hidden]{display:none!important}.bc-period-preview{padding:13px 15px;border:1px solid var(--bc-border);border-radius:8px;background:var(--bc-raised);display:flex;flex-direction:column;gap:5px}
+.bc-period-preview>span,.bc-period-preview small{font-size:12px;line-height:1.6;color:var(--bc-muted)}.bc-period-preview strong{font-size:15px;line-height:1.5;font-weight:600}
+.bc-shell #bc-period-month label{display:flex;flex-direction:column;gap:8px;font-size:13px}.bc-shell #bc-period-month input{font:inherit;min-height:46px;padding:10px 12px;box-sizing:border-box;width:100%;background:var(--bc-surface);color:var(--bc-text);border:1px solid var(--bc-border);border-radius:8px;color-scheme:dark}.bc-shell.light #bc-period-month input{color-scheme:light}
+#bc-period-month p,#bc-period-reference{font-size:12px;color:var(--bc-muted);line-height:1.6;margin:8px 0 0}
+.bc-period-compare{border-top:1px solid var(--bc-border);padding-top:12px}.bc-period-compare>summary{padding:8px 0!important;min-height:36px!important;border:0!important;background:transparent!important;font-size:13px!important;color:var(--bc-muted)!important;cursor:pointer}
+.bc-period-compare .bc-period-comparison{border:0;padding-top:10px}.bc-period-footer{display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--bc-border);padding-top:14px}
+.bc-shell .bc-period-footer button{width:auto;min-height:44px;padding:10px 16px;border:1px solid var(--bc-border)!important;text-align:center}.bc-shell .bc-period-footer .bc-period-apply{background:var(--bc-accent);color:var(--bc-button-ink);border-color:var(--bc-accent)!important}
+@media(max-width:760px){.bc-shell .bc-range-v2>.bc-period-panel{width:calc(100vw - 32px);max-width:calc(100vw - 32px);padding:16px;right:0;max-height:calc(100dvh - 40px)}.bc-period-quick{grid-template-columns:repeat(2,minmax(0,1fr))}.bc-shell .bc-period-quick button{min-height:76px}.bc-period-modes button{font-size:12px!important;padding:8px 6px!important}.bc-shell .bc-account>.bc-menu-panel{max-width:calc(100vw - 32px)}.bc-shell .bc-secondary{display:none!important}.bc-period-trigger-text #bc-range-label{font-size:12px!important}.bc-period-footer button{flex:1}}
+.bc-shell .bc-range-v2>.bc-period-panel{position:fixed!important;display:flex!important;flex-direction:column;overflow:hidden!important;box-shadow:0 14px 36px #0004}
+.bc-period-heading{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-shrink:0}.bc-shell .bc-period-heading>button{width:32px;min-width:32px;min-height:32px;padding:0;border:0;background:transparent;font-size:23px;line-height:1}
+.bc-period-modes,.bc-period-footer{flex-shrink:0}.bc-period-body{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:14px;padding-right:3px;overscroll-behavior:contain}.bc-period-body>section,.bc-period-body>.bc-period-preview,.bc-period-body>.bc-period-compare{flex-shrink:0}
+.bc-shell .bc-account #bc-user-menu button{font-size:14px!important}
+.bc-shell .bc-period-quick button{min-height:64px;padding:9px 10px;gap:4px}.bc-period-quick button small{line-height:1.4}
