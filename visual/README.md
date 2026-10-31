@@ -1,5 +1,7 @@
 # Padrão visual das áreas — Grupo Bsan
 
+Calendários do período (31/10/2026): seleção de mês em grade de 12 meses com navegação por ano; intervalo personalizado em calendário próprio, dois meses no desktop e um no celular, faixa contínua e prévia ao passar pelas datas. A seleção aceita ordem inversa e intervalos entre meses; setas, Home/End e PageUp/PageDown navegam pelo teclado. Animações respeitam movimento reduzido. Atalho Últimos 15 dias incluído, com a mesma referência de última venda dos demais atalhos. Os campos originais e o comando de aplicação são preservados; cancelar restaura a consulta vigente. Validado no navegador: rascunho sem aplicação, intervalo incompleto, confirmação, cancelamento, mês completo, teclado, temas e largura de 390 px.
+
 Cobertura: 13 áreas principais e oito sub-abas do Gerencial. Metas e Comissão mantêm os componentes já aprovados. As demais áreas usam os mesmos fundamentos de superfícies, tipografia, controles, tabelas e cor de estado.
 
 `areas.css` define o padrão e os ajustes próprios de cada área. `areas.js` aplica o tratamento aos componentes criados pelos renderizadores existentes e oferece ampliação dos gráficos, incluindo tabela de valores. O módulo não chama APIs nem grava, filtra ou recalcula dados de negócio.
