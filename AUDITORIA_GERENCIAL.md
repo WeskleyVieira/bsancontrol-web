@@ -47,7 +47,7 @@ Não há coleta de marketplace, reprocessamento financeiro, alteração de bônu
 
 ## Evidências de validação
 
-**75 testes aprovados:** 55 anteriores e 20 específicos do novo modelo/integração. Incluem R$ 85,01 em dois SKUs, gasto alocado uma única vez, fonte só de afiliados, TikTok, Temu, custo ausente, receita sem identificador, referência sem registros, páginas que não truncam exportação e simulação sem mudar a margem.
+**76 testes aprovados:** 55 anteriores e 21 específicos do novo modelo/integração. Incluem R$ 85,01 em dois SKUs, gasto alocado uma única vez, fonte só de afiliados, TikTok, Temu, custo ausente, receita sem identificador, referência sem registros, páginas que não truncam exportação e simulação sem mudar a margem.
 
 Conferência no navegador com usuários e dados fictícios em banco isolado:
 
@@ -63,3 +63,5 @@ Conferência no navegador com usuários e dados fictícios em banco isolado:
 A conciliação financeira oficial e a coleta das plataformas não foram certificadas por esta auditoria visual/funcional. O relatório mensal, a distribuição para margem, o diário e a cobrança podem ter alcances e cortes diferentes. Sem metadados confiáveis não se afirma completude ou liquidação. A cobertura de valores ausentes que já foram convertidos em zero pela origem não pode ser reconstruída pela interface.
 
 Full usa a relação recebida e seus critérios; não recalcula capacidade concedida pelo marketplace, não confirma nota futura e não cria envio. A leitura histórica depende da janela carregada. As referências de negócio e os modelos externos permanecem nas fontes de origem; somente a apresentação/derivação de leitura desta fase foi revisada. Conferência gerencial dos dados reais permanece pendente.
+
+Conferência final do inventário: mantidos ROAS diário (com denominador ausente distinto de zero), participações de faturamento/margem/unidades nas colunas completas e no CSV, status/visitas das campanhas e referências de cadastro/primeira venda disponível no detalhe. Esses campos não são convertidos em um veredito automático de saúde.
