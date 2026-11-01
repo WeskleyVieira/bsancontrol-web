@@ -1,5 +1,5 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const css=fs.readFileSync(path.join(__dirname,'areas.css'),'utf8').replace(/\r\n/g,'\n'),js=fs.readFileSync(path.join(__dirname,'areas.js'),'utf8').replace(/\r\n/g,'\n');new vm.Script(js);
+const css=['areas.css','comparacao.css'].map(f=>fs.readFileSync(path.join(__dirname,f),'utf8').replace(/\r\n/g,'\n')).join('\n'),js=['areas.js','comparacao.js'].map(f=>fs.readFileSync(path.join(__dirname,f),'utf8').replace(/\r\n/g,'\n')).join('\n');new vm.Script(js);
 function presentation(html){
  html=html.replace('placeholder="mín. 6 caracteres"','placeholder="mín. 8 caracteres"').replace('if(nova.length<6)','if(nova.length<8)').replace('A nova senha precisa de ao menos 6 caracteres.','A nova senha precisa de ao menos 8 caracteres.');
  // O estado do repasse fica junto do líquido, sem substituir a situação da venda.

@@ -128,9 +128,9 @@ function bcChromeCalendarPaint(){
 const BCGroup={mounted:false,identity:null,last:{},busy:false};
 const BCGroupMap=[
  {id:'resultados',label:'Resultados',items:[{id:'overview',label:'Visão Geral',page:'overview'},{id:'diario',label:'Diário',page:'diario'},{id:'marketplaces',label:'Marketplaces',page:'marketplaces'},{id:'abc',label:'Curva ABC',page:'abc'},{id:'forecast',label:'Forecast',page:'metas'}]},
- {id:'vendas',label:'Vendas',items:[{id:'vendas',label:'Vendas',page:'vendas'},{id:'raiox',label:'Raio-X',page:'raiox'},{id:'ger-vendas',label:'Vendas da operação',page:'gerencial',sub:'vendas'}]},
- {id:'gerencial',label:'Gerencial',items:[{id:'panorama',label:'Panorama',page:'gerencial',sub:'panorama'},{id:'diag',label:'Diagnóstico',page:'gerencial',sub:'diag'},{id:'produtos',label:'Anúncios',page:'gerencial',sub:'produtos'},{id:'ads',label:'Publicidade',page:'gerencial',sub:'ads'},{id:'metas',label:'Metas',page:'gerencial',sub:'metas'},{id:'full',label:'Full',page:'gerencial',sub:'full'}]},
- {id:'operacao',label:'Operação',items:[{id:'estoque',label:'Estoque',page:'estoque'},{id:'projecao',label:'Projeção',page:'projecao'},{id:'envios',label:'Envios',page:'envios'}]},
+ {id:'vendas',label:'Vendas',items:[{id:'vendas',label:'Vendas',page:'vendas'},{id:'raiox',label:'Raio-X',page:'raiox'}]},
+ {id:'gerencial',label:'Gerencial',items:[{id:'panorama',label:'Panorama',page:'gerencial',sub:'panorama'},{id:'ger-vendas',label:'Vendas da operação',page:'gerencial',sub:'vendas'},{id:'diag',label:'Diagnóstico',page:'gerencial',sub:'diag'},{id:'produtos',label:'Anúncios',page:'gerencial',sub:'produtos'},{id:'ads',label:'Publicidade',page:'gerencial',sub:'ads'},{id:'metas',label:'Metas',page:'gerencial',sub:'metas'},{id:'full',label:'Full',page:'gerencial',sub:'full'}]},
+ {id:'operacao',label:'Operação',items:[{id:'envios',label:'Envios',page:'envios'},{id:'estoque',label:'Estoque',page:'estoque'},{id:'projecao',label:'Projeção',page:'projecao'}]},
  {id:'acompanhamento',label:'Acompanhamento',items:[{id:'tarefas',label:'Tarefas',page:'acompanhamento',work:'tarefas'},{id:'promos',label:'Promoções',page:'acompanhamento',work:'promos'},{id:'ac-anuncios',label:'Anúncios · em breve',page:'acompanhamento',disabled:true}]},
  {id:'financeiro',label:'Financeiro',items:[{id:'dre',label:'DRE',page:'dre'},{id:'comissao',label:'Comissão',page:'gerencial',sub:'comissao'}]}
 ];
@@ -184,7 +184,7 @@ function bcGroupedRefresh(){
  }finally{BCGroup.busy=false;}
 }
 
-function bcChromeRefresh(){bcChromeAccount();bcChromePeriod();bcChromePeriodSync();bcGroupedRefresh();}
+function bcChromeRefresh(){bcChromeAccount();bcChromePeriod();bcChromePeriodSync();bcGroupedRefresh();if(typeof bcCompareRefresh==='function')bcCompareRefresh();}
 const bcVisualVisible=el=>!!el&&el.isConnected&&el.getClientRects().length>0&&!el.closest('[hidden]');
 function bcVisualTone(color){const c=String(color||'').replace(/\s/g,'').toLowerCase();if(/#(?:22c55e|34d399|4ade80|059669|10b981)|rgb\((?:34,197,94|52,211,153|74,222,128)\)|var\(--pos\)/.test(c))return'good';if(/#(?:f87171|ef5350|ef4444|dc2626|ff6b6b)|rgb\((?:248,113,113|239,83,80|239,68,68)\)|var\(--neg\)/.test(c))return'bad';if(/#(?:f59e0b|fbbf24|fcd34d|facc15)|rgb\((?:245,158,11|251,191,36)\)|var\(--warn\)/.test(c))return'attention';if(/#(?:4f8ef7|60a5fa|3b82f6)|var\(--a2?\)/.test(c))return'info';return'';}
 function bcVisualLabel(text){const original=String(text||'');const clean=original.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu,'').replace(/^\s+/,'');return clean.trim()?clean:original;}
