@@ -2,7 +2,7 @@
 
 A migração do tema comum foi concluída anteriormente. Este plano acompanha a revisão aprofundada de leitura, fluxo e funcionamento de cada página. Aplicar o tema não significa concluir a auditoria de uma página. A referência visual é Metas, incluindo tipografia, espaços, hierarquia dos valores, estados discretos e ampliação exclusiva dos gráficos.
 
-Prioridade atual: revisão do bloco Gerencial autorizado pelo usuário em 01/11/2026, detalhado em `AUDITORIA_GERENCIAL.md`. Inclui Diagnóstico, Anúncios, Publicidade e Full, além da correção dos guias no topo de Vendas, Raio-X e Vendas da operação. A validação técnica não substitui a aceitação gerencial dos dados oficiais pelo usuário. Não iniciar automaticamente o bloco de Acompanhamento.
+Prioridade atual: fase 4 — Acompanhamento, autorizada e implementada em 01/11/2026, detalhada em AUDITORIA_ACOMPANHAMENTO.md. Tarefas, Promoções e Ads receberam revisão de leitura, fila, fontes, registro e histórico. A validação técnica não substitui a aceitação gerencial dos dados oficiais pelo usuário. Não iniciar automaticamente a fase 5 — Operação.
 
 ## Diretriz de evolução aprovada pelo usuário
 
@@ -23,7 +23,7 @@ Candidatos para a etapa 2, ainda sujeitos à auditoria das fontes: margem por pe
 | 1 | Resultados → Visão Geral; Gerencial → Panorama | Revisão de hierarquia e critérios implementada e validada tecnicamente em 01/11/2026. Conferência gerencial do usuário pendente. |
 | 2 | Vendas; Raio-X; Gerencial → Vendas da operação | Auditoria funcional implementada; guias devolvidos ao topo e conferidos nas três telas em 01/11/2026. Revisão do gestor pendente. |
 | 3 | Gerencial → Diagnóstico, Anúncios, Publicidade, Full | Implementados e validados tecnicamente em 01/11/2026. Relatório, critérios e limites em AUDITORIA_GERENCIAL.md. Revisão gerencial pendente. |
-| 4 | Acompanhamento → Tarefas, Promoções, Ads | Pendente. Anúncios conserva o estado em breve até existir implementação de origem. |
+| 4 | Acompanhamento → Tarefas, Promoções, Ads | Implementados e validados tecnicamente em 01/11/2026. Histórico escopado e registro atômico; revisão gerencial pendente. Anúncios em breve continua indisponível. |
 | 5 | Operação → Envios, Estoque, Projeção | Pendente. Ordem preservada. |
 | 6 | Resultados → Diário, Marketplaces, Curva ABC, Forecast | Pendente. Forecast permanece na leitura macro. |
 | 7 | Financeiro → DRE; revisão de integração de Metas, Comissão e Administração de usuários | Pendente. Metas, Comissão e Administração já têm entregas próprias; esta etapa revisa integração e consistência, sem declará-las novamente auditadas. |
@@ -117,3 +117,9 @@ As alterações de API são de consulta e contrato de leitura, sem migração de
 Implementação descrita em `AUDITORIA_GERENCIAL.md`. Modelo derivado em `visual/gerencial-modelo.js`, apresentação em `visual/gerencial.js` e `visual/gerencial.css`. O Diagnóstico lista evidências e o que conferir; Anúncios conserva abertura por anúncio/SKU, curva, custo, margem, busca, ordenação, CSV e Raio-X; Publicidade separa atribuição, estimativas e fontes de afiliados; Full conserva as seis leituras e explicita a posição, o horizonte e o alcance do CSV.
 
 76 testes automatizados aprovados (55 anteriores e 21 novos). Os novos testes cobrem separação de afiliados antes do agrupamento, rateio sem duplicação por SKU e com conservação dos centavos, ausência/zero, referência, devoluções fora da base finalizada, cenário, margem Temu, TikTok, fonte sem ID, Full e exportação. Conferidos também temas, celular, carteira e gráficos ampliados com dados exclusivamente fictícios. Nenhuma coleta, fechamento, reprocessamento ou concessão de acesso é feito pela nova apresentação.
+
+## Etapa 4 — Acompanhamento
+
+Relatório e critérios em AUDITORIA_ACOMPANHAMENTO.md. Fonte oficial diferenciada de cálculo local; erro e vazio não geram demandas substitutas. Como ler no topo; prioridades visíveis; competência selecionável; fila por situação/tipo/operação/responsável; comparação contextual sem nota universal; registro, conferência e medição separados. Resultado anterior à última ação não conta como confirmação atual. Referências monetárias de tipos diferentes não são somadas como recuperação garantida.
+
+96 testes aprovados (76 anteriores e 20 novos), além de API e navegador com usuários/dados fictícios. Conferidos registro e recarga, histórico completo, restrição de escrita, carteira, CSV do filtro completo, imagens, falha/vazio/recuperação, comparação, promoções, Ads, calendário, temas e 390 px. Histórico novo usa a autorização de consulta vigente; POST verifica demanda, valida campos e salva registro/estado em transação com hora do servidor. Nenhuma coleta, reprocessamento financeiro, mudança de metas/bônus ou execução em marketplace.

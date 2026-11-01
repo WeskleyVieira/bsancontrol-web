@@ -15,6 +15,7 @@ const lancamento = require("./lancamento");
 const writeStore = require("./datasets-versionados");
 const acessos = require("./acessos");
 const usuarios = require("./usuarios").criarServico(dbx);
+const acompanhamentoRegistros = require('./acompanhamento-registros');
 
 const PORT = process.env.PORT || 8787;
 const SENHA_PADRAO = "bsan@2026";   // quem ainda tem essa é obrigado a trocar no 1º acesso
@@ -89,6 +90,10 @@ const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa,
 async function rotaGET(u, user) {
   if (user && !acessos.rota(user, "GET", u.pathname)) throw Object.assign(new Error("Seu acesso não permite esta consulta."), { status: 403, codigo: "PERMISSAO_NEGADA" });
   const q = Object.fromEntries(u.searchParams);
+  if (u.pathname === '/api/tratativas') {
+    await garantePrecoNovo();
+    return acompanhamentoRegistros.historico(dbx, user, q.demanda_id);
+  }
   const entrada = u.pathname.match(/^\/api\/lancamentos\/(envios|custos|comissao)$/);
   if (entrada) return writeStore.ler(dbx, entrada[1], user);
   if (u.pathname === "/api/health") {
@@ -446,32 +451,12 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && u.pathname === "/api/tratativas") {
       if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
       const o = await body(req);
-      const dem = await dbx.get("SELECT criado_em, gestor FROM demandas WHERE id=?", [o.demanda_id]);
-      if (user && user.perfil === "gestor" && (!user.gestor_ref || !dem || dem.gestor !== user.gestor_ref)) return J(res, { ok: false, erro: "fora do seu escopo" }, 403);
-      // QUEM CARIMBA A HORA É O SERVIDOR, nunca o cliente. O painel manda `registrado_em` com o
-      // relógio da máquina do gestor; aceitá-lo deixava a data de registro — e a `reacao_h`, que é
-      // a métrica de agilidade — reescrevíveis por quem mudasse a data do próprio computador.
-      // Num sistema de cobrança isso corrói exatamente o número que se quer cobrar. `o.registrado_em`
-      // é ignorado de propósito. (A carga vinda das planilhas é outro caminho: lá a data é a que o
-      // gestor digitou na coluna "Data de conclusão", e entra por plano-sheets.js, não por aqui.)
-      const agora = new Date().toISOString();
-      const reacaoH = dem && dem.criado_em ? (new Date(agora) - new Date(dem.criado_em)) / 36e5 : null;
-      // "O que exatamente foi feito" é o registro (16/10/2026: 90% dos gestores já usavam a observação
-      // para isso). Obrigatório no servidor também — o painel pode estar numa versão antiga em cache.
-      if (String(o.obs || "").trim().length < 15) return J(res, { ok: false, erro: "Descreva o que foi feito (pelo menos 15 caracteres)." }, 400);
-      const precoNovo = o.preco_novo != null && o.preco_novo !== "" ? +String(o.preco_novo).replace(",", ".") : null;
-      if (/ajustei o pre/i.test(o.acao || "") && !(precoNovo > 0)) return J(res, { ok: false, erro: "Informe o novo preço de venda." }, 400);
-      // "aguardando terceiro": a data que o gestor dá é quando a coordenação recobra (sem data: 3 dias)
-      const ateBruta = String(o.aguardar_ate || "");
-      const ateData = new Date(ateBruta + "T12:00:00Z");
-      const ate = /^\d{4}-\d{2}-\d{2}$/.test(ateBruta) && !Number.isNaN(ateData.getTime()) && ateData.toISOString().slice(0, 10) === ateBruta ? ateBruta : null;
       await garantePrecoNovo();
-      await dbx.run("INSERT INTO tratativas(demanda_id,gestor,acao,causa,obs,estado,registrado_em,reacao_h,preco_novo,aguardar_ate) VALUES(?,?,?,?,?,?,?,?,?,?)",
-        [o.demanda_id, (user && user.gestor_ref) || o.gestor || "", o.acao || "", o.causa || "", o.obs || "", o.estado || "trat", agora, reacaoH, precoNovo, ate]);
-      if (o.estado) await dbx.run("UPDATE demandas SET estado=? WHERE id=?", [o.estado, o.demanda_id]);
+      // Hora do servidor e carteira vigente; registro e estado gravados na mesma transação.
+      const salvo = await acompanhamentoRegistros.salvar(dbx, user, o);
       // espelha na planilha Google da operação (o bot lê de lá). Assíncrono: não segura a resposta.
       try { require("./espelho-planilhas").agendarPorDemanda(dbx, o.demanda_id); } catch (e) { console.error("[planilhas] " + e.message); }
-      return J(res, { ok: true, reacaoH });
+      return J(res, salvo);
     }
     // ── POST /api/comandos (29/10/2026) — botão "Reaplicar" de uma tarefa "Promo · Execução falhou" ──
     // O online NÃO executa nada: só enfileira um pedido. Quem executa é o fila-comandos.js no PC (onde moram os tokens do ML), que
