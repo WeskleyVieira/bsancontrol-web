@@ -6745,7 +6745,7 @@ function bcPosLogin(){ if(window.bcAposLogin){ window.bcAposLogin(); } else if(t
 function bcTrocarSenha(force){ bcAuthInjectCSS(); let ov=document.getElementById('bc-pwd');
   if(!ov){ ov=document.createElement('div'); ov.id='bc-pwd'; document.body.appendChild(ov); }
   ov.innerHTML=`<div class="bcl-card"><h3>${force?'Defina sua senha':'Trocar senha'}</h3>
-    <p>${force?'Primeiro acesso: troque a senha padrão por uma só sua.':'Escolha uma nova senha.'}</p>
+    <p>${force?'Primeiro acesso: troque a senha temporária que você recebeu por uma só sua, com pelo menos 8 caracteres.':'Escolha uma nova senha, com pelo menos 8 caracteres.'}</p>
     <form onsubmit="return bcPwdSubmit(event)">
     <div class="bcl-f"><label>Senha atual</label><input id="bcp-atual" type="password" autocomplete="current-password"></div>
     <div class="bcl-f"><label>Nova senha</label><input id="bcp-nova" type="password" autocomplete="new-password" placeholder="mín. 8 caracteres"></div>
