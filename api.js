@@ -21,7 +21,6 @@ const resultadosConsultas = require('./resultados-consultas');
 const financeiroConsultas = require('./financeiro-consultas');
 
 const PORT = process.env.PORT || 8787;
-const SENHA_PADRAO = "bsan@2026";   // quem ainda tem essa é obrigado a trocar no 1º acesso
 const AUTH_REQ = process.env.AUTH_REQUIRED === "1";                      // em produção: 1 (exige login)
 // ONLINE (AUTH_REQ): serve só esta pasta e a página enxuta (Acompanhamento). LOCAL: serve o BsanControl do Drive.
 const STATIC_ROOT = AUTH_REQ ? __dirname : path.resolve(__dirname, "..", "..");
