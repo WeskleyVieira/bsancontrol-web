@@ -2,6 +2,8 @@
 
 A migração do tema comum foi concluída anteriormente. Este plano acompanha a revisão aprofundada de leitura, fluxo e funcionamento de cada página. Aplicar o tema não significa concluir a auditoria de uma página. A referência visual é Metas, incluindo tipografia, espaços, hierarquia dos valores, estados discretos e ampliação exclusiva dos gráficos.
 
+Prioridade atual: concluir a revisão gerencial de Visão Geral e Panorama. O usuário autorizou a implementação da fase detalhada em `AUDITORIA_VISAO_PANORAMA_REVISAO.md`. Guias no topo e pré-diagnósticos visíveis após os indicadores; critérios revisados para descrever o recorte e as comparações disponíveis. A validação técnica não substitui a aceitação gerencial do usuário. Não avançar automaticamente para outra área.
+
 ## Diretriz de evolução aprovada pelo usuário
 
 O BsanControl deve apoiar a leitura integrada de todos os pontos do Grupo Bsan e a tomada de decisão para desenvolver empresas, operações, setores, colaboradores e gestores. O modelo atual é revisável: a auditoria pode recomendar novos indicadores, simplificar ou substituir leituras existentes e propor mudanças de estrutura quando houver benefício demonstrável. Preservar recursos e cálculos durante uma migração não os transforma em regras universais e imutáveis.
@@ -18,7 +20,7 @@ Candidatos para a etapa 2, ainda sujeitos à auditoria das fontes: margem por pe
 
 | Etapa | Páginas e modos incluídos | Situação |
 |---|---|---|
-| 1 | Resultados → Visão Geral; Gerencial → Panorama | Implementados e validados tecnicamente. Revisão do gestor pendente. |
+| 1 | Resultados → Visão Geral; Gerencial → Panorama | Revisão de hierarquia e critérios implementada e validada tecnicamente em 01/11/2026. Conferência gerencial do usuário pendente. |
 | 2 | Vendas; Raio-X; Gerencial → Vendas da operação | Implementados e validados tecnicamente. Revisão do gestor pendente. |
 | 3 | Gerencial → Diagnóstico, Anúncios, Publicidade, Full | Pendente. |
 | 4 | Acompanhamento → Tarefas, Promoções, Ads | Pendente. Anúncios conserva o estado em breve até existir implementação de origem. |
@@ -48,12 +50,14 @@ A Visão Geral responde quanto as vendas produziram no recorte e quais operaçõ
 | Variação com referência zero aparentava 0%; comparação automática do Panorama não declarava as datas. | Referência e datas explícitas; ausência não produz variação; base zero permite diferença absoluta, sem percentual fictício. |
 | Margem das vendas zero com Ads gerava valor negativo em reais, mas percentual de 0%. | Percentual divide a margem após Ads pela base vigente. Temu mantém sua base líquida, inclusive na série diária. Não há mudança no valor da margem apurada. |
 | Cache de Ads se mantinha com arrays novos de mesmo tamanho. | Invalidação considera também a identidade das bases recebidas. Mantidas as regras de máximo entre anúncio/campanha, exclusão de afiliados e do Ads já no líquido. |
-| Ausência de gasto atual era tratada como falha de coleta; total negativo de um canal virava afirmação sobre cada venda. | Cobertura e limites declarados sem inferências indevidas. Textos dinâmicos escapados. Sinais complementares ficam em abertura opcional. |
-| Excesso de informação sem distinguir vendas de resultado final. | Indicadores principais primeiro; evolução diária, composição, operações e leituras complementares em sequência. Margem com teto não recebe o nome de lucro final. |
+| Ausência de gasto atual era tratada como falha de coleta; total negativo de um canal virava afirmação sobre cada venda. | Cobertura e limites declarados sem inferências indevidas. Sinais principais ficam visíveis após os indicadores. Métodos e evidências extensas têm abertura opcional. |
+| Excesso de informação sem distinguir vendas de resultado final. | Guia no topo; indicadores, pré-diagnóstico, operações e gráficos em sequência. Metas mensais e apoio consolidado de SKU ficam separados. Margem registrada não recebe o nome de lucro final. |
 
 Cinco gráficos da Visão Geral preservados, incluindo controles de tendência, ampliação e tabela de valores. Rankings de SKU continuam baseados na fonte mensal consolidada, com alcance explicitado. Não passam a representar um recorte por empresa que a fonte não oferece. A média móvel é identificada como até sete pontos, sem presumir sete dias consecutivos.
 
 ## Evidências e limites da etapa 1
+
+Revisão de 01/11/2026: 54 testes automatizados aprovados (46 anteriores e oito novos). A síntese deriva da mesma base dos indicadores; variação por operação não presume zero quando falta referência. Panorama identifica a regra da comparação, a base percentual Temu e a distribuição do Ads mensal. Pedidos e ticket usam IDs e receita identificada, sem substituir pedidos por linhas. A carga não comprova completude do Ads diário e o horário dos extras não é apresentado como coleta individual. O modo executivo da Visão Geral deixa de aplicar meta universal de 15% e não chama toda diferença entre bruto/líquido de taxa. Gráficos ampliados exibem valores monetários com duas casas, sem resíduos de ponto flutuante. Relatório completo e critérios: `AUDITORIA_VISAO_PANORAMA_REVISAO.md`.
 
 - 34 testes automatizados aprovados: nove novos casos de resumo, sete da comparação e 18 de usuários/acessos. Incluem cache real de Ads, composição conciliada, percentuais, ausência/zero, metas e idempotência do integrador.
 - Homologação usa apenas usuários e vendas fictícios em banco isolado. Antes/depois no mesmo recorte: Bsan Shop/Amazon, faturamento R$ 6.202,00, margem das vendas R$ 0,00 e Ads R$ 200,00; margem após Ads permanece -R$ 200,00 e percentual passa de 0,00% a -3,22%. Temu mantém 15,00% sobre líquido, também no gráfico diário.
