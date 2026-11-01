@@ -2,7 +2,7 @@
 
 A migração do tema comum foi concluída anteriormente. Este plano acompanha a revisão aprofundada de leitura, fluxo e funcionamento de cada página. Aplicar o tema não significa concluir a auditoria de uma página. A referência visual é Metas, incluindo tipografia, espaços, hierarquia dos valores, estados discretos e ampliação exclusiva dos gráficos.
 
-Prioridade atual: concluir a revisão gerencial de Visão Geral e Panorama. O usuário autorizou a implementação da fase detalhada em `AUDITORIA_VISAO_PANORAMA_REVISAO.md`. Guias no topo e pré-diagnósticos visíveis após os indicadores; critérios revisados para descrever o recorte e as comparações disponíveis. A validação técnica não substitui a aceitação gerencial do usuário. Não avançar automaticamente para outra área.
+Prioridade atual: revisão do bloco Gerencial autorizado pelo usuário em 01/11/2026, detalhado em `AUDITORIA_GERENCIAL.md`. Inclui Diagnóstico, Anúncios, Publicidade e Full, além da correção dos guias no topo de Vendas, Raio-X e Vendas da operação. A validação técnica não substitui a aceitação gerencial dos dados oficiais pelo usuário. Não iniciar automaticamente o bloco de Acompanhamento.
 
 ## Diretriz de evolução aprovada pelo usuário
 
@@ -21,8 +21,8 @@ Candidatos para a etapa 2, ainda sujeitos à auditoria das fontes: margem por pe
 | Etapa | Páginas e modos incluídos | Situação |
 |---|---|---|
 | 1 | Resultados → Visão Geral; Gerencial → Panorama | Revisão de hierarquia e critérios implementada e validada tecnicamente em 01/11/2026. Conferência gerencial do usuário pendente. |
-| 2 | Vendas; Raio-X; Gerencial → Vendas da operação | Implementados e validados tecnicamente. Revisão do gestor pendente. |
-| 3 | Gerencial → Diagnóstico, Anúncios, Publicidade, Full | Pendente. |
+| 2 | Vendas; Raio-X; Gerencial → Vendas da operação | Auditoria funcional implementada; guias devolvidos ao topo e conferidos nas três telas em 01/11/2026. Revisão do gestor pendente. |
+| 3 | Gerencial → Diagnóstico, Anúncios, Publicidade, Full | Implementados e validados tecnicamente em 01/11/2026. Relatório, critérios e limites em AUDITORIA_GERENCIAL.md. Revisão gerencial pendente. |
 | 4 | Acompanhamento → Tarefas, Promoções, Ads | Pendente. Anúncios conserva o estado em breve até existir implementação de origem. |
 | 5 | Operação → Envios, Estoque, Projeção | Pendente. Ordem preservada. |
 | 6 | Resultados → Diário, Marketplaces, Curva ABC, Forecast | Pendente. Forecast permanece na leitura macro. |
@@ -102,6 +102,8 @@ Margem por pedido completo e taxa de devolução por coorte ficam como propostas
 
 ### Verificação e implementação
 
+Revisão de 01/11/2026: removida a ordenação CSS `order:99` que levava o Como ler ao fim nas três páginas. O guia agora é o primeiro elemento e tem ordem visual -1. Confirmados no navegador Vendas, Raio-X e Vendas da operação. A auditoria funcional anterior foi preservada; a posição inadequada do guia foi uma inconsistência da revisão visual, não uma mudança de fonte ou fórmula financeira.
+
 46 testes automatizados aprovados: 12 específicos desta etapa e 34 anteriores. Incluem conciliação entre SQL e modelo local, filtros literais com `%`/`_`, paginação, base Temu, margem real ausente, R$ 85,01 em dois itens, precisão/sinal/ausência no CSV, escape de campos e idempotência dos ajustes de origem.
 
 API e navegador foram conferidos somente com usuários e dados fictícios em banco isolado: 202 linhas em cinco páginas, 199 finalizadas, faturamento R$ 77.232,50 e margem com teto R$ 13.069,92. A soma das páginas concilia com o resumo no mesmo filtro. A fixture sem API reproduziu os mesmos totais e exportou 203 linhas no CSV (cabeçalho + 202 registros). Conferidos busca, status, margem negativa, colunas, ordenação, detalhe, Raio-X, ampliação e carteiras da Direção/Gestor, além de claro/escuro e largura de 390 px. Falha de rede controlada e recuperação também conferidas. A conferência gerencial dos dados oficiais permanece pendente.
@@ -109,3 +111,9 @@ API e navegador foram conferidos somente com usuários e dados fictícios em ban
 Módulo de definições `vendas-indicadores.js`, compartilhado com o servidor; agregação SQL em `vendas-pagina.js`; apresentação em `visual/vendas.js` e `visual/vendas.css`; ajustes guardados/idempotentes em `visual/vendas-correcoes.js`. O Pipeline deve copiar esses arquivos, reaplicar `visual/integrar.js` e preservar o ajuste de navegação em `visual/resumos.js`.
 
 As alterações de API são de consulta e contrato de leitura, sem migração de banco, concessão de acesso, coleta de plataformas, reprocessamento, mudança de fotos fechadas ou cálculo de bônus. Vendas continua paginada no servidor e o detalhe permanece carregado sob demanda. Atualizações da base seguem o mecanismo de sincronização/invalidação existente; esta etapa não cria uma foto financeira imutável de consultas feitas durante uma atualização.
+
+## Etapa 3 — Diagnóstico, Anúncios, Publicidade e Full
+
+Implementação descrita em `AUDITORIA_GERENCIAL.md`. Modelo derivado em `visual/gerencial-modelo.js`, apresentação em `visual/gerencial.js` e `visual/gerencial.css`. O Diagnóstico lista evidências e o que conferir; Anúncios conserva abertura por anúncio/SKU, curva, custo, margem, busca, ordenação, CSV e Raio-X; Publicidade separa atribuição, estimativas e fontes de afiliados; Full conserva as seis leituras e explicita a posição, o horizonte e o alcance do CSV.
+
+75 testes automatizados aprovados (55 anteriores e 20 novos). Os novos testes cobrem separação de afiliados antes do agrupamento, rateio sem duplicação por SKU e com conservação dos centavos, ausência/zero, referência, devoluções fora da base finalizada, cenário, margem Temu, TikTok, fonte sem ID, Full e exportação. Conferidos também temas, celular, carteira e gráficos ampliados com dados exclusivamente fictícios. Nenhuma coleta, fechamento, reprocessamento ou concessão de acesso é feito pela nova apresentação.
