@@ -29,7 +29,7 @@ function criarServico(db,{userReferences=async()=>[]}={}){
  async function salvar(ator,input){autorizar(ator);await schema();return transacao(async tx=>{
   const id=input.id==null?null:Number(input.id);if(id!==null&&(!Number.isSafeInteger(id)||id<1))throw falha(400,'Usuário inválido.');
   const nome=String(input.nome||'').trim(),email=String(input.email||'').trim().toLowerCase(),perfil=String(input.perfil||'');
-  if(!nome||nome.length>100||!email||email.length>180||!/^[^\s@]+@[^\s@]+$/.test(email))throw falha(400,'Informe nome e login/e-mail válidos.');if(!['direcao','coordenacao','gestor','compradora','estoque'].includes(perfil))throw falha(400,'Escolha um perfil válido.');
+  if(!nome||nome.length>100||!email||email.length>180||!/^[^\s@]+@[^\s@]+$/.test(email))throw falha(400,'Informe nome e login/e-mail válidos.');if(!['direcao','coordenacao','gestor','compradora','estoque','posvenda'].includes(perfil))throw falha(400,'Escolha um perfil válido.');
   const gestor=perfil==='gestor'?String(input.gestor_ref||'').trim():null;if(perfil==='gestor'&&(!gestor||!await tx.get('SELECT 1 ok FROM operacoes WHERE gestor=? LIMIT 1',[gestor])))throw falha(400,'Escolha uma carteira cadastrada.');
   const ativo=input.ativo===false||input.ativo===0?0:1;let r;try{r=acessos.normalizar(perfil,input.restricoes||{});}catch(e){throw falha(400,e.message);}
   const old=id?await tx.get('SELECT id,nome,email,perfil,gestor_ref,ativo,senha FROM usuarios WHERE id=?',[id]):null;if(id&&!old)throw falha(404,'Usuário não encontrado.');const duplicate=await tx.get('SELECT id FROM usuarios WHERE LOWER(email)=?',[email]);if(duplicate&&+duplicate.id!==id)throw falha(409,'Este login já está sendo utilizado.','LOGIN_DUPLICADO');

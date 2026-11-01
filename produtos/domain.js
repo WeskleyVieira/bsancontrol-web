@@ -23,6 +23,7 @@ function legacyCents(v) {
 }
 function capabilities(user, grants = []) {
   if (!user || user.ativo === 0 || user.ativo === false) fail('Entre com uma conta ativa.', 401);
+  if(user.perfil==='posvenda')fail('Este perfil acessa somente Pós-venda.',403);
   const resource=key=>!user.efetivas||user.efetivas[key]===true;
   if(!resource('produtos.ver'))fail('Seu acesso não permite consultar Produtos.',403);
   const admin = user.perfil === 'direcao';

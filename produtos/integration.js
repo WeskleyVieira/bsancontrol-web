@@ -1,7 +1,7 @@
 "use strict";
 const {openStore}=require('./store');const {createService}=require('./service');const {createHttp,json}=require('./http');
 const path=require('node:path');
-const RESTRICTED=new Set(['estoque','compradora']);
+const RESTRICTED=new Set(['estoque','compradora','posvenda']);
 const approvalEligible=require('../acessos').aprovador;
 function createIntegration({dbx,userDe,mustChangePassword,resolveSession}){
  let promise, productStore;

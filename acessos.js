@@ -2,6 +2,7 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.BCAcessos=api;})(typeof window==='object'?window:this,function(){
  'use strict';
  const todos=['direcao','coordenacao','gestor'];
+ const posvenda=[...todos,'posvenda'];
  const produtos=['direcao','coordenacao','gestor','compradora','estoque'];
  const financeiro=['direcao','coordenacao','gestor','compradora'];
  const catalogo=[
@@ -14,8 +15,8 @@
   {id:'estoque.ver',nome:'Estoque e planejamento',grupo:'Visualização',perfis:todos,descricao:'Estoque, Projeção e dados de Full. Full também exige Gestão e Dados de vendas.'},
   {id:'envios.ver',nome:'Consultar Envios',grupo:'Visualização',perfis:todos,descricao:'Contagens de coleta, Flex e Full registradas por operação.'},
   {id:'acompanhamento.ver',nome:'Consultar Acompanhamento',grupo:'Visualização',perfis:todos,descricao:'Tarefas, Promoções e Ads dentro da carteira autorizada.'},
-  {id:'posvenda.ver',nome:'Consultar Pós-venda',grupo:'Pós-venda',perfis:todos,requer:'vendas.ver',descricao:'Atendimentos de clientes. Gestor limitado à própria carteira.'},
-  {id:'posvenda.tratar',nome:'Registrar atendimentos e ações',grupo:'Pós-venda',perfis:todos,requer:'posvenda.ver',descricao:'Abrir atendimentos, registrar ações, definir responsável e prazo e atualizar a situação.'},
+  {id:'posvenda.ver',nome:'Consultar Pós-venda',grupo:'Pós-venda',perfis:posvenda,requer:'vendas.ver',requerExceto:['posvenda'],descricao:'Atendimentos de clientes. Gestor limitado à própria carteira.'},
+  {id:'posvenda.tratar',nome:'Registrar atendimentos e ações',grupo:'Pós-venda',perfis:posvenda,requer:'posvenda.ver',descricao:'Abrir atendimentos, registrar ações, definir responsável e prazo e atualizar a situação.'},
   {id:'comissao.ver',nome:'Consultar Comissão',grupo:'Visualização',perfis:todos,descricao:'Gestor: registros da própria carteira. Coordenação e Direção: escopo atual do perfil.'},
   {id:'dre.ver',nome:'Consultar DRE',grupo:'Visualização',perfis:['direcao'],descricao:'Custos e resultado financeiro. Exclusivo da Direção.'},
   {id:'acompanhamento.tratar',nome:'Registrar tratativas',grupo:'Ações',perfis:todos,requer:'acompanhamento.ver',descricao:'Registrar ações nas demandas autorizadas.'},
@@ -24,7 +25,8 @@
   {id:'dre.lancar',nome:'Lançar custos da DRE',grupo:'Ações',perfis:['direcao'],requer:'dre.ver',descricao:'Preencher e importar custos. Exclusivo da Direção.'}
  ];
  function base(perfil){return Object.fromEntries(catalogo.map(r=>[r.id,r.perfis.includes(perfil)]));}
- function efetivas(perfil,restricoes={}){const out=base(perfil);for(const r of catalogo)if(restricoes[r.id]===false)out[r.id]=false;for(const r of catalogo)if(r.requer&&!out[r.requer])out[r.id]=false;return out;}
+ function dependencia(item,perfil){return item.requer&&!item.requerExceto?.includes(perfil)?item.requer:null;}
+ function efetivas(perfil,restricoes={}){const out=base(perfil);for(const r of catalogo)if(restricoes[r.id]===false)out[r.id]=false;for(const r of catalogo){const required=dependencia(r,perfil);if(required&&!out[required])out[r.id]=false;}return out;}
  function normalizar(perfil,value){if(!value||typeof value!=='object'||Array.isArray(value))throw Error('As restrições de acesso são inválidas.');const out={},limites=base(perfil);for(const [key,v]of Object.entries(value)){if(!Object.hasOwn(limites,key)||typeof v!=='boolean')throw Error('Permissão inválida: '+key);if(v&&!limites[key])throw Error('Esta permissão é exclusiva de outro perfil.');if(v===false&&limites[key])out[key]=false;}return out;}
  function aprovador(user){return !!user&&(user.perfil==='compradora'||user.perfil==='direcao'&&String(user.email||'').toLowerCase()==='weskley@grupobsan');}
  function efetivasUsuario(user){const out=efetivas(user.perfil,user.restricoes||{});if(!aprovador(user))out['produtos.custos.aprovar']=false;return out;}
@@ -33,8 +35,9 @@
  function rota(user,method,path){
   if(path==='/api/health'||path==='/api/sessao'||path==='/api/trocar-senha')return true;
   if(path==='/api/produtos'||path.startsWith('/api/produtos/'))return pode(user,'produtos.ver');
+  if(path==='/api/pos-venda/acessos')return user?.perfil==='direcao';
   if(path.startsWith('/api/pos-venda/'))return pode(user,method==='POST'?'posvenda.tratar':'posvenda.ver');
-  if(['estoque','compradora'].includes(user?.perfil))return false;
+  if(['estoque','compradora','posvenda'].includes(user?.perfil))return false;
   if(path.startsWith('/api/admin/'))return user?.perfil==='direcao';
   if(['/api/dataset','/api/detalhe','/api/vendas','/api/vendas-agregado'].includes(path))return pode(user,'vendas.ver');
   if(['/api/abertura','/api/historico','/api/equipe'].includes(path))return pode(user,'gestao.ver')||pode(user,'acompanhamento.ver');
@@ -57,5 +60,5 @@
   if(!can('comissao.lancar'))delete d._versions.comissao;
   return d;
  }
- return{catalogo,base,efetivas,efetivasUsuario,aprovador,normalizar,pode,pagina,rota,filtrarExtras};
+ return{catalogo,base,dependencia,efetivas,efetivasUsuario,aprovador,normalizar,pode,pagina,rota,filtrarExtras};
 });
