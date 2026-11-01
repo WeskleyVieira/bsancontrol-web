@@ -14,8 +14,8 @@ function consultaVendas(q) {
   if (p.ponto) { w.push("ponto=?"); args.push(p.ponto); }
   const busca = String(p.q || "").trim().toLowerCase();
   if (busca) {
-    const like = "%" + busca + "%";
-    w.push("(LOWER(COALESCE(sku,'')) LIKE ? OR LOWER(COALESCE(titulo,'')) LIKE ? OR LOWER(COALESCE(pedido,'')) LIKE ? OR LOWER(COALESCE(anuncio_id,'')) LIKE ?)");
+    const like = "%" + busca.replace(/[!%_]/g, "!$&") + "%";
+    w.push("(LOWER(COALESCE(sku,'')) LIKE ? ESCAPE '!' OR LOWER(COALESCE(titulo,'')) LIKE ? ESCAPE '!' OR LOWER(COALESCE(pedido,'')) LIKE ? ESCAPE '!' OR LOWER(COALESCE(anuncio_id,'')) LIKE ? ESCAPE '!')");
     args.push(like, like, like, like);
   }
   if (String(p.neg) === "1") w.push("COALESCE(mc_comissao_n,mc_comissao) < 0");
@@ -28,4 +28,8 @@ function consultaVendas(q) {
   const dir = String(p.dir) === "1" ? "ASC" : "DESC";
   return { where: w.join(" AND "), args, base, baseArgs, order: col + " " + dir + ", id ASC", limite, offset: pagina * limite, pagina };
 }
-module.exports = { consultaVendas };
+function resumoVendasSQL(c){
+  const numeric=k=>`CAST(COALESCE(${k}_n,CAST(${k} AS NUMERIC)) AS DOUBLE PRECISION)`,fat=numeric('receita'),mc=numeric('mc_comissao'),liq=numeric('liquido'),ctp=numeric('ctp'),final="status IN ('venda','venda_com_troca')",fonte="LOWER(COALESCE(fonte_liquido,''))",prov=`(${fonte} LIKE '%provis%ri%' OR ${fonte} LIKE '%estimativa%' OR ${fonte} LIKE '%pendente%' OR ${fonte} LIKE '%estimado%' OR ${fonte} LIKE '%incompleto%')`,sum=(expr,condition=final)=>`SUM(CASE WHEN ${condition} THEN ${expr} ELSE 0 END)`;
+  return{sql:`SELECT COUNT(*) AS linhas, ${sum('1')} AS finalizadas, ${sum('qtd')} AS unidades, ${sum(fat)} AS faturamento, ${sum(mc)} AS margem, ${sum(`CASE WHEN LOWER(canal) LIKE '%temu%' THEN ${liq} ELSE ${fat} END`)} AS base, ${sum(ctp)} AS ctp, ${sum('1',`${final} AND ${mc}<0`)} AS negativas, ${sum(mc,`${final} AND ${mc}<0`)} AS "margemNegativa", ${sum('1',`${final} AND ${prov}`)} AS provisorias, ${sum(liq,`${final} AND ${prov}`)} AS "liquidoProvisorio", ${sum('1',`${final} AND TRIM(COALESCE(fonte_liquido,''))=''`)} AS "semFonte" FROM vendas WHERE ${c.where}`,args:c.args};
+}
+module.exports = { consultaVendas, resumoVendasSQL };

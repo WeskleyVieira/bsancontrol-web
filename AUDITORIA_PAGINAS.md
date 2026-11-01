@@ -2,12 +2,24 @@
 
 A migração do tema comum foi concluída anteriormente. Este plano acompanha a revisão aprofundada de leitura, fluxo e funcionamento de cada página. Aplicar o tema não significa concluir a auditoria de uma página. A referência visual é Metas, incluindo tipografia, espaços, hierarquia dos valores, estados discretos e ampliação exclusiva dos gráficos.
 
+## Diretriz de evolução aprovada pelo usuário
+
+O BsanControl deve apoiar a leitura integrada de todos os pontos do Grupo Bsan e a tomada de decisão para desenvolver empresas, operações, setores, colaboradores e gestores. O modelo atual é revisável: a auditoria pode recomendar novos indicadores, simplificar ou substituir leituras existentes e propor mudanças de estrutura quando houver benefício demonstrável. Preservar recursos e cálculos durante uma migração não os transforma em regras universais e imutáveis.
+
+Cada proposta deve apresentar a pergunta atendida, a decisão apoiada, o público e o alcance, a definição e fórmula, a origem e cobertura dos dados, a frequência de atualização, o comportamento sem dados e um exemplo visual ou fluxo de implementação. Diferenciar indicador disponível, indicador derivável com a base existente e indicador dependente de nova coleta. Não apresentar como realizado o que é estimativa nem como zero o que está ausente.
+
+Metas, referências e cores de desempenho devem considerar o modelo de negócio, o canal, a maturidade da operação, o período e os fatores sob controle de cada responsável. Comparações de colaboradores e gestores devem explicitar carteira, recursos disponíveis e contexto; volume isolado não comprova eficiência ou desempenho individual. Novos indicadores devem contribuir para uma decisão identificável, com aprofundamento na área apropriada, sem duplicar demandas e tratativas em várias páginas.
+
+Mudanças na definição de resultado, remuneração, fechamento ou série histórica devem declarar impacto, diferença em relação à regra vigente e estratégia de transição. Propor e demonstrar uma mudança é distinto de aplicá-la retroativamente. As restrições de acesso existentes continuam válidas até uma alteração expressamente autorizada.
+
+Candidatos para a etapa 2, ainda sujeitos à auditoria das fontes: margem por pedido; participação e valor da margem negativa; cancelamentos e devoluções com separação entre receita afetada e perda efetiva; cobertura da liquidação para distinguir valores provisórios de confirmados. Apresentar a utilidade e a implementação possível antes de tratá-los como indicadores aprovados.
+
 ## Sequência e situação
 
 | Etapa | Páginas e modos incluídos | Situação |
 |---|---|---|
 | 1 | Resultados → Visão Geral; Gerencial → Panorama | Implementados e validados tecnicamente. Revisão do gestor pendente. |
-| 2 | Vendas; Raio-X; Gerencial → Vendas da operação | Pendente. Próxima etapa. |
+| 2 | Vendas; Raio-X; Gerencial → Vendas da operação | Implementados e validados tecnicamente. Revisão do gestor pendente. |
 | 3 | Gerencial → Diagnóstico, Anúncios, Publicidade, Full | Pendente. |
 | 4 | Acompanhamento → Tarefas, Promoções, Ads | Pendente. Anúncios conserva o estado em breve até existir implementação de origem. |
 | 5 | Operação → Envios, Estoque, Projeção | Pendente. Ordem preservada. |
@@ -53,3 +65,43 @@ Cinco gráficos da Visão Geral preservados, incluindo controles de tendência, 
 - A homologação técnica não substitui a conferência gerencial dos dados oficiais, filtros, envios e entregas que o usuário reservou para sua revisão.
 
 Módulos: `visual/resumos-modelo.js`, `visual/resumos-correcoes.js`, `visual/resumos.js` e `visual/resumos.css`. Integração idempotente em `visual/integrar.js`; Pipeline copia os quatro assets e registra a janela carregada no loader para distinguir recorte de competência mensal.
+
+## Etapa 2 — Vendas, Vendas da operação e Raio-X
+
+Vendas permite consultar e conferir itens no filtro inteiro, preservando a paginação no banco. Vendas da operação apresenta o mesmo tipo de leitura dentro da conta e da carteira autorizada, com a abertura de custos própria do canal. Raio-X aprofunda um SKU entre as empresas, canais e datas selecionados, usando a margem real disponível na base e declarando quando utiliza a margem de origem por falta dessa informação.
+
+### Indicadores e decisões
+
+| Leitura | Definição e origem | Uso e limite |
+|---|---|---|
+| Faturamento, margem com teto, percentual e unidades finalizadas | Agregação das linhas com status `venda` ou `venda_com_troca`, respeitando os mesmos filtros da tabela. No online, o servidor agrega o filtro inteiro, sem limitar às 50 linhas da página. | Conferir o resultado registrado antes dos custos adicionais da apuração. Não substitui lucro final ou bônus. |
+| Margem média por unidade | Margem das finalizadas / quantidade dessas linhas. | Média contextual do mix consultado, mais útil ao aprofundar um SKU. Não é uma régua universal entre produtos de unidades diferentes. |
+| Margem negativa dos itens | Soma da margem das linhas finalizadas abaixo de zero, quantidade e participação nas finalizadas do filtro. | Localizar itens para investigação. Não equivale a pedido inteiro com prejuízo nem a dinheiro garantidamente recuperável. |
+| Provisoriedade e ausência de origem | Marcador de provisoriedade da fonte, inclusive com acentos; quantidade de linhas e soma de líquido provisório. Fonte ausente contabilizada separadamente. | Saber quanto da leitura ainda pode mudar. Ausência de marcador não comprova liquidação ou recebimento. |
+| Margem real e cobertura no Raio-X | Usa a margem real quando informada; quando ausente, conserva a margem de origem e identifica o total como disponível/misto, com quantidade de linhas afetadas. | Evitar apresentar zero como margem real conhecida. O detalhe online recebe apenas um sinal booleano de presença, derivado da coluna já consultada; não recebe abertura de custos adicional. |
+| Situações e devoluções do SKU | Linhas, unidades, receita e margem registradas por situação dentro do intervalo. | Devolução no recorte pode pertencer a venda de outro período. Substitui a antiga taxa/veredito automático como medida de qualidade do produto. |
+
+O percentual respeita `mcBase`: receita nos demais canais e líquido na Temu. No Raio-X, o resumo passa a respeitar a mesma base usada na tabela por canal. Não se aplica uma classificação universal de 10%/20% nestas leituras. A margem com teto de Vendas e a margem real do Raio-X mantêm nomes distintos; não devem ser comparadas como definições idênticas. A Visão Geral conserva sua leitura de margem sobre faturamento, identificada como tal.
+
+Margem por pedido completo e taxa de devolução por coorte ficam como propostas dependentes de vínculo e cobertura adequados de todos os itens, vendas e devoluções do pedido. Contar linhas como pedidos ou dividir eventos de períodos diferentes produziria uma leitura enganosa; nenhum desses indicadores foi declarado disponível nesta etapa.
+
+### Fluxos e correções
+
+- Colunas essenciais ou completas, ordenação por botões acessíveis e detalhe por item no começo da linha, disponível durante a rolagem horizontal. O detalhe preserva o link externo de venda quando aplicável e abre o Raio-X mantendo o período e o escopo.
+- Filtros ativos declarados junto da consulta. Alterar busca, empresa, canal, ponto, datas ou status reinicia a página; a mudança de página mantém o resumo completo.
+- Online: Exportar página CSV identifica o alcance real de 50 linhas. Local e Vendas da operação: Exportar filtro CSV baixa as linhas do filtro completo. Campos financeiros existentes e proteção contra fórmulas preservados; percentual com duas casas; custo de plataforma da operação conserva o sinal exibido na tela. Custos sem abertura ficam vazios no CSV, enquanto zero informado continua zero.
+- A abertura distingue custo zero de campo não informado, dentro da presença que a fonte disponibiliza. Não recupera informação de ausência que já tenha sido convertida em zero pela coleta anterior.
+- Títulos, situações e modalidades de envio entram como texto escapado. A situação da venda continua separada de sua provisoriedade financeira.
+- Falha de consulta retira os indicadores anteriores, bloqueia a exportação e oferece Tentar novamente. Vazio não fabrica percentual de 0%.
+- Raio-X preserva preço médio, custo médio unitário, pedidos identificados, evolução mensal e contribuição por operação. O custo é o registrado na base, sem atribuir uma foto histórica da Precifique que não existe. A evolução mensal passa a gráfico ampliável com tabela de valores. Meses parciais não recebem automaticamente os antigos vereditos de alta/queda ou estabilidade.
+- Corrigido o atalho Panorama → Ver vendas da operação, que usava o identificador anterior da navegação agrupada.
+
+### Verificação e implementação
+
+46 testes automatizados aprovados: 12 específicos desta etapa e 34 anteriores. Incluem conciliação entre SQL e modelo local, filtros literais com `%`/`_`, paginação, base Temu, margem real ausente, R$ 85,01 em dois itens, precisão/sinal/ausência no CSV, escape de campos e idempotência dos ajustes de origem.
+
+API e navegador foram conferidos somente com usuários e dados fictícios em banco isolado: 202 linhas em cinco páginas, 199 finalizadas, faturamento R$ 77.232,50 e margem com teto R$ 13.069,92. A soma das páginas concilia com o resumo no mesmo filtro. A fixture sem API reproduziu os mesmos totais e exportou 203 linhas no CSV (cabeçalho + 202 registros). Conferidos busca, status, margem negativa, colunas, ordenação, detalhe, Raio-X, ampliação e carteiras da Direção/Gestor, além de claro/escuro e largura de 390 px. Falha de rede controlada e recuperação também conferidas. A conferência gerencial dos dados oficiais permanece pendente.
+
+Módulo de definições `vendas-indicadores.js`, compartilhado com o servidor; agregação SQL em `vendas-pagina.js`; apresentação em `visual/vendas.js` e `visual/vendas.css`; ajustes guardados/idempotentes em `visual/vendas-correcoes.js`. O Pipeline deve copiar esses arquivos, reaplicar `visual/integrar.js` e preservar o ajuste de navegação em `visual/resumos.js`.
+
+As alterações de API são de consulta e contrato de leitura, sem migração de banco, concessão de acesso, coleta de plataformas, reprocessamento, mudança de fotos fechadas ou cálculo de bônus. Vendas continua paginada no servidor e o detalhe permanece carregado sob demanda. Atualizações da base seguem o mecanismo de sincronização/invalidação existente; esta etapa não cria uma foto financeira imutável de consultas feitas durante uma atualização.

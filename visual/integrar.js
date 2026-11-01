@@ -1,6 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {corrigir}=require('./resumos-correcoes');
-const css=['areas.css','comparacao.css','resumos.css'].map(f=>fs.readFileSync(path.join(__dirname,f),'utf8').replace(/\r\n/g,'\n')).join('\n'),js=['areas.js','comparacao.js','resumos-modelo.js','resumos.js'].map(f=>fs.readFileSync(path.join(__dirname,f),'utf8').replace(/\r\n/g,'\n')).join('\n');new vm.Script(js);
+const {corrigirVendas}=require('./vendas-correcoes');
+const css=['areas.css','comparacao.css','resumos.css','vendas.css'].map(f=>fs.readFileSync(path.join(__dirname,f),'utf8').replace(/\r\n/g,'\n')).join('\n'),js=['areas.js','comparacao.js','resumos-modelo.js','resumos.js','../vendas-indicadores.js','vendas.js'].map(f=>fs.readFileSync(path.join(__dirname,f),'utf8').replace(/\r\n/g,'\n')).join('\n');new vm.Script(js);
 function presentation(html){
  html=html.replace('placeholder="mín. 6 caracteres"','placeholder="mín. 8 caracteres"').replace('if(nova.length<6)','if(nova.length<8)').replace('A nova senha precisa de ao menos 6 caracteres.','A nova senha precisa de ao menos 8 caracteres.');
  // O estado do repasse fica junto do líquido, sem substituir a situação da venda.
@@ -24,6 +25,6 @@ function users(html){
  html=html.replace(/<script id="bc-users-(?:policy|module)">[\s\S]*?<\/script>\n?/g,'');
  return html.replace(/\s*<\/body>/,'\n<script id="bc-users-policy">'+policy+'</script>\n<script id="bc-users-module">'+ui+'</script>\n</body>');
 }
-function apply(html){html=presentation(corrigir(html.replace(/\r\n/g,'\n')));const style='<style id="bc-areas-visual">'+css+'</style>';html=html.includes('id="bc-areas-visual"')?html.replace(/<style id="bc-areas-visual">[\s\S]*?<\/style>/,()=>style):html.replace('</head>',style+'</head>');const marker='<!-- ===== BsanControl ONLINE';const module='<script id="bc-areas-module">'+js+'</script>\n';if(html.includes('id="bc-areas-module"'))html=html.replace(/<script id="bc-areas-module">[\s\S]*?<\/script>\n?/,()=>module);else if(html.includes(marker))html=html.replace(marker,module+marker);else html=html.replace('</body>',module+'</body>');return users(html.replace(/(?:\r?\n){2,}(?=<script id="bc-areas-module">)/g,'\n').replace(/(?:\r?\n)+(?=<!-- ===== BsanControl ONLINE)/g,'\n\n')); }
+function apply(html){html=presentation(corrigirVendas(corrigir(html.replace(/\r\n/g,'\n'))));const style='<style id="bc-areas-visual">'+css+'</style>';html=html.includes('id="bc-areas-visual"')?html.replace(/<style id="bc-areas-visual">[\s\S]*?<\/style>/,()=>style):html.replace('</head>',style+'</head>');const marker='<!-- ===== BsanControl ONLINE';const module='<script id="bc-areas-module">'+js+'</script>\n';if(html.includes('id="bc-areas-module"'))html=html.replace(/<script id="bc-areas-module">[\s\S]*?<\/script>\n?/,()=>module);else if(html.includes(marker))html=html.replace(marker,module+marker);else html=html.replace('</body>',module+'</body>');return users(html.replace(/(?:\r?\n){2,}(?=<script id="bc-areas-module">)/g,'\n').replace(/(?:\r?\n)+(?=<!-- ===== BsanControl ONLINE)/g,'\n\n')); }
 
 module.exports={apply,presentation};

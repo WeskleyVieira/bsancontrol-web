@@ -1,0 +1,14 @@
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.BCVendasModelo=api;})(typeof window==='object'?window:this,function(){
+ 'use strict';
+ const number=v=>Number(v)||0,fin=r=>['venda','venda_com_troca'].includes(String(r.stat||'')),provisorio=v=>/provisori[oa]|estimativa|pendente|estimado|incompleto/.test(String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase());
+ const temReal=r=>r.mcRealInformada!==false&&r.mcReal!=null&&r.mcReal!=='';
+ const empty=()=>({linhas:0,finalizadas:0,unidades:0,faturamento:0,margem:0,base:0,ctp:0,negativas:0,margemNegativa:0,provisorias:0,liquidoProvisorio:0,semFonte:0,semMargemReal:0});
+ function linhas(rows,{real=false,base=(m,f,l)=>/temu/i.test(m)?number(l):number(f)}={}){const out=empty();out.linhas=rows.length;for(const r of rows){if(!fin(r))continue;out.finalizadas++;out.unidades+=number(r.qtd);out.faturamento+=number(r.fat);const mc=number(real&&temReal(r)?r.mcReal:r.mc);if(real&&!temReal(r))out.semMargemReal++;out.margem+=mc;out.ctp+=number(r.ctp);out.base+=base(r.mkt,number(r.fat),number(r.liq));if(mc<0){out.negativas++;out.margemNegativa+=mc;}if(provisorio(r.fonte)){out.provisorias++;out.liquidoProvisorio+=number(r.liq);}if(!String(r.fonte||'').trim())out.semFonte++;}return completar(out);}
+ function completar(out){out={...empty(),...out};for(const k of Object.keys(empty()))out[k]=number(out[k]);return{...out,percentual:out.base?100*out.margem/out.base:null,margemUnidade:out.unidades?out.margem/out.unidades:null,participacaoNegativa:out.finalizadas?100*out.negativas/out.finalizadas:null,participacaoProvisoria:out.finalizadas?100*out.provisorias/out.finalizadas:null};}
+ function raio(rows){const vendas=rows.filter(fin),resumo=linhas(rows,{real:true}),months=new Map(),ops=new Map(),status=new Map(),pedidos=new Set();let identificadas=0;
+  for(const r of rows){const k=r.stat||'sem status',s=status.get(k)||{status:k,linhas:0,unidades:0,receita:0,margem:0};s.linhas++;s.unidades+=number(r.qtd);s.receita+=number(r.fat);s.margem+=number(temReal(r)?r.mcReal:r.mc);status.set(k,s);}
+  for(const r of vendas){const month=String(r.date).slice(0,7);if(!months.has(month))months.set(month,[]);months.get(month).push(r);const k=JSON.stringify([r.emp,r.mkt]);if(!ops.has(k))ops.set(k,[]);ops.get(k).push(r);if(String(r.ped||'').trim()){pedidos.add(JSON.stringify([r.emp,r.mkt,r.ped]));identificadas++;}}
+  return{resumo,title:vendas.find(r=>r.tit)?.tit||rows.find(r=>r.tit)?.tit||'',pedidos:pedidos.size,semPedido:vendas.length-identificadas,meses:[...months].sort(([a],[b])=>a.localeCompare(b)).map(([mes,list])=>({mes,...linhas(list,{real:true})})),operacoes:[...ops.values()].map(list=>({emp:list[0].emp,mkt:list[0].mkt,...linhas(list,{real:true})})).sort((a,b)=>b.margem-a.margem),status:[...status.values()]};
+ }
+ return{fin,provisorio,linhas,completar,raio};
+});

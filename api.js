@@ -9,7 +9,8 @@ const dbx = require("./dbx");
 // token do cache-bust: hash do DATABASE_URL (quem tem a conexão pode limpar — zero config novo)
 const BUST_TOKEN = crypto.createHash("sha256").update(process.env.DATABASE_URL || "sem-db").digest("hex");
 const { hashSenha, verificaSenha, assinaToken, verificaToken } = require("./auth");
-const { consultaVendas } = require("./vendas-pagina");
+const { consultaVendas, resumoVendasSQL } = require("./vendas-pagina");
+const { completar: completarResumoVendas } = require("./vendas-indicadores");
 const lancamento = require("./lancamento");
 const writeStore = require("./datasets-versionados");
 const acessos = require("./acessos");
@@ -147,7 +148,8 @@ async function rotaGET(u, user) {
     const c = consultaVendas(q);
     const fat = "CAST(COALESCE(receita_n,CAST(receita AS NUMERIC)) AS DOUBLE PRECISION)";
     const par = (n, v) => ({ n: +n || 0, v: Math.round((+v || 0) * 100) / 100 });
-    const [kpiRow, linhas] = await Promise.all([
+    const resumoQuery=resumoVendasSQL(c);
+    const [kpiRow, linhas, resumoRow] = await Promise.all([
       dbx.get(`SELECT COUNT(*) n,
         SUM(CASE WHEN status IN ('venda','venda_com_troca') THEN 1 ELSE 0 END) n_fin,
         SUM(CASE WHEN status='pendente' THEN 1 ELSE 0 END) n_pen,
@@ -164,7 +166,8 @@ async function rotaGET(u, user) {
       dbx.all(`SELECT data AS date, empresa AS emp, canal AS mkt, ponto, sku, anuncio_id AS anuncio, titulo AS tit, pedido AS ped,
         qtd, ${fat} AS fat, CAST(COALESCE(liquido_n,CAST(liquido AS NUMERIC)) AS DOUBLE PRECISION) AS liq, CAST(COALESCE(ctp_n,CAST(ctp AS NUMERIC)) AS DOUBLE PRECISION) AS ctp, CAST(COALESCE(imposto_n,CAST(imposto AS NUMERIC)) AS DOUBLE PRECISION) AS imp,
         CAST(COALESCE(mc_comissao_n,CAST(mc_comissao AS NUMERIC)) AS DOUBLE PRECISION) AS mc, fonte_liquido AS fonte, status AS stat
-      FROM vendas WHERE ${c.where} ORDER BY ${c.order} LIMIT ? OFFSET ?`, c.args.concat([c.limite, c.offset]))
+      FROM vendas WHERE ${c.where} ORDER BY ${c.order} LIMIT ? OFFSET ?`, c.args.concat([c.limite, c.offset])),
+      dbx.get(resumoQuery.sql,resumoQuery.args)
     ]);
     linhas.forEach(o => {
       o.date = String(o.date || "").slice(0, 10);
@@ -180,8 +183,8 @@ async function rotaGET(u, user) {
         pendente: par(kpiRow.n_pen, kpiRow.fat_pen), cancelada: par(kpiRow.n_can, kpiRow.fat_can),
         devolvida: par(kpiRow.n_dev, kpiRow.fat_dev), extravio: par(kpiRow.n_ext, kpiRow.fat_ext)
       },
-      total: n, fat: par(0, fatFiltrado).v, paginas: Math.max(1, Math.ceil(n / c.limite)), pagina: c.pagina, limite: c.limite,
-      linhas
+      total: +resumoRow.linhas||0, fat: par(0, fatFiltrado).v, paginas: Math.max(1, Math.ceil((+resumoRow.linhas||0) / c.limite)), pagina: c.pagina, limite: c.limite,
+      linhas, resumo: completarResumoVendas(resumoRow)
     };
   }
   // ── /api/dataset — datasets do painel (ROWS/DETALHE/agregados) escopados por PONTO, janela de meses ──
@@ -259,7 +262,7 @@ async function rotaGET(u, user) {
         qtd, CAST(COALESCE(receita_n,CAST(receita AS NUMERIC)) AS DOUBLE PRECISION) AS receita, CAST(COALESCE(liquido_n,CAST(liquido AS NUMERIC)) AS DOUBLE PRECISION) AS liquido, CAST(COALESCE(ctp_n,CAST(ctp AS NUMERIC)) AS DOUBLE PRECISION) AS ctp, CAST(COALESCE(imposto_n,CAST(imposto AS NUMERIC)) AS DOUBLE PRECISION) AS imposto, CAST(COALESCE(mc_real_n,CAST(mc_real AS NUMERIC)) AS DOUBLE PRECISION) AS mc_real, CAST(COALESCE(mc_comissao_n,CAST(mc_comissao AS NUMERIC)) AS DOUBLE PRECISION) AS mc_comissao, fonte_liquido, status FROM vendas WHERE ${w.join(" AND ")}`, args);
     const detalhe = raw.map(v => ({ date: v.data, emp: v.empresa, mkt: v.canal, sku: v.sku, tit: v.titulo, ped: v.pedido,
       anuncio: v.anuncio_id, qtd: r2(v.qtd), fat: r2(v.receita), liq: r2(v.liquido), ctp: r2(v.ctp), imp: r2(v.imposto),
-      mc: r2(v.mc_comissao), mccom: r2(v.mc_comissao), mcReal: r2(v.mc_real), fonte: v.fonte_liquido, stat: v.status, ponto: v.ponto }));
+      mc: r2(v.mc_comissao), mccom: r2(v.mc_comissao), mcReal: r2(v.mc_real), mcRealInformada: v.mc_real!=null&&v.mc_real!=='', fonte: v.fonte_liquido, stat: v.status, ponto: v.ponto }));
     return { periodo: [de, ate], ms: Date.now() - t0, n: detalhe.length, detalhe };
   }
   // ── /api/abertura — custos por venda de UMA operação (sub-aba Vendas da Gerencial) ────────────
