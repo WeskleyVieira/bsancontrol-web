@@ -97,11 +97,11 @@ O fluxo mantém a divisão de responsabilidades: Visão Geral apresenta o quadro
 
 ## Validação e limites da entrega
 
-- **54 testes automatizados aprovados:** 46 anteriores e oito novos casos de referência por operação, bases equivalentes, evolução ainda negativa, IDs/ticket, concentração, métodos de Ads e modo executivo. Integração idempotente e scripts compilados.
+- **55 testes automatizados aprovados:** 46 anteriores e nove novos casos de referência por operação, bases equivalentes, evolução ainda negativa, IDs/ticket, concentração, métodos de Ads e modo executivo. Integração idempotente e scripts compilados.
 - **Dados fictícios no navegador:** grupo de seis operações; crescimento de faturamento com redução de margem em uma conta; conta com margem negativa; carteira do Gestor limitada a duas operações para aprofundamento. Guia primeiro no conteúdo e sinais fora de qualquer bloco recolhido.
 - **Panorama:** Amazon com margem das vendas zero e Ads de R$ 200,00 conserva -R$ 200,00 e -3,22%; Temu conserva 15,00% sobre líquido. Ads ausente não é zero confirmado. Referência de 2025 ausente deixa variações indisponíveis.
 - **Pedidos:** cenário fictício com 127 de 129 linhas identificadas mostra 71 pedidos e ticket de R$ 368,24, excluindo receita sem ID; comparação de pedidos/ticket é omitida quando a identificação é parcial.
-- **Leitura e interação:** temas claro/escuro, largura de 390 px sem transbordamento da página, rolagem interna da tabela, gráfico ampliado e tabela de valores formatada em reais. Nenhum erro de console nos fluxos conferidos. Teste de abertura da Visão Geral não disparou `/api/detalhe`.
+- **Leitura e interação:** temas claro/escuro, largura de 390 px sem transbordamento da página, rolagem interna da tabela, gráfico ampliado e tabela de valores formatada em reais. Atalho de comparação testado com a página rolada: painel contido entre 16 px e o limite inferior da janela, com fechamento acessível. Nenhum erro de console nos fluxos conferidos. Teste de abertura da Visão Geral não disparou `/api/detalhe`.
 - **Preservação:** cálculos financeiros, históricos fechados, coleta, permissões e backend não são reprocessados. Comparações continuam dependendo dos registros carregados; existência de um registro de Ads não comprova cobertura completa. Sem metadados confiáveis, a coleta individual por fonte permanece não informada.
 - A revisão visual e técnica não certifica a conciliação dos dados reais de todas as operações. A conferência gerencial do usuário permanece pendente.
 

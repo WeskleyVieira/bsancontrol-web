@@ -37,3 +37,9 @@ test('esta fase retira os julgamentos universais apenas dos dois renderizadores 
  const diag=sourceBetween('function renderDiagnosis(', '// EXECUTIVE MODE'),pano=sourceBetween('function renderGerencial(){','// ── Gráficos ──');assert.doesNotMatch(diag,/META_MARGEM|65|Tudo sob controle|A régua é uma só/);assert.doesNotMatch(pano,/Concentração de risco|Queda relevante|de prejuízo/);assert.match(html,/const META_MARGEM=15/);assert.match(html,/BC_RESUMOS_LEITURA_V2/);
 });
 test('modo executivo da Visão Geral conserva a mesma base e não reintroduz metas universais',()=>{const exec=sourceBetween('function openExec(){','function closeExec(){');assert.doesNotMatch(exec,/META_MARGEM|mcBadge\(|mcCor\(|Math.round\(fatDe/);assert.match(exec,/_resumoAgrupa/);assert.match(exec,/Diferença bruto\/líquido/);assert.match(exec,/Objetivos específicos em Metas/);});
+test('atalho de comparação mantém o calendário dentro da tela mesmo com o cabeçalho fora da janela',()=>{
+ const code=sourceBetween('function bcChromePeriodSync(', 'function bcChromePeriod(){');
+ for(const [width,height,top,bottom,want]of [[1280,720,-500,-450,16],[1280,900,100,144,152],[1280,720,450,494,16],[390,844,100,144,16]]){
+  const panel={style:{}},range={open:true,querySelector:s=>s==='summary'?{getBoundingClientRect:()=>({top,bottom,right:width-20})}:panel},context=vm.createContext({BCChrome:{periodMounted:true},getR:()=>['2026-10-01','2026-10-28'],bcChromeText:()=>{},bcChromePeriodName:()=>'',bcChromePeriodPreview:()=>{},document:{getElementById:id=>id==='bc-range-menu'?range:{}},window:{innerWidth:width,innerHeight:height}});vm.runInContext(code,context);context.bcChromePeriodSync();assert.equal(panel.style.top,want+'px');assert.equal(parseInt(panel.style.top)+parseInt(panel.style.maxHeight),height-16);assert.equal(panel.style.right,'20px');
+ }
+});
