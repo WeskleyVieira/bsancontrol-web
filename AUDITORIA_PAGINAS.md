@@ -2,7 +2,7 @@
 
 A migração do tema comum foi concluída anteriormente. Este plano acompanha a revisão aprofundada de leitura, fluxo e funcionamento de cada página. Aplicar o tema não significa concluir a auditoria de uma página. A referência visual é Metas, incluindo tipografia, espaços, hierarquia dos valores, estados discretos e ampliação exclusiva dos gráficos.
 
-Prioridade atual: fase 4 — Acompanhamento, autorizada e implementada em 01/11/2026, detalhada em AUDITORIA_ACOMPANHAMENTO.md. Tarefas, Promoções e Ads receberam revisão de leitura, fila, fontes, registro e histórico. A validação técnica não substitui a aceitação gerencial dos dados oficiais pelo usuário. Não iniciar automaticamente a fase 5 — Operação.
+Prioridade atual: fase 5 — Operação, autorizada e implementada em 01/11/2026, detalhada em AUDITORIA_OPERACAO.md. Envios, Estoque e Projeção receberam revisão de fontes, filtros, hierarquia e decisões. A validação técnica não substitui a aceitação gerencial dos dados oficiais pelo usuário. Não iniciar automaticamente a fase 6 — Resultados.
 
 ## Diretriz de evolução aprovada pelo usuário
 
@@ -24,7 +24,7 @@ Candidatos para a etapa 2, ainda sujeitos à auditoria das fontes: margem por pe
 | 2 | Vendas; Raio-X; Gerencial → Vendas da operação | Auditoria funcional implementada; guias devolvidos ao topo e conferidos nas três telas em 01/11/2026. Revisão do gestor pendente. |
 | 3 | Gerencial → Diagnóstico, Anúncios, Publicidade, Full | Implementados e validados tecnicamente em 01/11/2026. Relatório, critérios e limites em AUDITORIA_GERENCIAL.md. Revisão gerencial pendente. |
 | 4 | Acompanhamento → Tarefas, Promoções, Ads | Implementados e validados tecnicamente em 01/11/2026. Histórico escopado e registro atômico; revisão gerencial pendente. Anúncios em breve continua indisponível. |
-| 5 | Operação → Envios, Estoque, Projeção | Pendente. Ordem preservada. |
+| 5 | Operação → Envios, Estoque, Projeção | Implementados e validados tecnicamente em 01/11/2026. Fontes e fórmulas declaradas; conferência gerencial pendente. |
 | 6 | Resultados → Diário, Marketplaces, Curva ABC, Forecast | Pendente. Forecast permanece na leitura macro. |
 | 7 | Financeiro → DRE; revisão de integração de Metas, Comissão e Administração de usuários | Pendente. Metas, Comissão e Administração já têm entregas próprias; esta etapa revisa integração e consistência, sem declará-las novamente auditadas. |
 
