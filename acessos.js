@@ -24,7 +24,9 @@
  function base(perfil){return Object.fromEntries(catalogo.map(r=>[r.id,r.perfis.includes(perfil)]));}
  function efetivas(perfil,restricoes={}){const out=base(perfil);for(const r of catalogo)if(restricoes[r.id]===false)out[r.id]=false;for(const r of catalogo)if(r.requer&&!out[r.requer])out[r.id]=false;return out;}
  function normalizar(perfil,value){if(!value||typeof value!=='object'||Array.isArray(value))throw Error('As restrições de acesso são inválidas.');const out={},limites=base(perfil);for(const [key,v]of Object.entries(value)){if(!Object.hasOwn(limites,key)||typeof v!=='boolean')throw Error('Permissão inválida: '+key);if(v&&!limites[key])throw Error('Esta permissão é exclusiva de outro perfil.');if(v===false&&limites[key])out[key]=false;}return out;}
- function pode(user,key){return !!user&&efetivas(user.perfil,user.restricoes||{})[key]===true;}
+ function aprovador(user){return !!user&&(user.perfil==='compradora'||user.perfil==='direcao'&&String(user.email||'').toLowerCase()==='weskley@grupobsan');}
+ function efetivasUsuario(user){const out=efetivas(user.perfil,user.restricoes||{});if(!aprovador(user))out['produtos.custos.aprovar']=false;return out;}
+ function pode(user,key){return !!user&&efetivasUsuario(user)[key]===true;}
  function pagina(user,page,sub){const can=k=>pode(user,k);if(page==='cadastro-produtos')return can('produtos.ver');if(page==='gerencial'){if(sub==='comissao')return can('comissao.ver');return can('gestao.ver')&&(sub!=='full'||can('estoque.ver'));}if(page==='dre')return can('dre.ver');if(page==='acompanhamento')return can('acompanhamento.ver');if(page==='envios')return can('envios.ver');if(page==='estoque')return can('estoque.ver');if(page==='projecao')return can('estoque.ver')&&can('vendas.ver');return can('vendas.ver');}
  function rota(user,method,path){
   if(path==='/api/health'||path==='/api/sessao'||path==='/api/trocar-senha')return true;
@@ -52,5 +54,5 @@
   if(!can('comissao.lancar'))delete d._versions.comissao;
   return d;
  }
- return{catalogo,base,efetivas,normalizar,pode,pagina,rota,filtrarExtras};
+ return{catalogo,base,efetivas,efetivasUsuario,aprovador,normalizar,pode,pagina,rota,filtrarExtras};
 });

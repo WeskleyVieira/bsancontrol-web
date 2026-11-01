@@ -107,10 +107,10 @@ async function rotaGET(u, user) {
   const entrada = u.pathname.match(/^\/api\/lancamentos\/(envios|custos|comissao)$/);
   if (entrada) return writeStore.ler(dbx, entrada[1], user);
   if (u.pathname === "/api/health") {
-    const v = await dbx.get("SELECT COUNT(*) n FROM vendas");
-    const d = await dbx.get("SELECT COUNT(*) n FROM demandas");
+    const v = !AUTH_REQ||acessos.pode(user,'vendas.ver') ? await dbx.get("SELECT COUNT(*) n FROM vendas") : null;
+    const d = !AUTH_REQ||acessos.pode(user,'acompanhamento.ver') ? await dbx.get("SELECT COUNT(*) n FROM demandas") : null;
     const s = await dbx.get("SELECT MAX(atualizado) m FROM datasets");   // carimbo do último db-sync (p/ o auto-refresh detectar dado novo)
-    return { ok: true, banco: dbx.IS_PG ? "Postgres" : "SQLite", vendas: v.n, demandas: d.n, _sync: (s && s.m) ? s.m : null };
+    return { ok: true, banco: dbx.IS_PG ? "Postgres" : "SQLite", ...(v?{vendas:v.n}:{}), ...(d?{demandas:d.n}:{}), _sync: (s && s.m) ? s.m : null };
   }
   if (u.pathname === "/api/demandas") {
     await garantePrecoNovo();

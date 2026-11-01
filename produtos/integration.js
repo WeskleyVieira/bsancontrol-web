@@ -2,7 +2,7 @@
 const {openStore}=require('./store');const {createService}=require('./service');const {createHttp,json}=require('./http');
 const path=require('node:path');
 const RESTRICTED=new Set(['estoque','compradora']);
-function approvalEligible(user){return user.perfil==='compradora'||(user.perfil==='direcao'&&String(user.email||'').toLowerCase()==='weskley@grupobsan');}
+const approvalEligible=require('../acessos').aprovador;
 function createIntegration({dbx,userDe,mustChangePassword,resolveSession}){
  let promise, productStore;
  const eligible=approvalEligible;
