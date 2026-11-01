@@ -1247,12 +1247,12 @@ body.bc-shell #bc-login .bcl-f input:focus,body.bc-shell #bc-pwd .bcl-f input:fo
 
 .bc-products-frame{display:block;width:100%;height:calc(100dvh - 230px);min-height:560px;border:0;border-radius:10px;background:var(--bc-surface,var(--surf));color-scheme:inherit}
 .bc-products-status{color:var(--bc-muted,var(--mut));font:14px/1.6 Inter,system-ui,sans-serif}
-body.bc-products-open #bc-point,body.bc-products-open #bc-company,body.bc-products-open #bc-marketplace,body.bc-products-open .bc-period-control{display:none!important}
+body.bc-products-open .bc-products-irrelevant,body.bc-products-open .bc-period-control,body.bc-products-open #bc-range-menu{display:none!important}
 body.bc-products-open .dbar,body.bc-products-open .cbar{display:none!important}
 .bc-u-product-grants{margin-top:24px;padding-top:18px;border-top:1px solid var(--bc-border,var(--bdr2))}.bc-u-product-grant{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:18px 0}.bc-u-product-grant label{flex:1;min-width:180px}
 @media(max-width:720px){.bc-products-frame{height:calc(100dvh - 190px);min-height:500px}.bc-u-product-grant button{width:100%}}
 
-body.bc-products-open #bc-global-context,body.bc-products-open #bc-scope-note{display:none!important}
+body.bc-products-open #bc-global-context{display:flex}
 
 body.bc-pos-venda-open #bc-global-context,body.bc-pos-venda-open .dbar,body.bc-pos-venda-open .cbar{display:none!important}
 .pv-page{color:var(--bc-text);min-width:0}.pv-heading,.pv-dialog-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:20px}.pv-heading :is(h1,h2){margin:0;font-size:var(--bc-text-title,22px)}.pv-note{color:var(--bc-muted);font-size:13px;line-height:1.7;margin:8px 0}.pv-button{min-height:42px;padding:9px 15px;border:1px solid var(--bc-border);border-radius:8px;background:var(--bc-surface);color:var(--bc-text);font:600 13px/1.5 var(--bc-font);cursor:pointer}.pv-button:hover{border-color:var(--bc-accent)}.pv-button:disabled{opacity:.55;cursor:default}.pv-primary{background:var(--bc-accent);border-color:var(--bc-accent);color:var(--bc-button-ink)}.pv-page :is(button,input,select,textarea):focus-visible,.pv-dialog :is(button,input,select,textarea):focus-visible{outline:2px solid var(--bc-accent);outline-offset:3px}.pv-filters,.pv-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:14px;align-items:end}.pv-filters{padding:20px;background:var(--bc-surface);border:1px solid var(--bc-border);border-radius:10px}.pv-control{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:13px;color:var(--bc-muted)}.pv-control :is(input,select,textarea){box-sizing:border-box;width:100%;min-width:0;min-height:42px;padding:10px 12px;border:1px solid var(--bc-border);border-radius:7px;background:var(--bc-raised);color:var(--bc-text);font:14px/1.5 var(--bc-font)}.pv-control textarea{resize:vertical}.pv-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:22px 0}.pv-metric,.pv-block{padding:20px;background:var(--bc-surface);border:1px solid var(--bc-border);border-radius:10px;min-width:0}.pv-metric h3{font-size:13px;font-weight:600;color:var(--bc-muted);margin:0 0 10px}.pv-metric>strong{font-size:29px;font-weight:650;font-variant-numeric:tabular-nums}.pv-block h2{font-size:17px;margin:0 0 12px}.pv-table-wrap{max-width:100%;overflow:auto;border:1px solid var(--bc-border);border-radius:8px;margin-top:15px}.pv-table{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}.pv-table th,.pv-table td{padding:13px 14px;border-bottom:1px solid var(--bc-border);text-align:left;vertical-align:top}.pv-table th{background:var(--bc-raised);font-weight:600;white-space:nowrap}.pv-table small{display:block;color:var(--bc-muted);font-size:12px;margin-top:5px}.pv-subject{min-width:200px;max-width:330px}.pv-subject .pv-button{text-align:left;white-space:normal;color:var(--bc-accent);border:0;padding:0;min-height:30px;background:none}.pv-badge{display:inline-block;padding:3px 8px;border:1px solid var(--bc-border);border-radius:5px;font-size:12px;white-space:nowrap;background:var(--bc-raised)}.pv-state-atrasado,.pv-state-aguardando_plataforma,.pv-state-a_conferir{color:var(--bc-attention)}.pv-state-resolvido{color:var(--bc-good)}.pv-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0 0;font-size:13px}.pv-empty{padding:30px 10px}.pv-empty h3{font-size:16px}.pv-dialog{box-sizing:border-box;width:min(900px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;background:var(--bc-surface);color:var(--bc-text);border:1px solid var(--bc-border);border-radius:12px;padding:24px;font:14px/1.7 var(--bc-font)}.pv-dialog::backdrop{background:rgba(4,8,16,.75)}.pv-dialog h2{font-size:20px;margin:0}.pv-dialog h3{font-size:15px}.pv-form{display:grid;gap:18px}.pv-facts{display:grid;grid-template-columns:minmax(120px,1fr) 2fr;gap:6px 18px}.pv-facts dt{color:var(--bc-muted)}.pv-facts dd{margin:0;overflow-wrap:anywhere}.pv-description{white-space:pre-wrap;overflow-wrap:anywhere}.pv-history{border-top:1px solid var(--bc-border);padding:15px 0}.pv-history h3{font-size:13px;margin:0}.pv-dialog .pv-block{margin-top:22px}.pv-dialog .pv-table{min-width:550px}.pv-error{color:var(--bc-bad);white-space:pre-wrap}.pv-dialog summary{cursor:pointer;color:var(--bc-accent)}
@@ -15054,12 +15054,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  const oldHeader=bcHeaderRefresh;bcHeaderRefresh=function(){const result=oldHeader.apply(this,arguments);if(activePage==='dre'){const marketplace=$('bc-marketplace');if(marketplace)marketplace.disabled=!BCNav.company;if($('bc-scope-note'))$('bc-scope-note').textContent='A DRE lê competências completas. Empresa e ponto recebem a estrutura cadastrada; um marketplace isolado mostra a contribuição antes dessa estrutura.';if($('bc-context-summary'))$('bc-context-summary').textContent=scopeName();}return result;};
 })();
 
-/* Produtos is an isolated same-origin view using the host's validated session. */
+/* Produtos compartilha o ponto do cabeçalho. Atualizar sessão não reinicia o formulário. */
 (function(){'use strict';
- const pageId='cadastro-produtos',S={frame:null,ready:false,cap:null,signature:'',sent:'',mode:'catalog'};
+ const pageId='cadastro-produtos',S={frame:null,ready:false,cap:null,signature:null,userId:null,sent:'',mode:'catalog',point:'',busy:false};
  const sections=[['catalog','Catálogo'],['tasks','Pendências de custo'],['entries','Entradas de compra'],['materials','Materiais'],['pack','Embalagens'],['prep','Preparação de embalagens'],['review','Homologação'],['sales','Apuração de custos'],['sync','Atualização'],['publication','Integração']];
  window.bcProdutoSection='catalog';
- BCGroupMap.splice(BCGroupMap.findIndex(g=>g.id==='operacao')+1,0,{id:'cadastro-produtos',label:'Produtos',items:sections.map(([mode,label])=>({id:'cadastro-'+mode,label,page:pageId,productMode:mode}))});
+ BCGroupMap.splice(BCGroupMap.findIndex(g=>g.id==='operacao')+1,0,{id:pageId,label:'Produtos',items:sections.map(([mode,label])=>({id:'cadastro-'+mode,label,page:pageId,productMode:mode}))});
  NAV_PAGES.push({id:pageId,label:'Produtos'});
  const nav=document.createElement('button');nav.id='nav-'+pageId;nav.className='ntab';nav.textContent='Produtos';nav.onclick=()=>bcGroupedOpen(pageId);document.getElementById('main-nav')?.append(nav);
  const root=document.createElement('section');root.id='page-'+pageId;root.className='page bc-products-page';
@@ -15069,30 +15069,40 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    if(!user?.produtos_habilitado||!window.BCAcessos?.pode(user,'produtos.ver'))return false;
    const m=item.productMode;if(['catalog','prep'].includes(m))return true;
    if(m==='sync')return !!S.cap?.administrar;
-   if(['review','sales','publication'].includes(m))return !!S.cap?.administrar&&!!S.cap?.financeiro?.includes(S.cap?.ponto);
-   return !!S.cap?.financeiro?.includes(S.cap?.ponto);
+   if(['review','sales','publication'].includes(m))return !!S.cap?.administrar&&!!S.cap?.financeiro?.includes(S.point);
+   return !!S.cap?.financeiro?.includes(S.point);
  };
  function theme(){return document.body.classList.contains('light')?'light':'dark';}
- function send(refresh=false){if(!S.frame||!S.ready)return;const token=BCAUTH.token;if(!token)return;
-   S.frame.contentWindow.postMessage({type:'bsan-produtos-auth',token,section:S.mode,theme:theme(),refresh},location.origin);
+ function choosePoint(){const points=S.cap?.pontos||[];if(points.length&&!points.includes(S.point))S.point=points.includes(PONTO_SEL)?PONTO_SEL:points[0];return S.point||PONTO_SEL||'';}
+ function send(refresh=false){if(!S.frame||!S.ready||!BCAUTH.token)return;const data={type:'bsan-produtos-auth',token:BCAUTH.token,identity:String(BCAUTH.user?.id||''),section:S.mode,point:choosePoint(),theme:theme(),refresh};const signature=JSON.stringify({...data,refresh:false});if(!refresh&&signature===S.sent)return;S.sent=signature;S.frame.contentWindow.postMessage(data,location.origin);}
+ function header(){if(activePage!==pageId)return;const select=document.getElementById('bc-point');if(!select)return;const point=choosePoint(),points=S.cap?.pontos||[];
+   if(points.length){PONTO_SEL=point;bcNavOptions(select,points.map(p=>[p,p]),point);select.disabled=false;}else select.disabled=true;
+   for(const id of ['bc-company','bc-marketplace']){const control=document.getElementById(id);if(control)(control.closest('label')||control.parentElement).classList.add('bc-products-irrelevant');}
+   const note=document.getElementById('bc-scope-note');if(note)note.textContent='Cadastro de produtos por ponto. '+(point?'Ponto selecionado: '+point+'.':'Selecione Bsan ou Powerfull.');
+   const summary=document.getElementById('bc-context-summary');if(summary)summary.textContent='Produtos'+(point?' · '+point:'');
  }
- function mount(){if(S.frame)return;const f=document.createElement('iframe');f.id='cadastro-produtos-frame';f.title='Cadastro de Produtos';f.className='bc-products-frame';f.src='/produtos?embedded=1';f.onload=()=>{S.ready=true;send();};root.append(f);S.frame=f;status.textContent='Carregando cadastro e permissões…';}
+ function mount(){if(S.frame)return;const f=document.createElement('iframe');f.id='cadastro-produtos-frame';f.title='Cadastro de Produtos';f.className='bc-products-frame';f.src='/produtos?embedded=1';f.onload=()=>{S.ready=true;send();};root.append(f);S.frame=f;S.sent='';status.hidden=false;status.textContent='Carregando cadastro e permissões…';}
  window.bcProdutosOpenMode=mode=>{if(!sections.some(([m])=>m===mode))return;S.mode=mode;window.bcProdutoSection=mode;mount();send();};
- const go=goPage;goPage=function(id,button){if(id===pageId){if(!bcProdutosAllowed({productMode:S.mode},BCAUTH.user))return;mount();send();}const r=go.apply(this,arguments);document.body.classList.toggle('bc-products-open',activePage===pageId);return r;};
+ const go=goPage;goPage=function(id,button){if(id===pageId){if(!BCAUTH.user?.produtos_habilitado||!BCAcessos.pode(BCAUTH.user,'produtos.ver'))return;if(activePage!==pageId){S.point=PONTO_SEL||S.point;choosePoint();}if(!bcProdutosAllowed({productMode:S.mode},BCAUTH.user)){S.mode='catalog';window.bcProdutoSection='catalog';}mount();}const r=go.apply(this,arguments);document.body.classList.toggle('bc-products-open',activePage===pageId);if(id===pageId){header();send();}return r;};
+ const navRefresh=bcNavRefresh;bcNavRefresh=function(){const r=navRefresh.apply(this,arguments);header();if(activePage===pageId)send();return r;};
+ const chrome=bcChromeRefresh;bcChromeRefresh=function(){const r=chrome.apply(this,arguments);header();return r;};
+ document.addEventListener('change',e=>{if(activePage!==pageId||e.target.id!=='bc-point')return;if(S.busy){e.stopImmediatePropagation();e.target.value=S.point;status.textContent='Feche a ficha ou o formulário antes de trocar o ponto.';status.hidden=false;return;}S.point=e.target.value;},true);
  window.addEventListener('message',e=>{
    if(e.origin!==location.origin||e.source!==S.frame?.contentWindow)return;
-   if(e.data?.type==='bsan-produtos-ready'){S.ready=true;send();}
-   if(e.data?.type==='bsan-produtos-expired'){BCAUTH.clear();S.cap=null;S.frame?.remove();S.frame=null;S.ready=false;bcShowLogin(true);}
+   if(e.data?.type==='bsan-produtos-ready'){S.ready=true;S.sent='';send();}
+   if(e.data?.type==='bsan-produtos-expired'){BCAUTH.clear();S.cap=null;S.frame?.remove();S.frame=null;S.ready=false;S.sent='';bcShowLogin(true);}
    if(e.data?.type==='bsan-produtos-state'){
-     S.cap=e.data.access;const mode=e.data.section;if(sections.some(([m])=>m===mode)){S.mode=mode;window.bcProdutoSection=mode;}
-     status.textContent='';status.hidden=true;bcGroupedRefresh();
+     S.cap=e.data.access;S.busy=e.data.busy===true;if(S.cap?.pontos?.includes(S.cap.ponto))S.point=S.cap.ponto;
+     const mode=e.data.section;if(sections.some(([m])=>m===mode)){S.mode=mode;window.bcProdutoSection=mode;}
+     if(activePage===pageId&&S.point){PONTO_SEL=S.point;try{localStorage.setItem('bc_ponto',S.point);}catch{}}
+     status.textContent='';status.hidden=true;header();bcGroupedRefresh();
    }
  });
  setInterval(()=>{if(activePage===pageId&&!document.hidden)send(true);},60000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&activePage===pageId)send(true);});
  new MutationObserver(()=>{if(S.frame?.contentWindow)S.frame.contentWindow.postMessage({type:'bsan-produtos-theme',theme:theme()},location.origin);}).observe(document.body,{attributes:true,attributeFilter:['class']});
- setInterval(()=>{const signature=BCAUTH.token+'|'+JSON.stringify(BCAUTH.user?.efetivas||{});if(signature===S.signature)return;S.signature=signature;S.cap=null;
-   if(!BCAUTH.token){S.frame?.remove();S.frame=null;S.ready=false;return;}send(true);bcGroupedRefresh();
+ setInterval(()=>{const userId=String(BCAUTH.user?.id||''),signature=BCAUTH.token+'|'+JSON.stringify(BCAUTH.user?.efetivas||{});if(signature===S.signature)return;const changed=S.userId!==null&&userId!==S.userId;S.signature=signature;S.userId=userId;S.sent='';
+   if(!BCAUTH.token||changed){S.cap=null;S.frame?.remove();S.frame=null;S.ready=false;S.busy=false;if(activePage===pageId&&BCAUTH.token)mount();return;}send(true);bcGroupedRefresh();
  },1000);
 })();
 
