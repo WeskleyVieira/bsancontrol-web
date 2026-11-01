@@ -18,6 +18,7 @@ const usuarios = require("./usuarios").criarServico(dbx);
 const acompanhamentoRegistros = require('./acompanhamento-registros');
 const operacaoConsultas = require('./operacao-consultas');
 const resultadosConsultas = require('./resultados-consultas');
+const financeiroConsultas = require('./financeiro-consultas');
 
 const PORT = process.env.PORT || 8787;
 const SENHA_PADRAO = "bsan@2026";   // quem ainda tem essa é obrigado a trocar no 1º acesso
@@ -92,6 +93,7 @@ const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa,
 async function rotaGET(u, user) {
   if (user && !acessos.rota(user, "GET", u.pathname)) throw Object.assign(new Error("Seu acesso não permite esta consulta."), { status: 403, codigo: "PERMISSAO_NEGADA" });
   const q = Object.fromEntries(u.searchParams);
+  if (u.pathname === '/api/financeiro/dre') return financeiroConsultas.dre(dbx, q);
   if (u.pathname === '/api/resultados/resumo') return resultadosConsultas.resumo(dbx, q);
   if (u.pathname === '/api/resultados/skus') return resultadosConsultas.skus(dbx, q);
   if (u.pathname === '/api/operacao/estoque') return operacaoConsultas.estoque(dbx);

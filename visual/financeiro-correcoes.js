@@ -1,0 +1,4 @@
+/* A competência explicitamente solicitada não deve virar o último mês com comissão. */
+'use strict';
+function corrigirFinanceiro(html){const before="const months=[...new Set((typeof COMISSAO!=='undefined'?COMISSAO:[]).map(r=>r.mes))].sort();if(months.length&&!months.includes(BCNav.month))BCNav.month=months.at(-1)||'';",after="const months=[...new Set((typeof COMISSAO!=='undefined'?COMISSAO:[]).map(r=>r.mes))].sort();/* bc-fin-competencia-explicita */if(/^\\d{4}-(0[1-9]|1[0-2])$/.test(BCNav.month)&&!months.includes(BCNav.month)){months.push(BCNav.month);months.sort();}if(months.length&&!BCNav.month)BCNav.month=months.at(-1)||'';";if(html.includes(after))return html;if(!html.includes(before))throw Error('Contrato de competência do cabeçalho mudou.');return html.replace(before,after);}
+module.exports={corrigirFinanceiro};
