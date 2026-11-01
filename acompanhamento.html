@@ -4989,11 +4989,23 @@ const AC2_TIPOS_PROMO = [
   { k:'promo_encareceu', curto:'Encareceu',    cor:'#a78bfa', re:/promo · encareceu/i,    ajuda:'O preço da promoção ficou acima do que o anúncio vendia: aproximar para não perder a venda.' },
   { k:'promo_execucao',  curto:'Execução falhou', cor:'#0ea5e9', re:/promo · execução falhou/i, ajuda:'O robô tentou e não conseguiu manter o anúncio na campanha (preço novo, antigo, teto e a rodada seguinte). Clique em Reaplicar — o robô tenta de novo em até 15 min — e, se não der, faça à mão pelo passo a passo.' },
 ];
+// ── SUB-ABA ADS (31/10/2026) ─────────────────────────────────────────────────────────────────────
+// Plano de Ads do Mercado Livre (ml-ads-plano.js → ads_plano → db-sync/ads-demandas.js, id "ads|…"): o ROAS-alvo é da
+// CAMPANHA (tarefa de campanha) e pausar/mover é do ANÚNCIO. Régua = Diagnóstico pós-Ads: margem depois do Ads ≥ 10%.
+// O efeito é medido pelo próprio plano (gasto parou, ROAS-alvo novo lido da API), não pela margem da venda.
+const AC2_TIPOS_ADS = [
+  { k:'ads_pausar',   curto:'Pausar anúncio',  cor:'#dc2626', re:/ads · pausar an/i,  ajuda:'O Ads deste anúncio come mais do que a margem aguenta (ou gastou sem vender). Pausar o anúncio dentro da campanha.' },
+  { k:'ads_mover',    curto:'Mover de campanha', cor:'#f59e0b', re:/ads · mover/i,    ajuda:'O anúncio precisa de um ROAS-alvo bem maior que o da campanha. Tirar dela e pôr numa campanha de margem curta.' },
+  { k:'ads_subir',    curto:'Subir ROAS',      cor:'#a855f7', re:/ads · subir/i,      ajuda:'O ROAS-alvo da campanha está baixo para a margem dos anúncios dela. Subir para o valor indicado.' },
+  { k:'ads_campanha', curto:'Pausar campanha', cor:'#64748b', re:/ads · pausar camp/i, ajuda:'A campanha gasta sem receita de Ads. Pausar (ou registrar se é estratégia).' },
+  { k:'ads_baixar',   curto:'Baixar ROAS',     cor:'#16a34a', re:/ads · baixar/i,     ajuda:'Campanha com folga (margem depois do Ads acima de 20%): baixar o ROAS-alvo um degrau para ganhar alcance.' },
+];
 let AC2_TIPOS = AC2_TIPOS_TAREFAS;   // troca com a sub-aba (ac2.setSub)
 // botão "Reaplicar" (fila de comandos): DESLIGADO até o pipeline ir para a nuvem — hoje quem executa seria o PC (fila-comandos.js)
 // e, sem ele rodando, o pedido ficaria parado. Na migração o servidor executa na hora e isto vira true. (Weskley, 29/10/2026)
 const AC2_REAPLICAR = false;
 const AC2_ISPROMO = i => /^promo\|/.test(String(i&&i.id||'')) || /^promo ·/i.test(String(i&&i.tipo||''));
+const AC2_ISADS = i => /^ads\|/.test(String(i&&i.id||'')) || /^ads ·/i.test(String(i&&i.tipo||''));
 const ac2TipoDe = t => (AC2_TIPOS.find(x => x.re.test(String(t||''))) || { k:'outro', curto:'Outro', cor:'#8891a8', ajuda:'' });
 // conta quantas de cada tipo há numa lista
 function ac2PorTipo(l){ const o={}; AC2_TIPOS.forEach(t=>o[t.k]=0); o.outro=0;
@@ -5002,7 +5014,7 @@ function ac2PorTipo(l){ const o={}; AC2_TIPOS.forEach(t=>o[t.k]=0); o.outro=0;
 const ac2Registrada = i => !!i.trat || i.estado==='trat';
 // PRAZO POR TIPO (14/10/2026). Vem de cada tarefa (db-sync grava de metas.json → prazos_dias);
 // o padrão abaixo só cobre tarefa antiga, gravada antes de existir o campo. Antes a régua era 24h para tudo.
-const AC2_PRAZO_PADRAO = { prejuizo:1, devolucao:2, margem:1, queima:1, maturacao:2, promo_sangra:2, promo_preco:2, promo_encareceu:2 };   // prazos do Weskley, 16/10/2026
+const AC2_PRAZO_PADRAO = { prejuizo:1, devolucao:2, margem:1, queima:1, maturacao:2, promo_sangra:2, promo_preco:2, promo_encareceu:2, ads_pausar:2, ads_mover:2, ads_subir:2, ads_campanha:2, ads_baixar:2 };   // prazos do Weskley, 16/10/2026
 const ac2Prazo = i => i.prazo!=null ? +i.prazo : (AC2_PRAZO_PADRAO[ac2TipoDe(i.tipo).k] || 7);
 // situação do prazo: registrada (no prazo / com X dias de atraso) ou em aberto (vence em X / atrasada X)
 function ac2PrazoInfo(i){
@@ -5027,8 +5039,8 @@ const ac2Esc = t => String(t==null?'':t).replace(/[&<>"]/g, c => ({'&':'&amp;','
 // com operações da Bsan Shop e da Jowcase na tela. Uma lente que não cascateia mente sobre o recorte.
 ac2.filt=function(){ const ms=ac2.mesesSel(); return ac2.DEM.filter(i=>ac2.compDe(i)>=AC2_DESDE&&(!ms||ms.has(ac2.compDe(i)))&&((typeof PONTO_SEL==='undefined'||!PONTO_SEL||i.ponto===PONTO_SEL)&&(typeof bcNavMatch!=='function'||bcNavMatch(i)))&&AC2_DIMS.every(d=>!ac2[d.k].size||ac2[d.k].has(d.g(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel)&&ac2.daSub(i)); };
 if(!ac2.sub) ac2.sub='tarefas';
-ac2.daSub=function(i){ return ac2.sub==='promos' ? AC2_ISPROMO(i) : !AC2_ISPROMO(i); };
-ac2.setSub=function(s){ if(ac2.sub===s) return; ac2.sub=s; AC2_TIPOS = s==='promos' ? AC2_TIPOS_PROMO : AC2_TIPOS_TAREFAS;
+ac2.daSub=function(i){ return ac2.sub==='promos' ? AC2_ISPROMO(i) : ac2.sub==='ads' ? AC2_ISADS(i) : !AC2_ISPROMO(i) && !AC2_ISADS(i); };
+ac2.setSub=function(s){ if(ac2.sub===s) return; ac2.sub=s; AC2_TIPOS = s==='promos' ? AC2_TIPOS_PROMO : s==='ads' ? AC2_TIPOS_ADS : AC2_TIPOS_TAREFAS;
   AC2_TIPO_FILTRO=''; AC2_DIR_TIPO=''; ac2.opSel=null; ac2.render(); };
 ac2.met=function(l){ const prej=l.filter(i=>i.mcPct<0); return {n:l.length, risco:l.reduce((s,i)=>s+i.risco,0), prej:prej.length, riscoPrej:prej.reduce((s,i)=>s+i.risco,0), corr:l.length-prej.length}; };
 ac2.preso=function(){ return typeof BCAUTH!=='undefined' && BCAUTH.user && BCAUTH.user.perfil==='gestor'; };
@@ -5071,8 +5083,8 @@ ac2.render=function(){
   // SUB-ABAS do Acompanhamento: Tarefas · Promos · (Anúncios, em breve). Cada uma com a mesma mecânica e os mesmos níveis.
   const sb=document.getElementById('a2-sub');
   if(sb){ const ms=ac2.mesesSel(); const base=(ac2.DEM||[]).filter(i=>ac2.compDe(i)>=AC2_DESDE&&(!ms||ms.has(ac2.compDe(i)))&&((typeof PONTO_SEL==='undefined'||!PONTO_SEL||i.ponto===PONTO_SEL)&&(typeof bcNavMatch!=='function'||bcNavMatch(i)))&&(!ac2.gestorSel||i.gestor===ac2.gestorSel));
-    const nP=base.filter(AC2_ISPROMO).length, nT=base.length-nP;
-    sb.innerHTML=[['tarefas','📋 Tarefas',nT,'margem, prejuízo, queima, devolução'],['promos','🏷️ Promos',nP,'promoções do Mercado Livre']]
+    const nP=base.filter(AC2_ISPROMO).length, nA=base.filter(AC2_ISADS).length, nT=base.length-nP-nA;
+    sb.innerHTML=[['tarefas','📋 Tarefas',nT,'margem, prejuízo, queima, devolução'],['promos','🏷️ Promos',nP,'promoções do Mercado Livre'],['ads','📣 Ads',nA,'Mercado Ads: ROAS-alvo da campanha, pausar ou mover anúncio']]
       .map(x=>'<button class="a2-subb '+(ac2.sub===x[0]?'on':'')+'" onclick="ac2.setSub(\''+x[0]+'\')" title="'+x[3]+'">'+x[1]+' <span class="a2-subn">'+x[2]+'</span></button>').join('')
       +'<button class="a2-subb off" disabled title="em construção">📦 Anúncios <span class="a2-subn">em breve</span></button>'; }
   const subCoord = (ac2.nivel==='coord' && ac2.foco) ? ac2Esc((ac2.foco==='tipo' ? ((AC2_TIPOS.find(t=>t.k===ac2.focoTipo)||{}).curto) : (AC2_FOCO[ac2.foco]||{}).tit) || 'fila') : 'a fila do dia';
@@ -5237,7 +5249,7 @@ function ac2Atrasos(l){
       <td class="r">${x.atr?x.maior+' dia(s)':'—'}</td>
       <td class="r" style="color:${x.risco?'#f59e0b':'var(--t3)'}">${x.risco?AC2_BRLk(x.risco):'—'}</td>
       <td class="r">${x.reg?`<span style="color:${ac2SemFr(x.reg-x.fora,x.reg).cor};font-weight:700">${x.noPrazo}%</span> <span style="color:var(--t3)">(${x.fora} de ${x.reg} fora do prazo)</span>`:'<span style="color:var(--t3)">sem registro</span>'}</td></tr>`).join('');
-  return `<div class="a2-sh" style="margin-top:6px">Quem está em atraso<small>${tot} tarefa(s) sem registro já passaram do prazo · ${ac2.sub==='promos' ? 'prazo das promoções: 2 dias' : 'prazo (tarefas criadas a partir de 15/10): Prejuízo, Margem e Queima 1 dia · Maturação e Devolução 2 dias; as anteriores seguem o prazo da época'} · clique para abrir a lista do gestor</small></div>
+  return `<div class="a2-sh" style="margin-top:6px">Quem está em atraso<small>${tot} tarefa(s) sem registro já passaram do prazo · ${ac2.sub==='promos' ? 'prazo das promoções: 2 dias' : ac2.sub==='ads' ? 'prazo das tarefas de Ads: 2 dias' : 'prazo (tarefas criadas a partir de 15/10): Prejuízo, Margem e Queima 1 dia · Maturação e Devolução 2 dias; as anteriores seguem o prazo da época'} · clique para abrir a lista do gestor</small></div>
     <div class="tbl-wrap"><table class="tbl a2-tbl"><thead><tr><th>Gestor</th><th class="r">Atrasadas agora</th><th>De que tipo</th><th class="r">Maior atraso</th><th class="r">R$ parado nelas</th><th class="r">Registradas no prazo</th></tr></thead>
     <tbody>${tr}</tbody></table></div>`;
 }
@@ -5623,7 +5635,7 @@ function ac2Coord(){
     <div class="a2-gcs">${cards}</div>
     ${blocoConclusao('Conclusão por empresa', i=>i.empresa, 'quais empresas estão em dia')}
     ${blocoConclusao('Conclusão por marketplace', i=>i.mkt, 'quais canais estão em dia')}
-    <div class="a2-nota">Prazo para registrar: ${ac2.sub==='promos' ? 'promoções 2 dias' : 'Prejuízo, Margem e Queima 1 dia · Maturação e Devolução 2 dias (tarefas criadas a partir de 15/10; as anteriores seguem o prazo da época)'}. A ordem da mesa não é só o valor parado: R$ 800 atrasado há uma semana cobra mais que R$ 2.000 atrasado há algumas horas.</div>`;
+    <div class="a2-nota">Prazo para registrar: ${ac2.sub==='promos' ? 'promoções 2 dias' : ac2.sub==='ads' ? 'Ads 2 dias' : 'Prejuízo, Margem e Queima 1 dia · Maturação e Devolução 2 dias (tarefas criadas a partir de 15/10; as anteriores seguem o prazo da época)'}. A ordem da mesa não é só o valor parado: R$ 800 atrasado há uma semana cobra mais que R$ 2.000 atrasado há algumas horas.</div>`;
 }
 
 
@@ -6008,6 +6020,7 @@ function ac2PainelVendas(i, k){
 // isso em vez de inventar. Tudo sai do ac2Analise — o mesmo motor do painel aberto.
 function ac2Problema(i, a){
   if(AC2_ISPROMO(i)) return '<b>'+ac2Esc(String(i.causa||'').split(' · campanhas:')[0])+'</b>';
+  if(AC2_ISADS(i)) return '<b>'+ac2Esc(String(i.causa||'').split(' · O QUE FAZER:')[0])+'</b>';
   const k = ac2TipoDe(i.tipo).k;
   if(k==='devolucao') return `<b>${ac2Esc(i.causa||'Devolução acima do normal')}</b>`;
   const ok = a && !a.vazio, pc = ok ? a.pct(a.mc) : +i.mcPct, meta = +i.meta||0;
@@ -6102,8 +6115,14 @@ function ac2PromoResumo(i){ const k=ac2TipoDe(i.tipo).k, c=String(i.causa||''), 
   const link = i.anuncio && /^MLB\d/i.test(i.anuncio) ? ' · <a href="https://produto.mercadolivre.com.br/'+String(i.anuncio).replace(/^MLB/i,'MLB-')+'" target="_blank" rel="noopener">abrir o anúncio ↗</a>' : '';
   return '<div class="dm-l dm-lk"><span class="dm-k">O que fazer</span><div>'+fazer+link+'</div></div>'
     + (camp ? '<div class="dm-l dm-lk"><span class="dm-k">Campanhas</span><div>'+ac2Esc(camp)+'</div></div>' : ''); }
+// tarefa de ADS: o passo a passo no Mercado Ads (vem pronto do ads-demandas.js) + link do anúncio
+function ac2AdsResumo(i){ const fazer=(String(i.causa||'').split(' · O QUE FAZER: ')[1]||'').trim();
+  const link = i.anuncio && /^MLB\d/i.test(i.anuncio) ? ' · <a href="https://produto.mercadolivre.com.br/'+String(i.anuncio).replace(/^MLB/i,'MLB-')+'" target="_blank" rel="noopener">abrir o anúncio ↗</a>' : '';
+  return '<div class="dm-l dm-lk"><span class="dm-k">O que fazer</span><div>'+(ac2Esc(fazer)||'—')+link+'</div></div>'
+    + '<div class="dm-l dm-mut">Régua: margem depois do Ads de pelo menos 10%. O resultado é conferido sozinho no plano do dia seguinte (gasto parado, ROAS-alvo novo lido da API).</div>'; }
 function ac2ResumoHTML(i, a){
   if(AC2_ISPROMO(i)) return ac2PromoResumo(i);
+  if(AC2_ISADS(i)) return ac2AdsResumo(i);
   const causa = ac2Causa(a), sug = ac2Sugestoes(i, a);
   if(!causa && !sug.length) return `<div class="dm-l dm-mut">Sem vendas deste anúncio no período carregado — abra a conta completa ou o Raio-X.</div>`;
   return (causa ? `<div class="dm-l dm-lk"><span class="dm-k">O que aconteceu</span><div>${causa}</div></div>` : '')
@@ -6123,7 +6142,7 @@ function ac2DemRow(i, modo){
       const txt = cmd.estado==='pendente' ? '⏳ pedido enviado — o robô tenta em até 15 min' : cmd.estado==='rodando' ? '⚙️ o robô está tentando agora' : (cmd.resultado||cmd.estado);
       return '<div class="dm-l dm-lk"><span class="dm-k">Reaplicar</span><div><span style="color:'+cor+';font-weight:600">'+ac2Esc(txt)+'</span> <span class="dm-mut">· '+ac2Esc(quando)+(cmd.pedido_por?' · '+ac2Esc(cmd.pedido_por):'')+'</span></div></div>'; })() : '';
   const meta = [i.sku, i.anuncio, 'fat '+AC2_BRLk(+i.fat||0), i.qtd!=null&&i.qtd!=='' ? Math.round(i.qtd)+' un'+(i.pedidos?' · '+i.pedidos+' venda'+(i.pedidos>1?'s':''):'') : ''].filter(Boolean).map(ac2Esc).join(' · ');
-  const conta = `<button class="dm-conta" onclick="event.stopPropagation();ac2.abrirVendas('${_vk}')">ver a conta completa ▾</button>`;
+  const conta = AC2_ISADS(i) && !i.anuncio ? 'tarefa da campanha' : `<button class="dm-conta" onclick="event.stopPropagation();ac2.abrirVendas('${_vk}')">ver a conta completa ▾</button>`;
   let corpo = '';
   // tarefa de PROMOÇÃO: como o anúncio está HOJE (o texto da causa é o de quando a tarefa nasceu e pode estar superado)
   const hj = AC2_ISPROMO(i) && i.hoje ? i.hoje : null;
@@ -6159,7 +6178,7 @@ function ac2DemRow(i, modo){
       <div class="dm-meta">${meta} · ${conta}</div>
       <div class="a2-vd" id="${_vk}"></div>
     </div>
-    <div class="dm-side">${modo==='feita' ? '' : `<small>${AC2_ISPROMO(i)?'em jogo (30 dias)':ac2TipoDe(i.tipo).k==='devolucao'?'custo das devoluções':'falta p/ meta'}</small><b>${AC2_BRLk(+i.risco||0)}</b>`}${cmdBtn}${btn}</div>
+    <div class="dm-side">${modo==='feita' ? '' : `<small>${AC2_ISPROMO(i)?'em jogo (30 dias)':AC2_ISADS(i)?(ac2TipoDe(i.tipo).k==='ads_baixar'?'oportunidade':'Ads acima da margem'):ac2TipoDe(i.tipo).k==='devolucao'?'custo das devoluções':'falta p/ meta'}</small><b>${AC2_BRLk(+i.risco||0)}</b>`}${cmdBtn}${btn}</div>
   </div>`;
 }
 // preenche causa/sugestão das linhas visíveis: busca o histórico em segundo plano, 4 de cada vez
@@ -6168,6 +6187,7 @@ async function ac2CarregaResumos(){
   let ix = 0;
   const um = async () => { while(ix < els.length){ const el = els[ix++]; el.setAttribute('data-ok','1');
     const i = (ac2._vdMap||{})[el.getAttribute('data-res')]; if(!i) continue;
+    if(AC2_ISADS(i)){ el.innerHTML = ac2ResumoHTML(i, null); continue; }   // o plano de Ads já traz tudo
     try{ const H = await ac2Garante(i), a = ac2Analise(i, H);
       if(!el.isConnected) continue;
       const prob = el.previousElementSibling; if(prob && prob.classList.contains('dm-prob')) prob.innerHTML = ac2Problema(i, a);
@@ -6668,6 +6688,11 @@ function bcRenderAuthBar(){ const bar=document.getElementById('bc-authbar'); if(
 // de estoque no Full, concorrência/fabricante vendendo abaixo, e o gestor contestando o número.
 // "Sem ação" virou "Mantive de propósito": quase sempre era uma decisão, não uma omissão.
 const BC_OPC = {
+  ads: {
+    acoes: ['Subi o ROAS-alvo da campanha','Baixei o ROAS-alvo da campanha','Pausei o anúncio no Ads','Movi o anúncio para outra campanha',
+            'Pausei a campanha','Corrigi o preço/custo (o Ads volta depois)','Mantive de propósito (estratégia)','Outro'],
+    causas: ['ROAS-alvo baixo para a margem','Anúncio com margem curta numa campanha agressiva','Gasto sem venda','Margem ruim já antes do Ads (preço/custo)',
+             'Lançamento ou visibilidade (estratégia)','O número do sistema parece errado','Outro'] },
   promo: {
     acoes: ['Saí da campanha','Reduzi o desconto da promoção','Ajustei o preço da promoção','Ajustei o preço de cadastro (âncora)',
             'Revisei custo/ficha do produto','Pausei o anúncio','Mantive de propósito (estratégia)','Aguardando terceiro (fornecedor, estoque, fim de campanha)','Outro'],
@@ -6685,7 +6710,7 @@ const BC_OPC = {
             'Mudei transportadora ou modalidade de envio','Pausei o anúncio','Analisei os motivos e ainda não há ação','Outro'],
     causas: ['Produto diferente do anúncio','Defeito ou qualidade','Avaria no transporte','Tamanho, medida ou voltagem errada',
              'Atraso na entrega','Arrependimento do comprador','O número do sistema parece errado','Outro'] } };
-const bcOpcoes = tipo => BC_OPC[/^promo ·/i.test(String(tipo||'')) ? 'promo' : ac2TipoDe(tipo).k==='devolucao' ? 'devolucao' : 'margem'];
+const bcOpcoes = tipo => BC_OPC[/^promo ·/i.test(String(tipo||'')) ? 'promo' : /^ads ·/i.test(String(tipo||'')) ? 'ads' : ac2TipoDe(tipo).k==='devolucao' ? 'devolucao' : 'margem'];
 // o que pedir em cada ação: o detalhe é o que permite conferir depois se funcionou
 const BC_DICA = a => /ajustei o pre/i.test(a) ? 'ex.: subi de R$ 29,99 para R$ 32,90; margem esperada 21%'
   : /promo/i.test(a) ? 'ex.: saí da campanha X; o preço volta a R$ 34,90 em 18/10'

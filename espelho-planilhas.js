@@ -61,7 +61,12 @@ const ACAO = {
   "Maturação (produto novo)": "Produto novo: trabalhar a margem, não descartar.",
   "Promo · Sangrando": "Sair da campanha ou reduzir o desconto até a margem voltar ao piso.",
   "Promo · Preço errado": "Rever o preço de cadastro/âncora: abaixo do piso já no preço cheio.",
-  "Promo · Encareceu": "Aproximar o preço da promoção do preço em que o anúncio vendia."
+  "Promo · Encareceu": "Aproximar o preço da promoção do preço em que o anúncio vendia.",
+  "Ads · Subir ROAS-alvo": "Mercado Ads → campanha → editar → ROAS-alvo indicado → salvar.",
+  "Ads · Baixar ROAS-alvo": "Mercado Ads → campanha → editar → baixar o ROAS-alvo um degrau (20%).",
+  "Ads · Pausar anúncio": "Mercado Ads → campanha → aba Anúncios → pausar o anúncio.",
+  "Ads · Mover de campanha": "Tirar o anúncio da campanha e pô-lo numa de ROAS-alvo maior (margem curta).",
+  "Ads · Pausar campanha": "Mercado Ads → campanha → pausar (gasta sem receita de Ads)."
 };
 const ORIGEM = { "": "BsanControl", planilha: "Planilha antiga", historico: "Histórico (importado)" };
 
@@ -72,7 +77,7 @@ const CAB_REGISTROS = ["Registrado em", "Gestor", "Competência", "Anúncio", "P
   "Ação", "Novo preço", "Causa", "O que foi feito", "Reação (h)", "Origem", "ID da tarefa"];
 const DATAS = ["Registrado em", "Criada em", "Vence em"];
 // mesmo padrão do painel (AC2_PRAZO_PADRAO): só para tarefa gravada antes de existir prazo_dias
-const PRAZO_PADRAO = [[/^promo/i, 2], [/preju|estanca/i, 1], [/devolu/i, 2], [/corre/i, 1], [/queima/i, 1], [/matura/i, 2]];
+const PRAZO_PADRAO = [[/^promo/i, 2], [/^ads/i, 2], [/preju|estanca/i, 1], [/devolu/i, 2], [/corre/i, 1], [/queima/i, 1], [/matura/i, 2]];
 const prazoDe = d => d.prazo_dias != null ? +d.prazo_dias : ((PRAZO_PADRAO.find(([re]) => re.test(S(d.tipo))) || [0, 7])[1]);
 function situacaoPrazo(d, ts) {
   const p = prazoDe(d), nasc = Date.parse(d.criado_em || "");
