@@ -1,5 +1,18 @@
 # Padrão visual das áreas — Grupo Bsan
 
+Navegação agrupada (31/10/2026): o cabeçalho usa Resultados, Vendas, Gerencial, Operação, Acompanhamento e Financeiro. Há somente dois níveis de navegação; no celular, dois seletores equivalentes. A última seção de cada área é lembrada por sessão/identidade, sem alterar filtros ou competência. Direção recebe Financeiro (DRE e Comissão); Coordenação e Gestor recebem Comissão diretamente, sem uma sub-aba redundante. A autorização de DRE e o recorte da comissão continuam no servidor, sem mudança de permissões.
+
+| Área | Seções |
+|---|---|
+| Resultados | Visão Geral, Diário, Marketplaces, Curva ABC |
+| Vendas | Vendas, Raio-X, Vendas da operação (antiga seção do Gerencial) |
+| Gerencial | Panorama, Diagnóstico, Anúncios, Publicidade, Metas, Forecast |
+| Operação | Estoque, Full, Projeção, Envios |
+| Acompanhamento | Tarefas, Promoções; Ads quando disponível na fonte; Anúncios conserva o estado em breve |
+| Financeiro / Comissão | DRE exclusiva da Direção; Comissão dentro do escopo existente |
+
+Os renderizadores, IDs e handlers anteriores continuam como destinos internos. As seções antigas de navegação são substituídas visualmente, sem clonar conteúdo, solicitar bases ou alterar fórmulas. O módulo reconhece a nova seção de Ads da fonte local sem publicar o código de negócio que ainda não está em main. Conferidos no navegador os destinos de todas as áreas e seções, os três perfis, a persistência dos filtros, os temas e os seletores no celular. Testados os contratos reais do servidor para omissão dos custos e recorte de comissão, além do bloqueio de abertura direta da DRE no cliente.
+
 Calendários do período (31/10/2026): seleção de mês em grade de 12 meses com navegação por ano; intervalo personalizado em calendário próprio, dois meses no desktop e um no celular, faixa contínua e prévia ao passar pelas datas. A seleção aceita ordem inversa e intervalos entre meses; setas, Home/End e PageUp/PageDown navegam pelo teclado. Animações respeitam movimento reduzido. Atalho Últimos 15 dias incluído, com a mesma referência de última venda dos demais atalhos. Os campos originais e o comando de aplicação são preservados; cancelar restaura a consulta vigente. Validado no navegador: rascunho sem aplicação, intervalo incompleto, confirmação, cancelamento, mês completo, teclado, temas e largura de 390 px.
 
 Cobertura: 13 áreas principais e oito sub-abas do Gerencial. Metas e Comissão mantêm os componentes já aprovados. As demais áreas usam os mesmos fundamentos de superfícies, tipografia, controles, tabelas e cor de estado.

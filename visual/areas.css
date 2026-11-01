@@ -132,3 +132,18 @@ body.bc-shell .bc-metrics :is(.bc-metric-value,.kpi-val),body.bc-shell .bc-com-k
 @keyframes bc-calendar-select{from{transform:scale(.9)}to{transform:scale(1)}}
 @media(max-width:760px){.bc-shell .bc-range-v2>.bc-period-panel{width:calc(100vw - 32px)}.bc-calendar-grid{grid-template-columns:1fr;gap:0}.bc-calendar-page:nth-child(2){display:none}.bc-calendar-page h3{display:none}.bc-shell .bc-calendar-days button{width:38px;height:38px;min-height:38px}.bc-calendar-endpoints strong{font-size:13px}.bc-month-grid{gap:7px}.bc-shell .bc-month-grid button{font-size:13px;padding:8px 4px}.bc-calendar-instruction{min-height:38px}}
 @media(prefers-reduced-motion:reduce){.bc-calendar-cell:before,.bc-calendar-days button{transition:none!important;animation:none!important}}
+/* Navegação por área: seis entradas, uma única linha de seções por contexto. */
+body.bc-grouped-navigation :is(#main-nav,.bc-mobile-area,.bc-mobile-section,#nav-left,#nav-right,#page-gerencial .bc-secondary,#a2-sub){display:none!important}
+.bc-group-nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;min-width:0}
+.bc-shell .bc-group-button{border:1px solid transparent;background:transparent;color:var(--bc-muted);border-radius:8px;padding:10px 15px;min-height:44px;font-size:14px;font-weight:600;cursor:pointer}
+.bc-shell .bc-group-button:hover{background:var(--a3);color:var(--bc-text)}
+.bc-shell .bc-group-button[aria-current=page]{border-color:var(--bc-accent);background:var(--a3);color:var(--bc-text)}
+.bc-shell .bc-group-sections{margin:0 0 22px;gap:8px;max-width:100%;width:100%}
+.bc-shell .bc-group-sections[hidden],.bc-shell .bc-group-mobile-section[hidden]{display:none!important}
+.bc-shell .bc-group-sections button:disabled{opacity:.5;cursor:default}
+.bc-shell .bc-group-sections small{display:inline-block;font-size:12px;font-weight:500;margin-left:8px;padding:0 6px;border-radius:4px;background:var(--bc-raised);color:var(--bc-muted)}
+.bc-group-mobile{display:none;font-size:13px;color:var(--bc-muted);gap:7px}
+.bc-group-mobile select{font:inherit;font-size:14px;min-height:44px;padding:9px 12px;border:1px solid var(--bc-border);border-radius:8px;background:var(--bc-surface);color:var(--bc-text);width:100%}
+.bc-group-mobile-section{margin:0 0 22px}
+.bc-shell :is(.bc-group-nav,.bc-group-sections,.bc-group-mobile) :is(button,select):focus-visible{outline:2px solid var(--bc-accent);outline-offset:3px}
+@media(max-width:760px){.bc-group-nav,.bc-shell .bc-group-sections{display:none!important}.bc-group-mobile{display:flex;flex-direction:column;width:100%}.bc-shell .bc-nav-wrapper{display:block}}

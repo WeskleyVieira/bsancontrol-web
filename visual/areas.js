@@ -124,7 +124,67 @@ function bcChromeCalendarPaint(){
  bcChromeText(document.getElementById('bc-calendar-instruction'),from&&!to?'Agora escolha a data final. O intervalo será destacado ao passar pelas datas.':'Clique na data inicial e depois na final. Use as setas do teclado para navegar.');
 }
 
-function bcChromeRefresh(){bcChromeAccount();bcChromePeriod();bcChromePeriodSync();}
+// Two navigation levels over the existing pages. No data or permission contract changes.
+const BCGroup={mounted:false,identity:null,last:{},busy:false};
+const BCGroupMap=[
+ {id:'resultados',label:'Resultados',items:[{id:'overview',label:'Visão Geral',page:'overview'},{id:'diario',label:'Diário',page:'diario'},{id:'marketplaces',label:'Marketplaces',page:'marketplaces'},{id:'abc',label:'Curva ABC',page:'abc'}]},
+ {id:'vendas',label:'Vendas',items:[{id:'vendas',label:'Vendas',page:'vendas'},{id:'raiox',label:'Raio-X',page:'raiox'},{id:'ger-vendas',label:'Vendas da operação',page:'gerencial',sub:'vendas'}]},
+ {id:'gerencial',label:'Gerencial',items:[{id:'panorama',label:'Panorama',page:'gerencial',sub:'panorama'},{id:'diag',label:'Diagnóstico',page:'gerencial',sub:'diag'},{id:'produtos',label:'Anúncios',page:'gerencial',sub:'produtos'},{id:'ads',label:'Publicidade',page:'gerencial',sub:'ads'},{id:'metas',label:'Metas',page:'gerencial',sub:'metas'},{id:'forecast',label:'Forecast',page:'metas'}]},
+ {id:'operacao',label:'Operação',items:[{id:'estoque',label:'Estoque',page:'estoque'},{id:'full',label:'Full',page:'gerencial',sub:'full'},{id:'projecao',label:'Projeção',page:'projecao'},{id:'envios',label:'Envios',page:'envios'}]},
+ {id:'acompanhamento',label:'Acompanhamento',items:[{id:'tarefas',label:'Tarefas',page:'acompanhamento',work:'tarefas'},{id:'promos',label:'Promoções',page:'acompanhamento',work:'promos'},{id:'ac-anuncios',label:'Anúncios · em breve',page:'acompanhamento',disabled:true}]},
+ {id:'financeiro',label:'Financeiro',items:[{id:'dre',label:'DRE',page:'dre'},{id:'comissao',label:'Comissão',page:'gerencial',sub:'comissao'}]}
+];
+function bcGroupedAllowed(item,user=bcNavSession()){
+ if(item.id==='dre')return user?.perfil==='direcao';
+ if(item.id==='comissao')return ['direcao','coordenacao','gestor'].includes(user?.perfil)||typeof painelOnline==='function'&&!painelOnline();
+ return true;
+}
+function bcGroupedCatalogue(){return BCGroupMap.map(g=>{const items=[...g.items];if(g.id==='acompanhamento'&&typeof AC2_TIPOS_ADS!=='undefined')items.splice(2,0,{id:'ac-ads',label:'Ads',page:'acompanhamento',work:'ads'});return{...g,items:items.filter(i=>bcGroupedAllowed(i))};}).filter(g=>g.items.length).map(g=>({...g,label:g.id==='financeiro'&&g.items.length===1?'Comissão':g.label}));}
+function bcGroupedCurrent(groups=bcGroupedCatalogue()){
+ for(const group of groups){const item=group.items.find(i=>!i.disabled&&i.page===activePage&&(i.sub?i.sub===GER_SUB:i.work?i.work===(typeof ac2==='object'?ac2.sub:'tarefas'):true));if(item)return{group,item};}return null;
+}
+function bcGroupedIdentity(){const key=bcNavKey()+':areas-v1';if(BCGroup.identity!==key){BCGroup.identity=key;BCGroup.last={};try{const saved=JSON.parse(localStorage.getItem(key)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))BCGroup.last=saved;}catch{}}return key;}
+function bcGroupedRemember(group,item){const key=bcGroupedIdentity();if(BCGroup.last[group]===item)return;BCGroup.last[group]=item;try{localStorage.setItem(key,JSON.stringify(BCGroup.last));}catch{}}
+function bcGroupedOpen(groupId,itemId){
+ bcGroupedIdentity();const group=bcGroupedCatalogue().find(g=>g.id===groupId);if(!group)return;const item=group.items.find(i=>i.id===(itemId||BCGroup.last[groupId])&&!i.disabled)||(!itemId?group.items.find(i=>!i.disabled):null);if(!item||!bcGroupedAllowed(item))return;
+ const original=document.getElementById('nav-'+item.page);if(!original)return;
+ if(item.sub)GER_SUB=item.sub;
+ goPage(item.page,original);
+ if(item.work&&typeof ac2==='object'&&typeof ac2.setSub==='function')ac2.setSub(item.work);
+ const current=bcGroupedCurrent();if(current?.group.id===groupId&&current.item.id===item.id)bcGroupedRemember(groupId,item.id);
+ bcGroupedRefresh();bcVisualSchedule();
+}
+function bcGroupedMount(){
+ if(BCGroup.mounted||!BCNav.ready)return;const original=document.getElementById('main-nav'),heading=document.querySelector('.bc-view-heading');if(!original||!heading)return;
+ document.body.classList.add('bc-grouped-navigation');const primary=document.createElement('nav');primary.id='bc-group-nav';primary.className='bc-group-nav';primary.setAttribute('aria-label','Áreas do BsanControl');original.before(primary);
+ const mobile=document.createElement('label');mobile.className='bc-group-mobile';mobile.htmlFor='bc-group-select';mobile.append(document.createTextNode('Área do painel'));const select=document.createElement('select');select.id='bc-group-select';select.onchange=()=>bcGroupedOpen(select.value);mobile.append(select);primary.after(mobile);
+ const secondary=document.createElement('nav');secondary.id='bc-group-sections';secondary.className='bc-secondary bc-group-sections';heading.after(secondary);
+ const subMobile=document.createElement('label');subMobile.className='bc-group-mobile bc-group-mobile-section';subMobile.htmlFor='bc-group-section';const caption=document.createElement('span');caption.id='bc-group-section-label';subMobile.append(caption);const subSelect=document.createElement('select');subSelect.id='bc-group-section';subSelect.onchange=()=>{const current=bcGroupedCurrent();if(current)bcGroupedOpen(current.group.id,subSelect.value);};subMobile.append(subSelect);secondary.after(subMobile);
+ BCGroup.mounted=true;const refresh=bcNavRefresh;bcNavRefresh=function(){const result=refresh.apply(this,arguments);bcGroupedRefresh();return result;};
+}
+function bcGroupedRefresh(){
+ if(BCGroup.busy)return;bcGroupedMount();if(!BCGroup.mounted)return;BCGroup.busy=true;
+ try{
+ bcGroupedIdentity();const groups=bcGroupedCatalogue();let current=bcGroupedCurrent(groups);
+ if(!current){if(activePage==='dre'&&bcNavSession()?.perfil!=='direcao'){goPage('overview',document.getElementById('nav-overview'));current=bcGroupedCurrent(groups);}if(!current)return;}
+ const {group,item}=current;bcGroupedRemember(group.id,item.id);
+ const primary=document.getElementById('bc-group-nav'),signature=groups.map(g=>g.id+':'+g.label).join('|');
+ if(primary.dataset.signature!==signature){primary.replaceChildren(...groups.map(g=>{const b=bcChromeButton(g.label,()=>bcGroupedOpen(g.id));b.id='bc-area-'+g.id;b.className='bc-group-button';b.dataset.group=g.id;return b;}));primary.dataset.signature=signature;}
+ for(const b of primary.children){if(b.dataset.group===group.id){if(b.getAttribute('aria-current')!=='page')b.setAttribute('aria-current','page');}else b.removeAttribute('aria-current');}
+ bcNavOptions(document.getElementById('bc-group-select'),groups.map(g=>[g.id,g.label]),group.id);
+ const secondary=document.getElementById('bc-group-sections'),subSignature=group.items.map(i=>i.id+':'+i.label+':'+!!i.disabled).join('|');
+ if(secondary.dataset.signature!==subSignature){secondary.replaceChildren(...group.items.map(i=>{const b=bcChromeButton(i.label,()=>bcGroupedOpen(group.id,i.id));b.className='dshort';b.dataset.section=i.id;b.disabled=!!i.disabled;return b;}));secondary.dataset.signature=subSignature;}
+ const aria='Seções de '+group.label;if(secondary.getAttribute('aria-label')!==aria)secondary.setAttribute('aria-label',aria);
+ for(const b of secondary.children){if(b.dataset.section===item.id){if(b.getAttribute('aria-current')!=='page')b.setAttribute('aria-current','page');}else b.removeAttribute('aria-current');}
+ const single=group.items.filter(i=>!i.disabled).length===1;bcChromeHidden(secondary,single);bcChromeHidden(document.querySelector('.bc-group-mobile-section'),single);
+ bcChromeText(document.getElementById('bc-group-section-label'),aria);bcNavOptions(document.getElementById('bc-group-section'),group.items.filter(i=>!i.disabled).map(i=>[i.id,i.label]),item.id);
+ bcChromeText(document.getElementById('bc-page-title'),item.label);bcChromeText(document.getElementById('bc-breadcrumb'),'Grupo Bsan / '+group.label+(single?'':' / '+item.label));
+ // Counts remain those computed by Acompanhamento's existing filters.
+ if(group.id==='acompanhamento')for(const key of ['tarefas','promos','ads']){const old=document.querySelector('#a2-sub button[onclick*="'+key+'"] .a2-subn'),button=secondary.querySelector('[data-section="'+(key==='ads'?'ac-ads':key)+'"]');if(old&&button){let badge=button.querySelector('small');if(!badge){badge=document.createElement('small');button.append(badge);}bcChromeText(badge,old.textContent);}}
+ }finally{BCGroup.busy=false;}
+}
+
+function bcChromeRefresh(){bcChromeAccount();bcChromePeriod();bcChromePeriodSync();bcGroupedRefresh();}
 const bcVisualVisible=el=>!!el&&el.isConnected&&el.getClientRects().length>0&&!el.closest('[hidden]');
 function bcVisualTone(color){const c=String(color||'').replace(/\s/g,'').toLowerCase();if(/#(?:22c55e|34d399|4ade80|059669|10b981)|rgb\((?:34,197,94|52,211,153|74,222,128)\)|var\(--pos\)/.test(c))return'good';if(/#(?:f87171|ef5350|ef4444|dc2626|ff6b6b)|rgb\((?:248,113,113|239,83,80|239,68,68)\)|var\(--neg\)/.test(c))return'bad';if(/#(?:f59e0b|fbbf24|fcd34d|facc15)|rgb\((?:245,158,11|251,191,36)\)|var\(--warn\)/.test(c))return'attention';if(/#(?:4f8ef7|60a5fa|3b82f6)|var\(--a2?\)/.test(c))return'info';return'';}
 function bcVisualLabel(text){const original=String(text||'');const clean=original.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu,'').replace(/^\s+/,'');return clean.trim()?clean:original;}
