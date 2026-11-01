@@ -15,13 +15,15 @@ const { completar: completarResumoVendas } = require("./vendas-indicadores");
 const lancamento = require("./lancamento");
 const writeStore = require("./datasets-versionados");
 const acessos = require("./acessos");
-const usuarios = require("./usuarios").criarServico(dbx, {userReferences:id=>produtosIntegration.userReferences(id)});
+const usuarios = require("./usuarios").criarServico(dbx, {userReferences:async id=>[...await produtosIntegration.userReferences(id),...await posVenda.references(id)]});
 const produtosIntegration = require("./produtos/integration").createIntegration({dbx,resolveSession:sessaoDe});
 if(process.env.PRODUTOS_ENABLED==='1' && String(process.env.JWT_SECRET||'').length<32)throw Error('Produtos exige JWT_SECRET com pelo menos 32 caracteres.');
 const acompanhamentoRegistros = require('./acompanhamento-registros');
 const operacaoConsultas = require('./operacao-consultas');
 const resultadosConsultas = require('./resultados-consultas');
 const financeiroConsultas = require('./financeiro-consultas');
+const posVenda = require('./pos-venda').createService(dbx);
+const posVendaHttp = require('./pos-venda-http').createHttp(posVenda);
 
 const PORT = process.env.PORT || 8787;
 const AUTH_REQ = process.env.AUTH_REQUIRED === "1";                      // em produção: 1 (exige login)
@@ -449,6 +451,7 @@ const server = http.createServer(async (req, res) => {
       if (!user) return J(res, { ok: false, erro: "não autenticado" }, 401);
       return J(res, { ok: true, usuario: {...user,produtos_habilitado:process.env.PRODUTOS_ENABLED==='1'} });
     }
+    if(await posVendaHttp(req,res,u,user))return;
     // ── POST /api/trocar-senha (usuário logado troca a própria senha) ──
     if (req.method === "POST" && u.pathname === "/api/trocar-senha") {
       if (!user) return J(res, { ok: false, erro: "não autenticado" }, 401);

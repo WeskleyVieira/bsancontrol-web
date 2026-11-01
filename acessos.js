@@ -14,6 +14,8 @@
   {id:'estoque.ver',nome:'Estoque e planejamento',grupo:'Visualização',perfis:todos,descricao:'Estoque, Projeção e dados de Full. Full também exige Gestão e Dados de vendas.'},
   {id:'envios.ver',nome:'Consultar Envios',grupo:'Visualização',perfis:todos,descricao:'Contagens de coleta, Flex e Full registradas por operação.'},
   {id:'acompanhamento.ver',nome:'Consultar Acompanhamento',grupo:'Visualização',perfis:todos,descricao:'Tarefas, Promoções e Ads dentro da carteira autorizada.'},
+  {id:'posvenda.ver',nome:'Consultar Pós-venda',grupo:'Pós-venda',perfis:todos,requer:'vendas.ver',descricao:'Atendimentos de clientes. Gestor limitado à própria carteira.'},
+  {id:'posvenda.tratar',nome:'Registrar atendimentos e ações',grupo:'Pós-venda',perfis:todos,requer:'posvenda.ver',descricao:'Abrir atendimentos, registrar ações, definir responsável e prazo e atualizar a situação.'},
   {id:'comissao.ver',nome:'Consultar Comissão',grupo:'Visualização',perfis:todos,descricao:'Gestor: registros da própria carteira. Coordenação e Direção: escopo atual do perfil.'},
   {id:'dre.ver',nome:'Consultar DRE',grupo:'Visualização',perfis:['direcao'],descricao:'Custos e resultado financeiro. Exclusivo da Direção.'},
   {id:'acompanhamento.tratar',nome:'Registrar tratativas',grupo:'Ações',perfis:todos,requer:'acompanhamento.ver',descricao:'Registrar ações nas demandas autorizadas.'},
@@ -27,10 +29,11 @@
  function aprovador(user){return !!user&&(user.perfil==='compradora'||user.perfil==='direcao'&&String(user.email||'').toLowerCase()==='weskley@grupobsan');}
  function efetivasUsuario(user){const out=efetivas(user.perfil,user.restricoes||{});if(!aprovador(user))out['produtos.custos.aprovar']=false;return out;}
  function pode(user,key){return !!user&&efetivasUsuario(user)[key]===true;}
- function pagina(user,page,sub){const can=k=>pode(user,k);if(page==='cadastro-produtos')return can('produtos.ver');if(page==='gerencial'){if(sub==='comissao')return can('comissao.ver');return can('gestao.ver')&&(sub!=='full'||can('estoque.ver'));}if(page==='dre')return can('dre.ver');if(page==='acompanhamento')return can('acompanhamento.ver');if(page==='envios')return can('envios.ver');if(page==='estoque')return can('estoque.ver');if(page==='projecao')return can('estoque.ver')&&can('vendas.ver');return can('vendas.ver');}
+ function pagina(user,page,sub){const can=k=>pode(user,k);if(page==='pos-venda')return can('posvenda.ver');if(page==='cadastro-produtos')return can('produtos.ver');if(page==='gerencial'){if(sub==='comissao')return can('comissao.ver');return can('gestao.ver')&&(sub!=='full'||can('estoque.ver'));}if(page==='dre')return can('dre.ver');if(page==='acompanhamento')return can('acompanhamento.ver');if(page==='envios')return can('envios.ver');if(page==='estoque')return can('estoque.ver');if(page==='projecao')return can('estoque.ver')&&can('vendas.ver');return can('vendas.ver');}
  function rota(user,method,path){
   if(path==='/api/health'||path==='/api/sessao'||path==='/api/trocar-senha')return true;
   if(path==='/api/produtos'||path.startsWith('/api/produtos/'))return pode(user,'produtos.ver');
+  if(path.startsWith('/api/pos-venda/'))return pode(user,method==='POST'?'posvenda.tratar':'posvenda.ver');
   if(['estoque','compradora'].includes(user?.perfil))return false;
   if(path.startsWith('/api/admin/'))return user?.perfil==='direcao';
   if(['/api/dataset','/api/detalhe','/api/vendas','/api/vendas-agregado'].includes(path))return pode(user,'vendas.ver');
