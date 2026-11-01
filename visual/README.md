@@ -1,5 +1,9 @@
 # Padrão visual das áreas — Grupo Bsan
 
+Auditoria aprofundada por página: ver `../AUDITORIA_PAGINAS.md`. Etapa 1 implementa Visão Geral e Panorama: hierarquia e bases explícitas, composição conciliada com o faturamento, abertura da operação mantendo datas, meta mensal separada e correção do percentual após Ads quando a margem das vendas é zero. O núcleo de receita/margem em reais e os fechamentos permanecem preservados. A migração anterior do tema comum não substitui a revisão aprofundada das demais páginas.
+
+Os módulos adicionais `resumos-modelo.js`, `resumos-correcoes.js`, `resumos.js` e `resumos.css` devem existir no diretório `visual/` do Pipeline e ser copiados pelo `build-online.js`. O integrador valida os trechos de origem antes de aplicar correções e aborta se o contrato mudou. O loader registra a janela recebida em `_bcJanelaCarregada`; sem cobertura mensal suficiente, o resumo não apresenta o recorte como realizado do mês inteiro. Testes em `tests/resumos.test.js`.
+
 Administração implementada em `visual/usuarios.js` e `visual/usuarios.css`, com o contrato `acessos.js` compartilhado com o servidor. A lista tem busca/filtros; edição em Dados, Acessos e Histórico; senhas temporárias individuais; desativação reversível e restrições por recurso. Ver `USUARIOS_ACESSOS.md`. O integrador inclui os módulos depois de definir o loader; o Pipeline precisa copiar os novos assets e os módulos de backend.
 
 Correção de alcance: Full permanece no Gerencial, ligado à operação do gestor. Forecast fica em Resultados, junto das leituras macro.
