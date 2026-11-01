@@ -1176,6 +1176,33 @@ body.bc-grouped-navigation :is(#main-nav,.bc-mobile-area,.bc-mobile-section,#nav
 .bc-group-mobile-section{margin:0 0 22px}
 .bc-shell :is(.bc-group-nav,.bc-group-sections,.bc-group-mobile) :is(button,select):focus-visible{outline:2px solid var(--bc-accent);outline-offset:3px}
 @media(max-width:760px){.bc-group-nav,.bc-shell .bc-group-sections{display:none!important}.bc-group-mobile{display:flex;flex-direction:column;width:100%}.bc-shell .bc-nav-wrapper{display:block}}
+</style><style id="bc-users-visual">/* Usuários e acessos — mesmas superfícies, tipografia e acento da aba Metas. */
+.bc-users-page,.bc-user-drawer,.bc-u-confirm{color:var(--bc-text);background:var(--bc-surface);font-family:var(--bc-font,Inter,"Segoe UI",sans-serif);border:1px solid var(--bc-border);box-sizing:border-box}
+.bc-users-page::backdrop,.bc-user-drawer::backdrop,.bc-u-confirm::backdrop{background:rgba(4,8,16,.72)}
+.bc-users-page{inset:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;padding:28px;overflow:auto;border:0;border-radius:0}
+.bc-u-page-inner{max-width:1240px;margin:auto}.bc-u-page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:24px}
+.bc-u-page-head h1{font-size:30px;line-height:1.3;margin:6px 0 10px;letter-spacing:-.5px}.bc-u-page-head p,.bc-u-note{font-size:14px;line-height:1.7;color:var(--bc-muted);margin:8px 0}
+.bc-u-eyebrow{font-size:12px!important;letter-spacing:.4px;color:var(--bc-muted);margin:0!important}.bc-u-page-head>div:last-child{display:flex;gap:10px;flex-wrap:wrap}
+.bc-u-button{font:600 14px/1.5 var(--bc-font,Inter,"Segoe UI",sans-serif);min-height:44px;padding:10px 15px;border:1px solid var(--bc-border);border-radius:8px;color:var(--bc-text);background:var(--bc-surface);cursor:pointer;white-space:normal}
+.bc-u-button:hover{background:var(--a3)}.bc-u-button:disabled{opacity:.5;cursor:default}.bc-u-button.bc-u-primary{background:var(--bc-accent);color:var(--bc-button-ink,#182034);border-color:var(--bc-accent)}
+.bc-u-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 22px}.bc-u-stats article{padding:18px 20px;border:1px solid var(--bc-border);border-radius:10px;background:var(--bc-raised)}.bc-u-stats span{font-size:13px;color:var(--bc-muted);display:block}.bc-u-stats strong{font-size:30px;line-height:1.5;display:block;font-variant-numeric:tabular-nums}
+.bc-u-filters{display:grid;grid-template-columns:2fr repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px;padding:18px;border:1px solid var(--bc-border);border-radius:10px}.bc-u-field{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:13px;color:var(--bc-muted)}
+:is(.bc-users-page,.bc-user-drawer,.bc-u-confirm) :is(input:not([type=checkbox]),select){font:400 14px/1.5 var(--bc-font,Inter,"Segoe UI",sans-serif);width:100%;min-width:0;min-height:44px;box-sizing:border-box;padding:10px 12px;color:var(--bc-text);background:var(--bc-raised);border:1px solid var(--bc-border);border-radius:8px}
+.bc-u-count{font-size:13px;color:var(--bc-muted);margin:14px 0}.bc-u-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px}.bc-u-table th{text-align:left;padding:14px 16px;font-size:12px;font-weight:600;color:var(--bc-muted);background:var(--bc-raised)}.bc-u-table th:first-child{width:29%}.bc-u-table th:last-child{width:110px}.bc-u-table td{padding:16px;border-bottom:1px solid var(--bc-border);vertical-align:middle;overflow-wrap:anywhere;line-height:1.6}.bc-u-table tr:hover td{background:var(--a3)}.bc-u-table-wrap{border:1px solid var(--bc-border);border-radius:10px;overflow:hidden}.bc-u-table small,.bc-u-identity span{display:block;font-size:12px;color:var(--bc-muted);margin-top:4px}.bc-u-identity strong{display:block;font-weight:600}.bc-u-table td:last-child{overflow-wrap:normal}
+.bc-u-status{display:inline-block;font-size:12px;padding:3px 8px;border:1px solid var(--bc-border);border-radius:5px;color:var(--bc-muted);background:var(--bc-raised);white-space:nowrap}.bc-u-status[data-tone=good]{color:var(--bc-good);background:color-mix(in srgb,var(--bc-good) 8%,var(--bc-surface));border-color:color-mix(in srgb,var(--bc-good) 30%,var(--bc-border))}.bc-u-table .bc-u-pending{color:var(--bc-attention)}
+.bc-user-drawer{inset:0 0 0 auto;width:580px;max-width:100vw;height:100dvh;max-height:100dvh;margin:0 0 0 auto;border-width:0 0 0 1px;padding:0;border-radius:0;overflow:hidden}
+.bc-user-drawer[open]{display:flex;flex-direction:column}.bc-u-drawer-head{padding:24px 24px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-shrink:0}.bc-u-drawer-head h2{font-size:23px;line-height:1.35;margin:5px 0 6px;overflow-wrap:anywhere}.bc-u-drawer-head p:last-child{font-size:13px;color:var(--bc-muted);margin:0;overflow-wrap:anywhere}.bc-u-close{font-size:24px;line-height:1;min-width:40px;min-height:40px;border:1px solid var(--bc-border);border-radius:8px;background:transparent;color:var(--bc-text);cursor:pointer}
+.bc-u-tabs{padding:0 24px 14px;display:flex;gap:8px;border-bottom:1px solid var(--bc-border);flex-shrink:0}.bc-u-tab{min-height:44px;padding:9px 13px;font-size:14px;color:var(--bc-muted);background:transparent;border:1px solid transparent;border-radius:8px;cursor:pointer}.bc-u-tab[aria-current=page]{border-color:var(--bc-accent);background:var(--a3);color:var(--bc-text)}.bc-u-tab:disabled{opacity:.4;cursor:default}
+.bc-u-drawer-body{overflow:auto;min-height:0;flex:1;padding:22px 24px}.bc-u-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.bc-u-form-grid .bc-u-field:nth-child(-n+2){grid-column:1/-1}.bc-u-scope,.bc-u-security{padding:18px;border:1px solid var(--bc-border);border-radius:9px;margin-top:20px}.bc-user-drawer h3{font-size:16px;font-weight:600;margin:0 0 10px}.bc-u-scope ul{padding-left:18px;font-size:13px;line-height:1.8;color:var(--bc-muted)}
+.bc-u-drawer-footer{flex-shrink:0;padding:14px 24px 20px;border-top:1px solid var(--bc-border);background:var(--bc-surface)}.bc-u-drawer-footer p{font-size:12px;color:var(--bc-muted);margin:0 0 10px}.bc-u-drawer-footer>div{display:flex;justify-content:flex-end;gap:10px}.bc-u-drawer-footer .bc-u-button{flex:1}
+.bc-u-permission{display:flex;align-items:flex-start;gap:12px;border:1px solid var(--bc-border);border-radius:8px;padding:14px;margin:10px 0;cursor:pointer}.bc-u-permission input{width:18px;height:18px;min-width:18px;margin:3px 0 0;accent-color:var(--bc-accent)}.bc-u-permission strong{display:block;font-size:14px;font-weight:600}.bc-u-permission small{display:block;font-size:12px;line-height:1.7;color:var(--bc-muted);margin-top:5px}.bc-u-permission .bc-u-inheritance{color:var(--bc-accent)}.bc-u-permission:has(input:disabled){opacity:.65;cursor:default}#bc-user-permissions h4{font-size:13px;margin:22px 0 10px;color:var(--bc-muted)}
+.bc-u-confirm{width:480px;max-width:calc(100vw - 32px);padding:24px;border-radius:12px}.bc-u-confirm h2{font-size:21px;margin:0 0 12px;line-height:1.4}.bc-u-footer{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:20px}.bc-u-event{border-left:2px solid var(--bc-border);padding:2px 0 4px 16px;margin:18px 0}.bc-u-event strong{font-size:14px}.bc-u-event p{font-size:12px;overflow-wrap:anywhere}
+.bc-u-error,#bc-user-error{font-size:13px;color:var(--bc-bad);line-height:1.7;white-space:pre-line}#bc-users-status{min-height:22px;font-size:13px}#bc-users-status[data-tone=good]{color:var(--bc-good)}#bc-users-status[data-tone=bad]{color:var(--bc-bad)}.bc-u-empty{padding:32px 20px;text-align:center;color:var(--bc-muted);border:1px solid var(--bc-border);border-radius:10px}.bc-u-sr{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+:is(.bc-users-page,.bc-user-drawer,.bc-u-confirm) [hidden]{display:none!important}:is(.bc-users-page,.bc-user-drawer,.bc-u-confirm) :is(input,select,button):focus-visible{outline:2px solid var(--bc-accent);outline-offset:3px}
+@media(max-width:1000px){.bc-u-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.bc-u-page-head{flex-wrap:wrap}.bc-u-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.bc-users-page{padding:18px 16px}.bc-u-page-head h1{font-size:26px}.bc-u-page-head>div:last-child{width:100%}.bc-u-page-head button{flex:1}.bc-u-stats{gap:10px}.bc-u-stats article{padding:14px}.bc-u-stats strong{font-size:26px}.bc-u-filters{padding:14px;gap:12px;grid-template-columns:1fr}.bc-u-table,.bc-u-table tbody{display:block}.bc-u-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.bc-u-table tr{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--bc-border);padding:16px;gap:12px}.bc-u-table td{display:block;padding:0;border:0}.bc-u-table td:before{content:attr(data-label);display:block;font-size:12px;color:var(--bc-muted);margin-bottom:5px}.bc-u-table td:first-child,.bc-u-table td:last-child{grid-column:1/-1}.bc-u-table td:last-child button{width:100%}.bc-u-table td:first-child:before,.bc-u-table td:last-child:before{display:none}.bc-u-table tr:hover td{background:transparent}.bc-user-drawer{width:100vw;border:0}.bc-u-drawer-head{padding:20px 16px 14px}.bc-u-tabs{padding:0 16px 12px}.bc-u-drawer-body{padding:18px 16px}.bc-u-drawer-footer{padding:12px 16px 18px}.bc-u-form-grid{grid-template-columns:1fr}.bc-u-form-grid .bc-u-field{grid-column:1}.bc-u-confirm{padding:20px}}
+body.bc-access-no-tratativas #ac2-root :is(.dm-reg,.a2-trbtn){display:none!important}.bc-u-table th:last-child{width:136px}.bc-u-table td:last-child .bc-u-button{width:100%;padding-left:10px;padding-right:10px;box-sizing:border-box;max-width:100%}
+@media(max-width:760px){.bc-user-drawer{width:100%;max-width:100%}}
 </style></head>
 <body><div id="bc-dataload" style="position:fixed;inset:0;z-index:9990;background:#0d1119;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:Inter,system-ui,sans-serif;color:#8891a8"><div class="sp"></div><div id="bc-dataload-txt">Carregando…</div></div>
 
@@ -6656,7 +6683,7 @@ function bcTrocarSenha(force){ bcAuthInjectCSS(); let ov=document.getElementById
     <p>${force?'Primeiro acesso: troque a senha padrão por uma só sua.':'Escolha uma nova senha.'}</p>
     <form onsubmit="return bcPwdSubmit(event)">
     <div class="bcl-f"><label>Senha atual</label><input id="bcp-atual" type="password" autocomplete="current-password"></div>
-    <div class="bcl-f"><label>Nova senha</label><input id="bcp-nova" type="password" autocomplete="new-password" placeholder="mín. 6 caracteres"></div>
+    <div class="bcl-f"><label>Nova senha</label><input id="bcp-nova" type="password" autocomplete="new-password" placeholder="mín. 8 caracteres"></div>
     <div class="bcl-f"><label>Confirmar nova senha</label><input id="bcp-conf" type="password" autocomplete="new-password"></div>
     <button class="bcl-btn" id="bcp-sub" type="submit">Salvar</button>
     ${force?'':`<button type="button" onclick="document.getElementById('bc-pwd').classList.remove('on')" style="width:100%;margin-top:8px;background:none;border:none;color:var(--t3);font-size:12.5px;cursor:pointer">cancelar</button>`}
@@ -6666,7 +6693,7 @@ function bcTrocarSenha(force){ bcAuthInjectCSS(); let ov=document.getElementById
 async function bcPwdSubmit(ev){ ev.preventDefault(); const btn=document.getElementById('bcp-sub'), err=document.getElementById('bcp-err');
   const atual=document.getElementById('bcp-atual').value, nova=document.getElementById('bcp-nova').value, conf=document.getElementById('bcp-conf').value;
   err.textContent='';
-  if(nova.length<6){ err.textContent='⚠️ A nova senha precisa de ao menos 6 caracteres.'; return false; }
+  if(nova.length<8){ err.textContent='⚠️ A nova senha precisa de ao menos 8 caracteres.'; return false; }
   if(nova!==conf){ err.textContent='⚠️ A confirmação não bate com a nova senha.'; return false; }
   btn.disabled=true; btn.textContent='Salvando…';
   try{
@@ -13796,7 +13823,7 @@ function bcChromeAccount(){
  }
  const u=bcNavSession(),role={direcao:'Direção',coordenacao:'Coordenação',gestor:'Gestor'}[u?.perfil]||u?.perfil||'Sem sessão conectada';bcChromeText(document.getElementById('bc-user-name'),u?.nome||'Arquivo local');bcChromeText(document.getElementById('bc-user-role'),role);bcChromeText(document.getElementById('bc-user-note'),window.BC_REVIEW?'Ambiente de revisão · sem gravação oficial.':u?'Acesso conforme o perfil da sua sessão.':'Entre para acessar sua carteira e suas permissões.');
  for(const id of ['access','password','logout'])bcChromeHidden(document.getElementById('bc-user-'+id),!u);bcChromeHidden(document.getElementById('bc-user-login'),!!u);
- const admin=document.getElementById('btn-admin'),slot=document.getElementById('bc-user-admin-slot');if(admin){if(admin.parentElement!==slot)slot.append(admin);bcChromeText(admin,'Administração de usuários');bcChromeHidden(admin,u?.perfil!=='direcao');const display=u?.perfil==='direcao'?'block':'none';if(admin.style.display!==display)admin.style.display=display;admin.disabled=typeof window.bcAdminAbrir!=='function';admin.title=admin.disabled?'Disponível na sessão online da Direção':'Administrar usuários';if(!admin.dataset.bcAccount){admin.addEventListener('click',()=>{account.open=false;});admin.dataset.bcAccount='1';}}
+ const admin=document.getElementById('btn-admin'),slot=document.getElementById('bc-user-admin-slot');if(admin){if(admin.parentElement!==slot)slot.append(admin);bcChromeText(admin,'Usuários e acessos');bcChromeHidden(admin,u?.perfil!=='direcao');const display=u?.perfil==='direcao'?'block':'none';if(admin.style.display!==display)admin.style.display=display;admin.disabled=typeof window.bcAdminAbrir!=='function';admin.title=admin.disabled?'Disponível na sessão online da Direção':'Administrar usuários';if(!admin.dataset.bcAccount){admin.addEventListener('click',()=>{account.open=false;});admin.dataset.bcAccount='1';}}
 }
 function bcChromeDay(date,offset){const d=_parseD(date);d.setDate(d.getDate()+offset);return _iso(d);}
 function bcChromeRangeShort(from,to){if(from===to)return bcHeaderDate(from);const f=_parseD(from),t=_parseD(to),short=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace(/ de /g,' ').replace(/\./g,'');if(from.slice(0,7)===to.slice(0,7))return from.slice(8)+'–'+short(t)+' '+to.slice(0,4);if(from.slice(0,4)===to.slice(0,4))return short(f)+' — '+short(t)+' '+to.slice(0,4);return bcHeaderDate(from)+' — '+bcHeaderDate(to);}
@@ -13883,10 +13910,10 @@ function bcChromeCalendarPaint(){
 // Two navigation levels over the existing pages. No data or permission contract changes.
 const BCGroup={mounted:false,identity:null,last:{},busy:false};
 const BCGroupMap=[
- {id:'resultados',label:'Resultados',items:[{id:'overview',label:'Visão Geral',page:'overview'},{id:'diario',label:'Diário',page:'diario'},{id:'marketplaces',label:'Marketplaces',page:'marketplaces'},{id:'abc',label:'Curva ABC',page:'abc'}]},
+ {id:'resultados',label:'Resultados',items:[{id:'overview',label:'Visão Geral',page:'overview'},{id:'diario',label:'Diário',page:'diario'},{id:'marketplaces',label:'Marketplaces',page:'marketplaces'},{id:'abc',label:'Curva ABC',page:'abc'},{id:'forecast',label:'Forecast',page:'metas'}]},
  {id:'vendas',label:'Vendas',items:[{id:'vendas',label:'Vendas',page:'vendas'},{id:'raiox',label:'Raio-X',page:'raiox'},{id:'ger-vendas',label:'Vendas da operação',page:'gerencial',sub:'vendas'}]},
- {id:'gerencial',label:'Gerencial',items:[{id:'panorama',label:'Panorama',page:'gerencial',sub:'panorama'},{id:'diag',label:'Diagnóstico',page:'gerencial',sub:'diag'},{id:'produtos',label:'Anúncios',page:'gerencial',sub:'produtos'},{id:'ads',label:'Publicidade',page:'gerencial',sub:'ads'},{id:'metas',label:'Metas',page:'gerencial',sub:'metas'},{id:'forecast',label:'Forecast',page:'metas'}]},
- {id:'operacao',label:'Operação',items:[{id:'estoque',label:'Estoque',page:'estoque'},{id:'full',label:'Full',page:'gerencial',sub:'full'},{id:'projecao',label:'Projeção',page:'projecao'},{id:'envios',label:'Envios',page:'envios'}]},
+ {id:'gerencial',label:'Gerencial',items:[{id:'panorama',label:'Panorama',page:'gerencial',sub:'panorama'},{id:'diag',label:'Diagnóstico',page:'gerencial',sub:'diag'},{id:'produtos',label:'Anúncios',page:'gerencial',sub:'produtos'},{id:'ads',label:'Publicidade',page:'gerencial',sub:'ads'},{id:'metas',label:'Metas',page:'gerencial',sub:'metas'},{id:'full',label:'Full',page:'gerencial',sub:'full'}]},
+ {id:'operacao',label:'Operação',items:[{id:'estoque',label:'Estoque',page:'estoque'},{id:'projecao',label:'Projeção',page:'projecao'},{id:'envios',label:'Envios',page:'envios'}]},
  {id:'acompanhamento',label:'Acompanhamento',items:[{id:'tarefas',label:'Tarefas',page:'acompanhamento',work:'tarefas'},{id:'promos',label:'Promoções',page:'acompanhamento',work:'promos'},{id:'ac-anuncios',label:'Anúncios · em breve',page:'acompanhamento',disabled:true}]},
  {id:'financeiro',label:'Financeiro',items:[{id:'dre',label:'DRE',page:'dre'},{id:'comissao',label:'Comissão',page:'gerencial',sub:'comissao'}]}
 ];
@@ -14112,6 +14139,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   async function bcCarrega(silencioso){
     window._vndGer=(window._vndGer||0)+1; window._vndCache=null; window._vndVoo={};
     var el=document.getElementById('bc-dataload');
+    if(window.bcPodeRecurso && !window.bcPodeRecurso('vendas.ver')){ if(el)el.style.display='none';bcCarregaExtras();return; }
     try{
       if(el && !silencioso) el.style.display='flex';
       // RETRY com espera: o Render hiberna e a primeira requisição pode falhar até o processo acordar.
@@ -14223,6 +14251,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       if(!r.ok) return;
       var d=await r.json();
       if(typeof window.bcStoreVersions==='function')window.bcStoreVersions(d);
+      if(window.bcRecebeAcessosExtras)window.bcRecebeAcessosExtras(d);
       if(d.ads) ADS=d.ads; if(d.adsCamp) ADS_CAMP=d.adsCamp; if(d.adsDia) ADS_DIA=d.adsDia;
       if(d.afiliadosDia) AFILIADOS_DIA=d.afiliadosDia; if(d.afiliadosFonte) AFILIADOS_FONTE=d.afiliadosFonte;
       if(d.estoque) ESTOQUE=d.estoque; if(d.produtos) PRODUTOS=d.produtos;
@@ -14261,75 +14290,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   // coord/direção sobem o custos_2026.xlsx na plataforma (custos op + afi/lives; Ads já vem do dataset)
   window.bcSalvaCustos = async function(custos){ return window.bcGravaVersionado('custos',custos); };
   window.bcSalvaComissao = async function(linhas){ return window.bcGravaVersionado('comissao',linhas); };
-  // ── ADMIN de usuários (só Direção) ──
-  function bcAdmEsc(s){ return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c];}); }
-  window.bcAdminAbrir = async function(){
-    bcAuthInjectCSS();
-    var ov=document.getElementById('bc-admin');
-    if(!ov){ ov=document.createElement('div'); ov.id='bc-admin'; document.body.appendChild(ov); ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.remove('on');}); }
-    ov.innerHTML='<div class="bca-card"><div style="padding:30px;text-align:center;color:var(--t3)">⏳ carregando usuários…</div></div>';
-    ov.classList.add('on');
-    try{
-      var r=await authFetch('/api/admin/usuarios',{cache:'no-store'});
-      var d=await r.json(); if(!d.ok) throw new Error(d.erro||('HTTP '+r.status));
-      window._bcAdmUsers=d.usuarios||[]; window._bcAdmGest=d.gestores||[];
-      window.bcAdminRender();
-    }catch(e){ var c=document.querySelector('#bc-admin .bca-card'); if(c) c.innerHTML='<div style="padding:24px;color:var(--neg,#f87171)">⚠️ '+(e.message||e)+'</div>'; }
-  };
-  window.bcAdminRender = function(editId){
-    var us=window._bcAdmUsers||[], gest=window._bcAdmGest||[];
-    var pcor={direcao:'#8b5cf6',coordenacao:'#0ea5a0',gestor:'#4f8ef7'};
-    var rows=us.map(function(x){
-      return '<tr class="'+(x.ativo?'':'off')+'"><td><b>'+bcAdmEsc(x.nome)+'</b></td><td style="color:var(--t3)">'+bcAdmEsc(x.email)+'</td>'
-       +'<td><span class="bca-pill" style="background:'+(pcor[x.perfil]||'#777')+'">'+x.perfil+'</span></td><td>'+bcAdmEsc(x.gestor_ref||'—')+'</td>'
-       +'<td>'+(x.ativo?'✅':'⛔')+(x.senha_padrao?' <span title="ainda na senha padrão" style="color:#f59e0b">●</span>':'')+'</td>'
-       +'<td style="white-space:nowrap"><button class="bca-mini" onclick="bcAdminEditar('+x.id+')">editar</button><button class="bca-mini" onclick="bcAdminReset('+x.id+',&quot;'+bcAdmEsc(x.nome)+'&quot;)">reset senha</button></td></tr>';
-    }).join('');
-    var ed=editId?us.find(function(u){return u.id===editId;}):null;
-    var optG=gest.map(function(g){return '<option'+(ed&&ed.gestor_ref===g?' selected':'')+'>'+bcAdmEsc(g)+'</option>';}).join('');
-    var optP=['gestor','coordenacao','direcao'].map(function(p){return '<option value="'+p+'"'+((ed&&ed.perfil===p)||(!ed&&p==='gestor')?' selected':'')+'>'+p+'</option>';}).join('');
-    var form='<div style="margin-top:16px;border-top:1px solid var(--bdr2,#e6e8ee);padding-top:14px">'
-     +'<div style="font-weight:700;font-size:13px;margin-bottom:10px">'+(ed?'Editar: '+bcAdmEsc(ed.nome):'+ Novo usuário')+'</div>'
-     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-     +'<div class="bca-f"><label>Nome</label><input id="bca-nome" value="'+(ed?bcAdmEsc(ed.nome):'')+'"></div>'
-     +'<div class="bca-f"><label>E-mail</label><input id="bca-email" value="'+(ed?bcAdmEsc(ed.email):'')+'" '+(ed?'readonly style="opacity:.6"':'placeholder="ex.: fulano@grupobsan"')+'></div>'
-     +'<div class="bca-f"><label>Perfil</label><select id="bca-perfil" onchange="bcAdminTogGest()">'+optP+'</select></div>'
-     +'<div class="bca-f" id="bca-gest-box"><label>Gestor (carteira)</label><select id="bca-gest"><option value="">—</option>'+optG+'</select></div>'
-     +'</div><div style="display:flex;gap:12px;margin-top:4px;align-items:center">'
-     +'<label style="font-size:12px;color:var(--t2,#5a6578)"><input type="checkbox" id="bca-ativo" '+(!ed||ed.ativo?'checked':'')+'> ativo</label><div style="flex:1"></div>'
-     +(ed?'<button class="bca-mini" onclick="bcAdminRender()">cancelar</button>':'')
-     +'<button onclick="bcAdminSalvar()" style="background:#16a34a;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">Salvar</button>'
-     +'</div><div id="bca-msg" style="font-size:12px;margin-top:8px;min-height:16px"></div></div>';
-    var html='<div class="bca-card"><h3>⚙ Administração de usuários</h3><div class="sub">Crie, edite ou desative acessos. <b>gestor</b> = carteira dele · <b>coordenação</b>/<b>direção</b> = tudo. Novo usuário entra com senha <b>bsan@2026</b> e troca no 1º acesso. ● = ainda na padrão.</div>'
-     +'<table class="bca-tbl"><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Gestor</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'+form
-     +'<div style="text-align:right;margin-top:14px"><button class="bca-mini" onclick="bcAdminFechar()">fechar</button></div></div>';
-    var card=document.querySelector('#bc-admin .bca-card'); if(card) card.outerHTML=html;
-    window.bcAdminTogGest();
-  };
-  window.bcAdminFechar=function(){ var o=document.getElementById('bc-admin'); if(o)o.classList.remove('on'); };
-  window.bcAdminTogGest=function(){ var p=document.getElementById('bca-perfil'), box=document.getElementById('bca-gest-box'); if(p&&box) box.style.display=(p.value==='gestor')?'flex':'none'; };
-  window.bcAdminEditar=function(id){ window.bcAdminRender(id); };
-  window.bcAdminSalvar=async function(){
-    var msg=document.getElementById('bca-msg');
-    var nome=document.getElementById('bca-nome').value.trim(), email=document.getElementById('bca-email').value.trim(), perfil=document.getElementById('bca-perfil').value, gestor_ref=document.getElementById('bca-gest').value, ativo=document.getElementById('bca-ativo').checked;
-    if(!nome||!email){ msg.innerHTML='<span style="color:var(--neg,#f87171)">Nome e e-mail obrigatórios.</span>'; return; }
-    if(perfil==='gestor'&&!gestor_ref){ msg.innerHTML='<span style="color:var(--neg,#f87171)">Escolha a carteira (gestor).</span>'; return; }
-    msg.textContent='Salvando…';
-    try{
-      var r=await authFetch('/api/admin/usuarios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:nome,email:email,perfil:perfil,gestor_ref:gestor_ref,ativo:ativo?1:0})});
-      var d=await r.json(); if(!d.ok) throw new Error(d.erro||('HTTP '+r.status));
-      var rr=await authFetch('/api/admin/usuarios',{cache:'no-store'}); var dd=await rr.json(); window._bcAdmUsers=dd.usuarios||[]; window._bcAdmGest=dd.gestores||[];
-      window.bcAdminRender();
-      var m2=document.getElementById('bca-msg'); if(m2) m2.innerHTML='<span style="color:#16a34a">✓ '+(d.acao==='criado'?'Criado — senha inicial bsan@2026':'Atualizado')+'</span>';
-    }catch(e){ msg.innerHTML='<span style="color:var(--neg,#f87171)">⚠️ '+(e.message||e)+'</span>'; }
-  };
-  window.bcAdminReset=async function(id,nome){
-    if(!confirm('Resetar a senha de '+nome+' para bsan@2026? Ele troca no próximo acesso.')) return;
-    try{ var r=await authFetch('/api/admin/reset-senha',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})}); var d=await r.json(); if(!d.ok) throw new Error(d.erro);
-      var rr=await authFetch('/api/admin/usuarios',{cache:'no-store'}); var dd=await rr.json(); window._bcAdmUsers=dd.usuarios||[]; window.bcAdminRender();
-      alert('Senha de '+nome+' resetada para bsan@2026.');
-    }catch(e){ alert('Erro: '+(e.message||e)); }
-  };
+  // Administração de usuários fornecida pelo módulo visual de acessos.
   window.bcCarregaDataset = bcCarrega;
   window.bcAposLogin = function(){ bcVisibilidade(); bcCarrega(); };   // chamado pelo fluxo de login (bcPosLogin)
   // bootstrap: sem token → portão de login; com token → (troca forçada?) → carrega dataset
@@ -14344,5 +14305,116 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
 })();
 </script>
-
+<script id="bc-users-policy">/* Contrato de recursos compartilhado pelo servidor e pela interface. Só restringe o perfil. */
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.BCAcessos=api;})(typeof window==='object'?window:this,function(){
+ 'use strict';
+ const todos=['direcao','coordenacao','gestor'];
+ const catalogo=[
+  {id:'vendas.ver',nome:'Dados de vendas e resultados',grupo:'Visualização',perfis:todos,descricao:'Resultados, Vendas, Raio-X, Forecast e os indicadores usados na gestão. Essas telas compartilham a mesma base.'},
+  {id:'gestao.ver',nome:'Gestão das operações',grupo:'Visualização',perfis:todos,requer:'vendas.ver',descricao:'Panorama, Vendas da operação, Diagnóstico, Anúncios, Publicidade e Metas. O gestor continua limitado à própria carteira.'},
+  {id:'estoque.ver',nome:'Estoque e planejamento',grupo:'Visualização',perfis:todos,descricao:'Estoque, Projeção e dados de Full. Full também exige Gestão e Dados de vendas.'},
+  {id:'envios.ver',nome:'Consultar Envios',grupo:'Visualização',perfis:todos,descricao:'Contagens de coleta, Flex e Full registradas por operação.'},
+  {id:'acompanhamento.ver',nome:'Consultar Acompanhamento',grupo:'Visualização',perfis:todos,descricao:'Tarefas, Promoções e Ads dentro da carteira autorizada.'},
+  {id:'comissao.ver',nome:'Consultar Comissão',grupo:'Visualização',perfis:todos,descricao:'Gestor: registros da própria carteira. Coordenação e Direção: escopo atual do perfil.'},
+  {id:'dre.ver',nome:'Consultar DRE',grupo:'Visualização',perfis:['direcao'],descricao:'Custos e resultado financeiro. Exclusivo da Direção.'},
+  {id:'acompanhamento.tratar',nome:'Registrar tratativas',grupo:'Ações',perfis:todos,requer:'acompanhamento.ver',descricao:'Registrar ações nas demandas autorizadas.'},
+  {id:'envios.lancar',nome:'Lançar e importar Envios',grupo:'Ações',perfis:['direcao','coordenacao'],requer:'envios.ver',descricao:'Preenchimento e importação das contagens de envios.'},
+  {id:'comissao.lancar',nome:'Lançar Comissão',grupo:'Ações',perfis:['direcao'],requer:'comissao.ver',descricao:'Alterar registros de comissão pelos fluxos existentes.'},
+  {id:'dre.lancar',nome:'Lançar custos da DRE',grupo:'Ações',perfis:['direcao'],requer:'dre.ver',descricao:'Preencher e importar custos. Exclusivo da Direção.'}
+ ];
+ function base(perfil){return Object.fromEntries(catalogo.map(r=>[r.id,r.perfis.includes(perfil)]));}
+ function efetivas(perfil,restricoes={}){const out=base(perfil);for(const r of catalogo)if(restricoes[r.id]===false)out[r.id]=false;for(const r of catalogo)if(r.requer&&!out[r.requer])out[r.id]=false;return out;}
+ function normalizar(perfil,value){if(!value||typeof value!=='object'||Array.isArray(value))throw Error('As restrições de acesso são inválidas.');const out={},limites=base(perfil);for(const [key,v]of Object.entries(value)){if(!Object.hasOwn(limites,key)||typeof v!=='boolean')throw Error('Permissão inválida: '+key);if(v&&!limites[key])throw Error('Esta permissão é exclusiva de outro perfil.');if(v===false&&limites[key])out[key]=false;}return out;}
+ function pode(user,key){return !!user&&efetivas(user.perfil,user.restricoes||{})[key]===true;}
+ function pagina(user,page,sub){const can=k=>pode(user,k);if(page==='gerencial'){if(sub==='comissao')return can('comissao.ver');return can('gestao.ver')&&(sub!=='full'||can('estoque.ver'));}if(page==='dre')return can('dre.ver');if(page==='acompanhamento')return can('acompanhamento.ver');if(page==='envios')return can('envios.ver');if(page==='estoque')return can('estoque.ver');if(page==='projecao')return can('estoque.ver')&&can('vendas.ver');return can('vendas.ver');}
+ function rota(user,method,path){
+  if(path==='/api/health'||path==='/api/sessao'||path==='/api/trocar-senha')return true;
+  if(path.startsWith('/api/admin/'))return user?.perfil==='direcao';
+  if(['/api/dataset','/api/detalhe','/api/vendas','/api/vendas-agregado'].includes(path))return pode(user,'vendas.ver');
+  if(['/api/abertura','/api/historico','/api/equipe'].includes(path))return pode(user,'gestao.ver')||pode(user,'acompanhamento.ver');
+  if(path==='/api/demandas')return pode(user,'acompanhamento.ver');
+  if(path==='/api/tratativas'||path==='/api/comandos')return pode(user,method==='GET'?'acompanhamento.ver':'acompanhamento.tratar');
+  const entrada=path.match(/^\/api\/(?:lancamentos\/)?(envios|custos|comissao)$/);if(entrada){const key={envios:'envios',custos:'dre',comissao:'comissao'}[entrada[1]];return pode(user,key+(method==='GET'?'.ver':'.lancar'));}
+  return path==='/api/extras';
+ }
+ function filtrarExtras(data,user){const d={...data,_versions:{...data._versions}},can=k=>pode(user,k),remove=keys=>keys.forEach(k=>delete d[k]);
+  if(!can('dre.ver'))remove(['custos']);if(!can('dre.lancar'))delete d._versions.custos;
+  if(!can('envios.ver'))remove(['envios']);if(!can('envios.lancar'))delete d._versions.envios;
+  if(!can('estoque.ver'))remove(['estoque','fullRel']);
+  if(!can('gestao.ver'))remove(['ads','adsCamp','adsDia','afiliadosDia','afiliadosFonte','fullRel','produtos','skuCad']);
+  if(!can('acompanhamento.ver'))remove(['acomp','acompItens']);
+  if(!can('comissao.ver')){delete d._versions.comissao;if(can('gestao.ver')){const clean=r=>Object.fromEntries(Object.entries(r).filter(([k])=>!/bonus|b[oô]nus|teto|comissao|comiss[aã]o/i.test(k)));d.comissao=(d.comissao||[]).map(clean);d.comissaoDet=(d.comissaoDet||[]).map(clean);}else remove(['comissao','comissaoDet']);}
+  if(!can('comissao.lancar'))delete d._versions.comissao;
+  return d;
+ }
+ return{catalogo,base,efetivas,normalizar,pode,pagina,rota,filtrarExtras};
+});
+</script>
+<script id="bc-users-module">/* Administração de usuários: DOM seguro, confirmação explícita e contrato servido pela API. */
+(function(){'use strict';
+ const S={data:null,query:'',perfil:'',status:'',carteira:'',draft:null,saving:false,drawer:null,page:null,tab:'dados',origin:null,session:null,sync:null};
+ const $=id=>document.getElementById(id),roles={direcao:'Direção',coordenacao:'Coordenação',gestor:'Gestor'};
+ function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+ function btn(text,action,cls='bc-u-button'){const b=el('button',cls,text);b.type='button';b.onclick=action;return b;}
+ function field(title,input){const l=el('label','bc-u-field');l.append(el('span','',title),input);return l;}
+ function select(items,value){const e=el('select');for(const [v,label]of items)e.append(new Option(label,v));e.value=value;return e;}
+ function note(text,cls='bc-u-note'){return el('p',cls,text);}
+ function status(text,kind='neutral'){const s=el('span','bc-u-status',text);s.dataset.tone=kind;return s;}
+ function message(node,text,kind=''){node.textContent=text;node.dataset.tone=kind;}
+ async function request(url,options={}){const r=await authFetch(url,{cache:'no-store',...options});let d={};try{d=await r.json();}catch{}if(!r.ok||d.ok===false){const e=Error(d.erro||'Não foi possível concluir a solicitação.');e.codigo=d.codigo;e.status=r.status;throw e;}return d;}
+ function post(url,body){return request(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
+ function announce(text,tone='good'){message($('bc-users-status'),text,tone);}
+ function dialog(id,title,cls){const d=el('dialog',cls);d.id=id;d.setAttribute('aria-label',title);document.body.append(d);return d;}
+ function confirmAction(title,text,accept='Confirmar'){return new Promise(resolve=>{const d=dialog('bc-users-confirm',title,'bc-u-confirm'),h=el('h2','',title),p=note(text),actions=el('div','bc-u-footer');const close=value=>{d.close();d.remove();resolve(value);};actions.append(btn('Cancelar',()=>close(false)),btn(accept,()=>close(true),'bc-u-button bc-u-primary'));d.append(h,p,actions);d.addEventListener('cancel',e=>{e.preventDefault();close(false);});d.showModal();actions.firstChild.focus();});}
+ function page(){if(S.page)return S.page;const d=dialog('bc-users-page','Usuários e acessos','bc-users-page');d.innerHTML='<div class="bc-u-page-inner"><header class="bc-u-page-head"><div><p class="bc-u-eyebrow">GRUPO BSAN / ADMINISTRAÇÃO</p><h1>Usuários e acessos</h1><p>Organize as contas, as carteiras e o que cada pessoa pode fazer.</p></div><div id="bc-users-page-actions"></div></header><div id="bc-users-stats" class="bc-u-stats"></div><div id="bc-users-filters" class="bc-u-filters"></div><p id="bc-users-status" role="status" aria-live="polite"></p><section id="bc-users-list" aria-label="Lista de usuários"></section></div>';
+  $('bc-users-page-actions').append(btn('Voltar ao painel',closePage),btn('Novo usuário',()=>edit(),'bc-u-button bc-u-primary'));
+  const search=el('input');search.type='search';search.placeholder='Buscar por nome ou login';search.id='bc-users-search';search.oninput=()=>{S.query=search.value;renderList();};
+  const profile=select([['','Todos os perfis'],...Object.entries(roles)],''),state=select([['','Todas as situações'],['ativo','Ativos'],['inativo','Desativados'],['pendente','Troca de senha pendente']],'');profile.id='bc-users-filter-role';state.id='bc-users-filter-status';profile.onchange=()=>{S.perfil=profile.value;renderList();};state.onchange=()=>{S.status=state.value;renderList();};
+  $('bc-users-filters').append(field('Buscar usuário',search),field('Perfil',profile),field('Situação',state));d.addEventListener('cancel',e=>{e.preventDefault();closePage();});S.page=d;return d;
+ }
+ function closePage(){if(S.drawer?.open){closeDrawer();return;}S.page?.close();S.origin?.focus();}
+ async function load(){const d=await request('/api/admin/usuarios');S.data=d;const old=$('bc-users-filter-wallet');if(!old){const wallet=select([['','Todas as carteiras'],...d.gestores.map(g=>[g,g])],S.carteira);wallet.id='bc-users-filter-wallet';wallet.onchange=()=>{S.carteira=wallet.value;renderList();};$('bc-users-filters').append(field('Carteira do gestor',wallet));}renderList();return d;}
+ async function open(){if(BCAUTH.user?.perfil!=='direcao')return;S.origin=document.activeElement;const d=page();if(!d.open)d.showModal();$('bc-users-list').replaceChildren(note('Carregando usuários…'));announce('');try{await load();$('bc-users-search').focus();}catch(e){const retry=btn('Tentar novamente',open);$('bc-users-list').replaceChildren(note(e.message,'bc-u-error'),retry);}}
+ function matches(u){const fold=v=>String(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return(!S.query||fold(u.nome+' '+u.email).includes(fold(S.query)))&&(!S.perfil||u.perfil===S.perfil)&&(!S.carteira||u.gestor_ref===S.carteira)&&(!S.status||S.status==='ativo'&&u.ativo||S.status==='inativo'&&!u.ativo||S.status==='pendente'&&u.senha_pendente);}
+ function renderList(){if(!S.data)return;const all=S.data.usuarios,stats=$('bc-users-stats');stats.replaceChildren();for(const [label,value]of [['Usuários',all.length],['Ativos',all.filter(u=>u.ativo).length],['Desativados',all.filter(u=>!u.ativo).length],['Troca de senha pendente',all.filter(u=>u.ativo&&u.senha_pendente).length]]){const card=el('article');card.append(el('span','',label),el('strong','',String(value)));stats.append(card);}const rows=all.filter(matches),wrap=el('div','bc-u-table-wrap'),table=el('table','bc-u-table'),caption=el('caption','bc-u-sr',rows.length+' de '+all.length+' usuários');table.append(caption);const head=el('thead'),tr=el('tr');for(const name of ['Usuário','Perfil','Carteira','Situação','Ações'])tr.append(el('th','',name));head.append(tr);table.append(head);const body=el('tbody');
+  for(const u of rows){const row=el('tr'),identity=el('td','bc-u-identity');identity.append(el('strong','',u.nome),el('span','',u.email));const profile=el('td'),wallet=el('td'),state=el('td'),actions=el('td');profile.dataset.label='Perfil';wallet.dataset.label='Carteira';state.dataset.label='Situação';profile.append(status(roles[u.perfil]||u.perfil));const ops=S.data.operacoes.filter(o=>o.gestor===u.gestor_ref);wallet.append(el('span','',u.gestor_ref||'Não se aplica'));if(u.gestor_ref)wallet.append(el('small','',ops.length+(ops.length===1?' operação vinculada':' operações vinculadas')));state.append(status(u.ativo?'Ativo':'Desativado',u.ativo?'good':'neutral'));if(u.ativo&&u.senha_pendente)state.append(el('small','bc-u-pending','Troca de senha pendente'));const manage=btn('Gerenciar',()=>edit(u.id));manage.setAttribute('aria-label','Gerenciar '+u.nome);actions.append(manage);row.append(identity,profile,wallet,state,actions);body.append(row);}table.append(body);wrap.append(table);const host=$('bc-users-list');host.replaceChildren(note(rows.length+' de '+all.length+' usuários','bc-u-count'));if(rows.length)host.append(wrap);else host.append(note('Nenhum usuário corresponde aos filtros. Ajuste a busca ou limpe os filtros.','bc-u-empty'));}
+ function snapshot(){if(!S.draft)return'';return JSON.stringify(readDraft());}
+ function readDraft(){return{...S.draft,nome:$('bc-user-edit-name')?.value||'',email:$('bc-user-edit-email')?.value||'',perfil:$('bc-user-edit-role')?.value||S.draft.perfil,gestor_ref:$('bc-user-edit-wallet')?.value||'',ativo:$('bc-user-edit-active')?.value==='1'};}
+ async function closeDrawer(){if(S.saving)return;if(S.draft&&snapshot()!==S.original&&!await confirmAction('Descartar alterações?','As alterações deste usuário ainda não foram salvas.','Descartar'))return;S.drawer?.close();S.draft=null;S.drawer?.remove();S.drawer=null;S.manageOrigin?.focus();}
+ function edit(id){if(S.saving||S.drawer?.open)return;const u=id?S.data.usuarios.find(u=>u.id===id):null;S.manageOrigin=document.activeElement;S.draft=u?JSON.parse(JSON.stringify(u)):{id:null,nome:'',email:'',perfil:'gestor',gestor_ref:'',ativo:true,restricoes:{},versao:0};S.tab='dados';const d=dialog('bc-user-drawer',u?'Gerenciar '+u.nome:'Novo usuário','bc-user-drawer');S.drawer=d;d.innerHTML='<header class="bc-u-drawer-head"><div><p class="bc-u-eyebrow">ADMINISTRAÇÃO</p><h2 id="bc-user-edit-title"></h2><p id="bc-user-edit-subtitle"></p></div></header><nav id="bc-user-tabs" class="bc-u-tabs" aria-label="Seções do usuário"></nav><div class="bc-u-drawer-body"><section id="bc-user-data"></section><section id="bc-user-permissions" hidden></section><section id="bc-user-history" hidden></section><p id="bc-user-error" role="alert"></p></div><footer class="bc-u-drawer-footer"><p>As alterações só valem depois de salvar.</p><div id="bc-user-save-actions"></div></footer>';
+  $('bc-user-edit-title').textContent=u?u.nome:'Novo usuário';$('bc-user-edit-subtitle').textContent=u?u.email:'Defina os dados, a carteira e os acessos.';const close=btn('×',closeDrawer,'bc-u-close');close.setAttribute('aria-label','Fechar edição de usuário');d.querySelector('header').append(close);
+  for(const [key,title]of [['dados','Dados'],['acessos','Acessos'],['historico','Histórico']]){const b=btn(title,()=>tab(key),'bc-u-tab');b.dataset.tab=key;b.disabled=key==='historico'&&!u;$('bc-user-tabs').append(b);}buildData();renderPermissions();$('bc-user-save-actions').append(btn('Cancelar',closeDrawer),btn(u?'Salvar alterações':'Criar usuário',save,'bc-u-button bc-u-primary'));S.original=snapshot();tab('dados');d.addEventListener('cancel',e=>{e.preventDefault();closeDrawer();});d.showModal();$('bc-user-edit-name').focus();}
+ function buildData(){const u=S.draft,host=$('bc-user-data');host.replaceChildren();const name=el('input');name.id='bc-user-edit-name';name.value=u.nome;name.maxLength=100;name.required=true;name.autocomplete='off';const email=el('input');email.id='bc-user-edit-email';email.value=u.email;email.maxLength=180;email.required=true;email.autocomplete='off';email.spellcheck=false;const role=select(Object.entries(roles),u.perfil);role.id='bc-user-edit-role';role.disabled=u.id===S.data.meu_id;role.onchange=()=>{S.draft=readDraft();S.draft.restricoes={};walletVisibility();renderPermissions();};const wallet=select([['','Escolha a carteira'],...S.data.gestores.map(g=>[g,g])],u.gestor_ref);wallet.id='bc-user-edit-wallet';wallet.onchange=walletSummary;const active=select([['1','Ativo'],['0','Desativado']],u.ativo?'1':'0');active.id='bc-user-edit-active';active.disabled=u.id===S.data.meu_id;const grid=el('div','bc-u-form-grid');const wl=field('Carteira do gestor',wallet);wl.id='bc-user-wallet-label';grid.append(field('Nome',name),field('Login / e-mail',email),field('Perfil',role),wl,field('Situação do acesso',active));host.append(grid);if(u.id===S.data.meu_id)host.append(note('Seu próprio acesso à Direção permanece ativo. Para trocar sua senha, use o menu da conta.'));
+  const scope=el('div','bc-u-scope');scope.id='bc-user-wallet-summary';host.append(scope);if(u.id){const security=el('section','bc-u-security');security.append(el('h3','','Acesso à conta'),note('Gerar uma senha temporária encerra as sessões anteriores e exige troca no próximo acesso.'));const reset=btn('Gerar senha temporária',resetPassword);reset.id='bc-user-reset';reset.disabled=u.id===S.data.meu_id;security.append(reset);host.append(security);}walletVisibility();}
+ function walletVisibility(){const manager=$('bc-user-edit-role').value==='gestor';$('bc-user-wallet-label').hidden=!manager;$('bc-user-edit-wallet').required=manager;walletSummary();}
+ function walletSummary(){const host=$('bc-user-wallet-summary'),perfil=$('bc-user-edit-role').value,ref=$('bc-user-edit-wallet').value;host.replaceChildren(el('h3','','Alcance dos dados'));if(perfil==='gestor'){host.append(note('Gerencial, Acompanhamento e Comissão seguem a carteira escolhida. As leituras macro mantêm o alcance de grupo indicado no painel.'));const ops=S.data.operacoes.filter(o=>o.gestor===ref);if(ops.length){const list=el('ul');for(const o of ops)list.append(el('li','',o.empresa+' · '+o.marketplace));host.append(list);}else host.append(note('Escolha uma carteira para ver as operações vinculadas.'));}else host.append(note(perfil==='direcao'?'A Direção pode administrar usuários e acessar a DRE. As restrições individuais abaixo podem reduzir os demais recursos.':'A Coordenação mantém o alcance atual das operações e comissões. DRE e administração de usuários ficam indisponíveis.'));}
+ function tab(key){S.tab=key;for(const [k,id]of [['dados','data'],['acessos','permissions'],['historico','history']]){$('bc-user-'+id).hidden=k!==key;const b=$('bc-user-tabs').querySelector('[data-tab="'+k+'"]');b.setAttribute('aria-current',k===key?'page':'false');}if(key==='historico')history();}
+ function renderPermissions(){const host=$('bc-user-permissions');if(!host)return;const perfil=$('bc-user-edit-role').value,r=S.draft.restricoes||{},base=BCAcessos.base(perfil),effective=BCAcessos.efetivas(perfil,r);host.replaceChildren(el('h3','','O que este usuário pode acessar'),note('O perfil define o limite. As escolhas abaixo podem restringir esse limite. Visualizar inclui as exportações já disponíveis na área.'));
+  const reset=btn('Restaurar padrão do perfil',()=>{S.draft.restricoes={};renderPermissions();});host.append(reset);let group='';for(const item of BCAcessos.catalogo){if(item.grupo!==group){group=item.grupo;host.append(el('h4','',group));}const line=el('label','bc-u-permission'),check=el('input');check.type='checkbox';check.dataset.permission=item.id;check.checked=effective[item.id];check.disabled=!base[item.id]||!!item.requer&&!effective[item.requer];check.onchange=()=>{if(check.checked)delete S.draft.restricoes[item.id];else S.draft.restricoes[item.id]=false;renderPermissions();};const text=el('span'),explain=!base[item.id]?'Indisponível para este perfil':item.requer&&!effective[item.requer]?'Depende de '+BCAcessos.catalogo.find(x=>x.id===item.requer).nome:r[item.id]===false?'Restrito para este usuário':'Padrão do perfil';text.append(el('strong','',item.nome),el('small','',item.descricao),el('small','bc-u-inheritance',explain));line.append(check,text);host.append(line);}host.append(note(perfil==='direcao'?'Administração de usuários: disponível à Direção.':'DRE e administração não podem ser liberadas individualmente para este perfil.'));}
+ async function save(){if(S.saving)return;const d=readDraft(),error=$('bc-user-error');message(error,'');const invalid=['bc-user-edit-name','bc-user-edit-email','bc-user-edit-wallet'].map($).find(e=>!e.checkValidity());if(invalid){tab('dados');invalid.focus();invalid.reportValidity();return;}if(!/^[^\s@]+@[^\s@]+$/.test(d.email.trim())){message(error,'Informe um login/e-mail válido.');tab('dados');$('bc-user-edit-email').focus();return;}const old=S.data.usuarios.find(u=>u.id===d.id);if(old&&(old.perfil!==d.perfil||old.ativo!==d.ativo||old.email!==d.email||old.gestor_ref!==d.gestor_ref||JSON.stringify(old.restricoes)!==JSON.stringify(d.restricoes))&&!await confirmAction('Confirmar alteração de acesso','Confira os dados e acessos de '+d.nome+'. Mudanças de perfil, carteira, login ou situação encerram as sessões anteriores.','Salvar acesso'))return;
+  S.saving=true;S.drawer.setAttribute('aria-busy','true');for(const b of $('bc-user-save-actions').querySelectorAll('button'))b.disabled=true;try{const result=await post('/api/admin/usuarios',d);S.draft=null;S.drawer.close();S.drawer.remove();S.drawer=null;if(result.sessao_revogada){announce('Login alterado. Entre novamente com o novo login.');await sync();return;}await load();announce(result.acao==='criado'?'Usuário criado. A senha temporária será solicitada no primeiro acesso.':'Usuário atualizado.');if(result.senha_temporaria)showSecret(d.nome,result.senha_temporaria);else S.manageOrigin?.focus();}catch(e){message(error,e.message,'bad');if(e.codigo==='VERSAO_DESATUALIZADA'){const reload=btn('Recarregar dados deste usuário',async()=>{const id=S.draft.id;await load();S.draft=null;S.drawer.close();S.drawer.remove();S.drawer=null;edit(id);});error.append(el('br'),reload);}}finally{S.saving=false;if(S.drawer){S.drawer.removeAttribute('aria-busy');for(const b of $('bc-user-save-actions').querySelectorAll('button'))b.disabled=false;}}}
+ async function resetPassword(){if(snapshot()!==S.original){message($('bc-user-error'),'Salve ou cancele as alterações antes de gerar a senha temporária.');return;}const u=S.data.usuarios.find(u=>u.id===S.draft.id);if(!await confirmAction('Gerar senha temporária?','As sessões de '+u.nome+' serão encerradas. A nova senha deverá ser trocada no próximo acesso.','Gerar senha'))return;try{S.saving=true;const d=await post('/api/admin/reset-senha',{id:u.id,versao:u.versao});await load();S.draft=null;S.drawer.close();S.drawer.remove();S.drawer=null;showSecret(u.nome,d.senha_temporaria);}catch(e){message($('bc-user-error'),e.message,'bad');}finally{S.saving=false;}}
+ function showSecret(name,password){const d=dialog('bc-user-secret','Acesso temporário','bc-u-confirm'),input=el('input');input.type='password';input.value=password;input.readOnly=true;input.autocomplete='off';const actions=el('div','bc-u-footer'),msg=el('p');msg.setAttribute('role','status');actions.append(btn('Mostrar senha',e=>{input.type=input.type==='password'?'text':'password';e.currentTarget.textContent=input.type==='password'?'Mostrar senha':'Ocultar senha';}),btn('Copiar senha',async()=>{try{await navigator.clipboard.writeText(input.value);msg.textContent='Senha copiada.';}catch{input.type='text';input.focus();input.select();msg.textContent='Selecione e copie a senha.';}}),btn('Concluir',()=>{input.value='';d.close();d.remove();},'bc-u-button bc-u-primary'));d.append(el('h2','','Acesso temporário criado'),note(name+' deverá trocar esta senha no primeiro acesso. Copie e entregue diretamente. Ela não será exibida novamente.'),field('Senha temporária',input),msg,actions);d.addEventListener('close',()=>{input.value='';d.remove();});d.showModal();}
+ async function history(){const host=$('bc-user-history');host.replaceChildren(note('Carregando histórico…'));try{const d=await request('/api/admin/historico?id='+S.draft.id);if(!host.isConnected)return;host.replaceChildren(el('h3','','Histórico de alterações'));if(!d.eventos.length){host.append(note('Nenhuma alteração registrada desde a implantação deste histórico.'));return;}const actions={criado:'Usuário criado',atualizado:'Dados ou acessos atualizados',desativado:'Acesso desativado',reativado:'Acesso reativado',senha_temporaria:'Senha temporária gerada',senha_alterada:'Senha alterada pelo usuário'};for(const ev of d.eventos){const card=el('article','bc-u-event');card.append(el('strong','',actions[ev.acao]||ev.acao),note(ev.ator_nome+' · '+new Date(ev.criado_em).toLocaleString('pt-BR')));const names={nome:'Nome',email:'Login',perfil:'Perfil',gestor_ref:'Carteira',ativo:'Situação'};for(const [key,label]of Object.entries(names))if(ev.antes&&ev.depois&&ev.antes[key]!==ev.depois[key])card.append(note(label+': '+String(ev.antes[key]||'—')+' → '+String(ev.depois[key]||'—')));if(ev.antes&&ev.depois&&JSON.stringify(ev.antes.restricoes)!==JSON.stringify(ev.depois.restricoes))card.append(note('Restrições de acesso alteradas.'));host.append(card);}host.append(note('Até 80 alterações mais recentes. Senhas não são registradas no histórico.'));}catch(e){host.replaceChildren(note(e.message,'bc-u-error'),btn('Tentar novamente',history));}}
+ // Atualiza permissões antes da carga de dados e sempre que a página volta ao foco.
+ function current(){const u=BCAUTH.user;if(!u)return null;return S.session?.id===u.id?S.session:u;}
+ function can(key){return BCAcessos.pode(current(),key);}
+ function applyVisibility(){if(typeof bcGroupedCatalogue!=='function')return;const groups=bcGroupedCatalogue();if(!groups.some(g=>g.items.some(i=>!i.disabled&&i.page===activePage&&(!i.sub||i.sub===GER_SUB)))){const first=groups.flatMap(g=>g.items.map(i=>({g,i}))).find(x=>!x.i.disabled);if(first)bcGroupedOpen(first.g.id,first.i.id);else{for(const p of document.querySelectorAll('.page.on'))p.classList.remove('on');const heading=$('bc-page-title');if(heading)heading.textContent='Seu acesso';const n=$('bc-scope-note');if(n)n.textContent='Nenhuma área está disponível para esta conta. Solicite a revisão do acesso à Direção.';}}
+  const readOnly=!can('acompanhamento.tratar');if(document.body.classList.contains('bc-access-no-tratativas')!==readOnly)document.body.classList.toggle('bc-access-no-tratativas',readOnly);
+  if(typeof bcEnvRefresh==='function')bcEnvRefresh();if(typeof bcGestRefresh==='function')bcGestRefresh();if(typeof bcGroupedRefresh==='function')bcGroupedRefresh();}
+ async function sync(){if(S.sync)return S.sync;S.sync=(async()=>{if(!BCAUTH.token){S.session=null;return null;}const before=S.session,d=await request('/api/sessao');S.session=d.usuario;BCAUTH._set(BCAUTH.token,{...BCAUTH.user,...d.usuario});if(before&&JSON.stringify([before.perfil,before.gestor_ref,before.restricoes,before.ativo])!==JSON.stringify([d.usuario.perfil,d.usuario.gestor_ref,d.usuario.restricoes,d.usuario.ativo])){location.reload();return null;}if(d.usuario.trocar){bcTrocarSenha(true);return null;}applyVisibility();return d.usuario;})().finally(()=>{S.sync=null;});return S.sync;}
+ function start(){window.bcPodeRecurso=can;window.bcSyncAcesso=sync;window.bcAdminAbrir=open;window.bcAdminFechar=closePage;window.bcAdminEditar=edit;const logout=bcLogout;bcLogout=function(){logout.apply(this,arguments);location.reload();};
+  const fetchOriginal=authFetch;authFetch=async function(){try{const r=await fetchOriginal.apply(this,arguments);if(r.status===403){const d=await r.clone().json().catch(()=>({}));if(d.codigo==='PERMISSAO_NEGADA')sync().catch(()=>{});}return r;}catch(e){if(!BCAUTH.token){for(const d of document.querySelectorAll('#bc-users-page,#bc-user-drawer,#bc-user-secret,#bc-users-confirm'))if(d.open)d.close();S.session=null;S.data=null;location.reload();}throw e;}};
+  if(typeof Lancamento==='object'){const allowed=Lancamento.podeLancar;Lancamento.podeLancar=function(perfil,tipo){return allowed(perfil,tipo)&&(!S.session||can(({envios:'envios',custos:'dre',comissao:'comissao'}[tipo]||tipo)+'.lancar'));};}
+  if(typeof ac2==='object'&&typeof ac2.tratar==='function'){const tratar=ac2.tratar;ac2.tratar=function(){if(can('acompanhamento.tratar'))return tratar.apply(this,arguments);};}
+  window.bcRecebeAcessosExtras=d=>{S.operacoes=d.operacoes||[];};
+  if(typeof bcNavCatalogue==='function'){const catalogue=bcNavCatalogue;bcNavCatalogue=function(page){if(S.session&&!can('vendas.ver')&&S.operacoes?.length)return S.operacoes.map(o=>({emp:o.empresa,mkt:o.marketplace,ponto:typeof PONTO_ENV==='object'?PONTO_ENV[o.empresa]||'':''}));return catalogue.apply(this,arguments);};}
+  if(typeof bcGroupedCatalogue==='function'){const old=bcGroupedCatalogue;bcGroupedCatalogue=function(){return old().map(g=>{const items=g.items.filter(i=>i.disabled||BCAcessos.pagina(current(),i.page,i.sub));return{...g,items,label:g.id==='financeiro'&&items.length===1?items[0].label:g.label};}).filter(g=>g.items.some(i=>!i.disabled));};}
+  if(typeof goPage==='function'){const old=goPage;goPage=function(id,b){if(S.session&&!BCAcessos.pagina(current(),id,id==='gerencial'?GER_SUB:null))return;return old.apply(this,arguments);};}
+  const after=window.bcAposLogin;if(after)window.bcAposLogin=async function(){try{const u=await sync();if(!u)return;if(can('vendas.ver'))return after.apply(this,arguments);const cover=$('bc-dataload');if(cover)cover.style.display='none';await window.bcCarregaExtras?.();applyVisibility();}catch(e){const cover=$('bc-dataload');if(cover)cover.style.display='none';}};
+  if(typeof bcChromeRefresh==='function')bcChromeRefresh();document.addEventListener('visibilitychange',()=>{if(!document.hidden&&BCAUTH.token)sync().catch(()=>{});});setInterval(()=>{if(!document.hidden&&BCAUTH.token)sync().catch(()=>{});},60000);
+ }
+ start();
+})();
+</script>
 </body></html>

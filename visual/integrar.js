@@ -1,6 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const css=fs.readFileSync(path.join(__dirname,'areas.css'),'utf8').replace(/\r\n/g,'\n'),js=fs.readFileSync(path.join(__dirname,'areas.js'),'utf8').replace(/\r\n/g,'\n');new vm.Script(js);
 function presentation(html){
+ html=html.replace('placeholder="mín. 6 caracteres"','placeholder="mín. 8 caracteres"').replace('if(nova.length<6)','if(nova.length<8)').replace('A nova senha precisa de ao menos 6 caracteres.','A nova senha precisa de ao menos 8 caracteres.');
  // O estado do repasse fica junto do líquido, sem substituir a situação da venda.
  html=html.replace(/<span style="color:#facc15" title="(?:valor provisório — ainda não liquidado pela plataforma|provisório)">●<\/span>/g,'<small class="bc-settlement-tag" title="Valor provisório; pode mudar após a liquidação pela plataforma.">Em liquidação</small>');
  html=html.replace("${(provis(r.fonte)&&(r.stat==='venda'||!r.stat))?'<span style=\"color:#facc15;font-weight:600;font-size:11px;\" title=\"Ainda em liquidação. A próxima coleta troca só o que a plataforma de fato cobrou.\">Em liquidação</span>':statBadge(r.stat)}","${statBadge(r.stat)}");
@@ -16,6 +17,12 @@ function presentation(html){
  html=html.replace("s:brl(Math.round(tot.qtd/d))+' un/dia'","s:Math.round(tot.qtd/d).toLocaleString('pt-BR')+' un/dia'");
  return html;
 }
-function apply(html){html=presentation(html);const style='<style id="bc-areas-visual">'+css+'</style>';html=html.includes('id="bc-areas-visual"')?html.replace(/<style id="bc-areas-visual">[\s\S]*?<\/style>/,()=>style):html.replace('</head>',style+'</head>');const marker='<!-- ===== BsanControl ONLINE';const module='<script id="bc-areas-module">'+js+'</script>\n';if(html.includes('id="bc-areas-module"'))html=html.replace(/<script id="bc-areas-module">[\s\S]*?<\/script>\n?/,()=>module);else if(html.includes(marker))html=html.replace(marker,module+marker);else html=html.replace('</body>',module+'</body>');return html.replace(/(?:\r?\n){2,}(?=<script id="bc-areas-module">)/g,'\n').replace(/(?:\r?\n)+(?=<!-- ===== BsanControl ONLINE)/g,'\n\n');}
+function users(html){
+ const userCss=fs.readFileSync(path.join(__dirname,'usuarios.css'),'utf8').replace(/\r\n/g,'\n'),policy=fs.readFileSync(path.join(__dirname,'../acessos.js'),'utf8').replace(/\r\n/g,'\n'),ui=fs.readFileSync(path.join(__dirname,'usuarios.js'),'utf8').replace(/\r\n/g,'\n');new vm.Script(policy);new vm.Script(ui);
+ const style='<style id="bc-users-visual">'+userCss+'</style>';html=html.includes('id="bc-users-visual"')?html.replace(/<style id="bc-users-visual">[\s\S]*?<\/style>/,()=>style):html.replace('</head>',style+'</head>');
+ html=html.replace(/<script id="bc-users-(?:policy|module)">[\s\S]*?<\/script>\n?/g,'');
+ return html.replace(/\s*<\/body>/,'\n<script id="bc-users-policy">'+policy+'</script>\n<script id="bc-users-module">'+ui+'</script>\n</body>');
+}
+function apply(html){html=presentation(html);const style='<style id="bc-areas-visual">'+css+'</style>';html=html.includes('id="bc-areas-visual"')?html.replace(/<style id="bc-areas-visual">[\s\S]*?<\/style>/,()=>style):html.replace('</head>',style+'</head>');const marker='<!-- ===== BsanControl ONLINE';const module='<script id="bc-areas-module">'+js+'</script>\n';if(html.includes('id="bc-areas-module"'))html=html.replace(/<script id="bc-areas-module">[\s\S]*?<\/script>\n?/,()=>module);else if(html.includes(marker))html=html.replace(marker,module+marker);else html=html.replace('</body>',module+'</body>');return users(html.replace(/(?:\r?\n){2,}(?=<script id="bc-areas-module">)/g,'\n').replace(/(?:\r?\n)+(?=<!-- ===== BsanControl ONLINE)/g,'\n\n')); }
 
 module.exports={apply,presentation};

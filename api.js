@@ -12,6 +12,8 @@ const { hashSenha, verificaSenha, assinaToken, verificaToken } = require("./auth
 const { consultaVendas } = require("./vendas-pagina");
 const lancamento = require("./lancamento");
 const writeStore = require("./datasets-versionados");
+const acessos = require("./acessos");
+const usuarios = require("./usuarios").criarServico(dbx);
 
 const PORT = process.env.PORT || 8787;
 const SENHA_PADRAO = "bsan@2026";   // quem ainda tem essa é obrigado a trocar no 1º acesso
@@ -56,9 +58,9 @@ async function sessaoDe(req) {
   const h = req.headers["authorization"] || "";
   const tok = verificaToken(h.replace(/^Bearer\s+/i, ""));
   if (!tok) return null;
-  const us = await dbx.get("SELECT id, nome, perfil, gestor_ref, ativo FROM usuarios WHERE id=?", [tok.id]);
-  if (!us || !+us.ativo) return { recusado: 401, erro: "não autenticado" };
-  return { id: us.id, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref, trocar: tok.trocar === true };
+  const us = await usuarios.sessao(tok.id, tok.revogacao || 0, tok.trocar === true);
+  if (!us) return { recusado: 401, erro: "sessão expirada; entre novamente" };
+  return us;
 }
 
 // demanda do banco → modelo que o Acompanhamento (ac2) consome
@@ -84,6 +86,7 @@ const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa,
   funcionou: !r.desfecho || /Aguardando|Sem venda|Sem leitura|Pausado|parcial/.test(r.desfecho) ? null : /Resolvido|Progrediu|Justificado/.test(r.desfecho) });
 
 async function rotaGET(u, user) {
+  if (user && !acessos.rota(user, "GET", u.pathname)) throw Object.assign(new Error("Seu acesso não permite esta consulta."), { status: 403, codigo: "PERMISSAO_NEGADA" });
   const q = Object.fromEntries(u.searchParams);
   const entrada = u.pathname.match(/^\/api\/lancamentos\/(envios|custos|comissao)$/);
   if (entrada) return writeStore.ler(dbx, entrada[1], user);
@@ -365,7 +368,7 @@ async function rotaGET(u, user) {
     }
     if (user && user.perfil !== "direcao") delete got.custos;   // DRE só a direção; coordenação e gestor não recebem o blob
     const mx = await dbx.get("SELECT MAX(atualizado) m FROM datasets");   // carimbo do último db-sync (frescor)
-    return { ms: Date.now() - t0, ...got, _sync: (mx && mx.m) ? mx.m : null };
+    return acessos.filtrarExtras({ ms: Date.now() - t0, ...got, _sync: (mx && mx.m) ? mx.m : null }, user || { perfil: "direcao" });
   }
   return null;
 }
@@ -404,34 +407,37 @@ const server = http.createServer(async (req, res) => {
     }
     // ── LOGIN ──
     if (req.method === "POST" && u.pathname === "/api/login") {
+      res.setHeader("Cache-Control", "no-store");
       const b = await body(req);
       const us = await dbx.get("SELECT * FROM usuarios WHERE email=? AND ativo=1", [String(b.email || "").toLowerCase()]);
       if (!us || !verificaSenha(b.senha || "", us.senha)) return J(res, { ok: false, erro: "credenciais inválidas" }, 401);
-      const trocar = verificaSenha(SENHA_PADRAO, us.senha);   // ainda na senha padrão → o token só serve para trocá-la
-      const token = assinaToken({ id: us.id, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref, ...(trocar ? { trocar: true } : {}) });
+      const acesso = await usuarios.login(us), trocar = acesso.trocar;
+      const token = assinaToken({ id: us.id, revogacao: acesso.revogacao, ...(trocar ? { trocar: true } : {}) });
       let ponto = null;   // ponto do gestor (só p/ a lente visual começar nele; não restringe dados)
       if (us.perfil === "gestor") { const pr = await dbx.get("SELECT v.ponto p, COUNT(*) n FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=? GROUP BY v.ponto ORDER BY n DESC", [us.gestor_ref]); ponto = pr ? pr.p : null; }
-      return J(res, { ok: true, token, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref, ponto, trocar });
+      return J(res, { ok: true, token, ...acesso, ponto, trocar });
     }
     let user = null;
     if (u.pathname.startsWith("/api/")) {
       const s = await sessaoDe(req);
       if (s && s.recusado) return J(res, { ok: false, erro: s.erro }, s.recusado);
-      if (s && s.trocar && u.pathname !== "/api/trocar-senha") return J(res, { ok: false, erro: "troque a senha para continuar" }, 403);
+      if (s && s.trocar && !["/api/trocar-senha", "/api/sessao"].includes(u.pathname)) return J(res, { ok: false, codigo: "TROCA_OBRIGATORIA", erro: "troque a senha para continuar" }, 403);
       if (s && !s.recusado) user = s;
+    }
+    if (u.pathname.startsWith("/api/") && user && !acessos.rota(user, req.method, u.pathname)) return J(res, { ok: false, codigo: "PERMISSAO_NEGADA", erro: "Seu perfil e suas permissões não permitem esta ação." }, 403);
+    if (u.pathname === "/api/sessao" && req.method === "GET") {
+      res.setHeader("Cache-Control", "no-store");
+      if (!user) return J(res, { ok: false, erro: "não autenticado" }, 401);
+      return J(res, { ok: true, usuario: user });
     }
     // ── POST /api/trocar-senha (usuário logado troca a própria senha) ──
     if (req.method === "POST" && u.pathname === "/api/trocar-senha") {
       if (!user) return J(res, { ok: false, erro: "não autenticado" }, 401);
       const o = await body(req);
-      const us = await dbx.get("SELECT * FROM usuarios WHERE id=? AND ativo=1", [user.id]);
-      if (!us || !verificaSenha(o.senha_atual || "", us.senha)) return J(res, { ok: false, erro: "senha atual incorreta" }, 400);
-      const nova = String(o.senha_nova || "");
-      if (nova.length < 6) return J(res, { ok: false, erro: "a nova senha precisa de ao menos 6 caracteres" }, 400);
-      if (verificaSenha(nova, us.senha)) return J(res, { ok: false, erro: "a nova senha não pode ser igual à atual" }, 400);
-      await dbx.run("UPDATE usuarios SET senha=? WHERE id=?", [hashSenha(nova), us.id]);
-      const token = assinaToken({ id: us.id, nome: us.nome, perfil: us.perfil, gestor_ref: us.gestor_ref });
-      return J(res, { ok: true, token });
+      const us = await usuarios.trocar(user, String(o.senha_atual || ""), String(o.senha_nova || ""));
+      res.setHeader("Cache-Control", "no-store");
+      const token = assinaToken({ id: us.id, revogacao: us.revogacao });
+      return J(res, { ok: true, token, usuario: us });
     }
     // ── POST /api/tratativas (gestor registra; calcula reação) ──
     if (req.method === "POST" && u.pathname === "/api/tratativas") {
@@ -495,31 +501,18 @@ const server = http.createServer(async (req, res) => {
       _geracao = Math.max(Date.now(), _geracao + 1);
       return J(res, salvo);
     }
-    // ── ADMIN de usuários (SÓ Direção) ──
-    if (u.pathname.startsWith("/api/admin/")) {
-      if ((AUTH_REQ && !user) || (user && user.perfil !== "direcao")) return J(res, { ok: false, erro: "acesso só de administrador (Direção)" }, 403);
-      if (req.method === "GET" && u.pathname === "/api/admin/usuarios") {
-        const us = await dbx.all("SELECT id, nome, email, perfil, gestor_ref, ativo, senha FROM usuarios ORDER BY perfil, nome");
-        const gestores = (await dbx.all("SELECT DISTINCT gestor FROM operacoes ORDER BY gestor")).map(r => r.gestor);
-        return J(res, { ok: true, gestores, usuarios: us.map(x => ({ id: x.id, nome: x.nome, email: x.email, perfil: x.perfil, gestor_ref: x.gestor_ref, ativo: x.ativo, senha_padrao: verificaSenha(SENHA_PADRAO, x.senha) })) });
-      }
-      if (req.method === "POST" && u.pathname === "/api/admin/usuarios") {
-        const o = await body(req);
-        const nome = String(o.nome || "").trim(), email = String(o.email || "").trim().toLowerCase(), perfil = String(o.perfil || "gestor").trim();
-        if (!nome || !email) return J(res, { ok: false, erro: "nome e e-mail são obrigatórios" }, 400);
-        if (!["direcao", "coordenacao", "gestor"].includes(perfil)) return J(res, { ok: false, erro: "perfil inválido" }, 400);
-        const gestor_ref = perfil === "gestor" ? (String(o.gestor_ref || "").trim() || null) : null;
-        const ativo = (o.ativo === 0 || o.ativo === false) ? 0 : 1;
-        const existe = await dbx.get("SELECT id FROM usuarios WHERE email=?", [email]);
-        if (existe) { await dbx.run("UPDATE usuarios SET nome=?, perfil=?, gestor_ref=?, ativo=? WHERE email=?", [nome, perfil, gestor_ref, ativo, email]); return J(res, { ok: true, acao: "atualizado" }); }
-        await dbx.run("INSERT INTO usuarios(nome,email,senha,perfil,gestor_ref,ativo) VALUES(?,?,?,?,?,?)", [nome, email, hashSenha(SENHA_PADRAO), perfil, gestor_ref, ativo]);
-        return J(res, { ok: true, acao: "criado", senha_inicial: SENHA_PADRAO });
-      }
-      if (req.method === "POST" && u.pathname === "/api/admin/reset-senha") {
-        const o = await body(req); await dbx.run("UPDATE usuarios SET senha=? WHERE id=?", [hashSenha(SENHA_PADRAO), +o.id]);
-        return J(res, { ok: true, senha_inicial: SENHA_PADRAO });
-      }
-      return J(res, { ok: false, erro: "rota admin não encontrada" }, 404);
+    // Administração usa operações transacionais e o mesmo contrato de acesso da sessão.
+    if (u.pathname.startsWith('/api/admin/')) {
+      res.setHeader('Cache-Control', 'no-store');
+      if (!user || user.perfil !== 'direcao') return J(res,{ok:false,erro:'Somente a Direção pode administrar usuários.'},403);
+      let result;
+      if(req.method==='GET' && u.pathname==='/api/admin/usuarios') result=await usuarios.listar(user);
+      else if(req.method==='GET' && u.pathname==='/api/admin/historico') result=await usuarios.historico(user,Number(u.searchParams.get('id')));
+      else if(req.method==='POST' && u.pathname==='/api/admin/usuarios') result=await usuarios.salvar(user,await body(req));
+      else if(req.method==='POST' && u.pathname==='/api/admin/reset-senha') result=await usuarios.resetar(user,await body(req));
+      else return J(res,{ok:false,erro:'Rota administrativa não encontrada.'},404);
+      if(req.method!=='GET')for(const k of [..._gzCache.keys()]) _gzCache.delete(k);
+      return J(res,result);
     }
     // ── GET da API ──
     if (req.method === "GET" && u.pathname.startsWith("/api/")) {
@@ -530,7 +523,10 @@ const server = http.createServer(async (req, res) => {
       // cache por escopo (dados do gestor são restritos ao ponto dele; direção/coord compartilham)
       const macro = u.pathname === "/api/dataset" || u.pathname === "/api/detalhe";
       const escopo = macro ? "grupo" : (user ? user.perfil + ":" + (user.gestor_ref || "") : "anon");
-      const ckey = u.pathname + u.search + "#" + escopo;
+      // Consultas macro já foram autorizadas acima e devolvem o mesmo conteúdo para quem pode ler vendas.
+      // Extras compartilham cache apenas quando escopo e permissões efetivas são iguais.
+      const assinaturaAcesso=macro?'vendas-v1':user?crypto.createHash('sha256').update(JSON.stringify(user.efetivas)).digest('hex').slice(0,24):'dev';
+      const ckey = u.pathname + u.search + "#" + escopo + '#' + assinaturaAcesso;
       const etag = pesada ? etagDe(ckey) : null, vers = etag ? { ETag: etag, "Cache-Control": "private, no-cache" } : {};
       if (etag && String(req.headers["if-none-match"] || "") === etag) { res.writeHead(304, vers); return res.end(); }   // não mudou: o navegador usa a cópia dele
       if (pesada && aceitaGz) { const hit = gzCacheGet(ckey); if (hit) { res.writeHead(200, Object.assign({ "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "HIT" }, vers)); return res.end(hit); } }

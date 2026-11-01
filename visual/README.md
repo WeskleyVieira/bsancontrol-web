@@ -1,13 +1,17 @@
 # Padrão visual das áreas — Grupo Bsan
 
+Administração implementada em `visual/usuarios.js` e `visual/usuarios.css`, com o contrato `acessos.js` compartilhado com o servidor. A lista tem busca/filtros; edição em Dados, Acessos e Histórico; senhas temporárias individuais; desativação reversível e restrições por recurso. Ver `USUARIOS_ACESSOS.md`. O integrador inclui os módulos depois de definir o loader; o Pipeline precisa copiar os novos assets e os módulos de backend.
+
+Correção de alcance: Full permanece no Gerencial, ligado à operação do gestor. Forecast fica em Resultados, junto das leituras macro.
+
 Navegação agrupada (31/10/2026): o cabeçalho usa Resultados, Vendas, Gerencial, Operação, Acompanhamento e Financeiro. Há somente dois níveis de navegação; no celular, dois seletores equivalentes. A última seção de cada área é lembrada por sessão/identidade, sem alterar filtros ou competência. Direção recebe Financeiro (DRE e Comissão); Coordenação e Gestor recebem Comissão diretamente, sem uma sub-aba redundante. A autorização de DRE e o recorte da comissão continuam no servidor, sem mudança de permissões.
 
 | Área | Seções |
 |---|---|
-| Resultados | Visão Geral, Diário, Marketplaces, Curva ABC |
+| Resultados | Visão Geral, Diário, Marketplaces, Curva ABC, Forecast |
 | Vendas | Vendas, Raio-X, Vendas da operação (antiga seção do Gerencial) |
-| Gerencial | Panorama, Diagnóstico, Anúncios, Publicidade, Metas, Forecast |
-| Operação | Estoque, Full, Projeção, Envios |
+| Gerencial | Panorama, Diagnóstico, Anúncios, Publicidade, Metas, Full |
+| Operação | Estoque, Projeção, Envios |
 | Acompanhamento | Tarefas, Promoções; Ads quando disponível na fonte; Anúncios conserva o estado em breve |
 | Financeiro / Comissão | DRE exclusiva da Direção; Comissão dentro do escopo existente |
 
