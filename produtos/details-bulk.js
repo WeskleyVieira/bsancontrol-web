@@ -1,0 +1,12 @@
+'use strict';
+const D=require('./domain'),{insert}=require('./catalog-bulk');
+async function importDetails(db,batch,{sanitizeDetails,logistics,lockProduct,event}){
+ if(!batch.source||!batch.hash||!Array.isArray(batch.details))D.fail('Lote de detalhes inválido.');const source=D.text(batch.source,1000),syncHash=batch.hash+':details-v2';if(await db.get('SELECT id FROM prd_sincronizacoes WHERE fonte=? AND hash=?',[source,syncHash]))return {ok:true,repetido:true};
+ const rows=await db.all('SELECT e.conta,e.erp_id,e.produto_id,d.dados FROM prd_erp e LEFT JOIN prd_detalhes d ON d.produto_id=e.produto_id'),map=new Map(rows.map(r=>[r.conta+'|'+r.erp_id,r])),used=new Set(),changes=[];let matched=0,missingIdentity=0,notFound=0,older=0;const stamp=D.now();
+ for(const raw of batch.details){const conta=D.text(raw.conta,100),erp=D.text(raw.id,100);if(!conta||!erp){missingIdentity++;continue;}const key=conta+'|'+erp;if(used.has(key))D.fail('Detalhe ERP duplicado no lote.');used.add(key);const row=map.get(key);if(!row){notFound++;continue;}const data=sanitizeDetails(raw),previous=row.dados?JSON.parse(row.dados):null;if(previous?.fonte_coletada_em&&(!data.fonte_coletada_em||data.fonte_coletada_em<previous.fonte_coletada_em)){older++;continue;}matched++;if(row.dados&&JSON.stringify(previous)===JSON.stringify(data))continue;await lockProduct(db,row.produto_id);changes.push({id:row.produto_id,data});}
+ await insert(db,'prd_detalhes',['produto_id','dados','fonte','importado_em'],changes.map(c=>[c.id,JSON.stringify(c.data),source,stamp]),'ON CONFLICT(produto_id) DO UPDATE SET dados=excluded.dados,fonte=excluded.fonte,importado_em=excluded.importado_em');
+ for(let i=0;i<changes.length;i+=100){const chunk=changes.slice(i,i+100),cases=chunk.map(()=> 'WHEN ? THEN ?').join(' ');await db.run('UPDATE prd_produtos SET ncm=CASE id '+cases+' ELSE ncm END,categoria=CASE id '+cases+' ELSE categoria END WHERE id IN ('+chunk.map(()=>'?').join(',')+')',[...chunk.flatMap(c=>[c.id,c.data.ncm]),...chunk.flatMap(c=>[c.id,c.data.categoria]),...chunk.map(c=>c.id)]);}
+ for(const c of changes)await logistics.refresh(db,c.id,c.data);
+ await db.run('INSERT INTO prd_sincronizacoes(id,fonte,hash,iniciado_em,concluido_em,quantidade) VALUES(?,?,?,?,?,?)',[D.id(),source,syncHash,stamp,D.now(),matched]);await event(db,null,'importacao','detalhes_importados',{source,hash:batch.hash,revision:'details-v2',matched,missingIdentity,notFound,older,alterados:changes.length});return {ok:true,matched,missingIdentity,notFound,older};
+}
+module.exports={importDetails};

@@ -6,6 +6,7 @@ const path = require("path");
 const zlib = require("zlib");
 const crypto = require("crypto");
 const dbx = require("./dbx");
+require("./produtos/runtime").configure();
 // token do cache-bust: hash do DATABASE_URL (quem tem a conexão pode limpar — zero config novo)
 const BUST_TOKEN = crypto.createHash("sha256").update(process.env.DATABASE_URL || "sem-db").digest("hex");
 const { hashSenha, verificaSenha, assinaToken, verificaToken } = require("./auth");
@@ -14,7 +15,9 @@ const { completar: completarResumoVendas } = require("./vendas-indicadores");
 const lancamento = require("./lancamento");
 const writeStore = require("./datasets-versionados");
 const acessos = require("./acessos");
-const usuarios = require("./usuarios").criarServico(dbx);
+const usuarios = require("./usuarios").criarServico(dbx, {userReferences:id=>produtosIntegration.userReferences(id)});
+const produtosIntegration = require("./produtos/integration").createIntegration({dbx,resolveSession:sessaoDe});
+if(process.env.PRODUTOS_ENABLED==='1' && String(process.env.JWT_SECRET||'').length<32)throw Error('Produtos exige JWT_SECRET com pelo menos 32 caracteres.');
 const acompanhamentoRegistros = require('./acompanhamento-registros');
 const operacaoConsultas = require('./operacao-consultas');
 const resultadosConsultas = require('./resultados-consultas');
@@ -430,8 +433,9 @@ const server = http.createServer(async (req, res) => {
       const token = assinaToken({ id: us.id, revogacao: acesso.revogacao, ...(trocar ? { trocar: true } : {}) });
       let ponto = null;   // ponto do gestor (só p/ a lente visual começar nele; não restringe dados)
       if (us.perfil === "gestor") { const pr = await dbx.get("SELECT v.ponto p, COUNT(*) n FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=? GROUP BY v.ponto ORDER BY n DESC", [us.gestor_ref]); ponto = pr ? pr.p : null; }
-      return J(res, { ok: true, token, ...acesso, ponto, trocar });
+      return J(res, { ok: true, token, ...acesso, ponto, trocar, produtos_habilitado:process.env.PRODUTOS_ENABLED==='1' });
     }
+    if(await produtosIntegration(req,res,u))return;
     let user = null;
     if (u.pathname.startsWith("/api/")) {
       const s = await sessaoDe(req);
@@ -443,7 +447,7 @@ const server = http.createServer(async (req, res) => {
     if (u.pathname === "/api/sessao" && req.method === "GET") {
       res.setHeader("Cache-Control", "no-store");
       if (!user) return J(res, { ok: false, erro: "não autenticado" }, 401);
-      return J(res, { ok: true, usuario: user });
+      return J(res, { ok: true, usuario: {...user,produtos_habilitado:process.env.PRODUTOS_ENABLED==='1'} });
     }
     // ── POST /api/trocar-senha (usuário logado troca a própria senha) ──
     if (req.method === "POST" && u.pathname === "/api/trocar-senha") {

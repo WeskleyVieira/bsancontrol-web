@@ -2,7 +2,13 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.BCAcessos=api;})(typeof window==='object'?window:this,function(){
  'use strict';
  const todos=['direcao','coordenacao','gestor'];
+ const produtos=['direcao','coordenacao','gestor','compradora','estoque'];
+ const financeiro=['direcao','coordenacao','gestor','compradora'];
  const catalogo=[
+  {id:'produtos.ver',nome:'Consultar Produtos',grupo:'Produtos',perfis:produtos,descricao:'Cadastro operacional. O acesso aos pontos é atribuído separadamente nesta administração.'},
+  {id:'produtos.custos.ver',nome:'Consultar custos de Produtos',grupo:'Produtos',perfis:financeiro,requer:'produtos.ver',descricao:'Valores privados somente nos pontos autorizados. Estoque não recebe custos.'},
+  {id:'produtos.custos.editar',nome:'Cadastrar custos de Produtos',grupo:'Produtos',perfis:financeiro,requer:'produtos.custos.ver',descricao:'Preparar versões e composições nos pontos autorizados.'},
+  {id:'produtos.custos.aprovar',nome:'Aprovar custos de Produtos',grupo:'Produtos',perfis:['direcao','compradora'],requer:'produtos.custos.editar',descricao:'Uma pessoa autorizada aprova cada versão. Também exige concessão de aprovação por ponto.'},
   {id:'vendas.ver',nome:'Dados de vendas e resultados',grupo:'Visualização',perfis:todos,descricao:'Resultados, Vendas, Raio-X, Forecast e os indicadores usados na gestão. Essas telas compartilham a mesma base.'},
   {id:'gestao.ver',nome:'Gestão das operações',grupo:'Visualização',perfis:todos,requer:'vendas.ver',descricao:'Panorama, Vendas da operação, Diagnóstico, Anúncios, Publicidade e Metas. O gestor continua limitado à própria carteira.'},
   {id:'estoque.ver',nome:'Estoque e planejamento',grupo:'Visualização',perfis:todos,descricao:'Estoque, Projeção e dados de Full. Full também exige Gestão e Dados de vendas.'},
@@ -19,9 +25,11 @@
  function efetivas(perfil,restricoes={}){const out=base(perfil);for(const r of catalogo)if(restricoes[r.id]===false)out[r.id]=false;for(const r of catalogo)if(r.requer&&!out[r.requer])out[r.id]=false;return out;}
  function normalizar(perfil,value){if(!value||typeof value!=='object'||Array.isArray(value))throw Error('As restrições de acesso são inválidas.');const out={},limites=base(perfil);for(const [key,v]of Object.entries(value)){if(!Object.hasOwn(limites,key)||typeof v!=='boolean')throw Error('Permissão inválida: '+key);if(v&&!limites[key])throw Error('Esta permissão é exclusiva de outro perfil.');if(v===false&&limites[key])out[key]=false;}return out;}
  function pode(user,key){return !!user&&efetivas(user.perfil,user.restricoes||{})[key]===true;}
- function pagina(user,page,sub){const can=k=>pode(user,k);if(page==='gerencial'){if(sub==='comissao')return can('comissao.ver');return can('gestao.ver')&&(sub!=='full'||can('estoque.ver'));}if(page==='dre')return can('dre.ver');if(page==='acompanhamento')return can('acompanhamento.ver');if(page==='envios')return can('envios.ver');if(page==='estoque')return can('estoque.ver');if(page==='projecao')return can('estoque.ver')&&can('vendas.ver');return can('vendas.ver');}
+ function pagina(user,page,sub){const can=k=>pode(user,k);if(page==='cadastro-produtos')return can('produtos.ver');if(page==='gerencial'){if(sub==='comissao')return can('comissao.ver');return can('gestao.ver')&&(sub!=='full'||can('estoque.ver'));}if(page==='dre')return can('dre.ver');if(page==='acompanhamento')return can('acompanhamento.ver');if(page==='envios')return can('envios.ver');if(page==='estoque')return can('estoque.ver');if(page==='projecao')return can('estoque.ver')&&can('vendas.ver');return can('vendas.ver');}
  function rota(user,method,path){
   if(path==='/api/health'||path==='/api/sessao'||path==='/api/trocar-senha')return true;
+  if(path==='/api/produtos'||path.startsWith('/api/produtos/'))return pode(user,'produtos.ver');
+  if(['estoque','compradora'].includes(user?.perfil))return false;
   if(path.startsWith('/api/admin/'))return user?.perfil==='direcao';
   if(['/api/dataset','/api/detalhe','/api/vendas','/api/vendas-agregado'].includes(path))return pode(user,'vendas.ver');
   if(['/api/abertura','/api/historico','/api/equipe'].includes(path))return pode(user,'gestao.ver')||pode(user,'acompanhamento.ver');

@@ -135,19 +135,21 @@ const BCGroupMap=[
  {id:'financeiro',label:'Financeiro',items:[{id:'dre',label:'DRE',page:'dre'},{id:'comissao',label:'Comissão',page:'gerencial',sub:'comissao'}]}
 ];
 function bcGroupedAllowed(item,user=bcNavSession()){
+ if(item.page==='cadastro-produtos')return window.bcProdutosAllowed?.(item,user)===true;
  if(item.id==='dre')return user?.perfil==='direcao';
  if(item.id==='comissao')return ['direcao','coordenacao','gestor'].includes(user?.perfil)||typeof painelOnline==='function'&&!painelOnline();
  return true;
 }
 function bcGroupedCatalogue(){return BCGroupMap.map(g=>{const items=[...g.items];if(g.id==='acompanhamento'&&typeof AC2_TIPOS_ADS!=='undefined')items.splice(2,0,{id:'ac-ads',label:'Ads',page:'acompanhamento',work:'ads'});return{...g,items:items.filter(i=>bcGroupedAllowed(i))};}).filter(g=>g.items.length).map(g=>({...g,label:g.id==='financeiro'&&g.items.length===1?'Comissão':g.label}));}
 function bcGroupedCurrent(groups=bcGroupedCatalogue()){
- for(const group of groups){const item=group.items.find(i=>!i.disabled&&i.page===activePage&&(i.sub?i.sub===GER_SUB:i.work?i.work===(typeof ac2==='object'?ac2.sub:'tarefas'):true));if(item)return{group,item};}return null;
+ for(const group of groups){const item=group.items.find(i=>!i.disabled&&i.page===activePage&&(!i.productMode||i.productMode===window.bcProdutoSection)&&(i.sub?i.sub===GER_SUB:i.work?i.work===(typeof ac2==='object'?ac2.sub:'tarefas'):true));if(item)return{group,item};}return null;
 }
 function bcGroupedIdentity(){const key=bcNavKey()+':areas-v1';if(BCGroup.identity!==key){BCGroup.identity=key;BCGroup.last={};try{const saved=JSON.parse(localStorage.getItem(key)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))BCGroup.last=saved;}catch{}}return key;}
 function bcGroupedRemember(group,item){const key=bcGroupedIdentity();if(BCGroup.last[group]===item)return;BCGroup.last[group]=item;try{localStorage.setItem(key,JSON.stringify(BCGroup.last));}catch{}}
 function bcGroupedOpen(groupId,itemId){
  bcGroupedIdentity();const group=bcGroupedCatalogue().find(g=>g.id===groupId);if(!group)return;const item=group.items.find(i=>i.id===(itemId||BCGroup.last[groupId])&&!i.disabled)||(!itemId?group.items.find(i=>!i.disabled):null);if(!item||!bcGroupedAllowed(item))return;
  const original=document.getElementById('nav-'+item.page);if(!original)return;
+ if(item.productMode)window.bcProdutosOpenMode?.(item.productMode);
  if(item.sub)GER_SUB=item.sub;
  goPage(item.page,original);
  if(item.work&&typeof ac2==='object'&&typeof ac2.setSub==='function')ac2.setSub(item.work);

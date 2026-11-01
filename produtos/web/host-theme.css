@@ -1,0 +1,13 @@
+/* Shared visual contract: restrained lilac accent, semantic status, both themes. */
+:root{--bg:#080d15;--panel:#101723;--line:#2b3340;--text:#e5e9f0;--muted:#a7b1c0;--accent:#b8a6de;--warn:#dec078;--raised:#171f2c;color-scheme:dark}
+:root[data-theme=light]{--bg:#f5f6f9;--panel:#fff;--line:#dce0e8;--text:#1c2432;--muted:#59677b;--accent:#715295;--warn:#886329;--raised:#edf0f5;color-scheme:light}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px;background:var(--bg)}
+button,input,select,textarea{font-family:inherit;font-size:14px}input,select,textarea,.cost-picker{background:var(--raised);color:var(--text);border-color:var(--line)}
+button{background:var(--accent);color:var(--bg);min-height:42px;font-weight:600}button.secondary,button.quiet{background:var(--panel);color:var(--text);border-color:var(--line)}
+button:hover{filter:brightness(1.04)}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+h1{font-size:26px;letter-spacing:-.5px}h2{font-size:20px}h3{font-size:17px}th{font-size:12px;text-transform:none;letter-spacing:0}td{font-size:13px}th,td{padding:13px 15px}.money{font-variant-numeric:tabular-nums}.sku{font-size:12px}
+tbody tr:hover{background:var(--raised)}.tag{color:var(--text);background:var(--raised);border:1px solid var(--line);white-space:normal}.tag.pending{color:var(--warn);background:var(--panel)}.tag.approved{color:#79b99a;background:var(--panel)}
+.product-guide{padding:13px 17px;border:1px solid var(--line);background:var(--panel);border-radius:10px;margin-bottom:22px}.product-guide summary{cursor:pointer;color:var(--muted);font-weight:600}.product-guide p{margin:12px 0 0;font-size:14px}
+.message{background:var(--panel);border-color:var(--warn);color:var(--text)}.filters{align-items:end}.filters label{font-size:13px}.list-heading{font-size:13px}
+.bc-embedded>header,.bc-embedded #workspace>nav,.bc-embedded .eyebrow,.bc-embedded #workspace>.title h1{display:none!important}.bc-embedded main{padding:16px 8px;margin:0;max-width:none}.bc-embedded .title{margin-bottom:14px}.bc-embedded #subtitle{margin:0}.bc-embedded .login{display:none!important}
+@media(max-width:720px){h1{font-size:23px}.bc-embedded main{padding:10px 4px}.filters{padding:14px}.filters label{min-width:120px}dialog{padding:18px}button,input,select{min-height:44px}}

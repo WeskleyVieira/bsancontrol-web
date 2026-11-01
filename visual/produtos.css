@@ -1,0 +1,8 @@
+.bc-products-frame{display:block;width:100%;height:calc(100dvh - 230px);min-height:560px;border:0;border-radius:10px;background:var(--bc-surface,var(--surf));color-scheme:inherit}
+.bc-products-status{color:var(--bc-muted,var(--mut));font:14px/1.6 Inter,system-ui,sans-serif}
+body.bc-products-open #bc-point,body.bc-products-open #bc-company,body.bc-products-open #bc-marketplace,body.bc-products-open .bc-period-control{display:none!important}
+body.bc-products-open .dbar,body.bc-products-open .cbar{display:none!important}
+.bc-u-product-grants{margin-top:24px;padding-top:18px;border-top:1px solid var(--bc-border,var(--bdr2))}.bc-u-product-grant{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:18px 0}.bc-u-product-grant label{flex:1;min-width:180px}
+@media(max-width:720px){.bc-products-frame{height:calc(100dvh - 190px);min-height:500px}.bc-u-product-grant button{width:100%}}
+
+body.bc-products-open #bc-global-context,body.bc-products-open #bc-scope-note{display:none!important}
