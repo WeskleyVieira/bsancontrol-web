@@ -24,6 +24,7 @@ const resultadosConsultas = require('./resultados-consultas');
 const financeiroConsultas = require('./financeiro-consultas');
 const posVenda = require('./pos-venda').createService(dbx);
 const posVendaHttp = require('./pos-venda-http').createHttp(posVenda);
+const gestaoHttp = require('./gestao').createHttp(dbx, { writeStore });   // Financeiro da Direção: fechamento, custos e carteiras
 
 const PORT = process.env.PORT || 8787;
 const AUTH_REQ = process.env.AUTH_REQUIRED === "1";                      // em produção: 1 (exige login)
@@ -445,6 +446,7 @@ const server = http.createServer(async (req, res) => {
       if (s && s.trocar && !["/api/trocar-senha", "/api/sessao"].includes(u.pathname)) return J(res, { ok: false, codigo: "TROCA_OBRIGATORIA", erro: "troque a senha para continuar" }, 403);
       if (s && !s.recusado) user = s;
     }
+    if (await gestaoHttp(req, res, u, user)) return;   // /api/gestao/*: só a Direção (checagem própria do gestao.js)
     if (u.pathname.startsWith("/api/") && user && !acessos.rota(user, req.method, u.pathname)) return J(res, { ok: false, codigo: "PERMISSAO_NEGADA", erro: "Seu perfil e suas permissões não permitem esta ação." }, 403);
     if (u.pathname === "/api/sessao" && req.method === "GET") {
       res.setHeader("Cache-Control", "no-store");

@@ -1,0 +1,14 @@
+/* Financeiro da Direção (gestao.js): só ajustes de layout; cartões, blocos e tabelas vêm do padrão das áreas. */
+.gs-page .ger-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:12px 0}
+.gs-num{width:110px;padding:6px 8px;border:1px solid var(--bc-border);border-radius:6px;background:var(--bc-surface);color:var(--bc-text);font:inherit;font-variant-numeric:tabular-nums}
+.gs-inline{display:inline-flex;gap:6px;align-items:center;flex-wrap:nowrap}
+.gs-inline select{padding:6px 8px;border:1px solid var(--bc-border);border-radius:6px;background:var(--bc-surface);color:var(--bc-text);font:inherit}
+.gs-page td select{padding:5px 7px;border:1px solid var(--bc-border);border-radius:6px;background:var(--bc-surface);color:var(--bc-text);font:inherit}
+.gs-msg{min-height:22px;margin:8px 0;font-size:13px;color:var(--bc-muted)}
+.gs-msg[data-tone=good]{color:var(--bc-good)}
+.gs-msg[data-tone=bad]{color:var(--bc-bad)}
+.gs-form{display:grid;gap:12px;min-width:min(520px,86vw)}
+.gs-form input,.gs-form select{padding:7px 9px;border:1px solid var(--bc-border);border-radius:6px;background:var(--bc-surface);color:var(--bc-text);font:inherit}
+.gs-form input[type=checkbox]{width:auto}
+.gs-recibo{max-width:min(980px,96vw)}
+@media print{body.bc-shell>*:not(#gs-recibo){display:none!important}#gs-recibo{position:static;border:0;max-width:none}#gs-recibo header button{display:none}}
