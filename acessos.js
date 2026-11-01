@@ -26,6 +26,7 @@
   if(['/api/dataset','/api/detalhe','/api/vendas','/api/vendas-agregado'].includes(path))return pode(user,'vendas.ver');
   if(['/api/abertura','/api/historico','/api/equipe'].includes(path))return pode(user,'gestao.ver')||pode(user,'acompanhamento.ver');
   if(path==='/api/demandas')return pode(user,'acompanhamento.ver');
+  if(['/api/resultados/resumo','/api/resultados/skus'].includes(path))return method==='GET'&&pode(user,'vendas.ver');
   if(path==='/api/operacao/estoque')return pode(user,'estoque.ver');
   if(path==='/api/operacao/projecao')return pode(user,'estoque.ver')&&pode(user,'vendas.ver');
   if(path==='/api/tratativas'||path==='/api/comandos')return pode(user,method==='GET'?'acompanhamento.ver':'acompanhamento.tratar');
