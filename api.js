@@ -508,8 +508,12 @@ const server = http.createServer(async (req, res) => {
       let result;
       if(req.method==='GET' && u.pathname==='/api/admin/usuarios') result=await usuarios.listar(user);
       else if(req.method==='GET' && u.pathname==='/api/admin/historico') result=await usuarios.historico(user,Number(u.searchParams.get('id')));
+      else if(req.method==='GET' && u.pathname==='/api/admin/remocao') result=await usuarios.remocao(user,Number(u.searchParams.get('id')));
       else if(req.method==='POST' && u.pathname==='/api/admin/usuarios') result=await usuarios.salvar(user,await body(req));
       else if(req.method==='POST' && u.pathname==='/api/admin/reset-senha') result=await usuarios.resetar(user,await body(req));
+      else if(req.method==='POST' && u.pathname==='/api/admin/arquivar') result=await usuarios.arquivar(user,await body(req));
+      else if(req.method==='POST' && u.pathname==='/api/admin/restaurar') result=await usuarios.arquivar(user,await body(req),true);
+      else if(req.method==='POST' && u.pathname==='/api/admin/excluir') result=await usuarios.excluir(user,await body(req));
       else return J(res,{ok:false,erro:'Rota administrativa não encontrada.'},404);
       if(req.method!=='GET')for(const k of [..._gzCache.keys()]) _gzCache.delete(k);
       return J(res,result);

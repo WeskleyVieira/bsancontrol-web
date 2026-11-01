@@ -13,3 +13,55 @@ test('desativação e reativação preservam registros e revogam tokens antigos'
 test('reset e troca de senha encerram sessões e nunca reexibem o segredo',async()=>{const f=fixture(),u=await user(f,3),reset=await f.service.resetar(f.actor,{id:3,versao:u.versao});assert.equal(await f.service.sessao(3,0),null);let session=await f.service.sessao(3,1);assert.ok(session.trocar);await assert.rejects(f.service.trocar(session,'errada','NovaQAsenha2026'),e=>e.status===400);session=await f.service.trocar(session,reset.senha_temporaria,'NovaQAsenha2026');assert.equal(session.trocar,false);assert.equal(await f.service.sessao(3,1),null);assert.ok(await f.service.sessao(3,2));assert.ok(!JSON.stringify(await f.service.listar(f.actor)).includes(reset.senha_temporaria));assert.ok(!JSON.stringify(await f.service.historico(f.actor,3)).includes(reset.senha_temporaria));f.raw.close();});
 test('usuário não altera sua própria Direção e ator desativado não grava na fila',async()=>{const f=fixture(),self=await user(f,1);await assert.rejects(f.service.salvar(f.actor,{...self,ativo:false}),e=>e.status===409);await assert.rejects(f.service.salvar(f.actor,{...self,perfil:'gestor',gestor_ref:'Carteira A'}),e=>e.status===409);const other=await user(f,2),actor2={id:2,nome:'Direção B',perfil:'direcao',revogacao:0};const results=await Promise.allSettled([f.service.salvar(f.actor,{...other,ativo:false}),f.service.salvar(actor2,{nome:'Não deve criar',email:'indevido@exemplo.local',perfil:'coordenacao',ativo:true})]);assert.equal(results[0].status,'fulfilled');assert.equal(results[1].status,'rejected');assert.equal(f.raw.prepare("SELECT COUNT(*) n FROM usuarios WHERE perfil='direcao' AND ativo=1").get().n,1);assert.equal(f.raw.prepare("SELECT COUNT(*) n FROM usuarios WHERE email='indevido@exemplo.local'").get().n,0);f.raw.close();});
 test('histórico e mutações ficam exclusivos da Direção',async()=>{const f=fixture();await assert.rejects(f.service.listar({id:3,perfil:'gestor'}),e=>e.status===403);await assert.rejects(f.service.historico({id:4,perfil:'coordenacao'},3),e=>e.status===403);await assert.rejects(f.service.resetar({id:3,perfil:'gestor'},{id:2,versao:0}),e=>e.status===403);f.raw.close();});
+test('exclusão de conta sem uso remove credenciais e metadados, sem reutilizar seu ID',async()=>{
+ const f=fixture();const r=await f.service.salvar(f.actor,{nome:'Cadastro incorreto',email:'erro@exemplo.local',perfil:'coordenacao'}),id=r.usuario.id;
+ assert.equal((await f.service.remocao(f.actor,id)).pode_excluir,true);
+ await assert.rejects(f.service.excluir(f.actor,{id,versao:r.usuario.versao,confirmacao:'errado'}),e=>e.status===400);
+ await f.service.excluir(f.actor,{id,versao:r.usuario.versao,confirmacao:'erro@exemplo.local'});
+ for(const table of ['usuarios','usuario_acesso','usuario_ciclo','usuario_eventos'])assert.equal(f.raw.prepare('SELECT COUNT(*) n FROM '+table+' WHERE '+(table==='usuarios'?'id':'usuario_id')+'=?').get(id).n,0);
+ assert.equal(await f.service.sessao(id,0),null);
+ assert.equal(f.raw.prepare('SELECT ator_id FROM usuario_exclusoes WHERE usuario_id=?').get(id).ator_id,1);
+ const next=await f.service.salvar(f.actor,{nome:'Novo cadastro',email:'erro@exemplo.local',perfil:'coordenacao'});assert.ok(next.usuario.id>id);
+ assert.ok(!JSON.stringify(f.raw.prepare('SELECT * FROM usuario_exclusoes').all()).includes('erro@'));
+ f.raw.close();
+});
+test('arquivar revoga acesso, oculta da lista padrão via sinal e restaurar não reativa',async()=>{
+ const f=fixture(),u=await user(f,3);await f.service.arquivar(f.actor,{id:3,versao:u.versao});
+ const archived=await user(f,3);assert.ok(archived.arquivado_em);assert.equal(archived.ativo,false);assert.equal(await f.service.sessao(3,0),null);
+ await assert.rejects(f.service.salvar(f.actor,{...archived,ativo:true}),e=>e.status===409);
+ await assert.rejects(f.service.resetar(f.actor,{id:3,versao:archived.versao}),e=>e.status===409);
+ await f.service.arquivar(f.actor,{id:3,versao:archived.versao},true);const restored=await user(f,3);assert.equal(restored.arquivado_em,null);assert.equal(restored.ativo,false);
+ await f.service.salvar(f.actor,{...restored,ativo:true});assert.equal(await f.service.sessao(3,0),null);assert.ok(await f.service.sessao(3,3));
+ const events=await f.service.historico(f.actor,3);assert.ok(events.eventos.some(e=>e.acao==='arquivado'));assert.ok(events.eventos.some(e=>e.acao==='restaurado'));f.raw.close();
+});
+test('conta que acessou ou produziu registros só pode ser arquivada',async()=>{
+ const f=fixture();await f.service.sessao(3,0);assert.equal((await f.service.remocao(f.actor,3)).pode_excluir,false);
+ await assert.rejects(f.service.excluir(f.actor,{id:3,versao:0,confirmacao:'qa3@exemplo.local'}),e=>e.codigo==='EXCLUSAO_BLOQUEADA');
+ f.raw.exec('CREATE TABLE comandos(id TEXT,pedido_por TEXT);');f.raw.prepare('INSERT INTO comandos VALUES(?,?)').run('a','Coordenação fictícia');
+ assert.equal((await f.service.remocao(f.actor,4)).pode_excluir,false);
+ const before=await user(f,4);const renamed=await f.service.salvar(f.actor,{...before,nome:'Outro nome',email:'outro@exemplo.local'});
+ assert.equal((await f.service.remocao(f.actor,4)).pode_excluir,false);
+ await assert.rejects(f.service.excluir(f.actor,{id:4,versao:renamed.usuario.versao,confirmacao:renamed.usuario.email}),e=>e.codigo==='EXCLUSAO_BLOQUEADA');f.raw.close();
+});
+test('referências por carteira, autoria e novas FKs bloqueiam exclusão sem apagar registros',async()=>{
+ const f=fixture();f.raw.exec('CREATE TABLE tratativas(gestor TEXT);CREATE TABLE nova_referencia(quem INTEGER REFERENCES usuarios(id));CREATE TABLE datasets(nome TEXT,json TEXT);');
+ f.raw.prepare('INSERT INTO tratativas VALUES(?)').run('Carteira A');assert.equal((await f.service.remocao(f.actor,3)).pode_excluir,false);
+ f.raw.prepare('INSERT INTO nova_referencia VALUES(?)').run(4);assert.equal((await f.service.remocao(f.actor,4)).pode_excluir,false);
+ await assert.rejects(f.service.excluir(f.actor,{id:4,versao:0,confirmacao:'qa4@exemplo.local'}),e=>e.codigo==='EXCLUSAO_BLOQUEADA');assert.ok(f.raw.prepare('SELECT * FROM usuarios WHERE id=4').get());
+ f.raw.exec('DELETE FROM tratativas;');f.raw.prepare('INSERT INTO datasets VALUES(?,?)').run('comissaoDet',JSON.stringify([{Gestor:'Carteira A'}]));assert.equal((await f.service.remocao(f.actor,3)).pode_excluir,false);f.raw.close();
+});
+test('remoção protege a própria Direção, versão e autorização em todas as ações',async()=>{
+ const f=fixture();for(const method of ['arquivar','excluir'])await assert.rejects(f.service[method](f.actor,{id:1,versao:0,confirmacao:'qa1@exemplo.local'}),e=>e.status===409);
+ assert.equal((await f.service.remocao(f.actor,1)).pode_excluir,false);
+ await assert.rejects(f.service.arquivar(f.actor,{id:3,versao:9}),e=>e.codigo==='VERSAO_DESATUALIZADA');
+ for(const method of ['arquivar','excluir','remocao'])await assert.rejects(f.service[method]({id:3,perfil:'gestor'},{id:4,versao:0}),e=>e.status===403);f.raw.close();
+});
+test('cadastros iniciais e identidades antigas não podem reaparecer por exclusão',async()=>{
+ const f=fixture();const seeded=await f.service.salvar(f.actor,{nome:'Cadastro sincronizado',email:'coordenacao@grupobsan',perfil:'coordenacao'});
+ assert.equal((await f.service.remocao(f.actor,seeded.usuario.id)).pode_excluir,false);
+ const changed=await f.service.salvar(f.actor,{...seeded.usuario,email:'novo-login@exemplo.local'});assert.equal((await f.service.remocao(f.actor,changed.usuario.id)).pode_excluir,false);f.raw.close();
+});
+test('trocar perfil não desvincula a comissão nem a carteira antiga da conferência',async()=>{
+ const f=fixture();f.raw.exec('CREATE TABLE datasets(nome TEXT,json TEXT)');f.raw.prepare('INSERT INTO datasets VALUES(?,?)').run('comissaoDet',JSON.stringify([{Gestor:'CARTEIRA A'}]));
+ const old=await user(f,3);await f.service.salvar(f.actor,{...old,perfil:'coordenacao',gestor_ref:''});assert.equal((await f.service.remocao(f.actor,3)).pode_excluir,false);f.raw.close();
+});

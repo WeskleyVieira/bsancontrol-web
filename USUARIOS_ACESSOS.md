@@ -1,6 +1,10 @@
 # Usuários e acessos — Grupo Bsan
 
-Administração disponível no menu da conta, exclusivamente à Direção. A página usa lista pesquisável e filtros de perfil, situação e carteira. Gerenciar abre Dados, Acessos e Histórico em painel lateral; no celular, ocupa a tela com ações de salvar sempre visíveis. A retirada de acesso é uma desativação reversível, preservando registros anteriores.
+Administração disponível no menu da conta, exclusivamente à Direção. A página usa lista pesquisável e filtros de perfil, situação e carteira. Gerenciar abre Dados, Acessos e Histórico em painel lateral; no celular, ocupa a tela com ações de salvar sempre visíveis. Em Dados → Organização do cadastro, arquivar retira o usuário da lista padrão e encerra seu acesso. O filtro Arquivados permite restaurar; a restauração mantém o acesso desativado até uma reativação explícita.
+
+Exclusão definitiva exige digitar o login, versão atual e conferência transacional no servidor. Só é permitida sem acesso observado e sem vínculos de autoria, carteira, comissão, ações de administração ou FKs. Identidades anteriores das edições também entram na conferência. Cadastros iniciais mantidos pelo db-sync são arquiváveis, para impedir que uma exclusão seja recriada na próxima sincronização. Falhas de consulta e referências novas não liberam exclusão. Não há exclusão automática ou em lote.
+
+`usuarios-ciclo.js` fornece as verificações. `usuario_ciclo` guarda o arquivamento e a evidência de acesso a partir desta versão (não inventa acessos retroativos). `usuario_exclusoes` guarda somente o ID retirado, o ID do autor e o momento, para impedir reutilização e manter um registro mínimo da ação. A conta, credenciais e metadados administrativos do alvo são removidos; dados de negócio nunca são apagados por este fluxo. As duas tabelas são privadas da API, com RLS e sem privilégios públicos. A própria conta e a última Direção ativa permanecem protegidas.
 
 ## Contrato de acesso
 
