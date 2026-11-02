@@ -15390,10 +15390,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  }
  const skuDe=box=>{for(const s of box.querySelectorAll('.bc-copy')){const v=s.dataset.copiar;if(s.dataset.papel!=='anuncio'&&s.dataset.papel!=='pedido'&&SKU.test(v)&&!ML.test(v)&&!ASIN.test(v))return v;}return '';};
  function urlPara(id,c,titulo){
-  const link=c.sku&&window.BC_LINKS&&window.BC_LINKS[c.emp+'|'+c.mkt+'|'+c.sku];if(link)return link;   // endereço real vindo da API (Magalu)
+  // endereço pronto do pipeline: Magalu (url da API) e TikTok (Product ID; o ID da venda é o da variação, que não abre)
+  const link=c.sku&&window.BC_LINKS&&window.BC_LINKS[c.emp+'|'+c.mkt+'|'+c.sku];if(link)return link;
   if(ML.test(id)||ASIN.test(id))return urlAnuncio(id);
   if(/shopee/i.test(c.mkt)&&NUM.test(id)&&LOJA_SHOPEE[c.emp])return 'https://shopee.com.br/product/'+LOJA_SHOPEE[c.emp]+'/'+id;
-  if(/tiktok/i.test(c.mkt)&&/^\d{15,20}$/.test(id))return 'https://shop.tiktok.com/view/product/'+id+'?region=BR&locale=pt-BR';
   if(/shein/i.test(c.mkt)&&SKC.test(id))return 'https://br.shein.com/pdsearch/'+id+'/';
   // Magalu sem o endereço: busca pelas primeiras palavras do título (a busca com o título inteiro dá 403 no site)
   if(/magazine luiza/i.test(c.mkt)&&titulo)return 'https://www.magazineluiza.com.br/busca/'+titulo.split(/\s+/).slice(0,5).map(encodeURIComponent).join('+')+'/';
