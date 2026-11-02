@@ -15390,11 +15390,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  }
  const skuDe=box=>{for(const s of box.querySelectorAll('.bc-copy')){const v=s.dataset.copiar;if(s.dataset.papel!=='anuncio'&&s.dataset.papel!=='pedido'&&SKU.test(v)&&!ML.test(v)&&!ASIN.test(v))return v;}return '';};
  function urlPara(id,c,titulo){
+  const link=c.sku&&window.BC_LINKS&&window.BC_LINKS[c.emp+'|'+c.mkt+'|'+c.sku];if(link)return link;   // endereço real vindo da API (Magalu)
   if(ML.test(id)||ASIN.test(id))return urlAnuncio(id);
   if(/shopee/i.test(c.mkt)&&NUM.test(id)&&LOJA_SHOPEE[c.emp])return 'https://shopee.com.br/product/'+LOJA_SHOPEE[c.emp]+'/'+id;
   if(/tiktok/i.test(c.mkt)&&/^\d{15,20}$/.test(id))return 'https://shop.tiktok.com/view/product/'+id+'?region=BR&locale=pt-BR';
   if(/shein/i.test(c.mkt)&&SKC.test(id))return 'https://br.shein.com/pdsearch/'+id+'/';
-  if(/magazine luiza/i.test(c.mkt)&&titulo)return 'https://www.magazineluiza.com.br/busca/'+encodeURIComponent(titulo)+'/';
+  // Magalu sem o endereço: busca pelas primeiras palavras do título (a busca com o título inteiro dá 403 no site)
+  if(/magazine luiza/i.test(c.mkt)&&titulo)return 'https://www.magazineluiza.com.br/busca/'+titulo.split(/\s+/).slice(0,5).map(encodeURIComponent).join('+')+'/';
   // sem o ID: a busca dentro da própria loja (Shopee) ou pelo título (Shein)
   if(/shopee/i.test(c.mkt)&&LOJA_SHOPEE[c.emp]&&titulo)return 'https://shopee.com.br/shop/'+LOJA_SHOPEE[c.emp]+'/search?keyword='+encodeURIComponent(titulo);
   if(/shein/i.test(c.mkt)&&titulo)return 'https://br.shein.com/pdsearch/'+encodeURIComponent(titulo)+'/';
@@ -15413,7 +15415,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  function ligarTitulos(raiz){
   const tabelas=raiz.tagName==='TABLE'?[raiz]:raiz.querySelectorAll?[...raiz.querySelectorAll('table')]:[];const t0=raiz.closest&&raiz.closest('table');if(t0&&!tabelas.includes(t0))tabelas.push(t0);
   for(const tb of tabelas){const cab=[...tb.querySelectorAll('thead tr:last-child th')].map(th=>norm(th.textContent));const cols=cab.map((h,i)=>TITULO.test(h)?i:-1).filter(i=>i>=0);if(!cols.length)continue;const colId=cab.findIndex(h=>COL_ID.test(h));
-   for(const tr of tb.querySelectorAll('tbody tr')){if(tr.dataset.atalhoTitulo)continue;const c=contexto(tr),id=idDaLinha(tr,colId,c);
+   for(const tr of tb.querySelectorAll('tbody tr')){if(tr.dataset.atalhoTitulo)continue;const c=contexto(tr),id=idDaLinha(tr,colId,c);c.sku=skuDe(tr);
     for(const i of cols){const td=tr.cells[i];if(!td)continue;
      const w=document.createTreeWalker(td,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const v=n.nodeValue.trim();const e=n.parentElement;return v.length>=6&&/\s/.test(v)&&e&&!e.closest(PULA)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP;}});
      const n=w.nextNode();if(!n)continue;
@@ -15433,7 +15435,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    for(const m of card.textContent.matchAll(/\bMLB\d{6,}\b/gi))ids.add(m[0].toUpperCase());
    for(const s of card.querySelectorAll('.bc-copy[data-papel="anuncio"]'))ids.add(s.dataset.copiar);
    const n=[...h.childNodes].find(x=>x.nodeType===3&&tituloSeg(x.nodeValue));if(!n||ids.size>1||(!ids.size&&!card.querySelector(".bc-copy")))continue;   // sem ID e sem código no cartão não é cartão de anúncio
-   const c=contexto(card),id=[...ids][0]||anuncioDoSku(skuDe(card),c),url=urlPara(id,c,n.nodeValue.trim());if(!url)continue;
+   const c=contexto(card);c.sku=skuDe(card);const id=[...ids][0]||anuncioDoSku(c.sku,c),url=urlPara(id,c,n.nodeValue.trim());if(!url)continue;
    const a=linkAnuncio(url,id||n.nodeValue.trim(),n.nodeValue);n.replaceWith(a);h.dataset.atalhoTitulo='1';}
  }
  function processar(raiz){if(!raiz||!raiz.isConnected||raiz.nodeType!==1||raiz.closest('.bc-copy,.bc-copy-aviso'))return;separarLinks(raiz);marcarTextos(raiz);ligarTitulos(raiz);ligarCartoes(raiz);}
@@ -15626,6 +15628,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       if(Array.isArray(d.operacoes) && typeof METAS_GESTORES!=='undefined') METAS_GESTORES=Object.fromEntries(d.operacoes.map(o=>[o.empresa+'|'+o.marketplace,o.gestor]));
       if(typeof METAS_FONTE!=='undefined') METAS_FONTE={atualizadoEm:d._sync||'',origem:'Base sincronizada'};
       if(d.fullRel && typeof FULL_REL!=='undefined') FULL_REL=d.fullRel;   // relação do Full (só as operações do gestor)
+      if(d.linksAnuncio) window.BC_LINKS=d.linksAnuncio;   // link do anúncio por empresa|marketplace|SKU (visual/atalhos.js)
       if(typeof ENVIOS!=='undefined') ENVIOS=Array.isArray(d.envios)?d.envios:(ENVIOS||[]);
       if(typeof COMISSAO!=='undefined' && !Array.isArray(COMISSAO)) COMISSAO=[];
       window._bcExtrasOk=true;
