@@ -1,0 +1,12 @@
+
+/* Atalhos de anúncio e código (atalhos.js): título abre o anúncio, SKU/ID copia com um clique. */
+.bc-copy{cursor:copy;border-radius:4px;padding:0 2px;margin:0 -2px;text-decoration:underline dotted transparent;text-underline-offset:3px;transition:background-color .15s,text-decoration-color .15s}
+.bc-copy:hover,.bc-copy:focus-visible{background:var(--a3,rgba(196,181,253,.09));text-decoration-color:var(--bc-muted,currentColor);outline:none}
+.bc-copy:focus-visible{box-shadow:0 0 0 2px var(--bc-accent,#c4b5fd)}
+.bc-copy.ok{background:color-mix(in srgb,var(--bc-good,#79c9a6) 22%,transparent)}
+.bc-copy-abrir{margin-left:4px;color:var(--bc-accent,#c4b5fd)!important;text-decoration:none!important;font-size:.9em}
+.bc-anuncio-link{color:inherit!important;text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 35%,transparent);text-underline-offset:3px}
+.bc-anuncio-link:hover,.bc-anuncio-link:focus-visible{color:var(--bc-accent,#c4b5fd)!important;text-decoration-color:currentColor}
+.bc-copy-aviso{position:fixed;left:50%;bottom:24px;transform:translate(-50%,12px);z-index:2147483000;max-width:min(520px,calc(100vw - 32px));padding:10px 16px;border-radius:8px;border:1px solid var(--bc-border,#2b3546);background:var(--bc-raised,#1a2232);color:var(--bc-text,#e8edf5);font:500 14px/1.5 Inter,Segoe UI,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;overflow-wrap:anywhere}
+.bc-copy-aviso.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.bc-copy,.bc-copy-aviso{transition:none}}
