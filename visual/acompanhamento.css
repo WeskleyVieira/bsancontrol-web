@@ -2,3 +2,21 @@
 @media(max-width:1000px){.ac4-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}.ac4-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.ac4-kpis,.ac4-controls{grid-template-columns:minmax(0,1fr)!important}.ac4-block{padding:16px}.ac4-task{padding:16px}.ac4-dialog{width:100%;max-height:100dvh;height:100dvh;max-width:100%;margin:0;border-radius:0;padding:18px}.ac4-facts{grid-template-columns:minmax(0,1fr);gap:3px}.ac4-facts dd{margin-bottom:10px}.ac4-dialog>header{align-items:flex-start}.ac4-dialog>header h2{font-size:19px}.ac4-levels{gap:4px}.ac4-tab{padding:10px}}
 @media(prefers-reduced-motion:reduce){.ac4 *,.ac4-dialog *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Visões gerenciais: o contexto é comum; o conteúdo muda conforme o trabalho de cada nível. */
+.ac4-scope{border:1px solid var(--bc-border);border-radius:12px;padding:18px 20px;margin:0 0 20px;background:var(--bc-surface)}
+.ac4-scope>h2{font-size:17px!important;margin:0 0 10px}.ac4-scope-controls{grid-template-columns:repeat(3,minmax(150px,1fr)) auto;margin:12px 0}
+.ac4-breadcrumb{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:14px;color:var(--bc-text);font-size:14px;line-height:1.7}
+.ac4-breadcrumb strong{overflow-wrap:anywhere}.ac4-owner-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:16px;margin:18px 0}
+.ac4-owner-card{border:1px solid var(--bc-border);border-radius:10px;padding:20px;background:var(--bc-raised);min-width:0}.ac4-owner-card h3{font-size:18px!important;line-height:1.5;margin:0 0 14px;overflow-wrap:anywhere}
+.ac4-progress{display:grid;gap:8px;min-width:150px;font-size:13px;color:var(--bc-text)}.ac4-progress strong{font-size:13px;line-height:1.6;font-variant-numeric:tabular-nums}
+.ac4-progress progress{appearance:none;width:100%;height:8px;border:0;border-radius:6px;overflow:hidden;background:var(--bc-border);accent-color:var(--bc-accent)}
+.ac4-progress progress::-webkit-progress-bar{background:var(--bc-border)}.ac4-progress progress::-webkit-progress-value{background:var(--bc-accent);border-radius:6px}.ac4-progress progress::-moz-progress-bar{background:var(--bc-accent)}
+.ac4-matrix-cell{display:grid;gap:7px;background:var(--bc-raised);color:var(--bc-text);border:1px solid var(--bc-border);border-radius:8px;padding:12px;cursor:pointer;text-align:left;width:100%;min-width:180px}
+.ac4-matrix-cell:hover{border-color:var(--bc-accent);background:var(--a3)}.ac4-matrix-cell small{font-size:12px;line-height:1.5;color:var(--bc-muted);white-space:nowrap}
+.ac4-table td>.sum-button{white-space:nowrap;overflow-wrap:normal}.ac4-count{font-variant-numeric:tabular-nums}.ac4-table td{overflow-wrap:normal}
+#ac4-coordination .ac4-table{min-width:1250px}#ac4-coordination td:nth-child(7){min-width:240px;max-width:360px}#ac4-direction th:first-child{min-width:165px}
+.ac4-period-help{font-size:13px;color:var(--bc-muted);margin-top:8px}.ac4-period-help summary{cursor:pointer;min-height:30px;padding:4px 0}
+body.bc-shell .ac4 .sum-value.ac4-bad{color:var(--bc-bad)!important}body.bc-shell .ac4 .sum-card[data-ac4-tone=bad]{--bc-result-color:var(--bc-bad);border-left:4px solid var(--bc-bad)!important;border-color:color-mix(in srgb,var(--bc-bad) 48%,var(--bc-border))!important;background:color-mix(in srgb,var(--bc-bad) 11%,var(--bc-surface))!important}
+@media(max-width:1000px){.ac4-scope-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.ac4-scope{padding:16px}.ac4-scope-controls{grid-template-columns:minmax(0,1fr)}.ac4-owner-card{padding:16px}}
