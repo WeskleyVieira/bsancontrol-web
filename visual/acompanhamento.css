@@ -52,3 +52,6 @@ body.bc-shell .ac4 .sum-value.ac4-bad{color:var(--bc-bad)!important}body.bc-shel
 .ac4-case-link{border-left:2px solid var(--bc-border);padding-left:12px;margin:12px 0}.ac4-case-link .ac4-note{font-size:13px!important}
 #ac4-cases>.ac4-control{max-width:650px;margin:16px 0}#ac4-economy .ac4-block{margin-top:18px;padding:18px}#ac4-economy .ac4-table td{font-variant-numeric:tabular-nums}
 @media(max-width:600px){.ac4-continuity{padding:12px}.ac4-continuity .ac4-domain-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ac4-continuity .ac4-domain-stats>div{grid-template-columns:1fr;gap:3px}#ac4-economy .ac4-block{padding:12px}}
+
+/* Agenda de retornos: urgência sem sinalizar zero como problema. */
+#ac4-returns .ac4-return-stat.bad{border-left-color:var(--bc-bad)}#ac4-returns .ac4-return-stat.attention{border-left-color:var(--bc-attention)}
