@@ -19,6 +19,7 @@ const usuarios = require("./usuarios").criarServico(dbx, {userReferences:async i
 const produtosIntegration = require("./produtos/integration").createIntegration({dbx,resolveSession:sessaoDe});
 if(process.env.PRODUTOS_ENABLED==='1' && String(process.env.JWT_SECRET||'').length<32)throw Error('Produtos exige JWT_SECRET com pelo menos 32 caracteres.');
 const acompanhamentoRegistros = require('./acompanhamento-registros');
+const acompanhamentoFontes = require('./acompanhamento-fontes');
 const operacaoConsultas = require('./operacao-consultas');
 const resultadosConsultas = require('./resultados-consultas');
 const financeiroConsultas = require('./financeiro-consultas');
@@ -143,7 +144,7 @@ async function rotaGET(u, user) {
     if (user && user.perfil === "gestor") { if (!user.gestor_ref) w.push("1=0"); else { w.push("d.gestor=?"); args.push(user.gestor_ref); } }
     if (w.length) sql += " WHERE " + w.join(" AND ");
     sql += " ORDER BY d.risco DESC";
-    return (await dbx.all(sql, args)).map(mapDem);
+    return acompanhamentoFontes.enriquecer(dbx, (await dbx.all(sql, args)).map(mapDem));
   }
   // pedidos de reaplicação dos últimos 14 dias (o painel mostra o estado na tarefa) — gestor só vê os dele
   if (u.pathname === "/api/comandos") {
