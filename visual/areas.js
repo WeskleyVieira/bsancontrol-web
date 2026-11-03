@@ -19,7 +19,7 @@ const BCAreas={
  full:{selector:'#ger-sub-full',title:'Full',read:'Confira a data da posição, a sugestão e os itens que precisam de revisão. Escolha horizonte, tipo e a leitura de reposição, não repor, parado, antigo, desempenho ou pendências.',scope:'Estoque e giro usam a âncora da relação, não um estoque histórico do período do cabeçalho. Risco de ruptura é projeção. Posição ausente não é zero; peças a caminho ficam separadas do disponível.',next:'A relação e o CSV apoiam a preparação do galpão, sem criar envio. Gráficos e critérios detalhados ficam em apoio. Conferir a posição e as restrições precede a decisão de enviar.'},
  publicidade:{selector:'#ger-sub-ads',title:'Publicidade',read:'Comece pelo investimento e pela receita atribuída. Depois confira a margem da operação, cobertura e afiliados antes de explorar campanhas, anúncios e diário.',scope:'Relatório de mídia, Ads alocado na margem, cobranças no líquido e abertura de afiliados têm alcances próprios. ACOS e ROAS não medem lucro final. Receita atribuída vezes margem de referência menos investimento é uma estimativa, não um valor recuperável garantido.',next:'Troque o nível da leitura, filtre e exporte o CSV. No TikTok, mídia e afiliados já no líquido não são descontados novamente. Investigar não pausa nem escala campanhas automaticamente.'},
 };
-const BCVisual={pending:false,zoom:null,chartState:new WeakMap(),areas:new Set(),version:'2026-10-30-completa'};
+const BCVisual={pending:false,zoom:null,chartState:new WeakMap(),colorState:new WeakMap(),areas:new Set(),version:'2026-11-03-cores-resultados'};
 const BCType={seen:new WeakMap(),fontWrappers:new WeakMap(),family:'Inter, "Segoe UI", sans-serif'};
 const BCChrome={rangeMode:'quick',periodMounted:false};
 function bcChromeText(el,value){if(el&&el.textContent!==value)el.textContent=value;}
@@ -190,7 +190,61 @@ function bcChromeRefresh(){bcChromeAccount();bcChromePeriod();bcChromePeriodSync
 const bcVisualVisible=el=>!!el&&el.isConnected&&el.getClientRects().length>0&&!el.closest('[hidden]');
 function bcVisualTone(color){const c=String(color||'').replace(/\s/g,'').toLowerCase();if(/#(?:22c55e|34d399|4ade80|059669|10b981)|rgb\((?:34,197,94|52,211,153|74,222,128)\)|var\(--pos\)/.test(c))return'good';if(/#(?:f87171|ef5350|ef4444|dc2626|ff6b6b)|rgb\((?:248,113,113|239,83,80|239,68,68)\)|var\(--neg\)/.test(c))return'bad';if(/#(?:f59e0b|fbbf24|fcd34d|facc15)|rgb\((?:245,158,11|251,191,36)\)|var\(--warn\)/.test(c))return'attention';if(/#(?:4f8ef7|60a5fa|3b82f6)|var\(--a2?\)/.test(c))return'info';return'';}
 function bcVisualLabel(text){const original=String(text||'');const clean=original.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu,'').replace(/^\s+/,'');return clean.trim()?clean:original;}
-function bcVisualColor(value){if(Array.isArray(value))return value.map(bcVisualColor);if(typeof value!=='string')return value;const palette={'4f8ef7':'99b7dc','3b82f6':'99b7dc','60a5fa':'99b7dc','22c55e':'79c9a6','34d399':'79c9a6','10b981':'79c9a6','ef5350':'d38c98','ef4444':'d38c98','f87171':'d38c98','dc2626':'d38c98','f59e0b':'dec078','fbbf24':'dec078','facc15':'dec078','a78bfa':'b8a6de','818cf8':'b8a6de','f472b6':'c48faf','f43f5e':'c48faf','fb923c':'c3a484','f97316':'c3a484','38bdf8':'90bdb9','00c2a8':'8bbab3'};return value.replace(/#([a-f\d]{6})([a-f\d]{2})?\b/gi,(all,hex,alpha)=>palette[hex.toLowerCase()]?'#'+palette[hex.toLowerCase()]+(alpha||''):all);}
+function bcVisualColor(value){
+ if(Array.isArray(value))return value.map(bcVisualColor);if(typeof value!=='string')return value;
+ const light=document.body.classList.contains('light'),groups=[
+  [['4f8ef7','3b82f6','60a5fa','99b7dc','1d65d6'],'60a5fa','1d65d6'],
+  [['22c55e','34d399','4ade80','059669','10b981','79c9a6','2dd48a','087c45'],'2dd48a','087c45'],
+  [['ef5350','ef4444','f87171','dc2626','ff6b6b','d38c98','ef929a','ff5c66','c91d38'],'ff5c66','c91d38'],
+  [['f59e0b','fbbf24','fcd34d','facc15','dec078','9a5700'],'fbbf24','9a5700'],
+  [['a78bfa','818cf8','b8a6de','7150bf'],'a78bfa','7150bf'],
+  [['f472b6','f43f5e','c48faf','db2777'],'f472b6','db2777'],
+  [['fb923c','f97316','c3a484','c4560a'],'fb923c','c4560a'],
+  [['38bdf8','00c2a8','90bdb9','8bbab3','22d3ee','087e98'],'22d3ee','087e98']
+ ];const palette=Object.fromEntries(groups.flatMap(([keys,dark,day])=>keys.map(key=>[key,light?day:dark])));
+ return value.replace(/#([a-f\d]{6})([a-f\d]{2})?\b/gi,(all,hex,alpha)=>palette[hex.toLowerCase()]?'#'+palette[hex.toLowerCase()]+(alpha||''):all);
+}
+// Só interpreta um valor completo. Datas, códigos, textos e ausência não viram resultados.
+function bcVisualAmount(text){
+ let s=String(text??'').trim().replace(/[−–]/g,'-').replace(/\s/g,'');const accounting=s.startsWith('(')&&s.endsWith(')');if(accounting)s=s.slice(1,-1);
+ const m=s.match(/^([+-]?)(R\$)?([+-]?)(\d+(?:\.\d{3})*)(?:,(\d{1,12}))?([kKmMbB])?(%|p\.p\.)?$/);if(!m||m[1]&&m[3]||accounting&&(m[1]||m[3]))return null;
+ const value=Number(m[4].replaceAll('.','')+'.'+(m[5]||'0'))*(accounting||m[1]==='-'||m[3]==='-'?-1:1)*({k:1e3,m:1e6,b:1e9}[m[6]?.toLowerCase()]||1);
+ return Number.isFinite(value)?{value,unit:m[2]?'money':m[7]?'percent':'number'}:null;
+}
+function bcVisualValueTone(text,label='',comparison=false){
+ const n=bcVisualAmount(text);if(!n||comparison||n.value===0)return'';if(n.value<0)return'bad';
+ const l=String(label).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ if(/prejuizo|margem negativa|saldo negativo/.test(l))return'bad';
+ if(/atras|pendenc|sem custo|faltante/.test(l))return'attention';
+ if(/margem|margens|resultado|saldo|lucro|contribui/.test(l))return'good';
+ if(!/devolu|cancel/.test(l)&&/faturamento|receita|pedidos identificados|unidades vendidas/.test(l))return'info';return'';
+}
+function bcVisualResultColors(root){
+ const headers=new Map(),primary='.sum-value,.kpi-val,.bc-metric-value';
+ for(const e of root.querySelectorAll(primary+',.sum-bridge strong,.ger-values dd,.op-facts dd,td,td span,td strong,dd span,dd strong,.money,.sum-negative,.neg,.pos')){
+  if(e.closest('thead,form,code,kbd,a,button,.bc-technical,.sum-delta,.sum-change,[data-direction]')||e.querySelector('input,select,button,a,table'))continue;
+  const main=e.matches(primary),card=main?e.closest('.sum-card,.bc-metric,.kpi'):null;let label=card?.querySelector('h3,.bc-metric-label,.kpi-eye')?.textContent||'';
+  const table=e.closest('table'),cell=e.closest('td');if(table&&cell){if(!headers.has(table))headers.set(table,[...table.querySelectorAll('thead tr:last-child th')].map(h=>h.textContent));label=headers.get(table)[cell.cellIndex]||'';}
+  const comparison=/varia[cç][aã]o|diferen[cç]a|crescimento|redu[cç][aã]o|desvio|compara[cç][aã]o/i.test(label);
+  const direct=[...e.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim(),text=main&&bcVisualAmount(direct)?direct:e.textContent,n=bcVisualAmount(text);
+  let tone=main?bcVisualValueTone(text,label,comparison):n?.unit!=='number'&&n?.value<0&&!comparison?'bad':'';
+  if(!main&&e.classList.contains('sum-negative')&&n?.value<0&&!comparison)tone='bad';
+  if(tone)e.dataset.bcResult=tone;else delete e.dataset.bcResult;
+  if(card){if(tone)card.dataset.bcResult=tone;else delete card.dataset.bcResult;}
+ }
+}
+function bcVisualChartColors(chart){
+ const bad=document.body.classList.contains('light')?'#c91d38':'#ff5c66';
+ for(const d of chart.data?.datasets||[]){const type=d.type||chart.config.type,financial=/margem|resultado|saldo|lucro|contribui/i.test(d.label||''),state=BCVisual.colorState.get(d)||{};
+  for(const key of ['backgroundColor','borderColor','pointBackgroundColor','pointBorderColor']){
+   const fallback=financial&&type==='bar'&&key==='backgroundColor'?'#60a5fa':financial&&type==='line'&&key==='pointBackgroundColor'?(state.borderColor?.raw||d.borderColor||'#60a5fa'):null;
+   if(!d[key]&&!fallback)continue;let raw=state[key]&&d[key]===state[key].applied?state[key].raw:d[key]||fallback;let color=bcVisualColor(raw);
+   if(financial&&typeof color!=='function'&&(type==='bar'||type==='line'&&key.startsWith('point')))color=(d.data||[]).map((v,i)=>{const n=typeof v==='number'?v:v&&typeof v==='object'?v.y:null;return n!==null&&n<0?bad:Array.isArray(color)?color[i%color.length]:color;});
+   d[key]=color;state[key]={raw,applied:color};
+  }BCVisual.colorState.set(d,state);
+ }
+}
+
 function bcVisualGuide(root,spec){const existing=root.querySelector(':scope > .bc-reading-guide');if(existing){if(root.firstElementChild!==existing)root.prepend(existing);return;}const d=document.createElement('details');d.className='bc-reading-guide';const s=document.createElement('summary');s.textContent='Como ler '+spec.title;d.append(s);for(const text of [spec.read,spec.scope,spec.next]){const p=document.createElement('p');p.textContent=text;d.append(p);}root.prepend(d);}
 function bcVisualTypography(root){
  for(const e of root.querySelectorAll('.cc-title,.kpi-eye,.sl,h2,h3,h4,button,summary,.stab,.pf-lbl,option,.a2-subb,.a2-lvb,.diag-title,.a2-sh,.a2-shh,.a2-ttl,.bc-metric-label,.gf-subb,.a2-pill,.a2-db,.a2-cc .lb,.a2-gm .ml')){
@@ -266,7 +320,7 @@ function bcVisualChartTypography(chart){
  for(const scale of Object.values(o.scales||{})){if(scale.ticks)scale.ticks.font=bcVisualFont(scale.ticks.font,12);if(scale.title)scale.title.font=bcVisualFont(scale.title.font,13);}
 }
 function bcVisualTypeStart(){
- if(typeof Chart==='function'){Object.assign(Chart.defaults.font,{family:BCType.family,size:12,lineHeight:1.5});Chart.register({id:'bcTypography',beforeInit:bcVisualChartTypography,beforeUpdate:bcVisualChartTypography});
+ if(typeof Chart==='function'){Object.assign(Chart.defaults.font,{family:BCType.family,size:12,lineHeight:1.5});Chart.register({id:'bcTypography',beforeInit:bcVisualChartTypography,beforeUpdate:bcVisualChartTypography},{id:'bcSemanticColors',beforeUpdate:bcVisualChartColors});
   for(const canvas of document.querySelectorAll('canvas')){const chart=bcVisualChart(canvas);if(chart){bcVisualChartTypography(chart);chart.update('none');}}
   document.fonts?.ready.then(()=>{for(const canvas of document.querySelectorAll('canvas')){const chart=bcVisualChart(canvas);if(chart&&bcVisualVisible(canvas)){chart.resize();chart.update('none');}}});
  }
@@ -284,7 +338,7 @@ function bcVisualCharts(root,spec){
   if(!['pie','doughnut','polarArea','scatter','bubble'].includes(chart.config.type)){chart.options.interaction={...chart.options.interaction,mode:'index',intersect:false};}
   if(chart.options.plugins?.legend?.labels){chart.options.plugins.legend.labels.color=ink;chart.options.plugins.legend.labels.font={...chart.options.plugins.legend.labels.font,size:13};}
   for(const s of Object.values(chart.options.scales||{})){if(s.ticks){s.ticks.color=ink;s.ticks.font={...s.ticks.font,size:12};}if(s.grid)s.grid.color=grid;}
-  for(const d of chart.data.datasets||[]){for(const key of ['backgroundColor','borderColor','pointBackgroundColor','pointBorderColor'])if(d[key])d[key]=bcVisualColor(d[key]);if((d.type||chart.config.type)==='line'){d.borderWidth=Math.max(3,Number(d.borderWidth)||0);d.pointHitRadius=Math.max(14,Number(d.pointHitRadius)||0);d.pointHoverRadius=6;}}
+  bcVisualChartColors(chart);for(const d of chart.data.datasets||[]){if((d.type||chart.config.type)==='line'){d.borderWidth=Math.max(3,Number(d.borderWidth)||0);d.pointHitRadius=Math.max(14,Number(d.pointHitRadius)||0);d.pointHoverRadius=6;}}
   chart.update('none');chart.resize();
  }
 }
@@ -299,7 +353,7 @@ function bcVisualZoom(canvas,button,spec){const chart=bcVisualChart(canvas);if(!
  const values=document.getElementById('bc-viz-values');values.replaceChildren();const table=document.createElement('table'),head=document.createElement('thead'),tr=document.createElement('tr');for(const name of ['Período ou categoria','Indicador','Valor']){const th=document.createElement('th');th.textContent=name;tr.append(th);}head.append(tr);table.append(head);const body=document.createElement('tbody');for(const row of bcVisualChartRows(chart)){const tr=document.createElement('tr');for(const value of [row.label,row.series,row.value]){const td=document.createElement('td');td.textContent=value;tr.append(td);}body.append(tr);}table.append(body);values.append(table);for(const s of Object.values(chart.options.scales||{}))if(s.ticks)s.ticks.font={...s.ticks.font,size:15};dialog.showModal();document.getElementById('bc-viz-close').focus();requestAnimationFrame(()=>{chart.resize();chart.update('none');});}
 function bcVisualZoomClose(focus=true){const q=BCVisual.zoom;if(!q)return;BCVisual.zoom=null;const d=document.getElementById('bc-viz-dialog');if(document.fullscreenElement===d)document.exitFullscreen?.().catch(()=>{});if(q.mark.isConnected)q.mark.replaceWith(q.frame);else q.frame.remove();document.body.style.overflow=q.overflow;if(d.open)d.close();if(bcVisualChart(q.canvas)===q.chart){for(const s of Object.values(q.chart.options.scales||{}))if(s.ticks)s.ticks.font={...s.ticks.font,size:12};q.chart.resize();q.chart.update('none');}if(focus&&q.button.isConnected)q.button.focus({preventScroll:true});}
 function bcVisualUtility(){for(const e of document.querySelectorAll('.modal-box,.bca-card,.bcl-card,.bct-card,.exec-box,.guide-box,#ac2-modal .a2-modal,.a2-dialog'))if(bcVisualVisible(e))e.classList.add('bc-utility-surface');}
-function bcVisualRefresh(){BCVisual.pending=false;if(BCVisual.zoom&&!bcVisualVisible(BCVisual.zoom.mark.parentElement))bcVisualZoomClose(false);for(const [key,spec]of Object.entries(BCAreas)){const root=document.querySelector(spec.selector);if(!root)continue;root.classList.add('bc-area');root.dataset.bcArea=key;if(!bcVisualVisible(root))continue;BCVisual.areas.add(key);bcVisualGuide(root,spec);bcVisualMetrics(root);bcVisualTypography(root);bcVisualFilterBars(root);bcVisualTables(root,spec);bcVisualCharts(root,spec);}bcVisualIdentities(document);bcVisualUtility();bcChromeRefresh();for(const root of document.querySelectorAll('.hdr,#main-nav,.bc-view-heading,[id^="page-"],dialog[open],#bc-login.on,#bc-trat.on,#bc-pwd.on,#bc-admin.on'))if(bcVisualVisible(root))bcVisualType(root);}
+function bcVisualRefresh(){BCVisual.pending=false;if(BCVisual.zoom&&!bcVisualVisible(BCVisual.zoom.mark.parentElement))bcVisualZoomClose(false);for(const [key,spec]of Object.entries(BCAreas)){const root=document.querySelector(spec.selector);if(!root)continue;root.classList.add('bc-area');root.dataset.bcArea=key;if(!bcVisualVisible(root))continue;BCVisual.areas.add(key);bcVisualGuide(root,spec);bcVisualMetrics(root);bcVisualTypography(root);bcVisualResultColors(root);bcVisualFilterBars(root);bcVisualTables(root,spec);bcVisualCharts(root,spec);}for(const d of document.querySelectorAll('dialog[open],.modal.on'))bcVisualResultColors(d);bcVisualIdentities(document);bcVisualUtility();bcChromeRefresh();for(const root of document.querySelectorAll('.hdr,#main-nav,.bc-view-heading,[id^="page-"],dialog[open],#bc-login.on,#bc-trat.on,#bc-pwd.on,#bc-admin.on'))if(bcVisualVisible(root))bcVisualType(root);}
 function bcVisualSchedule(){if(BCVisual.pending)return;BCVisual.pending=true;queueMicrotask(bcVisualRefresh);}
 function bcVisualStart(){document.body.classList.add('bc-visual-complete');bcVisualTypeStart();bcVisualRefresh();new MutationObserver(records=>{if(records.some(r=>r.type==='attributes'||[...r.addedNodes,...r.removedNodes].some(n=>n.nodeType===1&&!n.matches?.('.bc-viz-tools,.bc-reading-guide'))))bcVisualSchedule();}).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden','open']});new MutationObserver(bcVisualSchedule).observe(document.body,{attributes:true,attributeFilter:['class']});document.addEventListener('click',()=>{if(BCVisual.zoom&&!BCVisual.zoom.canvas.isConnected)bcVisualZoomClose(false);bcVisualSchedule();},true);document.addEventListener('change',bcVisualSchedule,true);window.addEventListener('resize',bcVisualSchedule);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bcVisualStart);else bcVisualStart();
