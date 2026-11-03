@@ -26,8 +26,8 @@ A apresentação anterior reunia Direção, Coordenação e Gestor em uma fila s
 ## Continuação do plano
 
 1. Concluído neste bloco: restauração dos níveis gerenciais e correção do contexto.
-2. Próximo: organizar visualmente as etapas de execução, retorno, conferência, medição e conclusão; revisar prazos por domínio.
-3. Depois: enriquecer Promoções e Ads com orientações, campanhas e evidências próximas da tarefa.
+2. Concluído: etapas de execução, retorno, conferência, medição e conclusão; detalhes em ACOMPANHAMENTO-FLUXO.md.
+3. Próximo: enriquecer Promoções e Ads com orientações, campanhas e evidências próximas da tarefa.
 4. Depois: continuidade entre competências e revisão das medidas econômicas/comparação.
 5. Encerramento: homologação operacional do conjunto e liberação das etapas restantes.
 

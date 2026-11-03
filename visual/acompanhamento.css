@@ -20,3 +20,19 @@
 body.bc-shell .ac4 .sum-value.ac4-bad{color:var(--bc-bad)!important}body.bc-shell .ac4 .sum-card[data-ac4-tone=bad]{--bc-result-color:var(--bc-bad);border-left:4px solid var(--bc-bad)!important;border-color:color-mix(in srgb,var(--bc-bad) 48%,var(--bc-border))!important;background:color-mix(in srgb,var(--bc-bad) 11%,var(--bc-surface))!important}
 @media(max-width:1000px){.ac4-scope-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.ac4-scope{padding:16px}.ac4-scope-controls{grid-template-columns:minmax(0,1fr)}.ac4-owner-card{padding:16px}}
+
+/* Etapas da tratativa, prazos de retorno e evidências da última ação. */
+.ac4-five-kpis{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+.ac4-lanes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:18px 0}
+.ac4-lane-button{padding:12px;background:var(--bc-raised);color:var(--bc-text);border:1px solid var(--bc-border);border-radius:8px;font:600 13px/1.6 Inter,"Segoe UI",sans-serif;cursor:pointer;min-width:0;text-align:left}
+.ac4-lane-button:hover,.ac4-lane-button.on{border-color:var(--bc-accent);background:var(--a3)}
+.ac4-workgroup{border:1px solid var(--bc-border);border-radius:10px;margin:14px 0;padding:0 16px;background:var(--bc-surface)}
+.ac4-workgroup>summary{padding:16px 0;font-size:17px;font-weight:650;cursor:pointer;min-height:48px;box-sizing:border-box}
+.ac4-workgroup[data-lane=review]{border-left:3px solid var(--bc-bad)}.ac4-workgroup[data-lane=checking]{border-left:3px solid var(--bc-attention)}.ac4-workgroup[data-lane=completed]{border-left:3px solid var(--bc-good)}
+.ac4-next{border-left:3px solid var(--bc-accent);background:var(--bc-surface);padding:12px 16px;border-radius:4px;margin:14px 0}.ac4-next>strong{font-size:13px}.ac4-next p{margin-bottom:0}
+.ac4-return{font-size:14px;line-height:1.7;color:var(--bc-muted);font-weight:600}.ac4-track{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;border-top:1px solid var(--bc-border);padding-top:14px;margin-top:16px}
+.ac4-track>div{display:grid;align-content:start;gap:5px;font-size:13px;line-height:1.6;min-width:0}.ac4-track span{color:var(--bc-muted);overflow-wrap:anywhere}
+#ac4-coordination td:nth-child(7){min-width:0;max-width:none}#ac4-coordination td:nth-child(8){min-width:240px;max-width:360px}
+@media(max-width:1150px){.ac4-five-kpis,.ac4-lanes{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media(max-width:700px){.ac4-five-kpis,.ac4-lanes{grid-template-columns:repeat(2,minmax(0,1fr))!important}.ac4-track{grid-template-columns:minmax(0,1fr)}.ac4-workgroup{padding:0 12px}}
+@media(max-width:430px){.ac4-five-kpis{grid-template-columns:minmax(0,1fr)!important}}
