@@ -5,3 +5,81 @@
 @media(max-width:600px){.res-audit .op-control{min-width:100%}.res-calendar-grid{grid-template-columns:minmax(0,1fr);gap:14px}.res-calendar-tools{gap:8px;flex-wrap:wrap}.res-calendar-tools button{font-size:13px}.res-matrix-group{padding:10px}.res-audit .op-note{font-size:14px!important}}
 
 @media(max-width:600px){.res-audit .op-control:has(input[type=number]){flex:1 1 100%;min-width:100%}}
+/* Diário: indicadores gerenciais, comparação explícita e placar legível. */
+#res-diario .diary-period-controls{align-items:end;gap:10px}
+#res-diario .diary-period-controls .op-control{flex:0 1 260px;min-width:min(210px,100%)}
+#res-diario .diary-period-controls button{white-space:nowrap}
+#res-diario .sum-card .sum-note{min-height:0;margin:9px 0;font-size:13px}
+#res-diario .diary-commercial .sum-kpis{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+#res-diario .diary-finance-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+#res-diario .sum-card{padding:18px!important}
+#res-diario .diary-rate{margin:10px 0 0;font-size:13px;color:var(--bc-muted)}
+#res-diario .diary-rate>strong{font-size:23px;color:var(--bc-text);font-variant-numeric:tabular-nums}
+#res-diario .diary-rate>.diary-delta{display:block;margin-top:5px}
+#res-diario .diary-delta{display:block;font-size:13px;font-weight:600;line-height:1.6;white-space:nowrap;font-variant-numeric:tabular-nums}
+#res-diario .diary-delta[data-tone=good],#res-diario .diary-rank-movement[data-tone=good],#res-diario .diary-credit{color:var(--bc-good)!important}
+#res-diario .diary-delta[data-tone=bad],#res-diario .diary-rank-movement[data-tone=bad],#res-diario .diary-loss-label{color:var(--bc-bad)!important}
+#res-diario .diary-delta[data-tone=attention]{color:var(--bc-attention)!important}
+#res-diario .diary-delta[data-tone=neutral]{color:var(--bc-muted)!important;font-weight:400}
+#res-diario .diary-coverage{border-left:3px solid var(--bc-attention);padding:9px 12px;color:var(--bc-attention);font-size:13px;line-height:1.6}
+#res-diario .diary-horizons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+#res-diario .diary-horizon{padding:18px;border:1px solid var(--bc-border);border-radius:10px;background:var(--bc-raised);min-width:0}
+#res-diario .diary-horizon h3{font-size:17px;margin:0 0 6px}
+#res-diario .diary-horizon-date,#res-diario .diary-horizon small{font-size:12px;color:var(--bc-muted)}
+#res-diario .diary-horizon-fat{display:block;font-size:26px;margin:8px 0;color:var(--bc-info);font-variant-numeric:tabular-nums}
+#res-diario .diary-horizon p{font-size:13px;margin:8px 0}
+#res-diario .diary-reading .sum-button{display:block;margin-top:10px;text-align:left;white-space:normal;overflow-wrap:break-word}
+#res-diario .diary-reading{grid-template-columns:repeat(2,minmax(0,1fr))}
+#res-diario .diary-weight-summary,#res-diario .diary-target-summary{font-size:13px;line-height:1.7;color:var(--bc-muted)}
+#res-diario .diary-target-summary{color:var(--bc-text);padding:10px 14px;border:1px solid var(--bc-border);border-radius:8px;background:var(--bc-raised)}
+#res-diario #diary-ranking-wrap{max-height:72vh;isolation:isolate;scrollbar-gutter:stable}
+#res-diario .diary-ranking-table{min-width:1700px;width:100%;border-collapse:separate;border-spacing:0;table-layout:auto}
+#res-diario .diary-ranking-table :is(td,th){white-space:nowrap;overflow-wrap:normal;word-break:normal;vertical-align:middle;text-align:right}
+#res-diario .diary-ranking-table th{min-width:135px}
+#res-diario .diary-ranking-table :is(td,th):first-child{width:98px;min-width:98px;max-width:98px;box-sizing:border-box;position:sticky;left:0;z-index:2;text-align:center;background:var(--bc-surface)!important}
+#res-diario .diary-ranking-table :is(td,th):nth-child(2){min-width:190px;max-width:240px;position:sticky;left:98px;z-index:2;text-align:left;background:var(--bc-surface)!important;box-shadow:2px 0 0 var(--bc-border)}
+#res-diario .diary-ranking-table th:first-child,#res-diario .diary-ranking-table th:nth-child(2){z-index:4;background:var(--bc-raised)!important}
+#res-diario .diary-ranking-table .op-operation{display:flex;align-items:flex-start;flex-direction:column;gap:6px;min-width:165px}
+#res-diario .diary-ranking-table .bc-identity-tag{white-space:normal;word-break:normal;overflow-wrap:break-word}
+#res-diario .diary-ranking-table .sum-button{white-space:nowrap!important;word-break:normal!important;min-width:135px}
+#res-diario .diary-value{display:block;white-space:nowrap;font-weight:650}
+#res-diario .diary-metric-position{display:block;color:var(--bc-muted);font-size:11px;margin-top:3px;white-space:nowrap}
+#res-diario .diary-rank>strong{display:block;font-size:23px;font-weight:700}
+#res-diario .diary-rank>small{display:block;font-size:11px;line-height:1.4;white-space:normal;word-break:normal}
+#res-diario .diary-score strong{display:block;font-size:21px;font-weight:700;color:var(--bc-accent)}
+#res-diario .diary-score small{display:block;font-size:11px;color:var(--bc-muted)}
+#res-diario .diary-loss-label{display:inline-block;margin-top:4px;border:1px solid currentColor;border-radius:4px;padding:1px 5px;font-size:11px}
+#res-diario .diary-analysis-summary{font-size:14px;font-weight:600;line-height:1.8}
+#res-diario .diary-analysis-row{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;padding:16px 0;border-bottom:1px solid var(--bc-border);align-items:center}
+#res-diario .diary-analysis-label .op-operation{display:flex;flex-wrap:wrap;gap:5px}
+#res-diario .diary-analysis-label .sum-button{margin-top:8px;min-height:36px;font-size:12px!important}
+#res-diario .diary-analysis-tracks{min-width:0}
+#res-diario .diary-analysis-line{display:grid;grid-template-columns:75px minmax(80px,1fr) 150px;gap:12px;align-items:center;margin:6px 0;min-width:0}
+#res-diario .diary-analysis-line>small{font-size:12px;color:var(--bc-muted)}
+#res-diario .diary-analysis-line>strong{font-size:14px;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+#res-diario .diary-analysis-track{position:relative;height:18px;background:var(--bc-raised);border-radius:3px;min-width:0;overflow:hidden}
+#res-diario .diary-analysis-track::before{content:'';position:absolute;left:50%;top:0;bottom:0;border-left:1px solid var(--bc-muted);z-index:1}
+#res-diario .diary-analysis-bar{position:absolute;height:100%;min-width:0;border-radius:2px}
+#res-diario .diary-analysis-bar.is-prior{background:var(--bc-muted);opacity:.65}
+#res-diario .diary-analysis-bar.is-positive{background:var(--bc-good)}
+#res-diario .diary-analysis-bar.is-negative{background:var(--bc-bad)}
+#res-diario .diary-analysis-row>.diary-delta{grid-column:2;text-align:right}
+#res-diario .diary-bubble-frame{height:480px;position:relative;min-width:0}
+#res-diario .diary-bubble-legend{display:flex;flex-wrap:wrap;gap:10px 20px;font-size:13px;margin:12px 0 18px}
+#res-diario .diary-quadrant::before{content:'';display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;background:currentColor}
+#res-diario .diary-quadrant.estrela{color:var(--bc-good)}
+#res-diario .diary-quadrant.nicho{color:var(--bc-info)}
+#res-diario .diary-quadrant.margem{color:var(--bc-attention)}
+#res-diario .diary-quadrant.revisar{color:var(--bc-bad)}
+@media(max-width:1100px){#res-diario .diary-commercial .sum-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}#res-diario .diary-finance-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important}#res-diario .diary-analysis-row{grid-template-columns:200px minmax(0,1fr)}}
+@media(max-width:700px){#res-diario .diary-commercial .sum-kpis,#res-diario .diary-finance-kpis,#res-diario .diary-horizons,#res-diario .diary-reading{grid-template-columns:minmax(0,1fr)!important}#res-diario .diary-period-controls .op-control{min-width:100%;flex:1 1 100%}#res-diario .diary-analysis-row{display:block}#res-diario .diary-analysis-line{grid-template-columns:55px minmax(40px,1fr) 110px;gap:6px}#res-diario .diary-analysis-line>strong{font-size:12px}#res-diario .diary-analysis-label{margin-bottom:12px}#res-diario .diary-bubble-frame{height:360px}#res-diario .diary-horizon-fat{font-size:26px}#res-diario .diary-analysis-row>.diary-delta{margin-top:8px}}
+
+#res-diario .diary-analysis-line>strong[data-tone=bad]{color:var(--bc-bad)}
+#res-diario .diary-analysis-line>strong[data-tone=good]{color:var(--bc-good)}
+
+#res-diario .diary-ranking-table th .sum-button{background:transparent;border:0;padding:2px 0!important;min-width:0;min-height:30px;font-size:12px!important;color:var(--bc-muted)}
+#res-diario .diary-ranking-table th[aria-sort=descending] .sum-button::after{content:" ↓";color:var(--bc-accent)}
+
+#res-diario .diary-rate{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 8px;margin:8px 0}
+#res-diario .diary-rate>.diary-delta{display:inline;margin:0;font-size:12px}
+#res-diario .op-context{padding:12px 18px}

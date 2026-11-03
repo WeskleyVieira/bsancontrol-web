@@ -94,6 +94,10 @@
   function periods(ref,kind='dia',compare='anterior',custom=null) {
     if(!date(ref))return null;
     if(kind==='custom')return custom&&custom.every(r=>span(r[0],r[1]))?{cur:custom[0],prev:custom[1],divisor:1}:null;
+    if(/^(mes|trimestre|semestre|ano)-completo$/.test(kind)) {
+      const unit=kind.split('-')[0],size={mes:1,trimestre:3,semestre:6,ano:12}[unit],d=parse(ref),m=Math.floor(d.getUTCMonth()/size)*size,start=iso(new Date(Date.UTC(d.getUTCFullYear(),m,1,12)));
+      return{cur:[start,monthEnd(shiftMonth(start.slice(0,7),size-1))],prev:[shiftMonth(start.slice(0,7),-size)+'-01',add(start,-1)],divisor:1};
+    }
     if(kind==='dia')return {cur:[ref,ref],prev:compare==='weekday'?[add(ref,-7),add(ref,-7)]:compare==='media7'?[add(ref,-7),add(ref,-1)]:[add(ref,-1),add(ref,-1)],divisor:compare==='media7'?7:1};
     const d=parse(ref),y=d.getUTCFullYear(),m=d.getUTCMonth(),start=kind==='semana'?add(ref,-((d.getUTCDay()+6)%7)):kind==='mes'?iso(new Date(Date.UTC(y,m,1,12))):kind==='trimestre'?iso(new Date(Date.UTC(y,Math.floor(m/3)*3,1,12))):kind==='semestre'?iso(new Date(Date.UTC(y,Math.floor(m/6)*6,1,12))):`${y}-01-01`;
     if(kind==='semana')return{cur:[start,ref],prev:[add(start,-7),add(ref,-7)],divisor:1};
@@ -102,6 +106,23 @@
   }
   function scale(r,divisor=1) {if(!r)return null;const o={...r};for(const k of [...fields,'extra','embedded','before','after'])if(o[k]!=null)o[k]/=divisor;return o;}
   function score(ops,weights) {const keys=['after','percentAfter','fat','qtd','ped'],total=keys.reduce((s,k)=>s+Math.max(0,n(weights[k])??0),0);return ops.map(r=>({...r,score:!total||keys.some(k=>(n(weights[k])??0)>0&&r[k]==null)?null:keys.reduce((s,k)=>{const max=Math.max(0,...ops.map(r=>n(r[k])??0));return s+(max?Math.max(0,r[k]??0)/max*100:0)*Math.max(0,n(weights[k])??0);},0)/total}));}
+  function diaryFinance(total,ops=[]) {
+    if(!total)return {beforeAds:null,after:null,ads:null,affiliates:null,percentBeforeAds:null,percentAfter:null,missing:false};
+    const tt=ops.filter(r=>/tik\s*tok/i.test(r.mkt||'')),missing=tt.some(r=>r.mediaMissing>0),embeddedAds=tt.reduce((v,r)=>v-(n(r.pub)??0),0),affiliates=tt.reduce((v,r)=>v-(n(r.afil)??0),0);
+    const beforeAds=missing||total.mc==null?null:total.mc+embeddedAds;
+    return{beforeAds,after:total.after,ads:missing?null:(total.extra||0)+embeddedAds,affiliates:missing?null:affiliates,percentBeforeAds:beforeAds!=null&&total.base?100*beforeAds/total.base:null,percentAfter:total.percentAfter,missing};
+  }
+  function diaryRows(current,prior,divisor,weights) {
+    const cur=score(current.ops,weights),old=score(prior.ops.map(r=>scale(r,divisor)),weights),rank=(rows,k)=>{const sorted=rows.filter(r=>n(r[k])!=null).slice().sort((a,b)=>b[k]-a[k]||a.id.localeCompare(b.id)),out=new Map();let last,position;sorted.forEach((r,i)=>{if(i===0||r[k]!==last)position=i+1;out.set(r.id,position);last=r[k];});return out;},cr=rank(cur,'score'),pr=rank(old,'score'),metrics=['fat','after','percentAfter','ped','qtd','ticket'],positions=Object.fromEntries(metrics.map(k=>[k,[rank(cur,k),rank(old,k)]])),cmap=new Map(cur.map(r=>[r.id,r])),pmap=new Map(old.map(r=>[r.id,r]));
+    return [...new Set([...cmap.keys(),...pmap.keys()])].map(id=>{const c=cmap.get(id)||null,p=pmap.get(id)||null,op=c||p;return{id,emp:op.emp,mkt:op.mkt,c,p,rank:cr.get(id)??null,priorRank:pr.get(id)??null,movement:cr.has(id)&&pr.has(id)?pr.get(id)-cr.get(id):null,change:difference(c?.after,p?.after)?.value??null,financial:diaryFinance(c,c?[c]:[]),priorFinancial:diaryFinance(p,p?[p]:[]),positions:Object.fromEntries(metrics.map(k=>[k,{current:positions[k][0].get(id)??null,prior:positions[k][1].get(id)??null}]))};});
+  }
+  function diaryContributions(rows,metric='fat') {
+    return rows.filter(r=>n(r.c?.[metric])!=null&&n(r.p?.[metric])!=null).map(r=>({...r,value:r.c[metric]-r.p[metric]})).sort((a,b)=>Math.abs(b.value)-Math.abs(a.value)||a.id.localeCompare(b.id));
+  }
+  function diaryBubble(ops) {
+    const valid=ops.filter(r=>n(r.fat)>0&&n(r.percentAfter)!=null&&n(r.qtd)!=null&&n(r.qtd)>=0&&!(r.qtdMissing>0)),sorted=valid.map(r=>r.fat).sort((a,b)=>a-b),mid=Math.floor(sorted.length/2),median=sorted.length?(sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2):null,base=valid.reduce((s,r)=>s+(r.base||0),0),average=base?100*valid.reduce((s,r)=>s+r.after,0)/base:null,max=Math.max(1,...valid.map(r=>r.qtd));
+    return{median,average,points:valid.map(r=>({...r,x:r.fat,y:r.percentAfter,r:8+Math.sqrt(r.qtd/max)*26,quadrant:r.fat>=median?(r.percentAfter>=average?'estrela':'margem'):(r.percentAfter>=average?'nicho':'revisar')}))};
+  }
   function localSkus(lines,scope) {const map=new Map();for(const r of lines){if(!date(r.date)||r.date<scope.from||r.date>scope.to||scope.emp&&r.emp!==scope.emp||scope.mkt&&r.mkt!==scope.mkt||scope.ponto&&r.ponto!==scope.ponto)continue;const v=lineValue(r);if(!v.n_fin)continue;const code=String(r.sku||'').trim().toUpperCase(),k=key(r.emp,r.mkt,code),o=map.get(k)||{emp:r.emp,mkt:r.mkt,sku:code,titulo:r.tit||code,...blank()};for(const f of fields)o[f]+=v[f];map.set(k,o);}return [...map.values()];}
   function skuGroups(rows,byOperation=true) {const map=new Map();for(const r of rows){const k=byOperation?key(r.emp,r.mkt,r.sku):key(r.sku);if(!map.has(k))map.set(k,[]);map.get(k).push(r);}return [...map.entries()].map(([id,parts])=>({...sum(parts),id,sku:parts[0].sku,titulo:parts[0].titulo,emp:byOperation?parts[0].emp:'',mkt:byOperation?parts[0].mkt:'',parts}));}
   function abc(items,metric='fat',a=.8,b=.95) {
@@ -121,5 +142,5 @@
   function targetHistory(daily,goals,from,to) {
     return months(from,to).map(mes=>{const eligible=goals.filter(g=>g.mes===mes&&n(g.Faturamento_obj)!=null&&n(g.Faturamento_obj)>=0),keys=new Set(eligible.map(g=>String(g.operacao))),rs=daily.filter(r=>r.date>=from&&r.date<=to&&r.date.slice(0,7)===mes&&keys.has(r.emp+' · '+r.mkt)),present=new Set(rs.filter(r=>r.n_all>0).map(r=>r.emp+' · '+r.mkt)),target=eligible.length?eligible.reduce((s,g)=>s+Number(g.Faturamento_obj),0):null,covered=eligible.length>0&&[...keys].every(k=>present.has(k)),actual=covered?sum(rs)?.fat??null:null;return{mes,target,actual,covered,withGoal:keys.size,missing:[...keys].filter(k=>!present.has(k)).length,attainment:actual!=null&&target>0?actual/target*100:null};});
   }
-  return {n,key,date,add,span,monthEnd,shiftMonth,months,previous,fields,blank,sum,difference,lineValue,aggregateLines,aggregateRows,media,rangeModel,periods,scale,score,localSkus,skuGroups,abc,matrix,regression,forecast,targetHistory};
+  return {n,key,date,add,span,monthEnd,shiftMonth,months,previous,fields,blank,sum,difference,lineValue,aggregateLines,aggregateRows,media,rangeModel,periods,scale,score,diaryFinance,diaryRows,diaryContributions,diaryBubble,localSkus,skuGroups,abc,matrix,regression,forecast,targetHistory};
 });
