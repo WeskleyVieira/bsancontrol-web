@@ -1,0 +1,11 @@
+'use strict';
+// Leitura mensal dos anúncios de demandas já autorizadas. Não publica custo nem altera dados.
+const text=v=>String(v??'').trim(),num=v=>v==null||v===''||!Number.isFinite(Number(v))?null:Number(v),month=v=>/^\d{4}-(0[1-9]|1[0-2])$/.test(text(v));
+const key=i=>JSON.stringify([text(i.empresa),text(i.mkt||i.canal),text(i.ponto),text(i.anuncio||i.anuncio_id).toUpperCase(),text(i.competencia)]);
+async function enriquecer(db,items){const out=items.map(i=>({...i,financeiro:{status:'unsupported'}})),targets=new Map();for(const i of out){if(!text(i.anuncio)||!text(i.ponto)||!text(i.empresa)||!text(i.mkt)||!month(i.competencia))continue;const k=key(i);if(!targets.has(k))targets.set(k,[]);targets.get(k).push(i);i.financeiro={status:'missing',competencia:i.competencia};}
+ const entries=[...targets.values()],money=name=>`COALESCE(${name}_n,CAST(NULLIF(CAST(${name} AS TEXT),'') AS NUMERIC))`,mc=money('mc_comissao'),fat=money('receita');
+ try{for(let start=0;start<entries.length;start+=150){const chunk=entries.slice(start,start+150),args=[],where=chunk.map(([i])=>{args.push(i.empresa,i.mkt,i.ponto,text(i.anuncio).toUpperCase(),i.competencia);return '(empresa=? AND canal=? AND ponto=? AND UPPER(TRIM(anuncio_id))=? AND competencia=?)';}),rows=await db.all(`SELECT empresa,canal,ponto,UPPER(TRIM(anuncio_id)) AS anuncio,competencia,COUNT(*) AS linhas,SUM(${mc}) AS margem,SUM(${fat}) AS receita,SUM(CASE WHEN ${mc} IS NULL OR ${fat} IS NULL THEN 1 ELSE 0 END) AS incompletas,SUM(CASE WHEN LOWER(COALESCE(fonte_liquido,'')) LIKE '%estimad%' OR LOWER(COALESCE(fonte_liquido,'')) LIKE '%provis%' THEN 1 ELSE 0 END) AS estimadas FROM vendas WHERE status IN ('venda','venda_com_troca') AND (${where.join(' OR ')}) GROUP BY empresa,canal,ponto,UPPER(TRIM(anuncio_id)),competencia`,args);
+   for(const r of rows){const matched=targets.get(key(r));if(!matched)continue;for(const i of matched)i.financeiro={status:'ok',competencia:r.competencia,margem:num(r.margem),receita:num(r.receita),linhas:Number(r.linhas)||0,incompletas:Number(r.incompletas)||0,estimadas:Number(r.estimadas)||0};}
+  }}catch(e){for(const group of entries)for(const i of group)i.financeiro={status:'unavailable',competencia:i.competencia};}return out;
+}
+module.exports={enriquecer,key};

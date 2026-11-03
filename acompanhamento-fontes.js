@@ -1,4 +1,5 @@
 'use strict';
+const economia=require('./acompanhamento-economia');
 // Complementa somente demandas já autorizadas pelo endpoint. Nunca altera plano ou marketplace.
 const text=v=>String(v??'').trim(),num=v=>v==null||v===''||!Number.isFinite(Number(v))?null:Number(v);
 const type=i=>/^promo(?:\|| ·)/i.test(i.id||'')||/^promo ·/i.test(i.tipo||'')?'promos':/^ads(?:\|| ·)/i.test(i.id||'')||/^ads ·/i.test(i.tipo||'')?'ads':null;
@@ -31,5 +32,5 @@ async function enrichSource(db,items,kind){
  }catch(e){for(const t of targets.values())for(const i of t.items)i.evidencias={tipo:kind,status:'unavailable',dataConta:null};}
 }
 async function validationDetails(db,items){const relevant=items.filter(i=>type(i)==='promos'&&i.validacao);for(let start=0;start<relevant.length;start+=200){const chunk=relevant.slice(start,start+200);try{const rows=await db.all('SELECT * FROM promo_validacao WHERE demanda_id IN ('+chunk.map(()=>'?').join(',')+')',chunk.map(i=>i.id)),byId=new Map(rows.map(r=>[r.demanda_id,r]));for(const i of chunk){const r=byId.get(i.id);if(r&&r.em===i.validacao.em)i.validacao={...i.validacao,mcAtual:num(r.mc_atual),piso:num(r.piso)};}}catch(e){/* A revalidação básica continua na demanda; campos opcionais não apagam a fila. */}}}
-async function enriquecer(db,items){const out=items.map(i=>({...i}));await Promise.all([enrichSource(db,out,'promos'),enrichSource(db,out,'ads'),validationDetails(db,out)]);return out;}
+async function enriquecer(db,items){const out=items.map(i=>({...i})),finance=economia.enriquecer(db,out);await Promise.all([enrichSource(db,out,'promos'),enrichSource(db,out,'ads'),validationDetails(db,out)]);const byId=new Map((await finance).map(i=>[i.id,i.financeiro]));return out.map(i=>({...i,financeiro:byId.get(i.id)}));}
 module.exports={enriquecer,identity,promo,ads,keyOf};

@@ -28,7 +28,7 @@ A apresentação anterior reunia Direção, Coordenação e Gestor em uma fila s
 1. Concluído neste bloco: restauração dos níveis gerenciais e correção do contexto.
 2. Concluído: etapas de execução, retorno, conferência, medição e conclusão; detalhes em ACOMPANHAMENTO-FLUXO.md.
 3. Concluído: Promoções e Ads com orientações, campanhas e evidências; detalhes em ACOMPANHAMENTO-EVIDENCIAS.md.
-4. Próximo: continuidade entre competências e revisão das medidas econômicas/comparação.
+4. Concluído: continuidade entre competências, pendências anteriores, casos e revisão das referências econômicas; detalhes em ACOMPANHAMENTO-CONTINUIDADE.md.
 5. Encerramento: homologação operacional do conjunto e liberação das etapas restantes.
 
 Os motores atuais de conferência e medição permanecem. Registro não comprova aplicação no marketplace; conferência não equivale a resolução financeira.
