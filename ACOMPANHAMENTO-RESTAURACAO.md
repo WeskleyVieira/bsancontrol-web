@@ -2,6 +2,8 @@
 
 03/11/2026 · Fase 1: níveis de gestão e contexto da carteira.
 
+Atualização visual de 03/11: cards, selos e imagem para o grupo recuperados no design atual; a matriz ficou como abertura detalhada. Ver ACOMPANHAMENTO-PLACAR.md.
+
 A apresentação anterior reunia Direção, Coordenação e Gestor em uma fila semelhante. Selecionar responsável ou operação na lista não recalculava os cartões. Esta entrega recupera os instrumentos de gestão sobre os contratos atuais de leitura, registro, histórico e medição.
 
 ## Comportamento entregue
