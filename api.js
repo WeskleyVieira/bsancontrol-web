@@ -20,6 +20,7 @@ const produtosIntegration = require("./produtos/integration").createIntegration(
 if(process.env.PRODUTOS_ENABLED==='1' && String(process.env.JWT_SECRET||'').length<32)throw Error('Produtos exige JWT_SECRET com pelo menos 32 caracteres.');
 const acompanhamentoRegistros = require('./acompanhamento-registros');
 const acompanhamentoFontes = require('./acompanhamento-fontes');
+const acompanhamentoConsultas = require('./acompanhamento-consultas');
 const operacaoConsultas = require('./operacao-consultas');
 const resultadosConsultas = require('./resultados-consultas');
 const financeiroConsultas = require('./financeiro-consultas');
@@ -117,6 +118,7 @@ async function rotaGET(u, user) {
     return { ok: true, banco: dbx.IS_PG ? "Postgres" : "SQLite", ...(v?{vendas:v.n}:{}), ...(d?{demandas:d.n}:{}), _sync: (s && s.m) ? s.m : null };
   }
   if (u.pathname === "/api/demandas") {
+    if(q.complemento==='economia')return acompanhamentoConsultas.economia(dbx,user,q);
     await garantePrecoNovo();
     // ESCOPO POR PERFIL: gestor só vê as contas dele; direção/coordenação veem tudo
     // o REGISTRO DO GESTOR: o último (ação, causa, observação, quando, quem) + quantos já houve; e a
@@ -144,7 +146,7 @@ async function rotaGET(u, user) {
     if (user && user.perfil === "gestor") { if (!user.gestor_ref) w.push("1=0"); else { w.push("d.gestor=?"); args.push(user.gestor_ref); } }
     if (w.length) sql += " WHERE " + w.join(" AND ");
     sql += " ORDER BY d.risco DESC";
-    return acompanhamentoFontes.enriquecer(dbx, (await dbx.all(sql, args)).map(mapDem));
+    return acompanhamentoFontes.enriquecer(dbx, (await dbx.all(sql, args)).map(mapDem),{financeiro:q.leitura!=='fila'});
   }
   // pedidos de reaplicação dos últimos 14 dias (o painel mostra o estado na tarefa) — gestor só vê os dele
   if (u.pathname === "/api/comandos") {
