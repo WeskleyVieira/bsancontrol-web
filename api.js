@@ -19,6 +19,7 @@ const usuarios = require("./usuarios").criarServico(dbx, {userReferences:async i
 const produtosIntegration = require("./produtos/integration").createIntegration({dbx,resolveSession:sessaoDe});
 if(process.env.PRODUTOS_ENABLED==='1' && String(process.env.JWT_SECRET||'').length<32)throw Error('Produtos exige JWT_SECRET com pelo menos 32 caracteres.');
 const acompanhamentoRegistros = require('./acompanhamento-registros');
+const alinhamentosRegistros = require('./alinhamentos-registros');
 const acompanhamentoFontes = require('./acompanhamento-fontes');
 const acompanhamentoConsultas = require('./acompanhamento-consultas');
 const operacaoConsultas = require('./operacao-consultas');
@@ -115,6 +116,7 @@ async function rotaGET(u, user) {
     await garantePrecoNovo();
     return acompanhamentoRegistros.historico(dbx, user, q.demanda_id);
   }
+  if (u.pathname === '/api/alinhamentos') return q.id ? alinhamentosRegistros.historico(dbx, user, q.id) : alinhamentosRegistros.listar(dbx, user);
   const entrada = u.pathname.match(/^\/api\/lancamentos\/(envios|custos|comissao)$/);
   if (entrada) return writeStore.ler(dbx, entrada[1], user);
   if (u.pathname === "/api/health") {
@@ -486,6 +488,13 @@ const server = http.createServer(async (req, res) => {
       // espelha na planilha Google da operação (o bot lê de lá). Assíncrono: não segura a resposta.
       try { require("./espelho-planilhas").agendarPorDemanda(dbx, o.demanda_id); } catch (e) { console.error("[planilhas] " + e.message); }
       return J(res, salvo);
+    }
+    if (req.method === "POST" && u.pathname === "/api/alinhamentos") {
+      if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
+      const o = await body(req);
+      const fn = { criar: alinhamentosRegistros.criar, registrar: alinhamentosRegistros.registrar, fechar: alinhamentosRegistros.fechar, rodada: alinhamentosRegistros.carregarRodada }[o.acao];
+      if (!fn) return J(res, { ok: false, erro: "Ação de alinhamento não reconhecida." }, 400);
+      return J(res, await fn(dbx, user, o));
     }
     // ── POST /api/comandos (29/10/2026) — botão "Reaplicar" de uma tarefa "Promo · Execução falhou" ──
     // O online NÃO executa nada: só enfileira um pedido. Quem executa é o fila-comandos.js no PC (onde moram os tokens do ML), que

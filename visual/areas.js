@@ -131,7 +131,7 @@ const BCGroupMap=[
  {id:'vendas',label:'Vendas',items:[{id:'vendas',label:'Vendas',page:'vendas'},{id:'raiox',label:'Raio-X',page:'raiox'}]},
  {id:'gerencial',label:'Gerencial',items:[{id:'panorama',label:'Panorama',page:'gerencial',sub:'panorama'},{id:'ger-vendas',label:'Vendas da operação',page:'gerencial',sub:'vendas'},{id:'diag',label:'Diagnóstico',page:'gerencial',sub:'diag'},{id:'produtos',label:'Anúncios',page:'gerencial',sub:'produtos'},{id:'ads',label:'Publicidade',page:'gerencial',sub:'ads'},{id:'metas',label:'Metas',page:'gerencial',sub:'metas'},{id:'full',label:'Full',page:'gerencial',sub:'full'}]},
  {id:'operacao',label:'Operação',items:[{id:'envios',label:'Envios',page:'envios'},{id:'estoque',label:'Estoque',page:'estoque'},{id:'projecao',label:'Projeção',page:'projecao'}]},
- {id:'acompanhamento',label:'Acompanhamento',items:[{id:'tarefas',label:'Tarefas',page:'acompanhamento',work:'tarefas'},{id:'promos',label:'Promoções',page:'acompanhamento',work:'promos'},{id:'ac-anuncios',label:'Anúncios · em breve',page:'acompanhamento',disabled:true}]},
+ {id:'acompanhamento',label:'Acompanhamento',items:[{id:'tarefas',label:'Tarefas',page:'acompanhamento',work:'tarefas'},{id:'promos',label:'Promoções',page:'acompanhamento',work:'promos'},{id:'alinhamentos',label:'Alinhamentos',page:'acompanhamento',work:'alinhamentos'},{id:'ac-anuncios',label:'Anúncios · em breve',page:'acompanhamento',disabled:true}]},
  {id:'financeiro',label:'Financeiro',items:[{id:'dre',label:'DRE',page:'dre'},{id:'comissao',label:'Comissão',page:'gerencial',sub:'comissao'}]}
 ];
 function bcGroupedAllowed(item,user=bcNavSession()){
