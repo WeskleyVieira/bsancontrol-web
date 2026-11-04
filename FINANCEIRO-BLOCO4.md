@@ -1,6 +1,6 @@
 # Bloco 4 — Metas, Comissão e DRE
 
-Entrega de 04/11/2026, iniciada sobre `da0321c` e integrada às atualizações de Alinhamentos `beae07e` e Full `6f11fc8`. Preserva o design atual, o fluxo anterior útil e as regras oficiais de metas, bônus e fechamento. Referências: renderizadores existentes de Metas e Comissão, `AUDITORIA_FINANCEIRO.md`, composição de margem do bloco 1 e integração do Forecast do bloco 2.
+Entrega de 04/11/2026, iniciada sobre `da0321c` e integrada às atualizações de Alinhamentos `beae07e` Full `6f11fc8` e Pendências `6f9fd39`. Preserva o design atual, o fluxo anterior útil e as regras oficiais de metas, bônus e fechamento. Referências: renderizadores existentes de Metas e Comissão, `AUDITORIA_FINANCEIRO.md`, composição de margem do bloco 1 e integração do Forecast do bloco 2.
 
 ## Entrega e uso
 
@@ -33,7 +33,7 @@ Na amostra PostgreSQL somente de leitura, os dados de mídia entregues à interf
 
 ## Validação
 
-- 411 testes automatizados aprovados, incluindo a integração dos quatro testes de Alinhamentos e 23 novos de objetivos, ausência/zero, fotografia, duplicidade, precisão, conservação de mídia, cache e invalidação de fontes.
+- 414 testes automatizados aprovados, incluindo os testes integrados de Alinhamentos/Pendências e 23 novos de objetivos, ausência/zero, fotografia, duplicidade, precisão, conservação de mídia, cache e invalidação de fontes.
 - PostgreSQL real consultado somente em leitura: composição, empresas e competências conciliadas; comparação com as fontes originais confirmou os mesmos valores financeiros e de investimentos por operação. Nenhum dado comercial foi exportado nos relatórios de teste.
 - Navegador isolado com dados fictícios: Metas, Comissão, DRE, popup Pós-Ads, detalhes oficiais, seleção de operação, competência ausente, CSV, falhas, identidade e troca rápida de empresa. Temas claro/escuro e 390 px, sem erro JavaScript ou transbordamento persistente.
 - Gestor conserva a própria carteira e não recebe acesso à DRE. As consultas não baixam o DETALHE completo.
@@ -45,4 +45,4 @@ A validação gerencial dos números, objetivos e fotografias oficiais permanece
 
 Próximo bloco previsto: **5 — Produtos e Pós-venda**, para conferir pendências, responsáveis, custos/embalagens, atendimentos, indicadores e acessos. O bloco 6 reúne a homologação operacional do conjunto.
 
-Retorno técnico, se necessário: reverter somente as alterações financeiras sobre `6f11fc8`, preservando Alinhamentos e Full e sem migração de banco; restaurar os trechos correspondentes das fontes privadas pelos backups desta execução.
+Retorno técnico, se necessário: reverter somente as alterações financeiras sobre `6f9fd39`, preservando Alinhamentos, Pendências e Full e sem migração de banco; restaurar os trechos correspondentes das fontes privadas pelos backups desta execução.
