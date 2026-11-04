@@ -7971,8 +7971,24 @@ function _gfCSS(){
   document.head.appendChild(s);
 }
 const _gfPill=c=>`<span class="gf-pill" style="--c:${_GF_COR[c]||'#64748b'}" title="${_gfEsc(_GF_DICA[c]||'')}">${_gfEsc(c)}</span>`;
+// Full multi-marketplace (04/11/2026): a mesma aba serve Amazon, Shopee, Shein e Magalu — link e rótulos por plataforma
+let _gfMkt='Mercado Livre';
+const _gfEhML=()=>/mercado livre/i.test(_gfMkt);
+function _gfLinkAnuncio(L){
+  const id=String(L.mlb||''), sku=encodeURIComponent(L.sku||'');
+  if(_gfEhML()) return 'https://produto.mercadolivre.com.br/MLB-'+id.replace(/^MLB/i,'');
+  if(/amazon/i.test(_gfMkt)) return /^[A-Z0-9]{10}$/.test(id)?'https://www.amazon.com.br/dp/'+id:'';
+  if(/shopee/i.test(_gfMkt)) return 'https://shopee.com.br/search?keyword='+sku;
+  if(/shein/i.test(_gfMkt)) return 'https://br.shein.com/pdsearch/'+sku+'/';
+  return '';
+}
 function _gfAnuncio(L){
-  const link='https://produto.mercadolivre.com.br/MLB-'+String(L.mlb).replace(/^MLB/i,'');
+  const link=_gfLinkAnuncio(L);
+  if(!_gfEhML()){
+    const rot=/amazon/i.test(_gfMkt)?['ASIN','FNSKU']:(/shein/i.test(_gfMkt)?['SKC','código Shein']:['item','']);
+    const idTxt=L.mlb?(link?`<a href="${link}" target="_blank" rel="noopener">${rot[0]} ${_gfEsc(L.mlb)}</a>`:`${rot[0]} ${_gfEsc(L.mlb)}`):(link?`<a href="${link}" target="_blank" rel="noopener">buscar na ${_gfEsc(_gfMkt)}</a>`:'');
+    return `<div class="gf-prod">${_gfEsc(L.prod||L.sku)}</div><div class="gf-mini">${idTxt}${idTxt?' · ':''}${_gfEsc(L.sku)}${L.inv&&rot[1]?` · ${rot[1]} ${_gfEsc(L.inv)}`:''}</div>`;
+  }
   const ir=(L.irmaos||[]).length;
   // estoque do Full (inventory_id = "Código ML" na busca do envio) e o aviso de mesmo SKU em outro estoque (02/11/2026)
   const out=(L.outrosEstoques||[]).map(o=>o.inv+' ('+o.mlbs.join(', ')+')').join(' · ');
@@ -7985,13 +8001,14 @@ function _gfVendas(L, per){
 function _gfNoFull(L){
   const d=+L.dias; const z=!(L.un31>0)?'sem venda':(d>=999?'sem giro':(d<1?'zerado':`zera em ${Math.round(d)} d`));
   const cor=(L.un31>0&&d<7)?'#ef4444':((L.un31>0&&d<14)?'#f59e0b':'var(--t3)');
-  return `${_gfNum(L.aptas)}${L.proc?` <span class="gf-mini" title="Já recebido pelo ML e em processamento: conta como estoque">+${_gfNum(L.proc)} em processamento</span>`:''}${L.cam?` <span class="gf-mini" title="Não conta como estoque até chegar: o envio pode ter sido criado só para segurar a data">+${_gfNum(L.cam)} a caminho (não conta)</span>`:''}<div class="gf-mini" style="color:${cor}">${z}</div>`;
+  return `${_gfNum(L.aptas)}${L.proc?` <span class="gf-mini" title="Já recebido pela plataforma e em processamento: conta como estoque">+${_gfNum(L.proc)} em processamento</span>`:''}${L.cam?` <span class="gf-mini" title="Não conta como estoque até chegar: o envio pode ter sido criado só para segurar a data">+${_gfNum(L.cam)} a caminho (não conta)</span>`:''}<div class="gf-mini" style="color:${cor}">${z}</div>`;
 }
 // MARGEM PRÉ E PÓS ADS (02/11/2026, pedido do Weskley: "pra saber se vale a pena realmente enviar"). O motor guarda a margem
 // de 60 dias já sem o Ads (mc) e o peso do Ads sobre a venda (tacos); a de antes do Ads é a soma. Faixas da régua de promos:
 // < 0 prejuízo · < 10 abaixo do mínimo · 10–20 aceitável · 20+ ideal. O motor não manda ao Full com margem < 10% depois do Ads.
 function _gfMargem(L){
   if(L.mc==null) return '<span class="gf-mini">margem não apurada</span>';
+  if(L.mcAntesAds){ const v=+L.mc, c=v<0?'#ef4444':(v<10?'#f97316':(v<20?'#eab308':'#22c55e')); return `<b style="color:${c}" title="Margem dos últimos 60 dias ANTES do Ads: esta plataforma não tem o Ads por anúncio">${v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</b><div class="gf-mini">antes do Ads (o Ads de ${_gfEsc(_gfMkt)} não tem fonte por anúncio)</div>`; }
   const pos=+L.mc, ads=+L.tacos||0, pre=pos+ads;
   const cor=v=>v<0?'#ef4444':(v<10?'#f97316':(v<20?'#eab308':'#22c55e'));
   const p=v=>v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
@@ -8046,7 +8063,9 @@ function _gfLinhasEnvio(rel){
 function exportGerFullCSV(emp, mkt){
   const rel=(FULL_REL&&FULL_REL.contas)?FULL_REL.contas[emp+'|'+mkt]:null; if(!rel) return;
   const csvEsc=t=>{ let s=String(t==null?'':t); if(/^[=+\-@]/.test(s)) s="'"+s; return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
-  const cab=['Prioridade','MLB que recebe','Codigo ML (estoque)','SKU','Produto','QTD A ENVIAR','Precisava','Tendencia','Vd 30d','Vd 15d','Vd 7d','% Full','Aptas','Em processamento','A caminho','Dias p/ zerar','Experiencia','Olist (ponto)','Margem pos Ads %','Margem pre Ads %','Ads % da venda','Por que'];
+  _gfMkt=mkt||'Mercado Livre';
+  const ml=/mercado livre/i.test(mkt);
+  const cab=['Prioridade',ml?'MLB que recebe':'Anuncio (ASIN/item/SKC)',ml?'Codigo ML (estoque)':'Codigo no Full (FNSKU/codigo Shein)','SKU','Produto','QTD A ENVIAR','Precisava','Tendencia','Vd 30d','Vd 15d','Vd 7d','% Full','Aptas','Em processamento','A caminho','Dias p/ zerar','Experiencia','Olist (ponto)','Margem pos Ads %','Margem pre Ads %','Ads % da venda','Por que'];
   const lin=[];
   _gfLinhasEnvio(rel).forEach(L=>{
     lin.push([L.classe,L.mlb,L.inv||'',L.sku,L.prod,(L.aloc||{})[_gfH],(L.needH||{})[_gfH],L.tendencia,L.un31,L.un16,L.un8,L.fullPct,L.aptas,L.proc||0,L.cam,L.dias,L.exp||'',L.olist,L.mc,L.mc==null?'':Math.round(10*((+L.mc)+(+L.tacos||0)))/10,L.mc==null?'':(+L.tacos||0),L.obs].map(csvEsc).join(';'));
@@ -8058,10 +8077,11 @@ function exportGerFullCSV(emp, mkt){
 }
 function _renderGerFull(emp, mkt){
   const root=document.getElementById('gf-root'); if(!root) return;
+  _gfMkt=mkt||'Mercado Livre';
   _gfCSS();
   const rel=(typeof FULL_REL!=='undefined'&&FULL_REL&&FULL_REL.contas)?FULL_REL.contas[emp+'|'+mkt]:null;
   if(!rel){
-    const msg=(typeof FULL_REL==='undefined'||!FULL_REL)?'Carregando a relação do Full…':'A relação do Full cobre as contas do Mercado Livre (pontos Bsan e Powerfull). Esta operação ainda não entra.';
+    const msg=(typeof FULL_REL==='undefined'||!FULL_REL)?'Carregando a relação do Full…':'A relação do Full cobre as contas do Mercado Livre e o Full da Amazon, Shopee e Shein da Bsan e da Magalu da Jowcase. Esta operação não usa Full.';
     root.innerHTML=`<div class="cc"><div class="cc-title">Full</div><div class="cc-sub" style="margin-top:6px;">${msg} Nada aqui cria envio.</div></div>`; return;
   }
   const ej=s=>String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
@@ -8110,16 +8130,16 @@ function _renderGerFull(emp, mkt){
     const rows=ls.map(L=>{
       const a=(L.aloc||{})[_gfH]||0, need=(L.needH||{})[_gfH]||0;
       const env2=`<span class="gf-big"${a<need?' style="color:#f59e0b"':''}>${_gfNum(a)}</span>${a<need?`<div class="gf-mini">precisava ${_gfNum(need)}${a===0?' · sem saldo na Olist':' · saldo dividido entre as contas'}</div>`:''}`;
-      return '<tr>'+[td(_gfPill(L.classe)),td(_gfAnuncio(L)),td(env2,'text-align:right;'),td(_gfMargem(L)),td(_gfPorque(L)),td(_gfVendas(L,rot?(perM.get(L.chave)||0):null)),td(_gfNoFull(L)),td(_gfExp(L)),td(_gfOport(L,a)),td(_gfOlist(L,need))].join('')+'</tr>';
+      return '<tr>'+[td(_gfPill(L.classe)),td(_gfAnuncio(L)),td(env2,'text-align:right;'),td(_gfMargem(L)),td(_gfPorque(L)),td(_gfVendas(L,rot?(perM.get(L.chave)||0):null)),td(_gfNoFull(L)),...(_gfEhML()?[td(_gfExp(L)),td(_gfOport(L,a))]:[]),td(_gfOlist(L,need))].join('')+'</tr>';
     }).join('');
     corpo=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px;"><span class="cc-sub" style="margin:0">Cobrir:</span>${chipsH}<span class="gf-mini" style="margin-left:4px">${_gfH==='regra'?'regra do perfil: 45 a 90 dias conforme a tendência; sazonal até o fim da data':'velocidade × '+_gfH+' dias − o que já está no Full e a caminho'}</span></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${chipsT}</div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;">${busca}<button class="dshort" onclick="exportGerFullCSV('${ej(emp)}','${ej(mkt)}')">Exportar CSV (galpão)</button></div>
-      ${tabela(['Tipo','Anúncio','Enviar','Margem pós / pré Ads','Por quê','Vendas 30 / 15 / 7 d','No Full','Experiência / qualidade','Oportunidade ML','Olist'],rows,'Nada a enviar nesta cobertura.')}
+      ${tabela(['Tipo','Anúncio','Enviar','Margem pós / pré Ads','Por quê','Vendas 30 / 15 / 7 d','No Full',...(_gfEhML()?['Experiência / qualidade','Oportunidade ML']:[]),'Olist'],rows,'Nada a enviar nesta cobertura.')}
       <div class="cc-sub" style="margin-top:8px;">A Olist é dividida entre as contas do mesmo ponto: 10% fica para a venda direta, e quem vende mais com melhor margem recebe primeiro. Nada aqui cria envio no Mercado Livre.</div>`;
   } else if(_gfVis==='nao'){
-    const rows=nr.filter(bate).sort((a,b)=>(b.aptas-a.aptas)||(b.un31-a.un31)).map(L=>'<tr>'+[td(`<b>${_gfEsc(L.motivo)}</b>`,'max-width:260px;white-space:normal;'),td(_gfAnuncio(L)),td(_gfMargem(L)),td(_gfVendas(L,null)),td(_gfNoFull(L)),td(_gfExp(L)),td(_gfOport(L,0))].join('')+'</tr>').join('');
-    corpo=`<div style="margin-top:14px;">${busca}</div>${tabela(['Por que não repor','Anúncio','Margem pós / pré Ads','Vendas 30 / 15 / 7 d','No Full','Experiência / qualidade','Oportunidade ML'],rows,'Nenhum anúncio com venda ou estoque fora da reposição.')}`;
+    const rows=nr.filter(bate).sort((a,b)=>(b.aptas-a.aptas)||(b.un31-a.un31)).map(L=>'<tr>'+[td(`<b>${_gfEsc(L.motivo)}</b>`,'max-width:260px;white-space:normal;'),td(_gfAnuncio(L)),td(_gfMargem(L)),td(_gfVendas(L,null)),td(_gfNoFull(L)),...(_gfEhML()?[td(_gfExp(L)),td(_gfOport(L,0))]:[])].join('')+'</tr>').join('');
+    corpo=`<div style="margin-top:14px;">${busca}</div>${tabela(['Por que não repor','Anúncio','Margem pós / pré Ads','Vendas 30 / 15 / 7 d','No Full',...(_gfEhML()?['Experiência / qualidade','Oportunidade ML']:[])],rows,'Nenhum anúncio com venda ou estoque fora da reposição.')}`;
   } else if(_gfVis==='desemp'){
     // DESEMPENHO DO FULL (Relatório geral de estoque do Seller Central, lido pelo full-relacao.js — 26/10/2026). Tempo de estoque
     // e fora de venda são absolutos (conferidos com a tela do ML); vendas por m³ e rotatividade o ML compara com outros vendedores.
@@ -14881,7 +14901,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   n.append(detail('Método, limites e aprofundamento',allocationNote(c,g),note('O relatório por anúncio e o relatório por campanha podem ter atribuição diferente. O resumo conserva o maior investimento e a maior receita atribuída entre esses níveis, sem somar as visões.'),note('Uma contribuição estimada negativa orienta investigação; não prova desperdício nem recuperação garantida. Falta de venda vinculada não autoriza pausa automática.'),button('Abrir Anúncios',()=>bcGroupedOpen('gerencial','produtos')),button('Acompanhar metas',()=>bcGroupedOpen('gerencial','metas'))));
  };
  window.exportGerPublicidadeCSV=function(){download('Publicidade',['Titulo','ID','Visao','Investimento_relatorio_ou_cobranca_SKU','Receita_atribuida_relatorio','ACOS_pct','ROAS','Margem_referencia_pct','Origem_margem','Contribuicao_estimada_nao_liquidada','Margem_registrada_SKU','Impressoes','Cliques','CTR_pct','CVR_pct','CPC','Vendas_atribuidas','Orcamento_dia','ROAS_objetivo','Perda_orcamento_pct','Perda_classificacao_pct','Faturamento_SKU','Unidades_SKU','Afiliados_no_liquido','Status_campanha','Visitas'],S.lastAds.map(o=>[o.titulo,o.id,S.pub.mode,cv(o.inv),cv(o.rec),cv(o.acos),cv(o.roas),cv(o.margemReferencia),o.origemMargem,cv(o.estimativa),cv(o.resultadoRegistrado),o.impr,o.cli,cv(o.ctr),cv(o.cvr),cv(o.cpc),o.vendas,cv(o.orc),cv(o.obj),cv(o.perdOrc),cv(o.perdCls),cv(o.fat),o.qtd,cv(o.afil),o.status||'',o.vis]));};
- let fullPeriod=null;const originalNoFull=_gfNoFull;_gfNoFull=function(L){if(L.semPosicao||L.aptas==null)return '<span class="gf-mini">Posição não informada</span>'+(L.cam?' · '+_gfNum(L.cam)+' a caminho':'');return originalNoFull(L);};const originalFullSales=_gfVendas;_gfVendas=function(L,per){if(per!=null&&fullPeriod)per=fullPeriod.m.get(L.chave||_gfChave(L.sku))||0;return originalFullSales(L,per);};
+ let fullPeriod=null;const originalNoFull=_gfNoFull;_gfNoFull=function(L){if(L.semPosicao||L.aptas==null)return '<span class="gf-mini">'+(L.aptas==null?'Posição não informada':'fora do Full')+'</span>'+(L.cam?' · '+_gfNum(L.cam)+' a caminho':'');return originalNoFull(L);};const originalFullSales=_gfVendas;_gfVendas=function(L,per){if(per!=null&&fullPeriod)per=fullPeriod.m.get(L.chave||_gfChave(L.sku))||0;return originalFullSales(L,per);};
  const fullOriginal=_renderGerFull;_renderGerFull=function(emp,mkt){reset();fullPeriod=_gfVendasPeriodo(emp,mkt);const out=fullOriginal.apply(this,arguments),n=$('ger-sub-full'),gf=$('gf-root'),rel=typeof FULL_REL==='object'&&FULL_REL?.contas?FULL_REL.contas[emp+'|'+mkt]:null;n.classList.add('ger-audit');bcVisualGuide(n,BCAreas.full);let contextEl=$('ger-full-context');if(!contextEl){contextEl=el('section','ger-context');contextEl.id='ger-full-context';gf.before(contextEl);}const[s,e]=getR();contextEl.replaceChildren(el('strong','',emp+' · '+mkt),note('Consulta de vendas: '+date(s)+' a '+date(e)+'. A posição do estoque não é histórica deste intervalo.'));
   let read=$('ger-full-read');if(!read){read=block('O que revisar antes de preparar o envio');read.id='ger-full-read';gf.before(read);}read.replaceChildren(el('h2','','O que revisar antes de preparar o envio'));if(!rel){$('ger-full-kpis')?.replaceChildren();contextEl.append(note('A relação de Full desta operação não está disponível na carga.'));read.append(note('Sem posição para recomendar quantidades. Confira se a relação foi carregada e se inclui esta conta. Ausência de posição não significa estoque zero.'));return out;}
   const model=M.full(rel,_gfH);contextEl.append(note('Vendas da relação até '+date(rel.ancora)+' · Relação gerada em '+date(FULL_REL.dia)+' · Ponto '+String(rel.ponto||'não informado')+'. Giro e estoque usam essa posição; o intervalo do cabeçalho altera apenas a coluna de vendas do período.'));
