@@ -26,6 +26,7 @@ const resultadosConsultas = require('./resultados-consultas');
 const financeiroConsultas = require('./financeiro-consultas');
 const gerencialRaiox = require('./gerencial-raiox');
 const vendasRaiox = require('./vendas-raiox');
+const margensConsultas = require('./margens-consultas');
 const vendasExportacao = require('./vendas-exportacao');
 const posVenda = require('./pos-venda').createService(dbx);
 const posVendaHttp = require('./pos-venda-http').createHttp(posVenda);
@@ -104,6 +105,7 @@ async function rotaGET(u, user) {
   if (user && !acessos.rota(user, "GET", u.pathname)) throw Object.assign(new Error("Seu acesso não permite esta consulta."), { status: 403, codigo: "PERMISSAO_NEGADA" });
   const q = Object.fromEntries(u.searchParams);
   if (u.pathname === '/api/financeiro/dre') return financeiroConsultas.dre(dbx, q);
+  if (u.pathname === '/api/margens') return margensConsultas.carregar(dbx, q, user);
   if (u.pathname === '/api/resultados/resumo') return resultadosConsultas.resumo(dbx, q);
   if (u.pathname === '/api/resultados/skus') return resultadosConsultas.skus(dbx, q);
   if (u.pathname === '/api/operacao/estoque') return operacaoConsultas.estoque(dbx);
@@ -537,7 +539,7 @@ const server = http.createServer(async (req, res) => {
       if (AUTH_REQ && u.pathname !== "/api/health" && !user) return J(res, { erro: "não autenticado" }, 401);
       if(u.pathname==="/api/vendas/exportar")return await vendasExportacao.enviar(req,res,dbx,Object.fromEntries(u.searchParams));
       // cache (gzip) das rotas pesadas, por escopo (perfil+gestor) — 1º acesso busca, demais são instantâneos
-      const pesada = (u.pathname === "/api/dataset" || u.pathname === "/api/detalhe" || u.pathname === "/api/extras");
+      const pesada = (u.pathname === "/api/dataset" || u.pathname === "/api/detalhe" || u.pathname === "/api/extras" || u.pathname === "/api/margens");
       const aceitaGz = /\bgzip\b/.test(String(req.headers["accept-encoding"] || ""));
       // cache por escopo (dados do gestor são restritos ao ponto dele; direção/coord compartilham)
       const macro = u.pathname === "/api/dataset" || u.pathname === "/api/detalhe";

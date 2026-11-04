@@ -22,9 +22,9 @@
     const o=blank(); for(const r of rows) for(const k of fields) o[k]+=n(r[k])??0;
     o.extra=rows.reduce((s,r)=>s+(n(r.extra)??0),0);
     o.embedded=rows.reduce((s,r)=>s+(n(r.embedded)??0),0);
-    o.before=o.mc+o.embedded; o.after=o.mc-o.extra;
+    o.before=o.mc+o.embedded; o.after=rows.some(r=>r.adsMissing)?null:o.mc-o.extra;
     o.percent=o.base ? o.mc/o.base*100 : null;
-    o.percentAfter=o.base ? o.after/o.base*100 : null;
+    o.percentAfter=o.base&&o.after!=null ? o.after/o.base*100 : null;
     o.percentBefore=o.base ? o.before/o.base*100 : null;
     o.ticket=o.ped>0 && !rows.some(r=>r.ordersUnknown) ? o.fatIdent/o.ped : null;
     o.ordersUnknown=rows.some(r=>r.ordersUnknown);
@@ -69,12 +69,14 @@
     return {faixas:ranges.map(r=>{const map=new Map();for(const d of dias.filter(d=>d.date>=r.from&&d.date<=r.to)){const k=key(d.emp,d.mkt);if(!map.has(k))map.set(k,[]);map.get(k).push(d);}return {...r,ops:[...map.values()].map(ds=>({...sum(ds),emp:ds[0].emp,mkt:ds[0].mkt,ordersUnknown:true}))};}),dias,midiaBase:scope.ponto?aggregateRows(rows,ranges,{...scope,ponto:''}).dias:null,escopo:scope,base:[from,to],local:true,legacyAggregate:true,fallback};
   }
   function media(data,{ads=[],camp=[],dia=[]}={}) {
+    if(data.margensDiarias||data.margensErro){const mapped=new Map(data.dias.map(r=>[key(r.emp,r.mkt,r.date),{...r,extra:0,embedded:/tik\s*tok/i.test(r.mkt)?-(r.pub||0):0,adsMissing:true}]));for(const r of data.margensDiarias||[]){const k=key(r.emp,r.mkt,r.date),o=mapped.get(k)||{...blank(),emp:r.emp,mkt:r.mkt,date:r.date,mediaOnly:true};Object.assign(o,{extra:r.extra,embedded:r.embeddedAds,adsMissing:r.missing,adsMode:r.coverage});mapped.set(k,o);}const dias=[...mapped.values()],faixas=data.faixas.map(range=>{const relevant=dias.filter(r=>r.date>=range.from&&r.date<=range.to),ops=new Map(range.ops.map(r=>[key(r.emp,r.mkt),r]));for(const d of relevant)if(d.extra&&!ops.has(key(d.emp,d.mkt)))ops.set(key(d.emp,d.mkt),{...blank(),emp:d.emp,mkt:d.mkt,mediaOnly:true});for(const w of data.margensNaoAlocadas||[])if(w.month>=range.from.slice(0,7)&&w.month<=range.to.slice(0,7)&&!ops.has(key(w.emp,w.mkt)))ops.set(key(w.emp,w.mkt),{...blank(),emp:w.emp,mkt:w.mkt,mediaOnly:true});return{...range,ops:[...ops.values()].map(o=>{const rs=relevant.filter(d=>d.emp===o.emp&&d.mkt===o.mkt);return{...o,extra:rs.reduce((s,r)=>s+(r.extra||0),0),embedded:rs.reduce((s,r)=>s+(r.embedded||0),0),adsMissing:rs.some(r=>r.adsMissing)||(data.margensNaoAlocadas||[]).some(r=>r.emp===o.emp&&r.mkt===o.mkt&&r.month>=range.from.slice(0,7)&&r.month<=range.to.slice(0,7)),adsModes:[...new Set(rs.map(r=>r.adsMode))]};})};});return{...data,dias,faixas,mediaWarnings:data.margensNaoAlocadas||[]};}
+
     const monthly=new Map(),weights=new Map(),revenue=new Map(),selected=new Map(),scope=data.escopo||{},warnings=[];
     const excluded=r=>/afiliad/i.test(String(r.fonte||'')+' '+String(r.campanha||''))||/tik\s*tok/i.test(r.mkt||'')||scope.emp&&r.emp!==scope.emp||scope.mkt&&r.mkt!==scope.mkt;
     for(const[list,field]of[[ads,'ads'],[camp,'camp']])for(const r of list)if(!excluded(r)){const k=key(r.emp,r.mkt,String(r.comp).slice(0,7)),o=monthly.get(k)||{ads:0,camp:0};o[field]+=n(r.inv)??0;monthly.set(k,o);}
     for(const r of dia)if(!excluded(r)&&date(String(r.data).slice(0,10))){const d=String(r.data).slice(0,10),k=key(r.emp,r.mkt,d.slice(0,7)),o=weights.get(k)||new Map();o.set(d,(o.get(d)||0)+(n(r.inv)??0));weights.set(k,o);}
     for(const [rows,target]of[[data.midiaBase||data.dias,revenue],[data.dias,selected]])for(const r of rows){const k=key(r.emp,r.mkt,r.date.slice(0,7)),o=target.get(k)||new Map();o.set(r.date,(o.get(r.date)||0)+(n(r.fat)??0));target.set(k,o);}
-    const mapped=new Map(data.dias.map(r=>{const tt=/tik\s*tok/i.test(r.mkt),k=key(r.emp,r.mkt,r.date.slice(0,7)),w=weights.get(k),wt=w?[...w.values()].reduce((a,b)=>a+b,0):0,m=monthly.get(k),missingDay=!!m&&Math.max(m.ads,m.camp)>0&&wt>0&&!w.has(r.date);return[key(r.emp,r.mkt,r.date),{...r,extra:0,embedded:tt?-(r.pub||0)-(r.afil||0):0,adsMissing:!tt&&(!m||missingDay),adsMode:tt?'liquido':missingDay?'peso-diario-ausente':m?'mensal':'ausente'}];}));
+    const mapped=new Map(data.dias.map(r=>{const tt=/tik\s*tok/i.test(r.mkt),k=key(r.emp,r.mkt,r.date.slice(0,7)),w=weights.get(k),wt=w?[...w.values()].reduce((a,b)=>a+b,0):0,m=monthly.get(k),missingDay=!!m&&Math.max(m.ads,m.camp)>0&&wt>0&&!w.has(r.date);return[key(r.emp,r.mkt,r.date),{...r,extra:0,embedded:tt?-(r.pub||0):0,adsMissing:tt?(r.mediaMissing>0):(!m||missingDay),adsMode:tt?'liquido':missingDay?'peso-diario-ausente':m?'mensal':'ausente'}];}));
     for(const[k,m]of monthly){const[emp,mkt,month]=JSON.parse(k),inv=Math.max(m.ads,m.camp);if(!(inv>0)||month<data.base[0].slice(0,7)||month>data.base[1].slice(0,7))continue;
       const w=weights.get(k),wt=w?[...w.values()].reduce((a,b)=>a+b,0):0,f=revenue.get(k),ft=f?[...f.values()].reduce((a,b)=>a+b,0):0,useWeights=wt>0,base=useWeights?w:f,den=useWeights?wt:ft;
       if(!(den>0)){warnings.push({emp,mkt,month,inv,reason:'Sem pesos diários ou faturamento mensal para alocar'});continue;}
@@ -84,7 +86,7 @@
       }
     }
     const dias=[...mapped.values()].sort((a,b)=>a.date.localeCompare(b.date));
-    const faixas=data.faixas.map(range=>{const relevant=dias.filter(d=>d.date>=range.from&&d.date<=range.to),ops=new Map(range.ops.map(o=>[key(o.emp,o.mkt),o]));for(const r of relevant)if(r.extra&&!ops.has(key(r.emp,r.mkt)))ops.set(key(r.emp,r.mkt),{emp:r.emp,mkt:r.mkt,...blank(),mediaOnly:true});return{...range,ops:[...ops.values()].map(o=>{const rs=relevant.filter(d=>d.emp===o.emp&&d.mkt===o.mkt),allocation=sum(rs);return{...o,extra:allocation?.extra||0,embedded:allocation?.embedded||0,adsMissing:rs.some(r=>r.adsMissing),adsModes:[...new Set(rs.map(r=>r.adsMode))]};})};});
+    const faixas=data.faixas.map(range=>{const relevant=dias.filter(d=>d.date>=range.from&&d.date<=range.to),ops=new Map(range.ops.map(o=>[key(o.emp,o.mkt),o]));for(const r of relevant)if(r.extra&&!ops.has(key(r.emp,r.mkt)))ops.set(key(r.emp,r.mkt),{emp:r.emp,mkt:r.mkt,...blank(),mediaOnly:true});for(const w of data.margensNaoAlocadas||[])if(w.month>=range.from.slice(0,7)&&w.month<=range.to.slice(0,7)&&!ops.has(key(w.emp,w.mkt)))ops.set(key(w.emp,w.mkt),{...blank(),emp:w.emp,mkt:w.mkt,mediaOnly:true});return{...range,ops:[...ops.values()].map(o=>{const rs=relevant.filter(d=>d.emp===o.emp&&d.mkt===o.mkt),allocation=sum(rs);return{...o,extra:allocation?.extra||0,embedded:allocation?.embedded||0,adsMissing:rs.some(r=>r.adsMissing),adsModes:[...new Set(rs.map(r=>r.adsMode))]};})};});
     return{...data,dias,faixas,mediaWarnings:warnings};
   }
   function rangeModel(data,id) {
@@ -105,12 +107,12 @@
     return{cur:[start,ref],prev:[pstart,pend>last?last:pend],divisor:1};
   }
   function scale(r,divisor=1) {if(!r)return null;const o={...r};for(const k of [...fields,'extra','embedded','before','after'])if(o[k]!=null)o[k]/=divisor;return o;}
-  function score(ops,weights) {const keys=['after','percentAfter','fat','qtd','ped'],total=keys.reduce((s,k)=>s+Math.max(0,n(weights[k])??0),0);return ops.map(r=>({...r,score:!total||keys.some(k=>(n(weights[k])??0)>0&&r[k]==null)?null:keys.reduce((s,k)=>{const max=Math.max(0,...ops.map(r=>n(r[k])??0));return s+(max?Math.max(0,r[k]??0)/max*100:0)*Math.max(0,n(weights[k])??0);},0)/total}));}
+  function score(ops,weights) {const keys=['after','percentAfter','fat','qtd','ped'],total=keys.reduce((s,k)=>s+Math.max(0,n(weights[k])??0),0);return ops.map(r=>({...r,score:r.adsMissing||!total||keys.some(k=>(n(weights[k])??0)>0&&r[k]==null)?null:keys.reduce((s,k)=>{const max=Math.max(0,...ops.map(r=>n(r[k])??0));return s+(max?Math.max(0,r[k]??0)/max*100:0)*Math.max(0,n(weights[k])??0);},0)/total}));}
   function diaryFinance(total,ops=[]) {
     if(!total)return {beforeAds:null,after:null,ads:null,affiliates:null,percentBeforeAds:null,percentAfter:null,missing:false};
     const tt=ops.filter(r=>/tik\s*tok/i.test(r.mkt||'')),missing=tt.some(r=>r.mediaMissing>0),embeddedAds=tt.reduce((v,r)=>v-(n(r.pub)??0),0),affiliates=tt.reduce((v,r)=>v-(n(r.afil)??0),0);
-    const beforeAds=missing||total.mc==null?null:total.mc+embeddedAds;
-    return{beforeAds,after:total.after,ads:missing?null:(total.extra||0)+embeddedAds,affiliates:missing?null:affiliates,percentBeforeAds:beforeAds!=null&&total.base?100*beforeAds/total.base:null,percentAfter:total.percentAfter,missing};
+    const beforeAds=missing||total.mc==null?null:total.mc+embeddedAds;const adsMissing=missing||total.adsMissing;
+    return{beforeAds,after:total.after,ads:adsMissing?null:(total.extra||0)+embeddedAds,affiliates:missing?null:affiliates,percentBeforeAds:beforeAds!=null&&total.base?100*beforeAds/total.base:null,percentAfter:total.percentAfter,missing:adsMissing};
   }
   function diaryRows(current,prior,divisor,weights) {
     const cur=score(current.ops,weights),old=score(prior.ops.map(r=>scale(r,divisor)),weights),rank=(rows,k)=>{const sorted=rows.filter(r=>n(r[k])!=null).slice().sort((a,b)=>b[k]-a[k]||a.id.localeCompare(b.id)),out=new Map();let last,position;sorted.forEach((r,i)=>{if(i===0||r[k]!==last)position=i+1;out.set(r.id,position);last=r[k];});return out;},cr=rank(cur,'score'),pr=rank(old,'score'),metrics=['fat','after','percentAfter','ped','qtd','ticket'],positions=Object.fromEntries(metrics.map(k=>[k,[rank(cur,k),rank(old,k)]])),cmap=new Map(cur.map(r=>[r.id,r])),pmap=new Map(old.map(r=>[r.id,r]));
@@ -120,7 +122,7 @@
     return rows.filter(r=>n(r.c?.[metric])!=null&&n(r.p?.[metric])!=null).map(r=>({...r,value:r.c[metric]-r.p[metric]})).sort((a,b)=>Math.abs(b.value)-Math.abs(a.value)||a.id.localeCompare(b.id));
   }
   function diaryBubble(ops) {
-    const valid=ops.filter(r=>n(r.fat)>0&&n(r.percentAfter)!=null&&n(r.qtd)!=null&&n(r.qtd)>=0&&!(r.qtdMissing>0)),sorted=valid.map(r=>r.fat).sort((a,b)=>a-b),mid=Math.floor(sorted.length/2),median=sorted.length?(sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2):null,base=valid.reduce((s,r)=>s+(r.base||0),0),average=base?100*valid.reduce((s,r)=>s+r.after,0)/base:null,max=Math.max(1,...valid.map(r=>r.qtd));
+    const valid=ops.filter(r=>!r.adsMissing&&n(r.fat)>0&&n(r.percentAfter)!=null&&n(r.qtd)!=null&&n(r.qtd)>=0&&!(r.qtdMissing>0)),sorted=valid.map(r=>r.fat).sort((a,b)=>a-b),mid=Math.floor(sorted.length/2),median=sorted.length?(sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2):null,base=valid.reduce((s,r)=>s+(r.base||0),0),average=base?100*valid.reduce((s,r)=>s+r.after,0)/base:null,max=Math.max(1,...valid.map(r=>r.qtd));
     return{median,average,points:valid.map(r=>({...r,x:r.fat,y:r.percentAfter,r:8+Math.sqrt(r.qtd/max)*26,quadrant:r.fat>=median?(r.percentAfter>=average?'estrela':'margem'):(r.percentAfter>=average?'nicho':'revisar')}))};
   }
   function localSkus(lines,scope) {const map=new Map();for(const r of lines){if(!date(r.date)||r.date<scope.from||r.date>scope.to||scope.emp&&r.emp!==scope.emp||scope.mkt&&r.mkt!==scope.mkt||scope.ponto&&r.ponto!==scope.ponto)continue;const v=lineValue(r);if(!v.n_fin)continue;const code=String(r.sku||'').trim().toUpperCase(),k=key(r.emp,r.mkt,code),o=map.get(k)||{emp:r.emp,mkt:r.mkt,sku:code,titulo:r.tit||code,...blank()};for(const f of fields)o[f]+=v[f];map.set(k,o);}return [...map.values()];}

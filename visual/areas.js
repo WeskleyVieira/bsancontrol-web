@@ -229,6 +229,7 @@ function bcVisualResultColors(root){
   const direct=[...e.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim(),text=main&&bcVisualAmount(direct)?direct:e.textContent,n=bcVisualAmount(text);
   let tone=main?bcVisualValueTone(text,label,comparison):n?.unit!=='number'&&n?.value<0&&!comparison?'bad':'';
   if(!main&&e.classList.contains('sum-negative')&&n?.value<0&&!comparison)tone='bad';
+  const explicit=e.closest('[data-margin-tone]')?.dataset.marginTone;if(explicit&&tone!=='bad')tone=explicit==='neutral'?'':explicit;
   if(tone)e.dataset.bcResult=tone;else delete e.dataset.bcResult;
   if(card){if(tone)card.dataset.bcResult=tone;else delete card.dataset.bcResult;}
  }
