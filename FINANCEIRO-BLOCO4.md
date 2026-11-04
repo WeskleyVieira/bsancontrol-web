@@ -1,6 +1,6 @@
 # Bloco 4 — Metas, Comissão e DRE
 
-Entrega de 04/11/2026, iniciada sobre `da0321c` e integrada à atualização de Alinhamentos `beae07e`. Preserva o design atual, o fluxo anterior útil e as regras oficiais de metas, bônus e fechamento. Referências: renderizadores existentes de Metas e Comissão, `AUDITORIA_FINANCEIRO.md`, composição de margem do bloco 1 e integração do Forecast do bloco 2.
+Entrega de 04/11/2026, iniciada sobre `da0321c` e integrada às atualizações de Alinhamentos `beae07e` e Full `6f11fc8`. Preserva o design atual, o fluxo anterior útil e as regras oficiais de metas, bônus e fechamento. Referências: renderizadores existentes de Metas e Comissão, `AUDITORIA_FINANCEIRO.md`, composição de margem do bloco 1 e integração do Forecast do bloco 2.
 
 ## Entrega e uso
 
@@ -45,4 +45,4 @@ A validação gerencial dos números, objetivos e fotografias oficiais permanece
 
 Próximo bloco previsto: **5 — Produtos e Pós-venda**, para conferir pendências, responsáveis, custos/embalagens, atendimentos, indicadores e acessos. O bloco 6 reúne a homologação operacional do conjunto.
 
-Retorno técnico, se necessário: reverter somente as alterações financeiras sobre `beae07e`, preservando Alinhamentos e sem migração de banco; restaurar os trechos correspondentes das fontes privadas pelos backups desta execução.
+Retorno técnico, se necessário: reverter somente as alterações financeiras sobre `6f11fc8`, preservando Alinhamentos e Full e sem migração de banco; restaurar os trechos correspondentes das fontes privadas pelos backups desta execução.
