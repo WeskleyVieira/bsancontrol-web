@@ -34,7 +34,7 @@ Entrega de 04/11/2026, sobre `2b6c267`. Conserva o design atual, os filtros comp
 
 ## Validação
 
-- **369 testes automatizados**, incluindo 23 casos novos de composição, referências, SKUs, matriz, portfólio, ritmo, metas, falhas e concordância SQL/local.
+- **370 testes automatizados**, incluindo 24 casos novos de composição, referências, SKUs, matriz, portfólio, ritmo, metas, falhas e concordância SQL/local.
 - PostgreSQL somente de leitura: ranking e ABC conciliados com o Raio-X em contribuição, publicidade e percentual do SKU; execução de referência em aproximadamente 1,6 segundo. Nenhum dado comercial exportado nos relatórios de teste.
 - Homologação isolada com dados fictícios: Visão Geral, Marketplaces, ABC, Forecast e Diário; temas claro/escuro; 390 px; ranking sob demanda; acesso macro do gestor; sessão ausente; pop-up; filtros e CSV.
 - Falha de fonte limpa os valores anteriores e permite nova tentativa. Troca rápida de empresa ignora a resposta antiga. Valores monetários permanecem em uma linha e botões legíveis.
