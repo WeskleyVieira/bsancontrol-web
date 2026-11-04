@@ -50,6 +50,7 @@
   if(path==='/api/operacao/estoque')return pode(user,'estoque.ver');
   if(path==='/api/operacao/projecao')return pode(user,'estoque.ver')&&pode(user,'vendas.ver');
   if(path==='/api/tratativas'||path==='/api/comandos'||path==='/api/alinhamentos')return pode(user,method==='GET'?'acompanhamento.ver':'acompanhamento.tratar');
+  if(path==='/api/pendencias')return method==='GET'&&pode(user,'acompanhamento.ver');
   const entrada=path.match(/^\/api\/(?:lancamentos\/)?(envios|custos|comissao)$/);if(entrada){const key={envios:'envios',custos:'dre',comissao:'comissao'}[entrada[1]];return pode(user,key+(method==='GET'?'.ver':'.lancar'));}
   return path==='/api/extras';
  }
