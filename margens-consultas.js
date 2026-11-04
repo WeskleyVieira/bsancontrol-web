@@ -5,7 +5,7 @@ function consulta(q={},user){
  const valid=v=>/^\d{4}-\d{2}-\d{2}$/.test(v||'')&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v;
  if(!valid(q.de)||!valid(q.ate)||q.de>q.ate||Date.parse(q.ate)-Date.parse(q.de)>1098*864e5)throw fail('Informe um período válido de até três anos.');
  if(String(q.sku||'').length>200||String(q.q||'').length>200)throw fail('Busca inválida.');
- const basis=[q.de.slice(0,7)+'-01',new Date(Date.UTC(+q.ate.slice(0,4),+q.ate.slice(5,7),0)).toISOString().slice(0,10)],args=[...basis],w=["v.status IN ('venda','venda_com_troca')",'v.data>=?','v.data<=?'];
+ const basis=[q.de.slice(0,7)+'-01',new Date(Date.UTC(+q.ate.slice(0,4),+q.ate.slice(5,7),0)).toISOString().slice(0,10)],args=[...basis],w=["LOWER(TRIM(COALESCE(v.status,''))) IN ('venda','venda_com_troca')",'v.data>=?','v.data<=?'];
  // Ponto e SKU são aplicados APÓS o rateio: nunca usar somente as vendas selecionadas como denominador do mês.
  for(const[k,col]of [['emp','empresa'],['mkt','canal']])if(q[k]){w.push('v.'+col+'=?');args.push(String(q[k]));}
  if(q.carteira==='1'&&user?.perfil==='gestor'){w.push('EXISTS(SELECT 1 FROM operacoes o WHERE o.empresa=v.empresa AND o.marketplace=v.canal AND o.gestor=?)');args.push(user.gestor_ref||'');if(!user.gestor_ref)w.push('1=0');}

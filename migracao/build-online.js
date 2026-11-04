@@ -349,7 +349,7 @@ fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, "acompanhamento.html"), html);
 const copy = f => fs.copyFileSync(path.join(__dirname, f), path.join(OUT, f));
 fs.mkdirSync(path.join(OUT, "visual"), { recursive: true });
-for (const f of ["areas.js", "areas.css", "integrar.js"]) fs.copyFileSync(path.join(__dirname, "visual", f), path.join(OUT, "visual", f));
+for (const f of ["resultados-leitura-modelo.js", "resultados-restauracao.css", "areas.js", "areas.css", "integrar.js"]) fs.copyFileSync(path.join(__dirname, "visual", f), path.join(OUT, "visual", f));
 copy("api.js"); copy("dbx.js"); copy("auth.js"); copy("espelho-planilhas.js"); copy("lancamento.js"); copy("supabase-ca.pem"); copy("vendas-pagina.js"); copy("datasets-versionados.js"); copy("margens-modelo.js"); copy("margens-consultas.js");
 fs.writeFileSync(path.join(OUT, "package.json"), JSON.stringify({
   name: "bsancontrol-web", private: true, version: "1.0.0",
