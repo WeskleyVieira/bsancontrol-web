@@ -24,6 +24,7 @@ const acompanhamentoConsultas = require('./acompanhamento-consultas');
 const operacaoConsultas = require('./operacao-consultas');
 const resultadosConsultas = require('./resultados-consultas');
 const financeiroConsultas = require('./financeiro-consultas');
+const gerencialRaiox = require('./gerencial-raiox');
 const posVenda = require('./pos-venda').createService(dbx);
 const posVendaHttp = require('./pos-venda-http').createHttp(posVenda);
 const gestaoHttp = require('./gestao').createHttp(dbx, { writeStore });   // Financeiro da Direção: fechamento, custos e carteiras
@@ -117,6 +118,7 @@ async function rotaGET(u, user) {
     const s = await dbx.get("SELECT MAX(atualizado) m FROM datasets");   // carimbo do último db-sync (p/ o auto-refresh detectar dado novo)
     return { ok: true, banco: dbx.IS_PG ? "Postgres" : "SQLite", ...(v?{vendas:v.n}:{}), ...(d?{demandas:d.n}:{}), _sync: (s && s.m) ? s.m : null };
   }
+  if (u.pathname === "/api/gerencial/raiox") return gerencialRaiox.carregar(dbx,q,user);
   if (u.pathname === "/api/demandas") {
     if(q.complemento==='economia')return acompanhamentoConsultas.economia(dbx,user,q);
     await garantePrecoNovo();

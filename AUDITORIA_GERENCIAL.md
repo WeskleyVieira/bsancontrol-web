@@ -1,5 +1,7 @@
 # Fase 3 — Diagnóstico, Anúncios, Publicidade e Full
 
+Registro histórico. A recuperação do fluxo visual e operacional em 04/11/2026, mantendo o design atual, está em [GERENCIAL-RESTAURACAO.md](GERENCIAL-RESTAURACAO.md). Situações, composição e agenda foram recuperadas com fontes e limites explícitos; TACOS voltou à leitura essencial e Raio-X passou a abrir em pop-up.
+
 Autorizada pelo usuário em 01/11/2026. Base: ccb970a22eac6f34431127731663103163e3e035. Referência visual: Metas e a revisão de Visão Geral/Panorama.
 
 ## Correção da etapa de Vendas
