@@ -1,5 +1,7 @@
 # Auditoria por página — Grupo Bsan
 
+Recuperações posteriores ao retorno da equipe: [Gerencial, 04/11/2026](GERENCIAL-RESTAURACAO.md) e [Vendas/Raio-X, 04/11/2026](VENDAS-RESTAURACAO.md). Esses relatórios registram a restauração do fluxo anterior no design atual e complementam o histórico abaixo.
+
 A migração do tema comum foi concluída anteriormente. Este plano acompanha a revisão aprofundada de leitura, fluxo e funcionamento de cada página. Aplicar o tema não significa concluir a auditoria de uma página. A referência visual é Metas, incluindo tipografia, espaços, hierarquia dos valores, estados discretos e ampliação exclusiva dos gráficos.
 
 Prioridade atual: fase 7 — Financeiro e integração, autorizada e implementada em 01/11/2026, detalhada em AUDITORIA_FINANCEIRO.md. DRE por competência, fontes, composição, ausência e acessos revisados; integração de Metas, Comissão e Administração conferida. As sete fases têm entregas técnicas; a aceitação gerencial dos dados oficiais pelo usuário permanece pendente.

@@ -12,6 +12,7 @@ function consultaVendas(q) {
   if (p.emp) { w.push("empresa=?"); args.push(p.emp); }
   if (p.mkt) { w.push("canal=?"); args.push(p.mkt); }
   if (p.ponto) { w.push("ponto=?"); args.push(p.ponto); }
+  if (p.sku) { w.push("sku=?"); args.push(String(p.sku)); }
   const busca = String(p.q || "").trim().toLowerCase();
   if (busca) {
     const like = "%" + busca.replace(/[!%_]/g, "!$&") + "%";
@@ -30,6 +31,7 @@ function consultaVendas(q) {
 }
 function resumoVendasSQL(c){
   const numeric=k=>`CAST(COALESCE(${k}_n,CAST(${k} AS NUMERIC)) AS DOUBLE PRECISION)`,fat=numeric('receita'),mc=numeric('mc_comissao'),liq=numeric('liquido'),ctp=numeric('ctp'),final="status IN ('venda','venda_com_troca')",fonte="LOWER(COALESCE(fonte_liquido,''))",prov=`(${fonte} LIKE '%provis%ri%' OR ${fonte} LIKE '%estimativa%' OR ${fonte} LIKE '%pendente%' OR ${fonte} LIKE '%estimado%' OR ${fonte} LIKE '%incompleto%')`,sum=(expr,condition=final)=>`SUM(CASE WHEN ${condition} THEN ${expr} ELSE 0 END)`;
-  return{sql:`SELECT COUNT(*) AS linhas, ${sum('1')} AS finalizadas, ${sum('qtd')} AS unidades, ${sum(fat)} AS faturamento, ${sum(mc)} AS margem, ${sum(`CASE WHEN LOWER(canal) LIKE '%temu%' THEN ${liq} ELSE ${fat} END`)} AS base, ${sum(ctp)} AS ctp, ${sum('1',`${final} AND ${mc}<0`)} AS negativas, ${sum(mc,`${final} AND ${mc}<0`)} AS "margemNegativa", ${sum('1',`${final} AND ${prov}`)} AS provisorias, ${sum(liq,`${final} AND ${prov}`)} AS "liquidoProvisorio", ${sum('1',`${final} AND TRIM(COALESCE(fonte_liquido,''))=''`)} AS "semFonte" FROM vendas WHERE ${c.where}`,args:c.args};
+  return{sql:`SELECT COUNT(*) AS linhas, ${sum('1')} AS finalizadas, ${sum('qtd')} AS unidades, ${sum(fat)} AS faturamento, ${sum(mc)} AS margem, ${sum(`CASE WHEN LOWER(canal) LIKE '%temu%' THEN ${liq} ELSE ${fat} END`)} AS base, ${sum(ctp)} AS ctp, ${sum('1',`${final} AND ${mc}<0`)} AS negativas, ${sum(mc,`${final} AND ${mc}<0`)} AS "margemNegativa", ${sum('1',`${final} AND ${prov}`)} AS provisorias, ${sum(liq,`${final} AND ${prov}`)} AS "liquidoProvisorio", ${sum('1',`${final} AND TRIM(COALESCE(fonte_liquido,''))=''`)} AS "semFonte", ${sum(fat,`${final} AND TRIM(COALESCE(pedido,''))<>''`)} AS "fatIdentificada", ${sum('1',`${final} AND TRIM(COALESCE(pedido,''))=''`)} AS "semPedido", ${sum('1',`${final} AND ctp_n IS NULL AND (ctp IS NULL OR TRIM(CAST(ctp AS TEXT))='')`)} AS "semCtp" FROM vendas WHERE ${c.where}`,args:c.args};
 }
-module.exports = { consultaVendas, resumoVendasSQL };
+function pedidosVendasSQL(c){return{sql:`SELECT COUNT(*) AS pedidos FROM (SELECT empresa,canal,TRIM(pedido) AS pedido FROM vendas WHERE ${c.where} AND status IN ('venda','venda_com_troca') AND TRIM(COALESCE(pedido,''))<>'' GROUP BY empresa,canal,TRIM(pedido)) AS identificados`,args:c.args};}
+module.exports = { consultaVendas, resumoVendasSQL, pedidosVendasSQL };

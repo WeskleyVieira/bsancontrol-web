@@ -10,7 +10,7 @@ require("./produtos/runtime").configure();
 // token do cache-bust: hash do DATABASE_URL (quem tem a conexão pode limpar — zero config novo)
 const BUST_TOKEN = crypto.createHash("sha256").update(process.env.DATABASE_URL || "sem-db").digest("hex");
 const { hashSenha, verificaSenha, assinaToken, verificaToken } = require("./auth");
-const { consultaVendas, resumoVendasSQL } = require("./vendas-pagina");
+const { consultaVendas, resumoVendasSQL, pedidosVendasSQL } = require("./vendas-pagina");
 const { completar: completarResumoVendas } = require("./vendas-indicadores");
 const lancamento = require("./lancamento");
 const writeStore = require("./datasets-versionados");
@@ -25,6 +25,8 @@ const operacaoConsultas = require('./operacao-consultas');
 const resultadosConsultas = require('./resultados-consultas');
 const financeiroConsultas = require('./financeiro-consultas');
 const gerencialRaiox = require('./gerencial-raiox');
+const vendasRaiox = require('./vendas-raiox');
+const vendasExportacao = require('./vendas-exportacao');
 const posVenda = require('./pos-venda').createService(dbx);
 const posVendaHttp = require('./pos-venda-http').createHttp(posVenda);
 const gestaoHttp = require('./gestao').createHttp(dbx, { writeStore });   // Financeiro da Direção: fechamento, custos e carteiras
@@ -118,6 +120,7 @@ async function rotaGET(u, user) {
     const s = await dbx.get("SELECT MAX(atualizado) m FROM datasets");   // carimbo do último db-sync (p/ o auto-refresh detectar dado novo)
     return { ok: true, banco: dbx.IS_PG ? "Postgres" : "SQLite", ...(v?{vendas:v.n}:{}), ...(d?{demandas:d.n}:{}), _sync: (s && s.m) ? s.m : null };
   }
+  if (u.pathname === "/api/vendas/raiox") return vendasRaiox.carregar(dbx,q);
   if (u.pathname === "/api/gerencial/raiox") return gerencialRaiox.carregar(dbx,q,user);
   if (u.pathname === "/api/demandas") {
     if(q.complemento==='economia')return acompanhamentoConsultas.economia(dbx,user,q);
@@ -172,7 +175,8 @@ async function rotaGET(u, user) {
     const fat = "CAST(COALESCE(receita_n,CAST(receita AS NUMERIC)) AS DOUBLE PRECISION)";
     const par = (n, v) => ({ n: +n || 0, v: Math.round((+v || 0) * 100) / 100 });
     const resumoQuery=resumoVendasSQL(c);
-    const [kpiRow, linhas, resumoRow] = await Promise.all([
+    const ordersQuery=pedidosVendasSQL(c);
+    const [kpiRow, linhas, resumoRow, ordersRow] = await Promise.all([
       dbx.get(`SELECT COUNT(*) n,
         SUM(CASE WHEN status IN ('venda','venda_com_troca') THEN 1 ELSE 0 END) n_fin,
         SUM(CASE WHEN status='pendente' THEN 1 ELSE 0 END) n_pen,
@@ -190,11 +194,12 @@ async function rotaGET(u, user) {
         qtd, ${fat} AS fat, CAST(COALESCE(liquido_n,CAST(liquido AS NUMERIC)) AS DOUBLE PRECISION) AS liq, CAST(COALESCE(ctp_n,CAST(ctp AS NUMERIC)) AS DOUBLE PRECISION) AS ctp, CAST(COALESCE(imposto_n,CAST(imposto AS NUMERIC)) AS DOUBLE PRECISION) AS imp,
         CAST(COALESCE(mc_comissao_n,CAST(mc_comissao AS NUMERIC)) AS DOUBLE PRECISION) AS mc, fonte_liquido AS fonte, status AS stat
       FROM vendas WHERE ${c.where} ORDER BY ${c.order} LIMIT ? OFFSET ?`, c.args.concat([c.limite, c.offset])),
-      dbx.get(resumoQuery.sql,resumoQuery.args)
+      dbx.get(resumoQuery.sql,resumoQuery.args),
+      dbx.get(ordersQuery.sql,ordersQuery.args)
     ]);
     linhas.forEach(o => {
       o.date = String(o.date || "").slice(0, 10);
-      for (const k of ["qtd", "fat", "liq", "ctp", "imp", "mc"]) o[k] = Math.round((+o[k] || 0) * 100) / 100;
+      for (const k of ["qtd", "fat", "liq", "ctp", "imp", "mc"]) o[k] = k==="ctp"&&o[k]==null?null:Math.round((+o[k] || 0) * 100) / 100;
     });
     const faixa = { finalizadas: ["n_fin", "fat_fin"], pendente: ["n_pen", "fat_pen"], cancelada: ["n_can", "fat_can"], devolvida: ["n_dev", "fat_dev"], extravio: ["n_ext", "fat_ext"] }[q.status];
     const n = faixa ? (+kpiRow[faixa[0]] || 0) : (+kpiRow.n || 0);
@@ -207,7 +212,7 @@ async function rotaGET(u, user) {
         devolvida: par(kpiRow.n_dev, kpiRow.fat_dev), extravio: par(kpiRow.n_ext, kpiRow.fat_ext)
       },
       total: +resumoRow.linhas||0, fat: par(0, fatFiltrado).v, paginas: Math.max(1, Math.ceil((+resumoRow.linhas||0) / c.limite)), pagina: c.pagina, limite: c.limite,
-      linhas, resumo: completarResumoVendas(resumoRow)
+      linhas, resumo: completarResumoVendas({...resumoRow,...ordersRow})
     };
   }
   // ── /api/dataset — datasets do painel (ROWS/DETALHE/agregados) escopados por PONTO, janela de meses ──
@@ -530,6 +535,7 @@ const server = http.createServer(async (req, res) => {
     // ── GET da API ──
     if (req.method === "GET" && u.pathname.startsWith("/api/")) {
       if (AUTH_REQ && u.pathname !== "/api/health" && !user) return J(res, { erro: "não autenticado" }, 401);
+      if(u.pathname==="/api/vendas/exportar")return await vendasExportacao.enviar(req,res,dbx,Object.fromEntries(u.searchParams));
       // cache (gzip) das rotas pesadas, por escopo (perfil+gestor) — 1º acesso busca, demais são instantâneos
       const pesada = (u.pathname === "/api/dataset" || u.pathname === "/api/detalhe" || u.pathname === "/api/extras");
       const aceitaGz = /\bgzip\b/.test(String(req.headers["accept-encoding"] || ""));
