@@ -10,7 +10,7 @@ function catalogWhere(cap,query={}){
  if(query.q){if(query.match==='exact'){clauses.push('(p.sku_chave=? OR p.gtin=?)');args.push(D.skuKey(query.q),D.text(query.q,100));}
   else{clauses.push('(UPPER(p.sku) LIKE ? OR UPPER(p.nome) LIKE ? OR p.ncm LIKE ? OR UPPER(p.categoria) LIKE ? OR p.gtin LIKE ?)');args.push(...Array(5).fill(term(query.q)));}}
  if(query.ncm){if(!['missing','present'].includes(query.ncm))D.fail('Filtro de NCM inválido.');clauses.push(query.ncm==='missing'?"(p.ncm IS NULL OR p.ncm='')":"(p.ncm IS NOT NULL AND p.ncm<>'')");}
- if(query.logistica){if(!['conferida','a_conferir','incompleta','nao_informada'].includes(query.logistica))D.fail('Filtro de logística inválido.');clauses.push('p.logistica_estado=?');args.push(query.logistica);}
+ if(query.logistica){if(!['conferida','a_conferir','incompleta','nao_informada','pendentes'].includes(query.logistica))D.fail('Filtro de logística inválido.');if(query.logistica==='pendentes')clauses.push("COALESCE(p.logistica_estado,'')<>'conferida'");else{clauses.push('p.logistica_estado=?');args.push(query.logistica);}}
  if(query.pendencia){points.forEach(p=>D.scope(cap,p,true));
   if(!['todas','aguardando_custo','aguardando_vinculo','em_revisao','divergencia_legada','composicao_pendente','composicao_desatualizada'].includes(query.pendencia))D.fail('Pendência inválida.');
   clauses.push("EXISTS(SELECT 1 FROM prd_pendencias i WHERE i.produto_id=p.id AND i.estado='aberta'"+(query.pendencia==='todas'?'':" AND i.tipo=?")+')');

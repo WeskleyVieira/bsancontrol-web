@@ -20,18 +20,20 @@ function serveAsset(req,res,u){const file=files[u.pathname];if(!file)return fals
     'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' https: data:; base-uri 'none'; form-action 'self'; frame-ancestors 'self'"});
   res.end(fs.readFileSync(path.join(__dirname,'web',file[0])));return true;
 }
+function assertUserAccess(user,rest=''){if(!user)throw new ProdutoError('Entre para acessar Produtos.',401);
+      if(user.trocar_senha)throw new ProdutoError('Troque a senha inicial para acessar Produtos.',428);
+      if(user.efetivas&&user.efetivas['produtos.ver']!==true)throw new ProdutoError('Seu acesso não permite consultar Produtos.',403);
+      if(user.efetivas&&user.efetivas['produtos.custos.ver']!==true&&(/^\/(publicacoes|consumidores|apuracoes|conferencias|materiais|embalagens|entradas)(?:\/|$)/.test(rest)||/\/(composicao|vigencias|custo-na-data|custos)(?:\/|$)/.test(rest)))throw new ProdutoError('Acesso financeiro não autorizado.',403);
+}
 function createHttp({service,resolveUser}){
   return async function handle(req,res,u=new URL(req.url,'http://localhost')){
     if(serveAsset(req,res,u))return true;
     if(u.pathname!=='/api/produtos'&&!u.pathname.startsWith('/api/produtos/'))return false;
     try{
-      const user=await resolveUser(req);if(!user)throw new ProdutoError('Entre para acessar Produtos.',401);
-      if(user.trocar_senha)throw new ProdutoError('Troque a senha inicial para acessar Produtos.',428);
-      if(user.efetivas&&user.efetivas['produtos.ver']!==true)throw new ProdutoError('Seu acesso não permite consultar Produtos.',403);
-      const rest=u.pathname.slice('/api/produtos'.length),method=req.method;
-      if(user.efetivas&&user.efetivas['produtos.custos.ver']!==true&&(/^\/(publicacoes|consumidores|apuracoes|conferencias|materiais|embalagens|entradas)(?:\/|$)/.test(rest)||/\/(composicao|vigencias|custo-na-data|custos)(?:\/|$)/.test(rest)))throw new ProdutoError('Acesso financeiro não autorizado.',403);
+      const user=await resolveUser(req),rest=u.pathname.slice('/api/produtos'.length),method=req.method;assertUserAccess(user,rest);
       if(method==='GET'&&rest==='/publicacoes'){json(res,await service.publicationState(user,u.searchParams.get('ponto')));return true;}
       const publication=rest.match(/^\/publicacoes\/([\w-]+)\/arquivo$/);if(method==='GET'&&publication){json(res,await service.downloadPublication(user,publication[1]));return true;}
+      if(method==='GET'&&rest==='/resumo'){json(res,await service.summary(user,Object.fromEntries(u.searchParams)));return true;}
       if(method==='GET'&&rest==='/acesso'){json(res,await service.access(user));return true;}
       if(method==='GET'&&rest==='/acessos'){json(res,await service.adminAccess(user));return true;}
       if(method==='GET'&&rest==='/integracoes'){json(res,await service.syncOverview(user));return true;}
@@ -99,4 +101,4 @@ function createHttp({service,resolveUser}){
     return true;
   };
 }
-module.exports={createHttp,serveAsset,body,json};
+module.exports={createHttp,serveAsset,body,json,assertUserAccess};

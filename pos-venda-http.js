@@ -4,10 +4,12 @@ function createHttp(service){return async function(req,res,u,user){
  const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
  const path=u.pathname.replace('/api/pos-venda/',''),match=path.match(/^atendimentos\/([a-f\d-]{36})$/i);
  if(!user){send({erro:'Entre para acessar Pós-venda.'},401);return true;}
+ const context=path.match(/^atendimentos\/([a-f\d-]{36})\/contexto$/i);
  if(req.method==='GET'){
   if(path==='acessos')send(await service.accessState(user,u.searchParams.get('usuario_id')));
   else if(path==='config')send(await service.config(user));
   else if(path==='atendimentos')send(await service.list(user,Object.fromEntries(u.searchParams)));
+  else if(context)send(await service.context(user,context[1]));
   else if(match)send(await service.detail(user,match[1]));
   else send({erro:'Rota de Pós-venda não encontrada.'},404);
  }else if(req.method==='POST'&&(path==='acessos'||path==='atendimentos'||match)){

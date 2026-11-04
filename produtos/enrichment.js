@@ -12,5 +12,6 @@ function sanitizeDetails(value={}){
     fonte_coletada_em:validDate?new Date(rawDate).toISOString():null,logistica_origem:sanitizeLogistics(value.dimensoes??value.logistica_origem)};
 }
 async function operationalDetails(db,pid){const row=await db.get('SELECT dados,fonte,importado_em FROM prd_detalhes WHERE produto_id=?',[pid]);
-  if(!row)return null;const safe=sanitizeDetails(JSON.parse(row.dados));return {...safe,fonte:row.fonte,importado_em:row.importado_em};}
-module.exports={sanitizeDetails,operationalDetails};
+  return operationalDetailsValue(row);}
+function operationalDetailsValue(row){if(!row)return null;const safe=sanitizeDetails(JSON.parse(row.dados));return {...safe,fonte:row.fonte,importado_em:row.importado_em};}
+module.exports={sanitizeDetails,operationalDetails,operationalDetailsValue};

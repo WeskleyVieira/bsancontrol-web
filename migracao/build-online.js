@@ -350,7 +350,7 @@ fs.writeFileSync(path.join(OUT, "acompanhamento.html"), html);
 const copy = f => fs.copyFileSync(path.join(__dirname, f), path.join(OUT, f));
 fs.mkdirSync(path.join(OUT, "visual"), { recursive: true });
 for (const f of ["pendencias-modelo.js", "pendencias.js", "alinhamentos-modelo.js", "alinhamentos.js", "financeiro-leitura-modelo.js", "financeiro-leitura.js", "financeiro-leitura.css", "operacao-leitura-modelo.js", "resultados-leitura-modelo.js", "resultados-restauracao.css", "areas.js", "areas.css", "integrar.js"]) fs.copyFileSync(path.join(__dirname, "visual", f), path.join(OUT, "visual", f));
-copy("operacao-full.js"); copy("financeiro-consultas.js"); copy("alinhamentos-registros.js"); copy("alinhamentos-rodada.js"); copy("pendencias-leitura.js"); copy("api.js"); copy("dbx.js"); copy("auth.js"); copy("espelho-planilhas.js"); copy("lancamento.js"); copy("supabase-ca.pem"); copy("vendas-pagina.js"); copy("datasets-versionados.js"); copy("margens-modelo.js"); copy("margens-consultas.js");
+copy("operacao-full.js"); copy("financeiro-consultas.js"); copy("alinhamentos-registros.js"); copy("alinhamentos-rodada.js"); copy("pendencias-leitura.js"); copy("pos-venda-leitura.js"); copy("api.js"); copy("dbx.js"); copy("auth.js"); copy("espelho-planilhas.js"); copy("lancamento.js"); copy("supabase-ca.pem"); copy("vendas-pagina.js"); copy("datasets-versionados.js"); copy("margens-modelo.js"); copy("margens-consultas.js");
 fs.writeFileSync(path.join(OUT, "package.json"), JSON.stringify({
   name: "bsancontrol-web", private: true, version: "1.0.0",
   description: "BsanControl online (painel completo, API + login por perfil, escopo por ponto)",

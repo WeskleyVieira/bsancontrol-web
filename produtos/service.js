@@ -124,14 +124,12 @@ function createService(store,{listUsers,clock}={}) {
     syncOverview: user=>run(async db=>{const cap=await acl(db,user);if(!cap.admin)D.fail('Somente direção.',403);
       return {fontes:(await db.all('SELECT * FROM prd_integracoes ORDER BY chave')).map(r=>({...r,dados:JSON.parse(r.dados)})),
         cobertura:await db.all('SELECT e.conta,p.ponto,COUNT(*) AS quantidade,MAX(e.visto_em) AS importado_em FROM prd_erp e JOIN prd_produtos p ON p.id=e.produto_id GROUP BY e.conta,p.ponto ORDER BY e.conta')};}),
+    summary:(user,query={})=>run(async db=>require('./dashboard').summary(db,await acl(db,user),query.ponto)),
     list: (user,query={}) => run(async db => {
       const cap=await acl(db,user),{where,args}=catalogWhere(cap,query),{page,pageSize:size}=pagination(query);
       const total=Number((await db.get(`SELECT COUNT(*) AS n FROM prd_produtos p WHERE ${where}`,args)).n);
       const rows=await db.all(`SELECT p.* FROM prd_produtos p WHERE ${where} ORDER BY p.nome,p.id LIMIT ? OFFSET ?`,[...args,size,(page-1)*size]);
-      const items=[];
-      for(const r of rows){const x=D.operational(r),details=await operationalDetails(db,r.id);if(details)x.detalhes=details;if(cap.financeiro(r.ponto)){
-        x.custo=costPublic(await lastCost(db,r.id));if(x.custo)x.custo.recalculo_pendente=!!r.custo_recalcular;x.pendencias=await db.all("SELECT tipo,responsavel,criado_em FROM prd_pendencias WHERE produto_id=? AND estado='aberta' ORDER BY tipo",[r.id]);}
-        items.push(x);}
+      const items=await require('./dashboard').catalog(db,rows,cap,costPublic);
       return {items,total,page,pageSize:size};
     }),
     exportCatalog: (user,query={})=>run(async db=>{
