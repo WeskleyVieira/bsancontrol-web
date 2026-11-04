@@ -6917,7 +6917,7 @@ const BCAUTH = {
 };
 async function authFetch(url,opts){ opts=opts||{}; const h=Object.assign({},opts.headers||{}); const t=BCAUTH.token; if(t) h['Authorization']='Bearer '+t; opts.headers=h;
   const r=await fetch(url,opts);
-  if(r.status===401){ BCAUTH.clear(); try{bcRenderAuthBar();}catch(e){} bcShowLogin(true); throw new Error('sessão expirada'); }
+  if(r.status===401&&BCAUTH.token===t){ BCAUTH.clear(); try{bcRenderAuthBar();}catch(e){} bcShowLogin(true); throw new Error('sessão expirada'); }
   return r; }
 function bcAuthInjectCSS(){ if(document.getElementById('bc-auth-css'))return; const s=document.createElement('style'); s.id='bc-auth-css'; s.textContent=`
   #bc-login,#bc-trat,#bc-pwd,#bc-admin{position:fixed;inset:0;z-index:9999;background:rgba(8,12,20,.72);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px;font-family:'Inter',sans-serif}
