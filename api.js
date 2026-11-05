@@ -325,7 +325,7 @@ async function rotaGET(u, user) {
     const abertura = raw.map(v => {
       // mesma chave que o painel monta do DETALHE: pedido|sku|data|canal
       const o = { k: (v.pedido || "") + "|" + (v.sku || "") + "|" + v.data + "|" + (v.canal || "") };
-      for (const [curta, col] of PAR) { const x = r2(v[col]); if (x) o[curta] = x; }
+      for (const [curta, col] of PAR) { if(v[col]==null||v[col]===''){o[curta]=null;continue;} const x = r2(v[col]); if (x) o[curta] = x; }
       if (v.forma_entrega) o.ent = v.forma_entrega;
       if (v.veio_de_ads) o.ads = v.veio_de_ads;
       return o;
