@@ -29,6 +29,7 @@ const financeiroConsultas = require('./financeiro-consultas');
 const gerencialRaiox = require('./gerencial-raiox');
 const vendasRaiox = require('./vendas-raiox');
 const margensConsultas = require('./margens-consultas');
+const publicidadeConsultas = require('./publicidade-consultas');
 const vendasExportacao = require('./vendas-exportacao');
 const posVenda = require('./pos-venda').createService(dbx);
 const posVendaHttp = require('./pos-venda-http').createHttp(posVenda);
@@ -108,6 +109,7 @@ async function rotaGET(u, user) {
   const q = Object.fromEntries(u.searchParams);
   if (u.pathname === '/api/financeiro/dre') return financeiroConsultas.dre(dbx, q);
   if (u.pathname === '/api/margens') return margensConsultas.carregar(dbx, q, user);
+  if (u.pathname === '/api/publicidade/resumo') return publicidadeConsultas.carregar(dbx, q, user);
   if (u.pathname === '/api/resultados/resumo') return resultadosConsultas.resumo(dbx, q);
   if (u.pathname === '/api/resultados/skus') return resultadosConsultas.skus(dbx, q);
   if (u.pathname === '/api/operacao/full') return require('./operacao-full').read(dbx, q);
@@ -381,7 +383,7 @@ async function rotaGET(u, user) {
     const t0 = Date.now();
     const dsr = await dbx.all("SELECT nome, json, atualizado FROM datasets");
     const got = {};
-    for (const r of dsr) { try { got[r.nome] = JSON.parse(r.json); } catch (e) {} }
+    for (const r of dsr) { if(r.nome==='publicidadeMetas')continue; try { got[r.nome] = JSON.parse(r.json); } catch (e) {} }
     got._versions = {};
     for (const tipo of ["envios", "custos", "comissao"]) if (user && lancamento.podeLancar(user.perfil, tipo)) got._versions[tipo] = writeStore.versao(tipo, dsr.find(r => r.nome === tipo) || null);
     // Metas usa o vínculo atual do servidor, em vez do mapa estático da página.
@@ -481,6 +483,10 @@ const server = http.createServer(async (req, res) => {
       return J(res, { ok: true, token, usuario: us });
     }
     // ── POST /api/tratativas (gestor registra; calcula reação) ──
+    if(req.method==='POST'&&u.pathname==='/api/publicidade/metas'){
+      if(!user||!acessos.rota(user,'POST',u.pathname))return J(res,{erro:'Seu acesso não permite definir metas de publicidade.'},403);
+      const out=await publicidadeConsultas.salvarMeta(dbx,await body(req),user);_gzCache.clear();return J(res,out);
+    }
     if (req.method === "POST" && u.pathname === "/api/tratativas") {
       if (AUTH_REQ && !user) return J(res, { ok: false, erro: "não autenticado" }, 401);
       const o = await body(req);

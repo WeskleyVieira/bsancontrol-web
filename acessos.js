@@ -43,6 +43,8 @@
   if(['/api/abertura','/api/historico','/api/equipe'].includes(path))return pode(user,'gestao.ver')||pode(user,'acompanhamento.ver');
   if(['/api/vendas/raiox','/api/vendas/exportar','/api/margens'].includes(path))return method==='GET'&&pode(user,'vendas.ver');
   if(path==='/api/gerencial/raiox')return method==='GET'&&pode(user,'gestao.ver');
+  if(path==='/api/publicidade/resumo')return method==='GET'&&pode(user,'gestao.ver');
+  if(path==='/api/publicidade/metas')return method==='POST'&&user?.perfil==='direcao'&&pode(user,'gestao.ver');
   if(path==='/api/demandas')return pode(user,'acompanhamento.ver');
   if(['/api/resultados/resumo','/api/resultados/skus'].includes(path))return method==='GET'&&pode(user,'vendas.ver');
   if(path==='/api/financeiro/dre')return method==='GET'&&pode(user,'dre.ver');
@@ -55,6 +57,7 @@
   return path==='/api/extras';
  }
  function filtrarExtras(data,user){const d={...data,_versions:{...data._versions}},can=k=>pode(user,k),remove=keys=>keys.forEach(k=>delete d[k]);
+  delete d.publicidadeMetas; // Revisões financeiras saem apenas pela consulta autorizada de Publicidade.
   if(!can('dre.ver'))remove(['custos']);if(!can('dre.lancar'))delete d._versions.custos;
   if(!can('envios.ver'))remove(['envios']);if(!can('envios.lancar'))delete d._versions.envios;
   if(!can('estoque.ver'))remove(['estoque','fullRel']);
