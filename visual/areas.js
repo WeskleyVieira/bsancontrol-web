@@ -182,7 +182,7 @@ function bcGroupedRefresh(){
  bcChromeText(document.getElementById('bc-group-section-label'),aria);bcNavOptions(document.getElementById('bc-group-section'),group.items.filter(i=>!i.disabled).map(i=>[i.id,i.label]),item.id);
  bcChromeText(document.getElementById('bc-page-title'),item.label);bcChromeText(document.getElementById('bc-breadcrumb'),'Grupo Bsan / '+group.label+(single?'':' / '+item.label));
  // Counts remain those computed by Acompanhamento's existing filters.
- if(group.id==='acompanhamento')for(const key of ['tarefas','promos','ads']){const old=document.querySelector('#a2-sub button[data-work="'+key+'"] .a2-subn')||document.querySelector('#a2-sub button[onclick*="'+key+'"] .a2-subn'),button=secondary.querySelector('[data-section="'+(key==='ads'?'ac-ads':key)+'"]');if(old&&button){let badge=button.querySelector('small');if(!badge){badge=document.createElement('small');button.append(badge);}bcChromeText(badge,old.textContent);}}
+ if(group.id==='acompanhamento')for(const key of ['tarefas','promos','ads','alinhamentos','pendencias']){const old=document.querySelector('#a2-sub button[data-work="'+key+'"] .a2-subn')||document.querySelector('#a2-sub button[onclick*="'+key+'"] .a2-subn'),button=secondary.querySelector('[data-section="'+(key==='ads'?'ac-ads':key)+'"]');if(old&&button){let badge=button.querySelector('small');if(!badge){badge=document.createElement('small');button.append(badge);}bcChromeText(badge,old.textContent);}}
  }finally{BCGroup.busy=false;}
 }
 
