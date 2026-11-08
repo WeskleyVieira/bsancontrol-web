@@ -8,7 +8,7 @@ Canvas usa densidade de pelo menos 2x e texto de tamanho definido, preservando o
 
 O índice ponderado é apresentado como Pontos (0–100), com arredondamento aplicado à pontuação e ao ranking: empates nos pontos exibidos têm a mesma posição. Pesos, normalização, tratamento da origem e cálculos financeiros preservados; precisão anterior fica disponível internamente como scoreExact. CSV exporta pontos inteiros.
 
-Validação: 578 testes passam; sete scripts inline compilam; integração idempotente. Inspeção no frontend real com respostas sintéticas: pontos inteiros, 14 contas identificadas (incluindo Shein), ampliação nítida, lista numérica em 620px, soma do SKU CORTADOR em duas operações, margens/TACOS coloridos, Top 10 e detalhes, e resumo do Panorama após carregamento assíncrono. Reversão pelo revert desta entrega e regeneração do HTML.
+Validação: 580 testes passam; sete scripts inline compilam; integração idempotente. Inspeção no frontend real com respostas sintéticas: pontos inteiros, 14 contas identificadas (incluindo Shein), ampliação nítida, lista numérica em 620px, soma do SKU CORTADOR em duas operações, margens/TACOS coloridos, Top 10 e detalhes, e resumo do Panorama após carregamento assíncrono. Reversão pelo revert desta entrega e regeneração do HTML.
 
 ## Marketplaces, Curva ABC e Forecast
 - Gráficos de canais usam diário em até 62 dias, semanal em até 186 dias e mensal acima disso, com escolha manual. Um único intervalo vira barras comparativas. Meses selecionados parcialmente são marcados.
@@ -30,3 +30,10 @@ Validação: 578 testes passam; sete scripts inline compilam; integração idemp
 - Sem gravação de vendas, custos, tarefas, metas ou usuários. Sem alteração das regras de cálculo, limites de metas, publicidade ou afiliados. Pontos são um índice ponderado gerencial, não avaliação individual do gestor.
 - Carga por SKU e acesso continuam limitados ao escopo autorizado. Nenhuma operação é aberta por fora dos filtros ou permissões.
 - Validar a nomenclatura e o uso cotidiano com a equipe continua necessário; esta entrega corrige a apresentação e mantém as fontes e tratativas existentes.
+
+## Referência de Anúncios e Diagnóstico
+- A comparação interna deixou de depender do interruptor global: usa `_gerAnterior` quando não há comparação escolhida, mantendo o mesmo calendário do Panorama e da janela de carga. Mês completo compara com mês anterior completo; intervalo parcial compara com o anterior de mesma duração. A referência aparece no contexto.
+- Ranking permanece por faturamento da operação inteira, antes dos filtros; ↑, ↓ e = comparam posições. Tração mantém as regras existentes (crescimento >40% com atual >R$200 e referência positiva; queda >30% com referência >R$200), separada da posição relativa.
+- Filtros de tração ficam visíveis mesmo com zero; a agenda oferece dois acessos diretos. Zero não desaparece e falta de referência não é estabilidade.
+- Anúncios mostra todos os itens por padrão. Seleção opcional de 50, 100 ou 250 itens permite dividir listas maiores; totais, filtros e CSV continuam usando a lista inteira.
+- Regressão executa o contexto real sem comparação global e confirma altas/baixas no ranking e sinais de tração; referência personalizada tem prioridade. Frontend sintético confirmou 3 altas, 2 quedas, 1 empate, 1 sem referência, três itens perdendo tração e um ganhando, com abertura dos grupos.
