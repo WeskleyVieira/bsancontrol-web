@@ -34,8 +34,36 @@
  }
  function csv(headers,rows){const cell=v=>{if(v&&typeof v==='object'&&Object.hasOwn(v,'number'))return v.number==null||!Number.isFinite(+v.number)?'':Number(v.number).toFixed(v.digits??2);let s=v==null?'':String(v);if(/^[\s]*[=+\-@]/.test(s)&&typeof v!=='number')s="'"+s;return /[";\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};return '\uFEFF'+[headers,...rows].map(r=>r.map(cell).join(';')).join('\r\n');}
  function pagina(rows,page=0,size=50){const pages=Math.max(1,Math.ceil(rows.length/size)),index=Math.max(0,Math.min(Math.floor(Number(page)||0),pages-1));return{page:index,pages,total:rows.length,rows:rows.slice(index*size,(index+1)*size)};}
- function situacaoBase(o){if(o.adsMissing)return{key:'ads-pendente',label:'Ads pendente',tone:'attention'};const p=o.pctAfter;if(p==null)return{key:'sem-base',label:'Sem base',tone:'neutral'};if(p<0)return{key:'prejuizo',label:'Prejuízo',tone:'bad'};if(p<10)return o.abc==='C'?{key:'peso',label:'Peso morto',tone:'attention'}:{key:'corrigir',label:'Corrigir',tone:'attention'};if(p<20)return{key:'estavel',label:'Estável',tone:'info'};return o.abc==='A'?{key:'estrela',label:'Estrela',tone:'good'}:o.abc==='B'?{key:'escalar',label:'Escalar',tone:'info'}:{key:'nicho',label:'Nicho',tone:'accent'};}
+ const informado=v=>v!=null&&v!==''&&Number.isFinite(+v);
+ function situacaoBase(o){if(o.adsMissing)return{key:'ads-pendente',label:'Ads pendente',tone:'attention'};const p=o.pctAfter;if(informado(o.after)&&o.after<0||informado(p)&&p<0)return{key:'prejuizo',label:'Prejuízo',tone:'bad'};if(!informado(p))return{key:'sem-base',label:'Sem base',tone:'neutral'};if(p<10)return o.abc==='C'?{key:'peso',label:'Peso morto',tone:'attention'}:{key:'corrigir',label:'Corrigir',tone:'attention'};if(p<20)return{key:'estavel',label:'Estável',tone:'info'};return o.abc==='A'?{key:'estrela',label:'Estrela',tone:'good'}:o.abc==='B'?{key:'escalar',label:'Escalar',tone:'info'}:{key:'nicho',label:'Nicho',tone:'accent'};}
  function situacao(o){const s=situacaoBase(o);return o.estimated?{...s,label:s.label+' · estimado',tone:s.tone==='good'?'attention':s.tone}:s;}
+ // A agenda e Anúncios classificam a mesma composição, sem recalcular ou descontar Ads.
+ function agenda(items,{novo=()=>false}={}){
+  const keys=['estanca','adscome','corrija','queima','proteja','escale','escondido','maturacao','peso','cobertura','base'],BK=Object.fromEntries(keys.map(k=>[k,[]]));
+  const atual=items.map(item=>{
+   const o={...item,k:item.key,tit:item.titulo,aF:item.abc,mcp:item.pctPre,mcpPos:item.pctAfter,adsInv:item.inv,adsRec:item.rec,antFat:item.change?money(item.fat-item.change.fat):null},s=situacao(o);
+   o.situacao=s;o.causaPerda=s.key==='prejuizo'?(informado(o.pre)?o.pre<0?'produto':'publicidade':'a-conferir'):null;
+   o.adsCabe=informado(o.pre)&&o.base>0?money(Math.max(0,o.pre-o.base*.10)):null;
+   o.adsCorte=informado(o.inv)&&o.adsCabe!=null?money(Math.max(0,o.inv-o.adsCabe)):null;
+   o.roasAlvo=o.adsCabe>0.01&&o.adsCabe>=.25*o.inv&&o.rec>0?o.rec/o.adsCabe:null;
+   let bucket=null;
+   if(s.key==='ads-pendente'||!informado(o.after))bucket='cobertura';
+   else if(s.key==='prejuizo')bucket='estanca';
+   else if(s.key==='sem-base')bucket='base';
+   else if(o.pctAfter<10){
+    if(informado(o.pctPre)&&o.pctPre>=10&&o.inv>0)bucket='adscome';
+    else bucket=o.abc==='C'?(novo(o.sku)?'maturacao':'peso'):'corrija';
+   }else if(sinaisProduto({...o,pct:o.pctPre}).queima){bucket='queima';o.histSaud=o.history;}
+   else if(s.key==='estrela')bucket='proteja';
+   else if(s.key==='escalar')bucket='escale';
+   else if(s.key==='nicho')bucket='escondido';
+   o.bucket=bucket;if(bucket)BK[bucket].push(o);return o;
+  });
+  const pot=o=>informado(o.pre)&&o.base>0?money(Math.max(0,o.base*.20-o.pre)):null;
+  const qmLoss=o=>informado(o.histSaud)&&informado(o.pctPre)&&o.base>0?money(Math.max(0,o.base*(o.histSaud-o.pctPre)/100)):null;
+  const sum=(list,value)=>money(list.reduce((s,o)=>s+(value(o)??0),0));
+  return{atual,BK,pot,qmLoss,perdendo:atual.filter(o=>sinaisProduto(o).perdendo),ganhando:atual.filter(o=>sinaisProduto(o).ganhando),totPrej:sum(BK.estanca,o=>o.after),totPot:sum(BK.corrija,pot),totQueima:sum(BK.queima,qmLoss),totAdsCorte:sum(BK.adscome,o=>o.adsCorte)};
+ }
  // Referências de priorização do modelo antigo; não alteram metas nem a fila publicada.
  function sinaisProduto(o){return{perdendo:!!o.change&&o.fat>0&&o.fat-o.change.fat>200&&o.fat<(o.fat-o.change.fat)*.7,ganhando:!!o.change&&o.fat-o.change.fat>0&&o.fat>200&&o.fat>(o.fat-o.change.fat)*1.4,queima:['A','B'].includes(o.abc)&&o.history!=null&&o.pct>=10&&o.pct<o.history-5};}
  function acaoPublicidade(o){
@@ -52,5 +80,5 @@
   for(const r of rows){const k=JSON.stringify([r.emp,r.mkt]);if(!ops.has(k))ops.set(k,[]);ops.get(k).push(r);if(!days.has(r.date))days.set(r.date,[]);days.get(r.date).push(r);}
   return{titulo:rows.find(r=>r.titulo)?.titulo||sku,resumo,serie:[...days].map(([date,rs])=>({date,...raioSoma(rs)})).sort((a,b)=>a.date.localeCompare(b.date)),operacoes:[...ops.values()].map(rs=>({emp:rs[0].emp,mkt:rs[0].mkt,...raioSoma(rs)})).sort((a,b)=>b.mc-a.mc),comparacao:{pares:others.length,referencia:ref,deltaPP:resumo.pct!=null&&ref.pct!=null?resumo.pct-ref.pct:null,posicao:resumo.n&&resumo.base>0?1+others.filter(r=>100*r.mc/r.base>resumo.pct+1e-9).length:null,total:others.length+(resumo.n?1:0),parteMargem:ref.mc+resumo.mc>0?100*resumo.mc/(ref.mc+resumo.mc):null}};
  }
- return{orientacao,pagina,publicidade,grupos,comparar,diagnostico,desempenhoPublicidade,full,csv,affiliate,fin,inside,ratio,situacao,sinaisProduto,acaoPublicidade,raiox,raioSoma};
+ return{orientacao,pagina,publicidade,grupos,comparar,diagnostico,desempenhoPublicidade,full,csv,affiliate,fin,inside,ratio,situacao,agenda,sinaisProduto,acaoPublicidade,raiox,raioSoma};
 });
