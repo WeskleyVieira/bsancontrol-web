@@ -1,5 +1,5 @@
 /* Grupo Bsan: contrato de leitura. Fontes alternativas e estados não são parcelas. */
-(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.BCPublicidadeModelo=api;})(typeof window==='object'?window:this,function(){
+(function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./publicidade-cobertura'):root.BCPublicidadeCobertura);if(typeof module==='object'&&module.exports)module.exports=api;else root.BCPublicidadeModelo=api;})(typeof window==='object'?window:this,function(P){
  'use strict';
  const number=v=>v===null||v===undefined||typeof v==='boolean'||String(v).trim()===''||!Number.isFinite(+v)?null:+v;
  const money=v=>v==null?null:Math.round((v+Number.EPSILON)*100)/100;
@@ -41,6 +41,7 @@
    else if(daily.size){paid=metric(sum([...daily.values()],'inv'),'adsDia','data_venda',daily.size===dates.length?'diário informado':'diário com lacunas');paidRevenue=[...daily.values()].every(r=>r.recKnown)?sum([...daily.values()],'rec'):null;}
    else if(full&&alternatives.length){const v=alternatives[0];paid=metric(v.inv,v.source,'competencia','mensal informado');paidRevenue=v.rec;}
    else if(full&&(number(det.Ads_relatorio)!=null||number(legacy.ads)!=null)){paid=metric(number(det.Ads_relatorio)??number(legacy.ads),'apuração mensal','competencia','mensal legado');}
+   else if(!alternatives.length&&number(det.Ads_relatorio)==null&&number(legacy.ads)==null&&P?.semAds(o.emp,o.mkt,o.month))paid=metric(0,'declaração da Direção','data_venda','sem Ads confirmado');
    else paid=metric(null,'não disponível',full?'competencia':'data_venda','pendente');
    // Não interpretar Ads_real (total histórico) como mídia exclusiva.
    let selected=metric(null,'não disponível','data_venda','pendente');
@@ -53,7 +54,7 @@
    const goal=goals.filter(g=>g.emp===o.emp&&g.mkt===o.mkt&&g.mes===o.month).sort((a,b)=>b.revision-a.revision)[0]||null;
    let ap=0,aa=0,prefixPaid=0,prefixAf=0,prefixTotal=0,prefixFat=0;
    const serie=dates.map(date=>{const rs=sales.filter(r=>r.date===date),revenue=rs.length?sum(rs,'fat'):null;
-    const media=embedded?(rs.length&&rs.every(r=>!+r.pubMissing)?money(-sum(rs,'pub')):null):daily.get(date)?.inv??null;
+    const media=embedded?(rs.length&&rs.every(r=>!+r.pubMissing)?money(-sum(rs,'pub')):null):daily.get(date)?.inv??(paid.status==='sem Ads confirmado'?0:null);
     const affiliates=selected.source==='vendas.afiliados'?(rs.length&&rs.every(r=>!+r.afilMissing)?money(-sum(rs,'afil')):null):afDaily.get(date)??null;
     const all=media!=null&&affiliates!=null?money(media+affiliates):null;
     prefixFat+=revenue??0;prefixPaid+=media??0;prefixAf+=affiliates??0;prefixTotal+=all??0;ap+=media==null;aa+=affiliates==null;

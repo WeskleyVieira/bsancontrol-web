@@ -1,5 +1,5 @@
 /* Composição gerencial de margem. Rateio de Ads mensal não é custo identificado por pedido. */
-(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.BCMargensModelo=api;})(typeof window==='object'?window:this,function(){
+(function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./publicidade-cobertura'):root.BCPublicidadeCobertura);if(typeof module==='object'&&module.exports)module.exports=api;else root.BCMargensModelo=api;})(typeof window==='object'?window:this,function(P){
  'use strict';
  const n=v=>Number.isFinite(Number(v))?Number(v):0,round=v=>Math.round((n(v)+Number.EPSILON)*100)/100,key=(...v)=>JSON.stringify(v),pct=(a,b)=>a!=null&&b>0?100*a/b:null;
  const embedded=m=>/tik\s*tok/i.test(m),affiliate=r=>/afiliad|\bCVAF\b/i.test(String(r.fonte||'')+' '+String(r.campanha||''));
@@ -8,16 +8,16 @@
  function compose(rows=[]){
   if(!rows.length)return{fat:0,liq:0,mc:0,base:0,qtd:0,n:0,pre:null,ads:null,after:null,pctPre:null,pctAfter:null,tacos:null,missing:true,estimated:false,coverage:'Sem dados',tone:'neutral'};
   const sum=k=>round(rows.reduce((s,r)=>s+n(r[k]),0)),fat=sum('fat'),liq=sum('liq'),mc=sum('mc'),base=sum('base'),pub=sum('embeddedAds'),extra=sum('extra'),missing=rows.some(r=>r.missing),estimated=rows.some(r=>r.estimated),embeddedMissing=rows.some(r=>r.embeddedMissing),available=round(mc-extra),pre=embeddedMissing?null:round(mc+pub),ads=missing||embeddedMissing?null:round(pub+extra),after=missing||embeddedMissing?null:available;
-  const modes=[...new Set(rows.flatMap(r=>r.modes||[]))],coverage=missing||embeddedMissing?'Ads pendente':estimated?(modes.includes('sem-vinculo')?'Estimado · inclui Ads sem vínculo':'Estimado · rateio mensal'):modes.includes('liquido')?'Ads já no líquido':'Zero registrado';
+  const modes=[...new Set(rows.flatMap(r=>r.modes||[]))],coverage=missing||embeddedMissing?'Ads pendente':estimated?(modes.includes('sem-vinculo')?'Estimado · inclui Ads sem vínculo':'Estimado · rateio mensal'):modes.includes('liquido')?'Ads já no líquido':modes.includes('sem-ads-confirmado')?'Sem Ads confirmado':'Zero registrado';
   return{fat,liq,mc,base,qtd:sum('qtd'),n:sum('n'),ctp:sum('ctp'),ctpMissing:sum('ctpMissing'),custoUn:sum('ctpMissing')||!sum('qtd')?null:sum('ctp')/sum('qtd'),pre,ads,extra,embeddedAds:pub,after,available,pctPre:pct(pre,base),pctAfter:after==null?null:pct(after,base),tacos:ads==null?null:pct(ads,fat),adsUn:ads==null?null:rows.reduce((s,r)=>s+n(r.qtd),0)>0?ads/sum('qtd'):null,mcUn:after==null?null:sum('qtd')>0?after/sum('qtd'):null,missing:missing||embeddedMissing,estimated,modes,coverage,tone:(after??available)<0?'bad':missing||embeddedMissing||estimated?'attention':'good'};
  }
- function allocate(input,{ads=[],camp=[],dia=[]}={}){
+ function allocate(input,{ads=[],camp=[],dia=[],cobertura=P?.declaracoes||[]}={}){
   const months=new Map(),out=[],lookup=new Map(),rowKey=r=>key(r.emp,r.mkt,r.date,r.ponto||'',r.sku||'',r.anuncio||'');
   for(const r of input){const row={...r,date:String(r.date).slice(0,10),extra:0,embeddedAds:embedded(r.mkt)?-n(r.pub):0,embeddedMissing:embedded(r.mkt)&&n(r.pubMissing)>0,missing:false,estimated:false,modes:embedded(r.mkt)?['liquido']:[]};out.push(row);lookup.set(rowKey(row),row);if(embedded(r.mkt))continue;const k=key(r.emp,r.mkt,row.date.slice(0,7));if(!months.has(k))months.set(k,{rows:[],ads:[],camp:[],dia:[]});months.get(k).rows.push(row);}
   const unallocated=[];out.unallocated=unallocated;
   for(const[field,list]of [['ads',ads],['camp',camp],['dia',dia]])for(const r of list){if(embedded(r.mkt)||affiliate(r))continue;const month=String(field==='dia'?r.data:r.comp).slice(0,7),k=key(r.emp,r.mkt,month);if(!months.has(k)&&field!=='dia')months.set(k,{rows:[],ads:[],camp:[],dia:[]});if(months.has(k))months.get(k)[field].push(r);}
   for(const[k,m]of months){const[emp,mkt]=JSON.parse(k),monthly=m.ads.length||m.camp.length,totalAd=round(m.ads.reduce((s,r)=>s+n(r.inv),0)),totalCamp=round(m.camp.reduce((s,r)=>s+n(r.inv),0)),total=Math.max(totalAd,totalCamp),reports=new Map();
-   if(!monthly){for(const r of m.rows){r.missing=true;r.modes.push('ausente');}continue;}
+   if(!monthly){const zero=P?.semAds(emp,mkt,JSON.parse(k)[2],cobertura)&&!m.dia.some(r=>n(r.inv)!==0);for(const r of m.rows){r.missing=!zero;r.modes.push(zero?'sem-ads-confirmado':'ausente');}continue;}
    if(!m.rows.length){if(total>0)unallocated.push({emp,mkt,month:JSON.parse(k)[2],inv:total,motivo:'Publicidade sem vendas no mês para vincular a SKU, ponto e data'});continue;}
    if([...m.ads,...m.camp].some(r=>n(r.inv)<0)){for(const r of m.rows){r.missing=true;r.modes.push('valor-invalido');}continue;}
    if(total>0)for(const r of m.rows){r.estimated=true;r.modes.push('rateio-mensal');}

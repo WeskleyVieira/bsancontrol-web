@@ -1,4 +1,4 @@
-(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.BCResumos=api;})(typeof window==='object'?window:this,function(){
+(function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('../publicidade-cobertura'):root.BCPublicidadeCobertura);if(typeof module==='object'&&module.exports)module.exports=api;else root.BCResumos=api;})(typeof window==='object'?window:this,function(P){
  'use strict';const key=(emp,mkt)=>JSON.stringify([emp,mkt]);
  function variacao(atual,anterior,presente){if(!presente||atual==null||anterior==null)return null;return{valor:atual-anterior,percentual:anterior===0?null:(atual-anterior)/Math.abs(anterior)*100};}
  const amount=v=>Math.round((Number(v)||0)*100)/100;
@@ -46,10 +46,10 @@
   const eligible=a=>a.emp===emp&&a.mkt===mkt&&!/afiliad/i.test(String(a.fonte||'')+' '+String(a.campanha||'')),months=[];
   let d=new Date(from.slice(0,7)+'-01T12:00:00Z');const end=to.slice(0,7);for(let i=0;i<240&&d.toISOString().slice(0,7)<=end;i++){months.push(d.toISOString().slice(0,7));d.setUTCMonth(d.getUTCMonth()+1);}
   const meses=months.map(m=>{const records=dia.filter(a=>eligible(a)&&String(a.data||'').slice(0,7)===m),days=[...new Set(records.map(a=>String(a.data).slice(0,10)))].filter(v=>v>=from&&v<=to).sort(),monthly=[...ads,...camp].some(a=>eligible(a)&&String(a.comp||'').slice(0,7)===m),weights=records.reduce((n,a)=>n+(+a.inv||0),0)>0;
-   return{mes:m,registrado:monthly,modo:!monthly?'ausente':weights?'pesos-diarios':'rateio-faturamento',dias:days.length,primeiro:days[0]||null,ultimo:days.at(-1)||null};});
+   const zero=!monthly&&!weights&&P?.semAds(emp,mkt,m);return{mes:m,registrado:monthly||!!zero,modo:zero?'sem-ads-confirmado':!monthly?'ausente':weights?'pesos-diarios':'rateio-faturamento',dias:days.length,primeiro:days[0]||null,ultimo:days.at(-1)||null};});
   const missing=meses.filter(m=>!m.registrado).map(m=>m.mes),daily=meses.filter(m=>m.modo==='pesos-diarios').length,rateio=meses.filter(m=>m.modo==='rateio-faturamento').length;
-  const texto=missing.length?'Sem registro adicional de Ads em '+missing.join(', ')+'. Ausência de registro não confirma gasto zero.':daily&&rateio?'Ads mensal distribuído por pesos diários em parte dos meses e por faturamento nos demais.':daily?'Ads mensal distribuído pelos pesos da série diária disponível; o valor exibido por dia é uma alocação do total mensal.':'Ads mensal distribuído pelo faturamento de cada dia; o valor diário é um rateio.';
-  return{tipo:missing.length?'incompleto':daily&&rateio?'misto':daily?'diario':'rateio',faltantes:missing,meses,completude:'nao-informada',texto:texto+' A carga não comprova cobertura completa da coleta. Afiliados já incluídos no líquido não são descontados novamente.'};
+  const semAds=meses.filter(m=>m.modo==='sem-ads-confirmado');const texto=semAds.length===meses.length?'Sem Ads confirmado nas competências consultadas: o Pós-Ads é igual ao Pré-Ads.':missing.length?'Sem registro adicional de Ads em '+missing.join(', ')+'. Ausência de registro não confirma gasto zero.':daily&&rateio?'Ads mensal distribuído por pesos diários em parte dos meses e por faturamento nos demais.':daily?'Ads mensal distribuído pelos pesos da série diária disponível; o valor exibido por dia é uma alocação do total mensal.':'Ads mensal distribuído pelo faturamento de cada dia; o valor diário é um rateio.';
+  return{tipo:missing.length?'incompleto':semAds.length===meses.length?'sem-ads':daily&&rateio?'misto':daily?'diario':'rateio',faltantes:missing,meses,completude:'nao-informada',texto:texto+' A carga não comprova cobertura completa da coleta. Afiliados já incluídos no líquido não são descontados novamente.'};
  }
  return{variacao,overview,sinaisOverview,evolucao,depoisAds,pedidos,anuncios,meta,coberturaAds,key};
 });
