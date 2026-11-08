@@ -24,6 +24,7 @@
   return{titulo:String(o.titulo||o.tit||skus[0]||o.anuncio||'Item sem título'),skus,anuncios:unique(modo==='sku'?(o.anuncios||[]):[o.anuncio])};
  }
  function tomMargem(valor,percentual){if(valor==null||valor===''||!Number.isFinite(+valor))return'neutral';if(+valor<0)return'bad';if(percentual==null||percentual===''||!Number.isFinite(+percentual))return'neutral';return +percentual<10?'bad':+percentual<20?'attention':'good';}
+ function tomTacos(percentual){if(percentual==null||percentual===''||!Number.isFinite(+percentual))return'neutral';return +percentual<3?'good':+percentual<5?'attention':'bad';}
  function coberturaProduto(o){return{label:o.adsMissing?'Ads pendente':o.estimated?'Rateio estimado':o.coverage==='Sem Ads confirmado'?'Sem Ads confirmado':'Ads apurado',tone:o.adsMissing||o.estimated?'attention':'neutral',detalhe:String(o.coverage||'Origem da publicidade não informada')};}
  function comparar(current,previous){const map=new Map(previous.map(o=>[o.key,o]));return current.map(o=>{const p=map.get(o.key);return{...o,change:p?{fat:money(o.fat-p.fat),mc:money(o.mc-p.mc),pct:o.pct!=null&&p.pct!=null?o.pct-p.pct:null}:null};});}
  // Posição por faturamento positivo, com empates em centavos: 1º, 1º, 3º.
@@ -140,5 +141,5 @@
   for(const r of rows){const k=JSON.stringify([r.emp,r.mkt]);if(!ops.has(k))ops.set(k,[]);ops.get(k).push(r);if(!days.has(r.date))days.set(r.date,[]);days.get(r.date).push(r);}
   return{titulo:rows.find(r=>r.titulo)?.titulo||sku,resumo,serie:[...days].map(([date,rs])=>({date,...raioSoma(rs)})).sort((a,b)=>a.date.localeCompare(b.date)),operacoes:[...ops.values()].map(rs=>({emp:rs[0].emp,mkt:rs[0].mkt,...raioSoma(rs)})).sort((a,b)=>b.mc-a.mc),comparacao:{pares:others.length,referencia:ref,deltaPP:resumo.pct!=null&&ref.pct!=null?resumo.pct-ref.pct:null,posicao:resumo.n&&resumo.base>0?1+others.filter(r=>100*r.mc/r.base>resumo.pct+1e-9).length:null,total:others.length+(resumo.n?1:0),parteMargem:ref.mc+resumo.mc>0?100*resumo.mc/(ref.mc+resumo.mc):null}};
  }
- return{orientacao,pagina,publicidade,grupos,identidadeProduto,tomMargem,coberturaProduto,rankingProdutos,variacaoMargemPre,evolucaoProdutos,comparar,diagnostico,desempenhoPublicidade,full,csv,affiliate,fin,inside,ratio,situacao,agenda,agendaGrupos,recorteAgenda,sinaisProduto,acaoPublicidade,revisaoProduto,raiox,raioSoma};
+ return{orientacao,pagina,publicidade,grupos,identidadeProduto,tomMargem,tomTacos,coberturaProduto,rankingProdutos,variacaoMargemPre,evolucaoProdutos,comparar,diagnostico,desempenhoPublicidade,full,csv,affiliate,fin,inside,ratio,situacao,agenda,agendaGrupos,recorteAgenda,sinaisProduto,acaoPublicidade,revisaoProduto,raiox,raioSoma};
 });

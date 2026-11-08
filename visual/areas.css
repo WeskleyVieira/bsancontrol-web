@@ -161,3 +161,11 @@ body.bc-shell :is(.sum-card,.bc-metric)[data-bc-result=info]{--bc-result-color:v
 body.bc-shell :is(.sum-value,.bc-metric-value)[data-bc-result]{font-weight:700!important;font-variant-numeric:tabular-nums}
 body.bc-shell :is(td,dd)[data-bc-result=bad]{font-weight:650}
 body.bc-shell :is(.sum-signal,.op-signal)[data-tone=bad],body.bc-shell .op-signal.op-bad{border-color:color-mix(in srgb,var(--bc-bad) 50%,var(--bc-border));background:color-mix(in srgb,var(--bc-bad) 7%,var(--bc-surface))}
+
+/* Cabeçalho uniforme, inclusive com ordenação; a coluna fixa não se mistura à rolagem. */
+body.bc-shell .bc-area table{border-collapse:separate!important;border-spacing:0!important}
+body.bc-shell .bc-area table thead th{vertical-align:middle!important;box-sizing:border-box;min-height:56px;height:56px;padding:8px 14px!important;line-height:1.4!important;border-bottom:1px solid var(--bc-border);background:var(--bc-raised)!important}
+body.bc-shell .bc-area table thead th>button{display:inline-flex;align-items:center;justify-content:inherit;gap:5px;min-height:38px;padding-block:4px;vertical-align:middle;line-height:1.4;font-size:inherit;white-space:nowrap}
+body.bc-shell .ds-root :is(#tbl-vendas,#gv-tbl) :is(th,td):first-child{box-shadow:1px 0 0 var(--bc-border);min-width:170px;width:170px}
+body.bc-shell .ds-root :is(#tbl-vendas,#gv-tbl) th:first-child{z-index:5}
+body.bc-shell .ds-root :is(#tbl-vendas,#gv-tbl) tbody td{background:var(--bc-surface)}

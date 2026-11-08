@@ -83,3 +83,12 @@
 #res-diario .diary-rate{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 8px;margin:8px 0}
 #res-diario .diary-rate>.diary-delta{display:inline;margin:0;font-size:12px}
 #res-diario .op-context{padding:12px 18px}
+
+/* Identificação completa da bolha também disponível sem depender do canvas. */
+.diary-bubble-accounts{margin-top:16px;border:1px solid var(--bc-border);border-radius:8px;padding:10px 14px}.diary-bubble-accounts>summary{cursor:pointer;font-weight:600;min-height:32px}.diary-bubble-account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:12px}.diary-bubble-account-grid button{text-align:left;white-space:normal}
+
+.res-top-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px;margin:16px 0}.res-top-card{position:relative;padding:18px;border:1px solid var(--bc-border);border-radius:12px;background:var(--bc-surface);min-width:0}.res-top-position{display:block;color:var(--bc-accent);margin-bottom:10px}.res-top-card h3{font-size:15px;line-height:1.5;min-height:46px;overflow-wrap:anywhere}.res-top-card .bc-copy{font-size:12px;overflow-wrap:anywhere}.res-top-metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}.res-top-metrics span,.res-top-metrics small{display:block;font-size:12px;color:var(--bc-muted)}.res-top-metrics strong{display:block;font-size:20px;white-space:nowrap}.res-top-metrics [data-tone=bad] :is(strong,small){color:var(--bc-bad)}.res-top-metrics [data-tone=attention] :is(strong,small){color:var(--bc-attention)}.res-top-metrics [data-tone=good] :is(strong,small){color:var(--bc-good)}
+
+.res-abc-operation-picker{margin:16px 0;padding:12px 16px;background:var(--bc-surface);border:1px solid var(--bc-border);border-radius:10px}.res-abc-operation-picker summary{cursor:pointer;font-weight:600;min-height:32px}.res-abc-operation-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:14px 0}.res-abc-operation-checks label{display:flex;align-items:center;gap:8px;min-height:36px}.res-abc-operation-checks input{accent-color:var(--bc-accent)}
+
+.res-abc-identity{display:flex;flex-direction:column;gap:8px}.res-abc-identity>strong{font-size:13px;line-height:1.5}.res-abc-identity>.bc-copy{font-weight:600;width:fit-content}.res-abc-identity .op-note{margin:0;font-size:12px}
