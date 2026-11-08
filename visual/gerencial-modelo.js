@@ -23,7 +23,7 @@
   const skus=unique([...(o.skus||[]),o.sku]);
   return{titulo:String(o.titulo||o.tit||skus[0]||o.anuncio||'Item sem título'),skus,anuncios:unique(modo==='sku'?(o.anuncios||[]):[o.anuncio])};
  }
- function tomMargem(valor,percentual){if(valor==null||valor===''||!Number.isFinite(+valor))return'neutral';if(+valor<0)return'bad';if(percentual==null||percentual===''||!Number.isFinite(+percentual))return'neutral';return +percentual<10?'attention':+percentual<20?'info':'good';}
+ function tomMargem(valor,percentual){if(valor==null||valor===''||!Number.isFinite(+valor))return'neutral';if(+valor<0)return'bad';if(percentual==null||percentual===''||!Number.isFinite(+percentual))return'neutral';return +percentual<10?'bad':+percentual<20?'attention':'good';}
  function coberturaProduto(o){return{label:o.adsMissing?'Ads pendente':o.estimated?'Rateio estimado':'Ads apurado',tone:o.adsMissing||o.estimated?'attention':'neutral',detalhe:String(o.coverage||'Origem da publicidade não informada')};}
  function comparar(current,previous){const map=new Map(previous.map(o=>[o.key,o]));return current.map(o=>{const p=map.get(o.key);return{...o,change:p?{fat:money(o.fat-p.fat),mc:money(o.mc-p.mc),pct:o.pct!=null&&p.pct!=null?o.pct-p.pct:null}:null};});}
  // Posição por faturamento positivo, com empates em centavos: 1º, 1º, 3º.
