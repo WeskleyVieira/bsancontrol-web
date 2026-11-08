@@ -73,6 +73,33 @@
   if(o.inv>0&&o.acos!=null&&o.margemReferencia>0&&o.acos<=o.margemReferencia*.5)return{key:'escala',label:'Espaço para escalar',tone:'good',action:o.perdOrc>=20?'Conferir estoque e conversão; há perda por orçamento.':o.perdCls>=20?'Conferir classificação, oferta e ROAS-alvo antes de ampliar.':'Testar aumento gradual com estoque e margem acompanhados.'};
   return{key:'manter',label:'Manter e acompanhar',tone:'info',action:'Acompanhar ACOS, margem e volume no mesmo período.'};
  }
+ // Catálogo da agenda: contagens pertencem a cada grupo, sem somar sinais sobrepostos.
+ function agendaGrupos(a,{comparacao=false,publicidade=[],temPublicidade=false,publicidadeNoLiquido=false,movimentos=[]}={}){
+  const defs=[
+   ['estanca','perdas','Margem sangrando','bad','Pós-Ads negativo. Confira se a perda já existe no produto ou surge com a publicidade.'],
+   ['adscome','perdas','Ads comendo a margem','attention','Pré-Ads de pelo menos 10%, mas Pós-Ads abaixo de 10%, sem prejuízo.'],
+   ['corrija','perdas','Correção de margem','attention','Pós-Ads entre 0% e 10%, fora dos grupos de publicidade e baixa participação.'],
+   ['peso','perdas','Peso morto','attention','Curva C com Pós-Ads abaixo de 10%, sem prejuízo, fora do período de produto novo. Há vendas neste recorte.'],
+   ['proteja','proteger','Estrelas','good','Curva A com Pós-Ads de pelo menos 20%, sem queima histórica identificada.'],
+   ['queima','proteger','Queimando margem','attention','Curva A ou B: Pré-Ads de pelo menos 10%, mais de 5 pontos abaixo da referência histórica.'],
+   ['escale','oportunidades','Para impulsionar','good','Curva B com Pós-Ads de pelo menos 20%, sem queima histórica identificada.'],
+   ['escondido','oportunidades','Possíveis estrelas','accent','Curva C com Pós-Ads de pelo menos 20%: boa margem e baixa participação no faturamento.'],
+   ['maturacao','oportunidades','Produtos em maturação','info','Curva C com Pós-Ads abaixo de 10%, sem prejuízo, marcado como novo pelo cadastro ou primeira venda disponível.'],
+   ['perdendo','evolucao','Perdendo tração','attention','Faturamento cai mais de 30%; referência acima de R$ 200 e vendas no período atual.'],
+   ['ganhando','evolucao','Ganhando tração','good','Faturamento cresce mais de 40%; atual acima de R$ 200 e referência positiva.'],
+   ['devolucoes','evolucao','Devoluções no período','attention','Movimentos classificados como devolvida no intervalo. Não é taxa por safra de venda.'],
+   ['cobertura','evolucao','Conferir publicidade pendente','attention','Fonte de publicidade insuficiente para concluir a margem Pós-Ads.'],
+   ['base','evolucao','Conferir base de margem','neutral','Sem base válida para calcular o percentual Pós-Ads.'],
+   ['ads-queima','perdas','Queimando no Ads','bad','Relatório: receita atribuída × margem de referência − gasto resulta negativo. É uma estimativa.'],
+   ['ads-sem-retorno','perdas','Ads sem retorno atribuído','attention','Relatório com gasto positivo e nenhuma receita atribuída. Não comprova ausência de efeito orgânico.'],
+   ['ads-escala','oportunidades','Espaço no Ads','good','Relatório com gasto e ACOS de até metade da margem de referência. Conferir estoque e testar gradualmente.']
+  ];
+  const returns=new Map();for(const r of movimentos){if(String(r.stat)!=='devolvida')continue;const key=r.anuncio?'anuncio:'+r.anuncio:'sku:'+r.sku;if(!r.anuncio&&!r.sku)continue;const o=returns.get(key)||{key,anuncio:r.anuncio||'',sku:r.sku||'',skus:[],titulo:r.tit||r.sku||r.anuncio,qtdDev:0};o.qtdDev+=Math.abs(n(r.qtd));if(r.sku&&!o.skus.includes(r.sku))o.skus.push(r.sku);returns.set(key,o);}
+  return defs.map(([key,familia,label,tone,criterio])=>{const tipo=key.startsWith('ads-')?'publicidade':['perdendo','ganhando'].includes(key)?'sinal':key==='devolucoes'?'movimento':'acao';const disponivel=tipo==='sinal'?comparacao:tipo==='publicidade'?temPublicidade&&!publicidadeNoLiquido:true;
+   const rows=tipo==='publicidade'?publicidade.filter(o=>acaoPublicidade(o).key===key.slice(4)):tipo==='sinal'?a[key]:tipo==='movimento'?[...returns.values()]:a.BK[key];
+   return{key,familia,label,tone,criterio,tipo,disponivel,pendencia:tipo==='sinal'?'Escolha uma comparação com vendas de referência no cabeçalho.':publicidadeNoLiquido?'Neste canal a publicidade já está no líquido. Confira as cobranças por SKU em Publicidade.':'Sem relatório por anúncio neste período.',count:disponivel?rows.length:null,rows:disponivel?rows.slice():[]};});
+ }
+ function recorteAgenda(items,keys){const selected=new Set(keys);return items.filter(o=>selected.has(o.key));}
  const RX_FIELDS=['qtd','fat','liq','mc','ctp','base','n','dev','negativas'];
  function raioSoma(rows){const o=Object.fromEntries(RX_FIELDS.map(k=>[k,rows.reduce((s,r)=>s+n(r[k]),0)]));return{...o,pct:ratio(o.mc,o.base),mcUn:o.qtd?o.mc/o.qtd:null,preco:o.qtd?o.fat/o.qtd:null,custo:o.qtd?o.ctp/o.qtd:null};}
  function raiox(series,peers,sku){
@@ -80,5 +107,5 @@
   for(const r of rows){const k=JSON.stringify([r.emp,r.mkt]);if(!ops.has(k))ops.set(k,[]);ops.get(k).push(r);if(!days.has(r.date))days.set(r.date,[]);days.get(r.date).push(r);}
   return{titulo:rows.find(r=>r.titulo)?.titulo||sku,resumo,serie:[...days].map(([date,rs])=>({date,...raioSoma(rs)})).sort((a,b)=>a.date.localeCompare(b.date)),operacoes:[...ops.values()].map(rs=>({emp:rs[0].emp,mkt:rs[0].mkt,...raioSoma(rs)})).sort((a,b)=>b.mc-a.mc),comparacao:{pares:others.length,referencia:ref,deltaPP:resumo.pct!=null&&ref.pct!=null?resumo.pct-ref.pct:null,posicao:resumo.n&&resumo.base>0?1+others.filter(r=>100*r.mc/r.base>resumo.pct+1e-9).length:null,total:others.length+(resumo.n?1:0),parteMargem:ref.mc+resumo.mc>0?100*resumo.mc/(ref.mc+resumo.mc):null}};
  }
- return{orientacao,pagina,publicidade,grupos,comparar,diagnostico,desempenhoPublicidade,full,csv,affiliate,fin,inside,ratio,situacao,agenda,sinaisProduto,acaoPublicidade,raiox,raioSoma};
+ return{orientacao,pagina,publicidade,grupos,comparar,diagnostico,desempenhoPublicidade,full,csv,affiliate,fin,inside,ratio,situacao,agenda,agendaGrupos,recorteAgenda,sinaisProduto,acaoPublicidade,raiox,raioSoma};
 });
