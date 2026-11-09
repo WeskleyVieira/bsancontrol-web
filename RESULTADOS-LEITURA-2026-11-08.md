@@ -37,3 +37,10 @@ Validação: 580 testes passam; sete scripts inline compilam; integração idemp
 - Filtros de tração ficam visíveis mesmo com zero; a agenda oferece dois acessos diretos. Zero não desaparece e falta de referência não é estabilidade.
 - Anúncios mostra todos os itens por padrão. Seleção opcional de 50, 100 ou 250 itens permite dividir listas maiores; totais, filtros e CSV continuam usando a lista inteira.
 - Regressão executa o contexto real sem comparação global e confirma altas/baixas no ranking e sinais de tração; referência personalizada tem prioridade. Frontend sintético confirmou 3 altas, 2 quedas, 1 empate, 1 sem referência, três itens perdendo tração e um ganhando, com abertura dos grupos.
+
+## Conferência em produção
+- Outubro/Grupo: faturamento R$603.450,04, Pré-Ads R$129.072,91, publicidade R$25.983,68 e Pós-Ads R$103.089,23. Shein: 479 unidades, faturamento R$14.907,68, Pré-Ads/Pós-Ads R$3.219,08.
+- Magalu outubro reconhecido sem Ads; novembro permanece pendente de fonte de publicidade, sem presumir gasto zero. DRE apresenta Mês e um único controle de competência por padrão. Top 10 carregou dez cards reais. Forecast separou o ponto parcial de novembro (01–06) da linha de totais mensais.
+- Pesseguinho/ML em outubro: 112 itens na lista única; contra setembro, 15 sobem, 38 caem, 2 mantêm e 57 ficam sem vendas na referência. O Diagnóstico recupera 8 ganhando tração e 16 perdendo tração.
+- O código legado comparava Curva ABC atual versus anterior (A/B/C) para suas setas. Não armazenava uma disputa diária de posições numéricas dentro do mês. O novo movimento numérico compara posições entre os dois períodos explicitados na tela; uma leitura diária acumulada precisaria de modo próprio.
+- Células compostas TACOS / teto colorem somente o percentual realizado. O teto mantém sua apresentação como referência.

@@ -14424,6 +14424,7 @@ function bcVisualResultColors(root){
   const main=e.matches(primary),card=main?e.closest('.sum-card,.bc-metric,.kpi'):null;let label=card?.querySelector('h3,.bc-metric-label,.kpi-eye')?.textContent||'';
   const table=e.closest('table'),cell=e.closest('td');if(table&&cell){if(!headers.has(table))headers.set(table,[...table.querySelectorAll('thead tr:last-child th')].map(h=>h.textContent));label=headers.get(table)[cell.cellIndex]||'';}
   /* bc-dd-label */ if(!label&&e.matches('dd'))label=e.previousElementSibling?.textContent||'';
+  if(e===cell&&/tacos/i.test(label)&&/teto|meta|limite/i.test(label)&&!e.querySelector('[data-metric-tone]')){const pair=e.textContent.trim().match(/^([+-]?[\d.,]+\s*%)(\s*\/.*)$/);if(pair){const actual=document.createElement('span'),amount=bcVisualAmount(pair[1]);actual.textContent=pair[1];actual.dataset.metricTone=actual.dataset.bcResult=window.BCGerencialModelo?.tomTacos(amount?.value)||'neutral';e.replaceChildren(actual,document.createTextNode(pair[2]));}}
   const comparison=/varia[cç][aã]o|diferen[cç]a|crescimento|redu[cç][aã]o|desvio|compara[cç][aã]o/i.test(label);
   const direct=[...e.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim(),text=main&&bcVisualAmount(direct)?direct:e.textContent,n=bcVisualAmount(text);
   let tone=main?bcVisualValueTone(text,label,comparison):n?.unit!=='number'&&n?.value<0&&!comparison?'bad':'';
