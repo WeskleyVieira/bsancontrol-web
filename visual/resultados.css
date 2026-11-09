@@ -93,3 +93,4 @@
 
 .res-abc-identity{display:flex;flex-direction:column;gap:8px}.res-abc-identity>strong{font-size:13px;line-height:1.5}.res-abc-identity>.bc-copy{font-weight:600;width:fit-content}.res-abc-identity .op-note{margin:0;font-size:12px}
 #res-diario .diary-rank-movement[data-tone=attention]{color:var(--bc-attention)!important}
+#res-diario .diary-ranking-table th:first-child{white-space:normal;line-height:1.4}
