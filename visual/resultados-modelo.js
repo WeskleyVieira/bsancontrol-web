@@ -108,6 +108,20 @@
   }
   function scale(r,divisor=1) {if(!r)return null;const o={...r};for(const k of [...fields,'extra','embedded','before','after'])if(o[k]!=null)o[k]/=divisor;return o;}
   function seriesBuckets(from,to,mode='auto'){const count=span(from,to);if(!count)return{mode:'dia',buckets:[]};if(!['dia','semana','mes'].includes(mode))mode=count<=62?'dia':count<=186?'semana':'mes';const buckets=[];for(let start=from;start<=to;){const limit=mode==='mes'?monthEnd(start.slice(0,7)):add(start,mode==='semana'?6:0),end=limit<to?limit:to,short=d=>d.slice(8,10)+'/'+d.slice(5,7),partial=mode==='mes'&&(start!==start.slice(0,7)+'-01'||end!==monthEnd(start.slice(0,7))),label=mode==='mes'?start.slice(0,7)+(partial?' *':''):mode==='semana'?short(start)+'–'+short(end):short(start);buckets.push({from:start,to:end,label,partial});start=add(end,1);}return{mode,buckets};}
+  // Rótulos locais: não desloca bolhas e não desenha linhas de ligação.
+  function bubbleLabels(points,bounds,measure){
+    const gap=8,height=34,placed=[],hidden=[],overlap=(a,b)=>a.left<b.right+4&&a.right>b.left-4&&a.top<b.bottom+4&&a.bottom>b.top-4;
+    const touches=(box,p)=>{const x=Math.max(box.left,Math.min(box.right,p.x)),y=Math.max(box.top,Math.min(box.bottom,p.y));return (x-p.x)**2+(y-p.y)**2<(p.r+3)**2;};
+    for(const p of points.slice().sort((a,b)=>b.r-a.r||a.index-b.index)){
+      const width=Math.max(measure(p.emp),measure(p.mkt))+12,r=p.r+gap,candidates=[
+        [p.x-width/2,p.y-r-height],[p.x+r,p.y-height/2],[p.x-width/2,p.y+r],[p.x-r-width,p.y-height/2],
+        [p.x+r,p.y-r-height],[p.x-r-width,p.y-r-height],[p.x+r,p.y+r],[p.x-r-width,p.y+r]
+      ];let found=null;
+      for(const [left,top]of candidates){const box={left,top,right:left+width,bottom:top+height};if(box.left<bounds.left||box.right>bounds.right||box.top<bounds.top||box.bottom>bounds.bottom||placed.some(q=>overlap(box,q))||points.some(q=>touches(box,q)))continue;found={...box,index:p.index,emp:p.emp,mkt:p.mkt};break;}
+      if(found)placed.push(found);else hidden.push(p.index);
+    }
+    return{placed,hidden};
+  }
   function score(ops,weights) {const keys=['after','percentAfter','fat','qtd','ped'],total=keys.reduce((s,k)=>s+Math.max(0,n(weights[k])??0),0);return ops.map(r=>{const exact=r.adsMissing||!total||keys.some(k=>(n(weights[k])??0)>0&&r[k]==null)?null:keys.reduce((s,k)=>{const max=Math.max(0,...ops.map(r=>n(r[k])??0));return s+(max?Math.max(0,r[k]??0)/max*100:0)*Math.max(0,n(weights[k])??0);},0)/total;return{...r,scoreExact:exact,score:exact==null?null:Math.round(exact)};});}
   function diaryFinance(total,ops=[]) {
     if(!total)return {beforeAds:null,after:null,ads:null,affiliates:null,percentBeforeAds:null,percentAfter:null,missing:false};
@@ -145,5 +159,5 @@
   function targetHistory(daily,goals,from,to) {
     return months(from,to).map(mes=>{const eligible=goals.filter(g=>g.mes===mes&&n(g.Faturamento_obj)!=null&&n(g.Faturamento_obj)>=0),keys=new Set(eligible.map(g=>String(g.operacao))),rs=daily.filter(r=>r.date>=from&&r.date<=to&&r.date.slice(0,7)===mes&&keys.has(r.emp+' · '+r.mkt)),present=new Set(rs.filter(r=>r.n_all>0).map(r=>r.emp+' · '+r.mkt)),target=eligible.length?eligible.reduce((s,g)=>s+Number(g.Faturamento_obj),0):null,covered=eligible.length>0&&[...keys].every(k=>present.has(k)),actual=covered?sum(rs)?.fat??null:null;return{mes,target,actual,covered,withGoal:keys.size,missing:[...keys].filter(k=>!present.has(k)).length,attainment:actual!=null&&target>0?actual/target*100:null};});
   }
-  return {n,key,date,add,span,monthEnd,shiftMonth,months,previous,fields,blank,sum,difference,lineValue,aggregateLines,aggregateRows,media,rangeModel,periods,scale,seriesBuckets,score,diaryFinance,diaryRows,diaryContributions,diaryBubble,localSkus,skuGroups,abc,matrix,regression,forecast,targetHistory};
+  return {n,key,date,add,span,monthEnd,shiftMonth,months,previous,fields,blank,sum,difference,lineValue,aggregateLines,aggregateRows,media,rangeModel,periods,scale,seriesBuckets,bubbleLabels,score,diaryFinance,diaryRows,diaryContributions,diaryBubble,localSkus,skuGroups,abc,matrix,regression,forecast,targetHistory};
 });
