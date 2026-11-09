@@ -112,6 +112,7 @@ async function rotaGET(u, user) {
   if (u.pathname === '/api/publicidade/resumo') return publicidadeConsultas.carregar(dbx, q, user);
   if (u.pathname === '/api/resultados/resumo') return resultadosConsultas.resumo(dbx, q);
   if (u.pathname === '/api/resultados/skus') return resultadosConsultas.skus(dbx, q);
+  if (u.pathname === '/api/resultados/forecast-produtos') return require('./forecast-produtos-consultas').carregar(dbx, q);
   if (u.pathname === '/api/operacao/full') return require('./operacao-full').read(dbx, q);
   if (u.pathname === '/api/operacao/estoque') return operacaoConsultas.estoque(dbx);
   if (u.pathname === '/api/operacao/projecao') return operacaoConsultas.vendas(dbx, q);

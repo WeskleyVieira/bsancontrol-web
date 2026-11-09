@@ -46,7 +46,7 @@
   if(path==='/api/publicidade/resumo')return method==='GET'&&pode(user,'gestao.ver');
   if(path==='/api/publicidade/metas')return method==='POST'&&user?.perfil==='direcao'&&pode(user,'gestao.ver');
   if(path==='/api/demandas')return pode(user,'acompanhamento.ver');
-  if(['/api/resultados/resumo','/api/resultados/skus'].includes(path))return method==='GET'&&pode(user,'vendas.ver');
+  if(['/api/resultados/resumo','/api/resultados/skus','/api/resultados/forecast-produtos'].includes(path))return method==='GET'&&pode(user,'vendas.ver');
   if(path==='/api/financeiro/dre')return method==='GET'&&pode(user,'dre.ver');
   if(path==='/api/operacao/full')return method==='GET'&&pode(user,'estoque.ver')&&pode(user,'gestao.ver');
   if(path==='/api/operacao/estoque')return pode(user,'estoque.ver');
