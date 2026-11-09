@@ -43,7 +43,7 @@ A implementação reutiliza o detalhe gerencial carregado e uma apuração de ma
 
 ## Validação
 
-620 testes passaram, incluindo 24 de Forecast: calendário/leap year, normalização, corte temporal, horizonte, faixa futura, ID/SKU, identidade ausente, operação, novos/sem vendas, referência inválida/desativada, tolerância, valores inválidos, lacunas, reconciliação de gráfico/totais, métodos, origem móvel, erro com zeros, unidades e imutabilidade das entradas.
+621 testes passaram, incluindo 24 de Forecast: calendário/leap year, normalização, corte temporal, horizonte, faixa futura, ID/SKU, identidade ausente, operação, novos/sem vendas, referência inválida/desativada, tolerância, valores inválidos, lacunas, reconciliação de gráfico/totais, métodos, origem móvel, erro com zeros, unidades e imutabilidade das entradas.
 
 Frontend real em API/SQLite exclusivamente fictícios, como gestor: cinco IDs viraram quatro SKUs, conservando R$ 2.640 realizados, R$ 13.200 de projeção e R$ 453 de Pós-Ads realizado. Grupo com dois IDs tornou-se um SKU sem MLB arbitrário. Filtro abaixo do esperado por SKU/unidades: 54 unidades realizadas, 117 projetadas em horizonte de 7 dias e 208 esperadas. Diálogo, Diário/Acumulado, CSV e comparação desativada conferidos. Console sem erros nesses percursos. Em 390 px: página sem transbordamento horizontal; viewport restaurado após teste.
 
