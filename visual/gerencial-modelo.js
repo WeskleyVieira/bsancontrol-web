@@ -108,7 +108,7 @@
   const alertas=[];if(o.adsMissing)alertas.push('A composição Pós-Ads ainda depende da fonte de publicidade.');if(o.estimated&&!o.semVendasAtual)alertas.push('O resultado inclui rateio estimado de publicidade. Confira o vínculo antes de decidir.');if(o.evolucao?.deltaFat<0&&o.evolucao?.movimento==='subiu')alertas.push('O anúncio subiu de posição, mas o faturamento caiu.');if(o.evolucao?.movimento==='sem-vendas-ref')alertas.push('Sem vendas na referência não comprova lançamento do produto.');return{key,titulo,tone,passos,alertas};
  }
  // Catálogo da agenda: contagens pertencem a cada grupo, sem somar sinais sobrepostos.
- function agendaGrupos(a,{comparacao=false,publicidade=[],temPublicidade=false,publicidadeNoLiquido=false,movimentos=[]}={}){
+ function agendaGrupos(a,{religar=[],comparacao=false,publicidade=[],temPublicidade=false,publicidadeNoLiquido=false,movimentos=[]}={}){
   const defs=[
    ['estanca','perdas','Margem sangrando','bad','Pós-Ads negativo. Confira se a perda já existe no produto ou surge com a publicidade.'],
    ['adscome','perdas','Ads comendo a margem','attention','Pré-Ads de pelo menos 10%, mas Pós-Ads abaixo de 10%, sem prejuízo.'],
@@ -126,11 +126,13 @@
    ['base','evolucao','Conferir base de margem','neutral','Sem base válida para calcular o percentual Pós-Ads.'],
    ['ads-queima','perdas','Queimando no Ads','bad','Relatório: receita atribuída × margem de referência − gasto resulta negativo. É uma estimativa.'],
    ['ads-sem-retorno','perdas','Ads sem retorno atribuído','attention','Relatório com gasto positivo e nenhuma receita atribuída. Não comprova ausência de efeito orgânico.'],
-   ['ads-escala','oportunidades','Espaço no Ads','good','Relatório com gasto e ACOS de até metade da margem de referência. Conferir estoque e testar gradualmente.']
+   ['ads-escala','oportunidades','Espaço no Ads','good','Relatório com gasto e ACOS de até metade da margem de referência. Conferir estoque e testar gradualmente.'],
+   ['ads-estoque','perdas','Ads sem estoque','bad','Anúncio com gasto no Ads sem estoque ou acabando: até 5 unidades ou menos de 7 dias de cobertura. Pausar até repor.'],
+   ['ads-religar','oportunidades','Ads para religar','good','Anúncio pausado no Ads por falta de estoque e com o estoque de volta. Religar.']
   ];
   const returns=new Map();for(const r of movimentos){if(String(r.stat)!=='devolvida')continue;const key=r.anuncio?'anuncio:'+r.anuncio:'sku:'+r.sku;if(!r.anuncio&&!r.sku)continue;const o=returns.get(key)||{key,anuncio:r.anuncio||'',sku:r.sku||'',skus:[],titulo:r.tit||r.sku||r.anuncio,qtdDev:0};o.qtdDev+=Math.abs(n(r.qtd));if(r.sku&&!o.skus.includes(r.sku))o.skus.push(r.sku);returns.set(key,o);}
   return defs.map(([key,familia,label,tone,criterio])=>{const tipo=key.startsWith('ads-')?'publicidade':['perdendo','ganhando'].includes(key)?'sinal':key==='devolucoes'?'movimento':'acao';const disponivel=tipo==='sinal'?comparacao:tipo==='publicidade'?temPublicidade&&!publicidadeNoLiquido:true;
-   const rows=tipo==='publicidade'?publicidade.filter(o=>acaoPublicidade(o).key===key.slice(4)):tipo==='sinal'?a[key]:tipo==='movimento'?[...returns.values()]:a.BK[key];
+   const rows=key==='ads-estoque'?publicidade.filter(o=>o.est&&(o.est.k==='sem_estoque'||o.est.k==='critico')):key==='ads-religar'?religar:tipo==='publicidade'?publicidade.filter(o=>acaoPublicidade(o).key===key.slice(4)):tipo==='sinal'?a[key]:tipo==='movimento'?[...returns.values()]:a.BK[key];
    return{key,familia,label,tone,criterio,tipo,disponivel,pendencia:tipo==='sinal'?'Escolha uma comparação com vendas de referência no cabeçalho.':publicidadeNoLiquido?'Neste canal a publicidade já está no líquido. Confira as cobranças por SKU em Publicidade.':'Sem relatório por anúncio neste período.',count:disponivel?rows.length:null,rows:disponivel?rows.slice():[]};});
  }
  function recorteAgenda(items,keys){const selected=new Set(keys);return items.filter(o=>selected.has(o.key));}
