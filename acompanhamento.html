@@ -4786,6 +4786,14 @@ function _renderGerPubCamp(arr,campOfficial,mkt,ch,tb,sub,ttl,soCamp,opMcp){
 // ── visão POR ANÚNCIO (agenda de ações + tabela) ──
 function _renderGerPubAnuncio(arr,ch,tb,sub,ttl,afil,opMcp){
   const esc=_adsEsc, linkA=_adsLinkA;
+  // ESTOQUE NO ADS (09/11/2026, ads-estoque.js → extras.ads[].est): quanto há no Full e na Olist de cada anúncio com Ads, como na aba Full.
+  const _estM={}; (Array.isArray(ADS)?ADS:[]).forEach(r=>{ if(r&&r.est&&r.mlb) _estM[String(r.mlb).toUpperCase()]=r.est; });
+  const estDe=o=>_estM[String(o.mlb||'').toUpperCase()]||null, temEst=!afil&&arr.some(o=>estDe(o));
+  const estRuim=o=>{const e=estDe(o);return !!e&&(e.k==='sem_estoque'||e.k==='critico');};
+  const ESTL={sem_estoque:['Sem estoque — pausar no Ads','#dc2626'],critico:['Acabando (até 5 un ou menos de 7 dias) — pausar no Ads','#ea580c'],contagem:['Olist negativa e vendendo: conferir a contagem, não pausar','#a855f7'],repor_full:['Acabando no Full, mas a Olist repõe: ver a aba Full','#f59e0b'],baixo:['Cobertura baixa (7 a 15 dias)','#f59e0b'],ok:['Estoque ok','var(--t2)'],sem_leitura:['Sem leitura de estoque (SKU fora da Olist)','var(--t3)']};
+  const estNum=v=>v==null?'—':Math.round(v).toLocaleString('pt-BR');
+  const estCel=(o,campo,orig)=>{const e=estDe(o);if(!e)return `<td class="r" style="color:var(--t3)">—</td>`;const L=ESTL[e.k]||ESTL.ok,v=e[campo],ativo=e.g===orig,ruim=ativo&&(e.k==='sem_estoque'||e.k==='critico'||e.k==='contagem');
+    return `<td class="r" title="${esc(L[0])}" style="color:${ruim?L[1]:(ativo?'var(--t1)':'var(--t3)')};${ruim?'font-weight:700;':''}">${estNum(v)}${ativo&&e.c!=null?`<div style="font-size:10px;color:var(--t3);font-weight:400">${String(e.c).replace('.',',')} d</div>`:''}</td>`;};
   const ag=document.getElementById('ga-agenda');
   const idNum=o=>String(o.mlb||'').replace(/^MLB/,''); // afiliados: id de produto Shopee (não é MLB)
   if(ttl) ttl.textContent = afil?'📣 Afiliados · por produto':'📣 Anúncios patrocinados';
@@ -4815,11 +4823,11 @@ function _renderGerPubAnuncio(arr,ch,tb,sub,ttl,afil,opMcp){
     ${card('🚀','Escale','#4f8ef7',escala,'ACOS bem abaixo da margem — sobra folga pra investir mais e crescer.',o=>'ACOS '+(isFinite(o.acos)?o.acos.toFixed(0):'0')+'% « MC '+o.mcp.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'% · +'+brl(o.resultado),'escala')}
     ${card('✅','Lucrando saudável','#22c55e',arr.filter(o=>o.vered==='lucra').sort((a,b)=>b.resultado-a.resultado),'ACOS dentro da margem. Mantenha.',o=>'ACOS '+o.acos.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'% · '+brl(o.resultado),'lucra')}
   </div>`;
-  const cnt={queima:queima.length,semv:semv.length,escala:escala.length,lucra:arr.filter(o=>o.vered==='lucra').length};
+  const cnt={queima:queima.length,semv:semv.length,escala:escala.length,lucra:arr.filter(o=>o.vered==='lucra').length,estq:arr.filter(estRuim).length};
   const chip=(v,l,cor)=>{const on=GER_AFILT===v;const n=v===''?arr.length:cnt[v];if(v!==''&&!n)return'';return `<span onclick="gerAFilt('${v}')" style="cursor:pointer;font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;border:1px solid ${on?cor:'var(--bdr2)'};background:${on?cor+'22':'transparent'};color:${on?cor:'var(--t2)'};white-space:nowrap;">${l} ${n}</span>`;};
-  ch.innerHTML=chip('','Todos','var(--a)')+chip('queima','🔥 Queima','#f87171')+chip('semv','🕳️ Sem retorno','#dc2626')+chip('escala','🚀 Escale','#4f8ef7')+chip('lucra','✅ Lucra','#22c55e');
-  let view=arr; if(GER_AFILT) view=view.filter(o=>o.vered===GER_AFILT);
-  const sv={tit:o=>o.tit||o.mlb,inv:o=>o.inv,rec:o=>o.recAds,acos:o=>isFinite(o.acos)?o.acos:9e9,mcp:o=>o.mcp,roas:o=>o.roas,res:o=>o.resultado,impr:o=>o.impr||0,cli:o=>o.cli||0,ctr:o=>o.ctr,cvr:o=>o.cvr,vis:o=>o.vis}[GER_ASORT.col]||(o=>o.inv);
+  ch.innerHTML=chip('','Todos','var(--a)')+chip('queima','🔥 Queima','#f87171')+chip('semv','🕳️ Sem retorno','#dc2626')+chip('escala','🚀 Escale','#4f8ef7')+chip('lucra','✅ Lucra','#22c55e')+(temEst?chip('estq','📦 Sem estoque','#ea580c'):'');
+  let view=arr; if(GER_AFILT==='estq') view=view.filter(estRuim); else if(GER_AFILT) view=view.filter(o=>o.vered===GER_AFILT);
+  const sv={tit:o=>o.tit||o.mlb,inv:o=>o.inv,rec:o=>o.recAds,acos:o=>isFinite(o.acos)?o.acos:9e9,mcp:o=>o.mcp,roas:o=>o.roas,res:o=>o.resultado,impr:o=>o.impr||0,cli:o=>o.cli||0,ctr:o=>o.ctr,cvr:o=>o.cvr,vis:o=>o.vis,estf:o=>{const e=estDe(o);return e&&e.f!=null?e.f:-1e9;},esto:o=>{const e=estDe(o);return e&&e.o!=null?e.o:-1e9;}}[GER_ASORT.col]||(o=>o.inv);
   const lin=view.slice().sort((a,b)=>{const x=sv(a),y=sv(b);const c=(typeof x==='string')?String(x).localeCompare(String(y)):(x-y);return (c*GER_ASORT.dir)||(b.inv-a.inv);});
   const scc=c=>GER_ASORT.col===c?(GER_ASORT.dir<0?' ▾':' ▴'):'';
   const stk='position:sticky;top:0;background:var(--surf2);z-index:3;';
@@ -4831,6 +4839,7 @@ function _renderGerPubAnuncio(arr,ch,tb,sub,ttl,afil,opMcp){
     +th('roas','ROAS','Receita-Ads ÷ investimento')+th('res','Resultado','Margem gerada − investimento')
     +th('impr','Impressões','Vezes que o anúncio apareceu')+th('cli','Cliques','Cliques no anúncio')
     +th('ctr','CTR','Cliques ÷ impressões')+th('cvr','CVR','Vendas ÷ cliques')+th('vis','Visitas','Visitas únicas, quando o relatório traz')
+    +(temEst?th('estf','No Full','Unidades deste anúncio no Full (aptas + em processamento + a caminho). Os dias de cobertura aparecem na origem que vale para o anúncio.')+th('esto','Olist','Disponível na Olist do ponto (saldo dividido entre as contas). Negativo = contagem errada.'):'')
     +`<th style="${stk}">Veredito</th></tr></thead><tbody>`;
   lin.forEach(o=>{
     const vd=_VERED[o.vered];
@@ -4846,9 +4855,10 @@ function _renderGerPubAnuncio(arr,ch,tb,sub,ttl,afil,opMcp){
       +`<td class="r" style="color:var(--t3)">${o.impr>0?o.ctr.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':'—'}</td>`
       +`<td class="r" style="color:var(--t3)">${o.cli>0?o.cvr.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':'—'}</td>`
       +`<td class="r" style="color:var(--t3)">${o.vis||'—'}</td>`
+      +(temEst?estCel(o,'f','Full')+estCel(o,'o','Olist'):'')
       +`<td><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:100px;background:${vd[1]}22;color:${vd[1]}">${vd[0]}</span></td></tr>`;
   });
-  if(!lin.length) h+=`<tr><td colspan="13" style="text-align:center;color:var(--t3);padding:24px">Nenhum anúncio neste filtro.</td></tr>`;
+  if(!lin.length) h+=`<tr><td colspan="${temEst?15:13}" style="text-align:center;color:var(--t3);padding:24px">Nenhum anúncio neste filtro.</td></tr>`;
   h+='</tbody>'; tb.innerHTML=h;
   _GA_EXP={tipo:'anuncio', rows:lin, afil:!!afil};
 }
@@ -5382,6 +5392,7 @@ const AC2_TIPOS_PROMO = [
 // CAMPANHA (tarefa de campanha) e pausar/mover é do ANÚNCIO. Régua = Diagnóstico pós-Ads: margem depois do Ads ≥ 10%.
 // O efeito é medido pelo próprio plano (gasto parou, ROAS-alvo novo lido da API), não pela margem da venda.
 const AC2_TIPOS_ADS = [
+  { k:'ads_estoque',  curto:'Sem estoque',     cor:'#ea580c', re:/ads · pausar sem estoque/i, ajuda:'O anúncio está no Ads sem estoque, ou com até 5 unidades ou menos de 7 dias de cobertura. Pausar no Ads até repor: o Ads gasta para vender o que não há.' },
   { k:'ads_pausar',   curto:'Pausar anúncio',  cor:'#dc2626', re:/ads · pausar an/i,  ajuda:'O Ads deste anúncio come mais do que a margem aguenta (ou gastou sem vender). Pausar o anúncio dentro da campanha.' },
   { k:'ads_mover',    curto:'Mover de campanha', cor:'#f59e0b', re:/ads · mover/i,    ajuda:'O anúncio precisa de um ROAS-alvo bem maior que o da campanha. Tirar dela e pôr numa campanha de margem curta.' },
   { k:'ads_subir',    curto:'Subir ROAS',      cor:'#a855f7', re:/ads · subir/i,      ajuda:'O ROAS-alvo da campanha está baixo para a margem dos anúncios dela. Subir para o valor indicado.' },
@@ -5402,7 +5413,7 @@ function ac2PorTipo(l){ const o={}; AC2_TIPOS.forEach(t=>o[t.k]=0); o.outro=0;
 const ac2Registrada = i => !!i.trat || i.estado==='trat';
 // PRAZO POR TIPO (14/10/2026). Vem de cada tarefa (db-sync grava de metas.json → prazos_dias);
 // o padrão abaixo só cobre tarefa antiga, gravada antes de existir o campo. Antes a régua era 24h para tudo.
-const AC2_PRAZO_PADRAO = { prejuizo:1, devolucao:2, margem:1, queima:1, maturacao:2, promo_sangra:2, promo_preco:2, promo_encareceu:2, ads_pausar:2, ads_mover:2, ads_subir:2, ads_campanha:2, ads_baixar:2 };   // prazos do Weskley, 16/10/2026
+const AC2_PRAZO_PADRAO = { prejuizo:1, devolucao:2, margem:1, queima:1, maturacao:2, promo_sangra:2, promo_preco:2, promo_encareceu:2, ads_estoque:2, ads_pausar:2, ads_mover:2, ads_subir:2, ads_campanha:2, ads_baixar:2 };   // prazos do Weskley, 16/10/2026
 const ac2Prazo = i => i.prazo!=null ? +i.prazo : (AC2_PRAZO_PADRAO[ac2TipoDe(i.tipo).k] || 7);
 // situação do prazo: registrada (no prazo / com X dias de atraso) ou em aberto (vence em X / atrasada X)
 function ac2PrazoInfo(i){
@@ -15229,8 +15240,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  const num=v=>v==null||v===''||!Number.isFinite(Number(v))?null:Number(v),time=v=>v?Number.isFinite(Date.parse(v))?Date.parse(v):null:null;
  const registered=i=>!!(i.registro?.acao||i.trat||i.estado==='trat');
  const sub=i=>/^promo(?:\|| ·)/i.test(String(i.id||''))||/^promo ·/i.test(String(i.tipo||''))?'promos':/^ads(?:\|| ·)/i.test(String(i.id||''))||/^ads ·/i.test(String(i.tipo||''))?'ads':'tarefas';
- const defaults={prejuizo:1,devolucao:2,margem:1,queima:1,maturacao:2,promo_sangra:2,promo_preco:2,promo_encareceu:2,ads_pausar:2,ads_mover:2,ads_subir:2,ads_campanha:2,ads_baixar:2};
- function kind(i){const t=String(i.tipo||''),queima=/queima/i.test(t),peso=/morto|(?:sem|baixo)[\s-]+giro/i.test(t);return /execução falhou/i.test(t)?'promo_execucao':/promo · sangra/i.test(t)?'promo_sangra':/promo · preço/i.test(t)?'promo_preco':/promo · encareceu/i.test(t)?'promo_encareceu':/ads · pausar an/i.test(t)?'ads_pausar':/ads · mover/i.test(t)?'ads_mover':/ads · subir/i.test(t)?'ads_subir':/ads · pausar camp/i.test(t)?'ads_campanha':/ads · baixar/i.test(t)?'ads_baixar':/preju/i.test(t)?'prejuizo':/devolu/i.test(t)?'devolucao':/corre.*margem/i.test(t)?'margem':queima&&peso?'tipo_misto':queima?'queima':peso?'peso':/matura/i.test(t)?'maturacao':'outro';}
+ const defaults={prejuizo:1,devolucao:2,margem:1,queima:1,maturacao:2,promo_sangra:2,promo_preco:2,promo_encareceu:2,ads_estoque:2,ads_pausar:2,ads_mover:2,ads_subir:2,ads_campanha:2,ads_baixar:2};
+ function kind(i){const t=String(i.tipo||''),queima=/queima/i.test(t),peso=/morto|(?:sem|baixo)[\s-]+giro/i.test(t);return /execução falhou/i.test(t)?'promo_execucao':/promo · sangra/i.test(t)?'promo_sangra':/promo · preço/i.test(t)?'promo_preco':/promo · encareceu/i.test(t)?'promo_encareceu':/ads · pausar sem estoque/i.test(t)?'ads_estoque':/ads · pausar an/i.test(t)?'ads_pausar':/ads · mover/i.test(t)?'ads_mover':/ads · subir/i.test(t)?'ads_subir':/ads · pausar camp/i.test(t)?'ads_campanha':/ads · baixar/i.test(t)?'ads_baixar':/preju/i.test(t)?'prejuizo':/devolu/i.test(t)?'devolucao':/corre.*margem/i.test(t)?'margem':queima&&peso?'tipo_misto':queima?'queima':peso?'peso':/matura/i.test(t)?'maturacao':'outro';}
  function deadline(i,now=Date.now()){
   const p=num(i.prazo),k=kind(i),fallback=k==='peso'||k==='tipo_misto'?(/queima|morto/i.test(String(i.tipo||''))?1:7):(defaults[k]??7),days=p!=null&&p>=0?p:fallback,created=time(i.criado_em),reg=registered(i),reaction=num(i.reacaoH),due=created==null?null:created+days*864e5;
   const elapsed=reg?reaction:created==null?null:(now-created)/36e5;
@@ -15276,7 +15287,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  const laneOptions=[['pending','A fazer'],['review','Recobrar / revisar'],['checking','Aguardando conferência'],['measuring','Em medição'],['completed','Concluídas']];
  function domain(i){
   const section=sub(i);if(section==='tarefas')return null;
-  const text=String(i.causa||''),match=text.match(/O QUE FAZER:\s*([\s\S]+)/i),fallback={promo_sangra:'Confira preço e margem da promoção; avalie a correção do desconto ou a saída da campanha.',promo_preco:'Confira o preço de cadastro e a composição de custo antes de revisar a promoção.',promo_encareceu:'Compare o preço da promoção com o preço atual e a orientação do plano.',promo_execucao:'Confira o motivo da falha e a participação do anúncio na campanha antes de tentar novamente.',ads_pausar:'Localize o anúncio na publicidade da conta e confira a recomendação de pausa do plano.',ads_mover:'Confira a campanha atual e a orientação de movimentação do anúncio no plano.',ads_subir:'Confira o ROAS-alvo atual da campanha e o alvo recomendado antes de ajustar.',ads_baixar:'Confira as condições e a janela do plano antes de reduzir o ROAS-alvo.',ads_campanha:'Confira o gasto e a receita atribuída da campanha antes de avaliar a pausa.'};
+  const text=String(i.causa||''),match=text.match(/O QUE FAZER:\s*([\s\S]+)/i),fallback={promo_sangra:'Confira preço e margem da promoção; avalie a correção do desconto ou a saída da campanha.',promo_preco:'Confira o preço de cadastro e a composição de custo antes de revisar a promoção.',promo_encareceu:'Compare o preço da promoção com o preço atual e a orientação do plano.',promo_execucao:'Confira o motivo da falha e a participação do anúncio na campanha antes de tentar novamente.',ads_estoque:'Localize o anúncio na publicidade da conta e pause até o estoque voltar.',ads_pausar:'Localize o anúncio na publicidade da conta e confira a recomendação de pausa do plano.',ads_mover:'Confira a campanha atual e a orientação de movimentação do anúncio no plano.',ads_subir:'Confira o ROAS-alvo atual da campanha e o alvo recomendado antes de ajustar.',ads_baixar:'Confira as condições e a janela do plano antes de reduzir o ROAS-alvo.',ads_campanha:'Confira o gasto e a receita atribuída da campanha antes de avaliar a pausa.'};
   const raw=section==='promos'?i.hoje:i.ads,status=i.evidencias?.status||(raw?'partial':'missing'),reading=['ok','partial'].includes(status)?raw:null,day=reading?.data||null,stamp=time(i.registro?.em),regDay=stamp==null?null:new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(stamp));
   const relation=!regDay||!day?'unknown':day<regDay?'before':day===regDay?'same-day':'after';
   const message=status==='unavailable'?'Não foi possível consultar esta fonte. A demanda e os registros foram preservados.':status==='ambiguous'?'Há mais de uma leitura possível para este vínculo; conferir a identificação da campanha.':status==='not-linked'?'Sem identificação suficiente para relacionar a leitura a esta demanda.':status==='unsupported'?'Sem fonte automática disponível para este canal.':status==='missing'?i.evidencias?.dataConta?'Item ausente na última leitura da conta; isso não comprova resolução.':'Sem leitura disponível para esta conta.':status==='partial'?'Leitura parcial disponível; nem todos os campos foram fornecidos.':'';
@@ -15473,7 +15484,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  const $=id=>document.getElementById(id),el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n;},fmt=v=>v==null?'—':Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}),cash=v=>v==null?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),pct=v=>v==null?'—':fmt(v)+'%',date=v=>M.time(v)==null?'Não informada':new Date(v).toLocaleString('pt-BR'),short=v=>/^\d{4}-\d{2}-\d{2}/.test(String(v))?String(v).slice(0,10).split('-').reverse().join('/'):'Não informada';
  const S={all:[],loaded:false,loading:false,error:'',at:null,token:null,seq:0,filter:{search:'',status:'all',type:'',operation:'',gestor:'',order:'priority',domain:''},page:0,view:'dashboard',compare:'gestor',flash:'',origin:null,historySeq:0,trail:[],temporal:'selected',caseSearch:'',casePage:0,returnFilter:'overdue',returnPage:0,portfolio:null,fluxos:{alinhamentos:[],pendencias:[],faltam:0,error:'',at:null}};
  const typeGuides={queima:'Investigar a redução de uma margem antes saudável: conferir preço, custo, descontos e publicidade; registrar a justificativa da estratégia e o próximo retorno.',peso:'Investigar baixa saída: conferir exposição, disponibilidade, oferta e viabilidade. Avaliar correção, reposicionamento ou retirada com o responsável.',tipo_misto:'A origem mistura queima e baixo giro no mesmo tipo. Conferir a classificação antes de cobrar a tratativa.'};
- const names={prejuizo:'Prejuízo',devolucao:'Devoluções',margem:'Margem',queima:'Queima de margem',peso:'Baixo giro / peso morto',tipo_misto:'Revisar tipo na origem',maturacao:'Maturação',promo_sangra:'Margem na promoção',promo_preco:'Preço de cadastro',promo_encareceu:'Preço da promoção',promo_execucao:'Execução falhou',ads_pausar:'Pausar anúncio',ads_mover:'Mover de campanha',ads_subir:'Subir ROAS',ads_campanha:'Pausar campanha',ads_baixar:'Baixar ROAS',outro:'Outro'};
+ const names={prejuizo:'Prejuízo',devolucao:'Devoluções',margem:'Margem',queima:'Queima de margem',peso:'Baixo giro / peso morto',tipo_misto:'Revisar tipo na origem',maturacao:'Maturação',promo_sangra:'Margem na promoção',promo_preco:'Preço de cadastro',promo_encareceu:'Preço da promoção',promo_execucao:'Execução falhou',ads_estoque:'Sem estoque',ads_pausar:'Pausar anúncio',ads_mover:'Mover de campanha',ads_subir:'Subir ROAS',ads_campanha:'Pausar campanha',ads_baixar:'Baixar ROAS',outro:'Outro'};
  let productOpening=null;
  function readIdentity(){const u=currentUser();return JSON.stringify([u?.id,u?.perfil,u?.gestor_ref,u?.restricoes,u?.revogacao,typeof BCAUTH==='undefined'?'':BCAUTH.token]);}
  function productScope(){return JSON.stringify([readIdentity(),PONTO_SEL||'',BCNav.company||'',BCNav.marketplace||'']);}
@@ -15546,7 +15557,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  function countButton(label,value,onClick,tone){const b=button(label+' · '+value,onClick,'sum-button ac4-count'+(tone?' ac4-'+tone:''));b.disabled=!value;return b;}
  function managerCard(group,dim='gestor'){return scoreOwner(group,{mode:'gestor',dim});}
 
- const typePalette={prejuizo:'bad',devolucao:'cyan',margem:'attention',queima:'pink',peso:'cyan',tipo_misto:'attention',maturacao:'violet',promo_sangra:'bad',promo_preco:'attention',promo_encareceu:'violet',promo_execucao:'pink',ads_pausar:'bad',ads_mover:'cyan',ads_subir:'attention',ads_campanha:'pink',ads_baixar:'violet',outro:'info'};
+ const typePalette={prejuizo:'bad',devolucao:'cyan',margem:'attention',queima:'pink',peso:'cyan',tipo_misto:'attention',maturacao:'violet',promo_sangra:'bad',promo_preco:'attention',promo_encareceu:'violet',promo_execucao:'pink',ads_estoque:'bad',ads_pausar:'bad',ads_mover:'cyan',ads_subir:'attention',ads_campanha:'pink',ads_baixar:'violet',outro:'info'};
  const gradeColor=b=>'var(--bc-'+(b?.tone==='neutral'?'muted':b?.tone||'muted')+')';
  function scoreBadge(label,b){const n=el('span','ac6-badge '+(b.tone||'neutral'));n.dataset.grade=b.key;n.append(el('strong','',label),document.createTextNode(' · '+(b.rate==null?'aguardando':(label==='Efeito'?b.value+'/'+b.total+' · ':'')+pct(b.rate)+' · '+b.label)));n.title=label==='Registro'?'Ações registradas / demandas ativas':'Resultados Resolvido, Progrediu ou Justificado / medições atuais conclusivas';return n;}
  function scoreProgress(s,label){const bar=el('div','ac6-progress');bar.setAttribute('role','progressbar');bar.setAttribute('aria-label',label);bar.setAttribute('aria-valuemin','0');bar.setAttribute('aria-valuemax','100');bar.setAttribute('aria-valuenow',String(s.registration.rate??0));bar.style.setProperty('--ac6-grade',gradeColor(s.registration));const fill=el('span');fill.style.width=(s.registration.rate??0)+'%';bar.append(fill);return bar;}
