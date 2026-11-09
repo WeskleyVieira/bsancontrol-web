@@ -104,7 +104,7 @@
   const tabelas=raiz.tagName==='TABLE'?[raiz]:raiz.querySelectorAll?[...raiz.querySelectorAll('table')]:[];const t0=raiz.closest&&raiz.closest('table');if(t0&&!tabelas.includes(t0))tabelas.push(t0);
   for(const tb of tabelas){const cab=[...tb.querySelectorAll('thead tr:last-child th')].map(th=>norm(th.textContent));const cols=cab.map((h,i)=>TITULO.test(h)?i:-1).filter(i=>i>=0);if(!cols.length)continue;const colId=cab.findIndex(h=>COL_ID.test(h));
    for(const tr of tb.querySelectorAll('tbody tr')){if(tr.dataset.atalhoTitulo)continue;const c=contexto(tr),id=idDaLinha(tr,colId,c);c.sku=skuDe(tr);
-    for(const i of cols){const td=tr.cells[i];if(!td)continue;
+    for(const i of cols){const td=tr.cells[i];if(!td||td.colSpan>1)continue;
      const w=document.createTreeWalker(td,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const v=n.nodeValue.trim();const e=n.parentElement;return v.length>=6&&/\s/.test(v)&&e&&!e.closest(PULA)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP;}});
      const n=w.nextNode();if(!n)continue;
      // só o trecho do título vira link ("Título · MLB…" → o "· MLB…" fica de fora)
