@@ -133,6 +133,15 @@
     const cur=score(current.ops,weights),old=score(prior.ops.map(r=>scale(r,divisor)),weights),rank=(rows,k)=>{const sorted=rows.filter(r=>n(r[k])!=null).slice().sort((a,b)=>b[k]-a[k]||a.id.localeCompare(b.id)),out=new Map();let last,position;sorted.forEach((r,i)=>{if(i===0||r[k]!==last)position=i+1;out.set(r.id,position);last=r[k];});return out;},cr=rank(cur,'score'),pr=rank(old,'score'),metrics=['fat','after','percentAfter','ped','qtd','ticket'],positions=Object.fromEntries(metrics.map(k=>[k,[rank(cur,k),rank(old,k)]])),cmap=new Map(cur.map(r=>[r.id,r])),pmap=new Map(old.map(r=>[r.id,r]));
     return [...new Set([...cmap.keys(),...pmap.keys()])].map(id=>{const c=cmap.get(id)||null,p=pmap.get(id)||null,op=c||p;return{id,emp:op.emp,mkt:op.mkt,c,p,rank:cr.get(id)??null,priorRank:pr.get(id)??null,movement:cr.has(id)&&pr.has(id)?pr.get(id)-cr.get(id):null,change:difference(c?.after,p?.after)?.value??null,financial:diaryFinance(c,c?[c]:[]),priorFinancial:diaryFinance(p,p?[p]:[]),positions:Object.fromEntries(metrics.map(k=>[k,{current:positions[k][0].get(id)??null,prior:positions[k][1].get(id)??null}]))};});
   }
+  function diaryHasSales(row){const c=row?.c;if(!c)return false;return c.n_fin!=null?c.n_fin>0:n(c.fat)>0||n(c.qtd)>0;}
+  function diaryVisibleRows(rows,includeNoSales=false){return rows.filter(r=>includeNoSales||diaryHasSales(r));}
+  function diaryRankState(row){
+    if(!diaryHasSales(row))return{key:'no-sales',label:'Sem vendas no período',detail:'Conta sem vendas finalizadas no período atual; os valores da referência permanecem disponíveis.'};
+    if(row.c.score==null){if(row.c.adsMissing||row.financial?.missing)return{key:'ads-pending',label:'Publicidade pendente',detail:'A publicidade do período ainda não está confirmada. Pós-Ads, pontos e posição atual ficam pendentes.'};return{key:'score-pending',label:'Pontos indisponíveis',detail:'Confira os pesos e os indicadores necessários para calcular os pontos.'};}
+    if(!row.p)return{key:'no-reference',label:'Sem posição anterior',detail:'Não há valores da operação no período de referência.'};
+    if(row.p.score==null)return{key:'prior-pending',label:'Referência sem pontos',detail:'Há dados na referência, mas a pontuação anterior está pendente. A posição atual continua disponível.'};
+    return{key:'ranked',label:row.movement===0?'Manteve posição':row.movement>0?'↑ '+row.movement+(row.movement===1?' posição':' posições'):'↓ '+Math.abs(row.movement)+(row.movement===-1?' posição':' posições'),detail:'Compara as posições pelos pontos nos dois períodos.'};
+  }
   function diaryContributions(rows,metric='fat') {
     return rows.filter(r=>n(r.c?.[metric])!=null&&n(r.p?.[metric])!=null).map(r=>({...r,value:r.c[metric]-r.p[metric]})).sort((a,b)=>Math.abs(b.value)-Math.abs(a.value)||a.id.localeCompare(b.id));
   }
@@ -159,5 +168,5 @@
   function targetHistory(daily,goals,from,to) {
     return months(from,to).map(mes=>{const eligible=goals.filter(g=>g.mes===mes&&n(g.Faturamento_obj)!=null&&n(g.Faturamento_obj)>=0),keys=new Set(eligible.map(g=>String(g.operacao))),rs=daily.filter(r=>r.date>=from&&r.date<=to&&r.date.slice(0,7)===mes&&keys.has(r.emp+' · '+r.mkt)),present=new Set(rs.filter(r=>r.n_all>0).map(r=>r.emp+' · '+r.mkt)),target=eligible.length?eligible.reduce((s,g)=>s+Number(g.Faturamento_obj),0):null,covered=eligible.length>0&&[...keys].every(k=>present.has(k)),actual=covered?sum(rs)?.fat??null:null;return{mes,target,actual,covered,withGoal:keys.size,missing:[...keys].filter(k=>!present.has(k)).length,attainment:actual!=null&&target>0?actual/target*100:null};});
   }
-  return {n,key,date,add,span,monthEnd,shiftMonth,months,previous,fields,blank,sum,difference,lineValue,aggregateLines,aggregateRows,media,rangeModel,periods,scale,seriesBuckets,bubbleLabels,score,diaryFinance,diaryRows,diaryContributions,diaryBubble,localSkus,skuGroups,abc,matrix,regression,forecast,targetHistory};
+  return {n,key,date,add,span,monthEnd,shiftMonth,months,previous,fields,blank,sum,difference,lineValue,aggregateLines,aggregateRows,media,rangeModel,periods,scale,seriesBuckets,bubbleLabels,score,diaryFinance,diaryRows,diaryHasSales,diaryVisibleRows,diaryRankState,diaryContributions,diaryBubble,localSkus,skuGroups,abc,matrix,regression,forecast,targetHistory};
 });

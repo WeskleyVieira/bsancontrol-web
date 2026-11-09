@@ -92,3 +92,4 @@
 .res-abc-operation-picker{margin:16px 0;padding:12px 16px;background:var(--bc-surface);border:1px solid var(--bc-border);border-radius:10px}.res-abc-operation-picker summary{cursor:pointer;font-weight:600;min-height:32px}.res-abc-operation-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:14px 0}.res-abc-operation-checks label{display:flex;align-items:center;gap:8px;min-height:36px}.res-abc-operation-checks input{accent-color:var(--bc-accent)}
 
 .res-abc-identity{display:flex;flex-direction:column;gap:8px}.res-abc-identity>strong{font-size:13px;line-height:1.5}.res-abc-identity>.bc-copy{font-weight:600;width:fit-content}.res-abc-identity .op-note{margin:0;font-size:12px}
+#res-diario .diary-rank-movement[data-tone=attention]{color:var(--bc-attention)!important}
