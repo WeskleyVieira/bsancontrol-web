@@ -25,6 +25,7 @@ const acompanhamentoFontes = require('./acompanhamento-fontes');
 const acompanhamentoConsultas = require('./acompanhamento-consultas');
 const operacaoConsultas = require('./operacao-consultas');
 const resultadosConsultas = require('./resultados-consultas');
+const escopoPonto = require('./escopo-ponto');
 const financeiroConsultas = require('./financeiro-consultas');
 const gerencialRaiox = require('./gerencial-raiox');
 const vendasRaiox = require('./vendas-raiox');
@@ -110,11 +111,11 @@ async function rotaGET(u, user) {
   if (u.pathname === '/api/financeiro/dre') return financeiroConsultas.dre(dbx, q);
   if (u.pathname === '/api/margens') return margensConsultas.carregar(dbx, q, user);
   if (u.pathname === '/api/publicidade/resumo') return publicidadeConsultas.carregar(dbx, q, user);
-  if (u.pathname === '/api/resultados/resumo') return resultadosConsultas.resumo(dbx, q);
-  if (u.pathname === '/api/resultados/skus') return resultadosConsultas.skus(dbx, q);
+  if (u.pathname === '/api/resultados/resumo') return resultadosConsultas.resumo(dbx, q, user);
+  if (u.pathname === '/api/resultados/skus') return resultadosConsultas.skus(dbx, q, user);
   if (u.pathname === '/api/resultados/forecast-produtos') return require('./forecast-produtos-consultas').carregar(dbx, q);
   if (u.pathname === '/api/operacao/full') return require('./operacao-full').read(dbx, q);
-  if (u.pathname === '/api/operacao/estoque') return operacaoConsultas.estoque(dbx);
+  if (u.pathname === '/api/operacao/estoque') { const r = await operacaoConsultas.estoque(dbx); return escopoPonto.ehGestor(user) ? { ...r, rows: r.rows.filter(x => x.ponto === q.ponto) } : r; }
   if (u.pathname === '/api/operacao/projecao') return operacaoConsultas.vendas(dbx, q);
   if (u.pathname === '/api/tratativas') {
     await garantePrecoNovo();
@@ -123,7 +124,7 @@ async function rotaGET(u, user) {
   if (u.pathname === '/api/alinhamentos') return q.id ? alinhamentosRegistros.historico(dbx, user, q.id) : alinhamentosRegistros.listar(dbx, user);
   if (u.pathname === '/api/pendencias') return pendenciasLeitura.listar(dbx, user);
   const entrada = u.pathname.match(/^\/api\/lancamentos\/(envios|custos|comissao)$/);
-  if (entrada) return writeStore.ler(dbx, entrada[1], user);
+  if (entrada) { const r = await writeStore.ler(dbx, entrada[1], user); if (entrada[1] === "envios" && escopoPonto.ehGestor(user)) r.dados = escopoPonto.filtrarEnvios(await escopoPonto.mapa(dbx), r.dados, q.ponto); return r; }
   if (u.pathname === "/api/health") {
     const v = !AUTH_REQ||acessos.pode(user,'vendas.ver') ? await dbx.get("SELECT COUNT(*) n FROM vendas") : null;
     const d = !AUTH_REQ||acessos.pode(user,'acompanhamento.ver') ? await dbx.get("SELECT COUNT(*) n FROM demandas") : null;
@@ -172,7 +173,7 @@ async function rotaGET(u, user) {
   }
   if (u.pathname === "/api/vendas-agregado") {
     const de = q.de || "0000-00-00", ate = q.ate || "9999-99-99", t0 = Date.now();
-    const w = ["data>=?", "data<=?", "status LIKE '%venda%'"], args = [de, ate];
+    const w = ["data>=?", "data<=?", "status LIKE '%venda%'"], args = [de, ate]; if (escopoPonto.ehGestor(user)) { w.push("ponto=?"); args.push(q.ponto); }   // regra de 10/11/2026: gestor só recebe o próprio ponto
     const W = " WHERE " + w.join(" AND ");
     const kpi = await dbx.get("SELECT COUNT(*) n, ROUND(SUM(CAST(COALESCE(receita_n,CAST(receita AS NUMERIC)) AS DOUBLE PRECISION))) fat, ROUND(SUM(CAST(COALESCE(mc_comissao_n,CAST(mc_comissao AS NUMERIC)) AS DOUBLE PRECISION))) mc FROM vendas" + W, args);
     const porOp = await dbx.all("SELECT empresa, canal, ROUND(SUM(CAST(COALESCE(receita_n,CAST(receita AS NUMERIC)) AS DOUBLE PRECISION))) fat, ROUND(SUM(CAST(COALESCE(mc_comissao_n,CAST(mc_comissao AS NUMERIC)) AS DOUBLE PRECISION))) mc, COUNT(*) n FROM vendas" + W + " GROUP BY empresa, canal ORDER BY mc DESC", args);
@@ -238,7 +239,7 @@ async function rotaGET(u, user) {
       const dt = new Date(maxd + "T00:00:00Z"); dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() - (meses - 1));
       de = de || dt.toISOString().slice(0, 10);
     }
-    const w = ["data>=?", "data<=?"]; const args = [de, ate];
+    const w = ["data>=?", "data<=?"]; const args = [de, ate]; if (escopoPonto.ehGestor(user)) { w.push("ponto=?"); args.push(q.ponto); }   // regra de 10/11/2026: gestor só recebe o próprio ponto
     const W = "WHERE " + w.join(" AND ");
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     const mapMoney = (a, campos) => a.map(o => { for (const c of campos) o[c] = r2(o[c]); return o; });
@@ -290,7 +291,7 @@ async function rotaGET(u, user) {
       const dt = new Date(maxd + "T00:00:00Z"); dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() - (meses - 1));
       de = de || dt.toISOString().slice(0, 10);
     }
-    const w = ["data>=?", "data<=?"]; const args = [de, ate];
+    const w = ["data>=?", "data<=?"]; const args = [de, ate]; if (escopoPonto.ehGestor(user)) { w.push("ponto=?"); args.push(q.ponto); }   // regra de 10/11/2026: gestor só recebe o próprio ponto
     const r2 = n => Math.round((+n || 0) * 100) / 100;
     // ⚠ NÃO acrescentar colunas aqui. Este endpoint devolve a base INTEIRA (148k linhas em out/2026);
     // cada campo a mais é multiplicado por isso. Medido: 16 campos de abertura levavam o pico de
@@ -407,6 +408,7 @@ async function rotaGET(u, user) {
         got.skuCad = f;
       }
     }
+    if (escopoPonto.ehGestor(user)) escopoPonto.filtrarExtras(await escopoPonto.mapa(dbx), got, q.ponto);
     if (user && user.perfil !== "direcao") delete got.custos;   // DRE só a direção; coordenação e gestor não recebem o blob
     const mx = await dbx.get("SELECT MAX(atualizado) m FROM datasets");   // carimbo do último db-sync (frescor)
     return acessos.filtrarExtras({ ms: Date.now() - t0, ...got, _sync: (mx && mx.m) ? mx.m : null }, user || { perfil: "direcao" });
@@ -556,6 +558,7 @@ const server = http.createServer(async (req, res) => {
     // ── GET da API ──
     if (req.method === "GET" && u.pathname.startsWith("/api/")) {
       if (AUTH_REQ && u.pathname !== "/api/health" && !user) return J(res, { erro: "não autenticado" }, 401);
+      await escopoPonto.aplicar(dbx, u, user);   // antes da exportação e do cache: a chave do cache leva o ponto já fixado
       if(u.pathname==="/api/vendas/exportar")return await vendasExportacao.enviar(req,res,dbx,Object.fromEntries(u.searchParams));
       // cache (gzip) das rotas pesadas, por escopo (perfil+gestor) — 1º acesso busca, demais são instantâneos
       const pesada = (u.pathname === "/api/dataset" || u.pathname === "/api/detalhe" || u.pathname === "/api/extras" || u.pathname === "/api/margens");

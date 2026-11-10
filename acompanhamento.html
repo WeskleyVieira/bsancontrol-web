@@ -13402,7 +13402,8 @@ function bcNavRefresh(){
  try{
  bcNavMount();const ops=bcNavReconcile(),all=bcNavCatalogue(),u=bcNavSession();
  const points=[...new Set(all.map(o=>o.ponto).filter(Boolean))].sort(),companies=[...new Set(ops.map(o=>o.emp))].sort(),channelOps=all.filter(o=>o.emp===BCNav.company),channels=[...new Set(channelOps.map(o=>o.mkt))].sort();
- bcNavOptions(document.getElementById('bc-point'),[['','Grupo'],...points.map(x=>[x,x])],PONTO_SEL);
+ const soProprioPonto=u?.perfil==='gestor';if(soProprioPonto&&points.length&&!points.includes(PONTO_SEL))PONTO_SEL=points[0];
+ bcNavOptions(document.getElementById('bc-point'),soProprioPonto?points.map(x=>[x,x]):[['','Grupo'],...points.map(x=>[x,x])],PONTO_SEL);
  bcNavOptions(document.getElementById('bc-company'),[['','Todas as empresas'],...companies.map(x=>[x,x])],BCNav.company);
  bcNavOptions(document.getElementById('bc-marketplace'),[['',BCNav.company?'Todos os marketplaces':'Selecione a empresa'],...channels.map(x=>{const point=channelOps.find(o=>o.mkt===x)?.ponto;return [x,x+(PONTO_SEL&&point&&point!==PONTO_SEL?' · ponto '+point:'')];})],BCNav.marketplace);
  const positional=activePage==='estoque'||activePage==='projecao',monthly=activePage==='gerencial'&&['metas','comissao'].includes(GER_SUB);
