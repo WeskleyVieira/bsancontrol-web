@@ -2,8 +2,9 @@
 // Local (dev/teste): nada a instalar. Nuvem (Render): DATABASE_URL setado → usa Postgres (dep 'pg').
 const path = require("path"), fs = require("fs");
 // credencial: env DATABASE_URL, ou arquivo git-ignored db_config.json (a senha NUNCA no código/git)
-if (!process.env.DATABASE_URL) { try { const c = require("./db_config.json"); if (/^postgres/i.test(c.DATABASE_URL || "")) process.env.DATABASE_URL = c.DATABASE_URL; } catch (e) {} }
-const IS_PG = !!process.env.DATABASE_URL;
+// BSAN_DB=sqlite força o SQLite local mesmo com db_config.json (teste do db-sync sem tocar a nuvem)
+if (!process.env.DATABASE_URL && process.env.BSAN_DB !== "sqlite") { try { const c = require("./db_config.json"); if (/^postgres/i.test(c.DATABASE_URL || "")) process.env.DATABASE_URL = c.DATABASE_URL; } catch (e) {} }
+const IS_PG = !!process.env.DATABASE_URL && process.env.BSAN_DB !== "sqlite";
 let impl;
 
 if (IS_PG) {

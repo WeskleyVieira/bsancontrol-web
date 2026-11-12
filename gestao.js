@@ -8,7 +8,10 @@
 //   · custos recorrentes: fixo (mesmo valor até mudar), variável (estimado pelo último valor confirmado até confirmar a
 //     conta do mês) e pontual. O mês confirmado guarda o valor real. "É comissão" = a própria comissão paga (ex.: parceria
 //     da Maressa): fica fora do lucro da regra de 10% e do pacote da DRE, para não contar duas vezes.
-//   · fechar: o painel só ENFILEIRA (tabela comandos); o PC fecha (fila-comandos.js → comissao.js --fechar).
+//   · fechar (12/11/2026, Weskley): DIRETO NO PAINEL, na hora. O banco (comissao_fechamento) guarda a foto da operação no mês
+//     (linha + detalhe da comissão como estão no painel), quem fechou e quando; "Pago em" registra o pagamento; reabrir só a
+//     Direção. O atualizar leva o banco para a Comissao_Fechada.json (comissao-fechamento-db.js) — o cálculo nunca refaz o
+//     que está fechado. Antes o painel só enfileirava e o PC fechava (fila-comandos.js), mas a rotina nunca foi agendada.
 const MES = /^\d{4}-(0[1-9]|1[0-2])$/;
 const EMP_PONTO = { 'Bsan Shop': 'Ponto 1', 'Jowcase': 'Ponto 1', 'Mary Kase': 'Ponto 1', 'Pesseguinho Store': 'Ponto 1', 'Powerfull Imports': 'Ponto 2', 'Powerfull Filial': 'Ponto 2' };
 const COMPARTILHADO = { 'Ponto 1 (compartilhado)': 'Ponto 1', 'Ponto 2 (compartilhado)': 'Ponto 2' };
@@ -28,7 +31,9 @@ async function schema(dbx) {
       rateio_desde TEXT, por TEXT, em TEXT, PRIMARY KEY (desde, operacao));
     CREATE TABLE IF NOT EXISTS gestao_custo (id TEXT PRIMARY KEY, descricao TEXT, empresa TEXT, categoria TEXT, tipo TEXT, valor REAL, dia INTEGER,
       desde TEXT, ate TEXT, comissao INTEGER, por TEXT, em TEXT);
-    CREATE TABLE IF NOT EXISTS gestao_custo_mes (mes TEXT NOT NULL, custo_id TEXT NOT NULL, valor REAL, por TEXT, em TEXT, PRIMARY KEY (mes, custo_id));`);
+    CREATE TABLE IF NOT EXISTS gestao_custo_mes (mes TEXT NOT NULL, custo_id TEXT NOT NULL, valor REAL, por TEXT, em TEXT, PRIMARY KEY (mes, custo_id));
+    CREATE TABLE IF NOT EXISTS comissao_fechamento (mes TEXT NOT NULL, operacao TEXT NOT NULL, fechado_em TEXT, fechado_por TEXT, bonus_rs REAL,
+      linha TEXT, det TEXT, pago_em TEXT, pago_por TEXT, reaberto_em TEXT, reaberto_por TEXT, origem TEXT, PRIMARY KEY (mes, operacao));`);
 }
 
 // ── vigência ────────────────────────────────────────────────────────────────────────────────────────────
@@ -141,13 +146,14 @@ function createHttp(dbx, { writeStore }) {
       dbx.all('SELECT * FROM gestao_carteira ORDER BY desde DESC'), dbx.all('SELECT * FROM gestao_regra'),
       dbx.all("SELECT nome, gestor_ref FROM usuarios WHERE perfil='gestor' AND ativo=1"), dbx.get("SELECT json, atualizado FROM datasets WHERE nome='comissao'"),
       dbx.all("SELECT id, criado_em, pedido_por, demanda_id, anuncio, estado, resultado, atualizado_em FROM comandos WHERE tipo='fechar_comissao' ORDER BY criado_em DESC LIMIT 20").catch(() => [])]);
+    const F = Object.fromEntries((await dbx.all('SELECT mes, operacao, fechado_em, fechado_por, bonus_rs, pago_em, pago_por FROM comissao_fechamento WHERE mes=? AND reaberto_em IS NULL', [mes])).map(f => [f.operacao, f]));
     const C = carteiraDoMes(cart, mes), R = regrasDoMes(regras, mes);
     let linhas = []; try { linhas = JSON.parse(com.json).filter(r => r.mes === mes); } catch (e) { }
     const nomes = new Set([...usuarios.map(u => S(u.gestor_ref)).filter(Boolean), ...cart.map(r => S(r.gestor)).filter(Boolean), ...ops.map(o => S(o.gestor)).filter(Boolean)]);
     const chaves = new Set([...ops.map(o => o.empresa + '|' + o.marketplace), ...cart.map(r => r.empresa + '|' + r.marketplace), ...linhas.map(l => l.operacao.replace(' · ', '|'))]);
     const operacoes = [...chaves].sort().map(k => { const [empresa, marketplace] = k.split('|'), op = empresa + ' · ' + marketplace, r = R[op] || null;
       return { operacao: op, empresa, marketplace, gestor: C[k] || null, regra: r ? { desde: r.desde, paga: r.paga == null ? null : !!+r.paga, teto: num(r.teto), regra: S(r.regra) || 'metas', pct_lucro: num(r.pct_lucro), rateio_desde: S(r.rateio_desde) || null } : null,
-        comissao: linhas.find(l => l.operacao === op) || null }; });
+        comissao: linhas.find(l => l.operacao === op) || null, fechamento: F[op] || null }; });
     return { ok: true, mes, operacoes, gestores: [...nomes].sort(), historico: cart.slice(0, 60), comissao_atualizada: com ? com.atualizado : null, fechamentos: cmds };
   }
   async function custos(mes) {
@@ -209,14 +215,36 @@ function createHttp(dbx, { writeStore }) {
         const salvo = await writeStore.gravar(dbx, 'custos', pacoteDRE(atual.dados, porMes), atual.versao, user);
         return J(res, { ...salvo, meses: Object.keys(porMes) }), true;
       }
-      if (u.pathname === '/api/gestao/fechar') {
+      if (u.pathname === '/api/gestao/fechar') {   // fecha NA HORA: congela a linha e o detalhe que o painel mostra agora
         const mes = mesOk(b.mes), ops = (Array.isArray(b.operacoes) ? b.operacoes : []).map(S).filter(o => / · /.test(o) && o.length < 80);
         if (!ops.length) throw falha(400, 'Escolha as operações a fechar.');
-        await dbx.exec(`CREATE TABLE IF NOT EXISTS comandos (id TEXT PRIMARY KEY, criado_em TEXT, pedido_por TEXT, perfil TEXT, gestor TEXT, tipo TEXT,
-          demanda_id TEXT, empresa TEXT, anuncio TEXT, estado TEXT, resultado TEXT, atualizado_em TEXT)`);
-        const id = 'fc-' + Date.now().toString(36);
-        await dbx.run('INSERT INTO comandos(id,criado_em,pedido_por,perfil,gestor,tipo,demanda_id,empresa,anuncio,estado,resultado,atualizado_em) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
-          [id, em, quem(user), user.perfil, '', 'fechar_comissao', 'comissao|' + mes, '', ops.join('\n'), 'pendente', 'na fila: o PC fecha em até 15 minutos', em]);
+        const [rc, rd] = await Promise.all([dbx.get("SELECT json FROM datasets WHERE nome='comissao'"), dbx.get("SELECT json FROM datasets WHERE nome='comissaoDet'")]);
+        const L = rc ? JSON.parse(rc.json) : [], D = rd ? JSON.parse(rd.json) : [];
+        const ja = new Set((await dbx.all('SELECT operacao FROM comissao_fechamento WHERE mes=? AND reaberto_em IS NULL', [mes])).map(r => r.operacao));
+        const semCalculo = [];
+        for (const op of ops) { if (ja.has(op)) continue;
+          const linha = L.find(r => r.mes === mes && r.operacao === op), det = D.find(r => r.mes === mes && r.operacao === op);
+          if (!linha || !det) { semCalculo.push(op); continue; }
+          await dbx.run('DELETE FROM comissao_fechamento WHERE mes=? AND operacao=?', [mes, op]);
+          await dbx.run('INSERT INTO comissao_fechamento(mes,operacao,fechado_em,fechado_por,bonus_rs,linha,det,origem) VALUES(?,?,?,?,?,?,?,?)', [mes, op, em, quem(user), r2(linha.bonus_final_rs), JSON.stringify(linha), JSON.stringify(det), 'painel']);
+          linha.fechado_em = em; linha.bonus_recalculado_rs = r2(linha.bonus_final_rs); linha.diferenca_rs = 0; }
+        await dbx.run("UPDATE datasets SET json=? WHERE nome='comissao'", [JSON.stringify(L)]);   // o painel já mostra fechada
+        const r = await estado(mes); if (semCalculo.length) r.aviso = 'Sem cálculo de comissão no painel para: ' + semCalculo.join(', ') + '. Rode o atualizar e tente de novo.';
+        return J(res, r), true;
+      }
+      if (u.pathname === '/api/gestao/pagar') {   // marca (ou desmarca, data vazia) o pagamento de operações FECHADAS
+        const mes = mesOk(b.mes), ops = (Array.isArray(b.operacoes) ? b.operacoes : []).map(S).filter(Boolean), data = S(b.pago_em);
+        if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data)) throw falha(400, 'Data de pagamento inválida.');
+        if (!ops.length) throw falha(400, 'Escolha as operações.');
+        for (const op of ops) await dbx.run('UPDATE comissao_fechamento SET pago_em=?, pago_por=? WHERE mes=? AND operacao=? AND reaberto_em IS NULL', [data || null, data ? quem(user) : null, mes, op]);
+        return J(res, await estado(mes)), true;
+      }
+      if (u.pathname === '/api/gestao/reabrir') {   // só Direção (a rota inteira é); paga não reabre
+        const mes = mesOk(b.mes), op = S(b.operacao);
+        const f = await dbx.get('SELECT pago_em FROM comissao_fechamento WHERE mes=? AND operacao=? AND reaberto_em IS NULL', [mes, op]);
+        if (!f) throw falha(400, 'Essa operação não está fechada.');
+        if (f.pago_em) throw falha(400, 'Comissão já marcada como paga. Desmarque o pagamento antes de reabrir.');
+        await dbx.run('UPDATE comissao_fechamento SET reaberto_em=?, reaberto_por=? WHERE mes=? AND operacao=?', [em, quem(user), mes, op]);
         return J(res, await estado(mes)), true;
       }
       return J(res, { ok: false, erro: 'Rota não encontrada.' }, 404), true;

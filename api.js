@@ -402,6 +402,7 @@ async function rotaGET(u, user) {
       if (got.afiliadosFonte) got.afiliadosFonte = got.afiliadosFonte.filter(afProprio);
       if (got.comissao) got.comissao = got.comissao.filter(r => daMinha(r));
       if (got.comissaoDet) got.comissaoDet = got.comissaoDet.filter(r => daMinha(r));
+      if (got.comissaoAlertas) got.comissaoAlertas = got.comissaoAlertas.filter(afProprio);   // mudança de comissão da Amazon (12/11/2026)
       const skus = new Set(user.gestor_ref ? (await dbx.all("SELECT DISTINCT v.sku sku FROM vendas v JOIN operacoes o ON v.empresa=o.empresa AND v.canal=o.marketplace WHERE o.gestor=?", [user.gestor_ref])).map(r => String(r.sku || "").toUpperCase()) : []);
       if (got.skuCad && typeof got.skuCad === "object" && !Array.isArray(got.skuCad)) {
         const f = {}; for (const k of Object.keys(got.skuCad)) if (skus.has(String(k).toUpperCase())) f[k] = got.skuCad[k];
@@ -560,6 +561,7 @@ const server = http.createServer(async (req, res) => {
       if (AUTH_REQ && u.pathname !== "/api/health" && !user) return J(res, { erro: "não autenticado" }, 401);
       await escopoPonto.aplicar(dbx, u, user);   // antes da exportação e do cache: a chave do cache leva o ponto já fixado
       if(u.pathname==="/api/vendas/exportar")return await vendasExportacao.enviar(req,res,dbx,Object.fromEntries(u.searchParams));
+      if(u.pathname==="/api/relatorio-gerencial")return await require("./relatorio-gerencial-http").enviar(req,res,dbx,user,Object.fromEntries(u.searchParams));   // Excel do mês da operação (12/11/2026)
       // cache (gzip) das rotas pesadas, por escopo (perfil+gestor) — 1º acesso busca, demais são instantâneos
       const pesada = (u.pathname === "/api/dataset" || u.pathname === "/api/detalhe" || u.pathname === "/api/extras" || u.pathname === "/api/margens");
       const aceitaGz = /\bgzip\b/.test(String(req.headers["accept-encoding"] || ""));
