@@ -8,6 +8,7 @@ files['/produtos/packaging-ui.js']=['packaging-ui.js','text/javascript; charset=
 files['/produtos/operational-packaging-ui.js']=['operational-packaging-ui.js','text/javascript; charset=utf-8'];
 files['/produtos/publication-ui.js']=['publication-ui.js','text/javascript; charset=utf-8'];
 files['/produtos/host-theme.css']=['host-theme.css','text/css; charset=utf-8'];
+for(const name of ['fullscreen.js','tabelas-ampliadas.js','interface.css'])files['/produtos/'+name]=['../../visual/'+name,name.endsWith('.css')?'text/css; charset=utf-8':'text/javascript; charset=utf-8'];
 function json(res,obj,status=200){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(obj));}
 function body(req){return new Promise((resolve,reject)=>{let size=0,parts=[],bad=false;
   req.on('data',chunk=>{size+=chunk.length;if(size>16384){bad=true;parts=[];}else if(!bad)parts.push(chunk);});
