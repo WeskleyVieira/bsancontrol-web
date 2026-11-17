@@ -1,6 +1,9 @@
 /* Tokens e componentes do novo padrão aplicados à estrutura original inteira. */
 :root{--bg:#f5f7fa;--surf:#fff;--surf2:#f1f4f8;--surf3:#eaf0f7;--bdr:#e2e7ef;--bdr2:#dce3ed;--t:#1d2a40;--t2:#5c6b83;--t3:#75839a;--a:#2862e6;--a2:#2862e6;--a3:#edf3ff;--g:#148455;--r:#cc4050;--y:#a36a0b;--b:#3975ed;--card-bg:#fff;--bc-ui-scale:1!important}
-body.review-integral{margin:0;padding:0 0 0 198px;background:var(--bg)!important;color:var(--t);font:13px/1.5 Inter,'Segoe UI',sans-serif;zoom:var(--bc-interface-scale,1);min-width:0}
+html:has(>body.review-integral){background:#f5f7fa!important}
+html:has(>body.review-integral:not(.light)){background:#0c111b!important}
+/* O zoom reduz também a altura física do body. Compense a escala em telas curtas. */
+body.review-integral{margin:0;padding:0 0 0 198px;background:var(--bg)!important;color:var(--t);font:13px/1.5 Inter,'Segoe UI',sans-serif;zoom:var(--bc-interface-scale,1);min-width:0;min-height:calc(100dvh / var(--bc-interface-scale,1))!important}
 body.review-integral:not(.light){--bg:#0c111b;--surf:#131c2b;--surf2:#1b2638;--surf3:#22324a;--bdr:#29354a;--bdr2:#354359;--t:#e9eef7;--t2:#acb9cc;--t3:#8494ad;--a:#82acff;--a2:#82acff;--a3:#1c304d;--card-bg:#131c2b}
 .review-integral *{box-sizing:border-box}.review-integral h1{font-size:24px;letter-spacing:-.6px}.review-integral h2{font-size:16px}.review-integral h3{font-size:13px}
 .review-integral button,.review-integral select,.review-integral input,.review-integral textarea{font:inherit;max-width:100%}.review-integral button{border:1px solid var(--bdr);border-radius:7px;padding:7px 10px;background:var(--surf);color:var(--t);cursor:pointer;min-height:30px;font-size:11px;box-shadow:none}
