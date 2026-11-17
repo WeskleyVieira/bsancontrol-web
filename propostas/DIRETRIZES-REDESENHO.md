@@ -7,8 +7,8 @@ Requisitos definidos pelo usuário após comparar a prévia com a referência Sh
 | Tema | Decisão | Critério para validar |
 |---|---|---|
 | Tema | Claro é o padrão; escuro é uma escolha pessoal. | Primeiro acesso claro; escolha preservada ao voltar. |
-| Cabeçalho | Busca à esquerda; ações discretas e perfil à direita. | Contexto operacional, avisos técnicos e ferramentas administrativas não ocupam várias linhas permanentes no topo. |
-| Menu | Lateral retrátil, com ícones e identificação das áreas. | Recolher libera espaço sem impedir acesso às abas; estado lembrado; no celular usa gaveta. |
+| Cabeçalho | Busca à esquerda; tema e conta à direita; notificações serão acrescentadas quando implementadas. | Preferências, contexto operacional e ferramentas administrativas não competem com as ações pessoais no topo. |
+| Menu | Lateral retrátil, com ícones e identificação das áreas; Preferências na base. | Recolher libera espaço sem impedir acesso às abas; rodapé acessível mesmo com rolagem da navegação; estado lembrado; no celular usa gaveta. |
 | Páginas | Composição própria para cada objetivo, com leitura inicial curta e aprofundamento disponível. | Resultados e desvios relevantes aparecem antes de textos extensos e controles secundários. |
 | Personalização | Usuário escolhe recursos, ordem, densidade e organização da sua leitura. | Preferências pertencem à pessoa e à página; outro usuário não herda essas escolhas. |
 | Persistência | Salvar automaticamente e oferecer restauração do padrão por página. | Voltar à ferramenta não exige repetir os ajustes; falha de salvamento é informada. |
