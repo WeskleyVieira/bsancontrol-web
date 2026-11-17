@@ -2,6 +2,6 @@
   "name": "bsancontrol-revisao-integral",
   "private": true,
   "version": "1.0.0",
-  "scripts": { "test": "node --test integral.test.cjs integral-preferences.test.cjs workspace.test.cjs" },
+  "scripts": { "test": "node --test integral.test.cjs integral-preferences.test.cjs studio.test.cjs workspace.test.cjs" },
   "dependencies": { "acorn": "8.15.0", "chart.js": "4.4.1", "chartjs-plugin-datalabels": "2.2.0", "xlsx": "0.18.5" }
 }

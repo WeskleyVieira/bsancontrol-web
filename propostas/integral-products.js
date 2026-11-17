@@ -1,22 +1,29 @@
-/* Apresentação do módulo Produtos original; seus formulários e serviços são mantidos. */
+/* Composição dos dez fluxos de Produtos, sobre os formulários e o serviço originais. */
 (function(){'use strict';
- window.addEventListener('error',e=>console.error('Prévia Produtos: '+e.filename+':'+e.lineno+' '+(e.error?.stack||e.message)));
- function init(){let pending=false,identity='';const prefs=new Map();
- function mode(){return document.querySelector('nav [class*="selected"]')?.id||[...document.querySelectorAll('#workspace>section')].find(n=>!n.hidden)?.id||'catalog';}
- function state(){const k=identity+':'+mode();if(!prefs.has(k)){try{prefs.set(k,identity?JSON.parse(localStorage.getItem('review-integral:'+k))||{}:{});}catch{prefs.set(k,{});}}return prefs.get(k);}
- // Registros de produtos, materiais e custos são dados da lista, não widgets.
- // A personalização nunca retira linhas individuais da análise.
- function nodes(){return [...document.querySelectorAll('#workspace .section,#workspace .dashboard-section')].filter(n=>!n.parentElement.closest('.section,.dashboard-section')&&!n.matches('form')&&!n.closest('form'));}
- function apply(){const s=state();for(const[n,i]of nodes().map((n,i)=>[n,i])){const key=n.id||n.querySelector('h2,h3')?.textContent||'Bloco '+i;n.dataset.reviewProductKey=key;n.classList.toggle('pr-review-hidden',s[key]===false);}}
- function dialog(){
-  let d=document.getElementById('pr-review-dialog');if(!d){d=document.createElement('dialog');d.id='pr-review-dialog';d.className='pr-review-dialog';document.body.append(d);}d.replaceChildren();
-  const h=document.createElement('header'),title=document.createElement('h2');title.textContent='Personalizar recursos de Produtos';const close=document.createElement('button');close.textContent='Fechar';close.onclick=()=>d.close();h.append(title,close);d.append(h);
-  const available=nodes().filter(n=>!n.hidden&&!n.closest('section[hidden]'));
-  const note=document.createElement('p');note.textContent=available.length?'Escolha painéis de apoio. Cadastros, linhas e formulários permanecem completos.':'Esta aba é um fluxo de cadastro. Seus registros, campos e ações ficam disponíveis por inteiro; não há painéis opcionais neste contexto.';d.append(note);
-  for(const[n,i]of available.map((n,i)=>[n,i])){const label=document.createElement('label'),input=document.createElement('input'),name=n.querySelector('h2,h3')?.textContent||'Painel de apoio '+(i+1);input.type='checkbox';input.checked=!n.classList.contains('pr-review-hidden');input.onchange=()=>{state()[n.dataset.reviewProductKey]=input.checked;if(identity)localStorage.setItem('review-integral:'+identity+':'+mode(),JSON.stringify(state()));apply();};label.append(input,document.createTextNode(name));d.append(label);}if(!d.open)d.showModal();
- }
- window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent)return;if(['review-personalize','review-user'].includes(e.data?.type)&&typeof e.data.identity==='string'){if(identity!==e.data.identity){identity=e.data.identity;prefs.clear();apply();}if(e.data.type==='review-personalize')dialog();}});
- new MutationObserver(records=>{if(!pending&&records.some(r=>!r.target.closest?.('#pr-review-dialog'))){pending=true;requestAnimationFrame(()=>{pending=false;apply();});}}).observe(document.body,{childList:true,subtree:true});apply();
+ function init(){
+  const root=document.getElementById('workspace');if(!root||!window.BCReviewStudio)return;
+  let identity='',store=null,studio=null,pending=false,expanded=null;const layouts=new Map();
+  const memory=new Map(),storage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};
+  function mode(){return(document.querySelector('nav button.selected')?.id||'catalog-tab').replace(/-tab$/,'');}
+  function key(){return'cadastro-produtos/cadastro-'+mode();}
+  function settings(){const k=key();if(!layouts.has(k))layouts.set(k,store?.getLayout(k)||{mode:'essential',items:{},order:[],sizes:{},tables:{}});return layouts.get(k);}
+  function persist(){store?.setLayout(key(),settings());}
+  const dialog=document.createElement('dialog');dialog.className='review-dialog studio-ui';dialog.setAttribute('aria-label','Análise ampliada');document.body.append(dialog);
+  function restoreZoom(){if(!expanded)return;expanded.marker.replaceWith(expanded.node);expanded=null;parent.postMessage({type:'bsan-produtos-table-view',open:false},location.origin);}
+  function expand(node,title){restoreZoom();dialog.replaceChildren();const h=document.createElement('header'),t=document.createElement('h2'),full=document.createElement('button'),close=document.createElement('button');t.textContent=title;full.textContent='Tela cheia';full.onclick=()=>dialog.classList.toggle('review-full');close.textContent='Fechar';close.onclick=()=>dialog.close();h.append(t,full,close);const body=document.createElement('div');body.className='review-dialog-body';dialog.append(h,body);const marker=document.createComment('origem da análise ampliada');node.before(marker);body.append(node);expanded={node,marker};parent.postMessage({type:'bsan-produtos-table-view',open:true},location.origin);dialog.showModal();}
+  dialog.addEventListener('close',restoreZoom);
+  function makeStudio(){studio=BCReviewStudio.create({settings,persist,expand,onLibrary:open=>parent.postMessage({type:'bsan-produtos-table-view',open},location.origin)});}
+  function apply(){pending=false;if(!studio||expanded)return;studio.compose(root,key());}
+  function schedule(){if(!pending){pending=true;requestAnimationFrame(apply);}}
+  document.body.classList.add('review-integral','studio-products','light');root.classList.add('page','on');
+  store=BCReviewPreferences.create(storage,'temporary-products');makeStudio();
+  window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent)return;const d=e.data||{};
+   if(d.type==='bsan-produtos-theme'||d.type==='bsan-produtos-auth'){document.body.classList.toggle('light',d.theme==='light');schedule();}
+   if(['review-user','review-personalize','bsan-produtos-auth'].includes(d.type)&&typeof d.identity==='string'&&d.identity!==identity){restoreZoom();studio.restore();identity=d.identity;layouts.clear();store=BCReviewPreferences.create(localStorage,'products:'+identity);makeStudio();schedule();}
+   if(d.type==='review-personalize'){apply();studio.openLibrary();}
+  });
+  new MutationObserver(records=>{if(records.some(r=>!r.target.closest?.('.studio-ui,[data-studio-owned=true]')&&(r.type==='attributes'||[...r.addedNodes].some(n=>n.nodeType===1&&!studio.isManaged(n)))))schedule();}).observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+  document.addEventListener('click',e=>{if(!e.target.closest('.studio-ui'))schedule();});document.addEventListener('change',e=>{if(!e.target.closest('.studio-ui'))schedule();});schedule();
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

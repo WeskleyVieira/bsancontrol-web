@@ -1,43 +1,47 @@
-# Prévia integral do BsanControl · 17/11/2026
+# Prévia integral recomposta do BsanControl · Studio v3
 
-**Redesenho em andamento:** os requisitos de experiência estão em [DIRETRIZES-REDESENHO.md](DIRETRIZES-REDESENHO.md). A cobertura funcional abaixo não significa que a composição de todas as páginas tenha sido redesenhada. Nesta revisão, o cabeçalho ganhou busca e ações compactas; o menu lateral é retrátil; tema e preferências são lembrados por identidade. Mapa, escala e perfil simulado ficam em **Preferências e ferramentas**.
+Prévia navegável para revisão visual antes de integrar ao painel publicado. Oito áreas e 39 destinos nativos, com dados fictícios, modelos e formulários originais. O item nativo “Anúncios · em breve” do Acompanhamento continua desabilitado.
 
-A versão atual aplica a nova navegação e apresentação à **estrutura original inteira**, em vez de substituir telas por composições demonstrativas. Usa o catálogo de navegação nativo: oito áreas e 39 destinos funcionais. O item original “Anúncios · em breve” de Acompanhamento continua desabilitado.
+**Abrir:** [Prévia integral](http://127.0.0.1:59833/?revisao=integral#gerencial/panorama).
 
-O HTML original é lido em memória de `T:/Meu Drive/Business Intelligence/Grupo Bsan/BsanControl.html`. Os conjuntos de dados são substituídos por exemplos fictícios. Renderizadores, modelos de negócio, filtros, tabelas, gráficos, detalhes e formulários continuam sendo os originais. Os módulos web e o serviço de Produtos também são os originais, com banco SQLite exclusivamente em memória.
+- Resumo essencial no início, gráficos e prioridades em uma grade de 12 colunas.
+- Cards com valor, comparação e explicações no ícone de informação; estimativas permanecem identificadas.
+- **Adicionar widgets** abre a biblioteca lateral: miniatura, finalidade, seleção, ordem por arraste/setas e cinco larguras.
+- **Todas as análises** revela os recursos da leitura atual; **Visão essencial** retorna à seleção sugerida. A biblioteca também restaura a composição inicial.
+- Tabelas com seleção de colunas disponíveis ao perfil, densidade, ampliação e ações nativas de detalhe/exportação. Colunas financeiras não são removidas por falta ou zero de dados.
+- Links dos indicadores e ações nativas abrem vendas, operação, anúncio ou SKU; voltar à origem preserva o recorte.
+- Claro inicial, escuro opcional, menu retrátil, ferramentas na base e escala no controle Visual. Preferências por identidade/página neste navegador; ainda sem sincronização entre dispositivos.
 
-**Abrir:** `http://127.0.0.1:59833/?revisao=integral#gerencial/panorama`. O botão **Mapa** reúne toda a estrutura. O menu lateral expande as abas da área ativa. **Todos os recursos** mostra os blocos da leitura; **Essencial** e **Personalizar** permitem escolher a apresentação, com preferências por aba e perfil neste navegador. Algumas análises aparecem depois de selecionar um produto, um filtro ou um detalhe, seguindo o fluxo original. Formulários de cadastro mantêm seus registros e campos completos.
-
-O padrão inclui densidade ajustável pelo controle Visual original, tema claro/escuro, tabelas compactas, cores sem bordas espessas nos gráficos e ampliação de blocos sem clonar seus controles. Tabelas e gráficos conservam também seus visualizadores nativos. A personalização altera a apresentação; não modifica denominadores, valores, linhas de produtos ou regras financeiras.
+Os dez fluxos de Produtos usam o aplicativo e o serviço originais, com SQLite somente em memória. Cadastros e ações demonstrativas desaparecem ao reiniciar o servidor. O HTML original é lido em memória de `T:/Meu Drive/Business Intelligence/Grupo Bsan/BsanControl.html`; os dados privados são substituídos. Nem o HTML gerado nem os arquivos de SAIDA são copiados para o Git.
 
 ## Executar
 
-Requer Node 24 com SQLite e acesso ao HTML original acima. A variável `BSAN_REVIEW_SOURCE` permite indicar outra cópia desse HTML. A partir da raiz do repositório:
+Requer Node 24 com SQLite e acesso ao HTML original. `BSAN_REVIEW_SOURCE` permite indicar outra cópia. Na raiz do repositório:
 
 ```powershell
 npm ci --prefix propostas
 node propostas/preview.cjs
 ```
 
-O servidor escuta somente em `127.0.0.1:59833`. `PROPOSTA_PORT` permite outra porta. Abrir o arquivo HTML diretamente não inicia esta versão. O HTML gerado original e os dados de SAIDA não são copiados para o Git.
+O servidor escuta apenas em `127.0.0.1:59833`. `PROPOSTA_PORT` permite mudar a porta. Abrir um HTML avulso não inicia a aplicação integral.
 
-## Cobertura e validação
-
-Veja [COBERTURA-INTEGRAL.md](COBERTURA-INTEGRAL.md) para as 39 rotas e o método de conferência. Os testes comparam as 1.524 funções nomeadas originais, inclusive internas, byte a byte; esse número representa funções, não indicadores. Todos os IDs estáticos originais permanecem presentes. Foram verificados navegação pelas 39 abas, Metas diário/acumulado, Raio-X, formulários de Produtos, preferências ao trocar de aba, ampliação e apresentação móvel.
+## Validação
 
 ```powershell
-node --test propostas/integral.test.cjs propostas/integral-preferences.test.cjs propostas/workspace.test.cjs
+node --test propostas/integral.test.cjs propostas/integral-preferences.test.cjs propostas/studio.test.cjs propostas/workspace.test.cjs
 ```
 
-Resultado: 17 testes passaram, sendo seis da revisão integral, dois de persistência/isolamento de preferências e nove de regressão do protótipo anterior. Os testes antigos de 175 blocos não são utilizados como prova de cobertura desta versão.
+21 testes aprovados: seis da adaptação integral, dois de preferências, quatro da composição Studio e nove do protótipo anterior. A paridade compara 1.524 funções nomeadas nativas, inclusive internas, byte a byte, além de todos os IDs estáticos. **Funções e blocos não são contagem de indicadores.** Os testes antigos de 175 blocos não provam cobertura da versão integral.
 
-## Limites da revisão
+[VALIDACAO-STUDIO.md](VALIDACAO-STUDIO.md) registra os percursos e limites; [COBERTURA-INTEGRAL.md](COBERTURA-INTEGRAL.md) e [cobertura-integral.json](cobertura-integral.json) registram os 39 destinos nativos. [DIRETRIZES-REDESENHO.md](DIRETRIZES-REDESENHO.md) contém as decisões de experiência.
 
-Esta é a migração da **estrutura para a prévia**, sem implantação em produção. Os valores são fictícios; perfis e ações usam adaptadores locais. Cadastros, tratativas e fechamento de demonstração não alteram registros reais e desaparecem ao reiniciar o servidor. Pagamentos, credenciais, integrações externas e coletores reais não são executados nem homologados aqui. As permissões oficiais precisarão ser verificadas na integração com o servidor de produção.
+## Limites
 
-A prioridade desta versão é a fidelidade das telas. Ocultar um bloco não garante que o modelo original deixe de calculá-lo. Não há promessa de redução de consultas ou tempo de carregamento: a divisão de consultas e o carregamento sob demanda em produção estão descritos em [CARREGAMENTO.md](CARREGAMENTO.md).
+Esta entrega é a implementação visual na prévia. Dados, perfis e gravações são demonstrativos; permissões oficiais, integrações externas, coletores, pagamentos e fechamento real não foram homologados. A integração de produção e a persistência oficial no servidor são uma etapa posterior à revisão do usuário.
 
-Somente `propostas/` foi alterado. As correções de ponto/casa, filtros do gestor e coletor Tiny não foram modificadas. O branch da proposta permanece separado da plataforma publicada.
+Os renderizadores nativos ainda podem calcular análises ocultas. Não há ganho de consultas ou tempo de carregamento declarado. Ver [CARREGAMENTO.md](CARREGAMENTO.md). IA não foi implementada.
+
+Somente `propostas/` foi alterado. As correções de ponto/casa, filtros do gestor e coleta Tiny não foram modificadas. O branch da proposta permanece separado do painel publicado.
 
 ## Histórico do protótipo anterior
 

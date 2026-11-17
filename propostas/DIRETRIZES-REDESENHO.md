@@ -45,6 +45,10 @@ O redesenho deverá separar a leitura essencial dos recursos adicionais no ciclo
 
 ## Estado da implementação nesta revisão
 
-**Aplicado à base da prévia:** cabeçalho compacto com busca de páginas, ações e perfil; ferramentas auxiliares em um diálogo próprio; menu lateral retrátil com acesso às abas recolhidas; tema claro inicial e escolha de tema salva; persistência de menu e layout por identidade e por página; correção dos endereços ao abrir uma área sem aba explicitada.
+**Implementado na prévia Studio v3:** composição dos 39 destinos nativos, indicadores essenciais antes do aprofundamento, grade configurável, explicações dos cards sob demanda, biblioteca lateral com miniaturas/finalidade/seleção, ordem por arraste ou setas, cinco larguras, colunas e densidade das tabelas, ampliação e retorno ao contexto anterior. Os dez fluxos de Produtos usam os formulários e o serviço originais em memória, com a mesma biblioteca visual. Metas preserva objetivos, orçamento, TACOS, dia selecionado e acumulado; Forecast conserva as lentes de operações e produtos.
 
-**Ainda não concluído:** recomposição interna de todas as páginas, biblioteca visual completa de widgets, tamanhos configuráveis e reorganização detalhada de tabelas, persistência oficial no servidor, otimização das consultas e integração de IA. A aplicação dessa base comum não será descrita como conclusão do redesenho da plataforma.
+A composição usa CSS e os elementos reais: a árvore funcional, IDs, eventos e cálculos nativos permanecem. A visibilidade pessoal usa atributos próprios, sem alterar o `hidden` que os renderizadores usam para mudar de seção ou proteger campos. Preferências são salvas por identidade e página neste navegador.
+
+**Etapas posteriores à revisão visual:** integração e homologação com o servidor oficial, sincronização de preferências entre dispositivos, divisão de consultas/carregamento sob demanda e IA. Nenhum desses itens é apresentado como já implantado. O painel publicado não foi alterado.
+
+Ver [VALIDACAO-STUDIO.md](VALIDACAO-STUDIO.md) para o escopo e a evidência desta revisão.
