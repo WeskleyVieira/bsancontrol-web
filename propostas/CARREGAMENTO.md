@@ -1,5 +1,13 @@
 # Contrato para a integração do layout
 
+## Estado atual da prévia integral
+
+A revisão integral preserva os renderizadores originais para permitir a conferência de todas as telas. A preferência essencial/personalizada controla visibilidade e ordem; não equivale a impedir todos os cálculos, montagem ou consultas do bloco oculto. Não se usa uma instância substituta de Chart nem se altera sua API para simular carregamento sob demanda. Nenhum ganho de desempenho em produção foi medido ou declarado.
+
+Os pontos abaixo são requisitos para a futura integração com produção. As referências ao cancelamento e à montagem sob demanda realizados na prévia descrevem o protótipo anterior, mantido em `workspace*.js`; não devem ser atribuídas ao servidor integral. Na integração, será necessário separar consultas e o ciclo de vida dos blocos sem perder os contratos dos modelos originais, medir o resultado e validar autorização no servidor.
+
+## Requisitos da integração
+
 A prévia demonstra o comportamento, mas não modifica consultas ou permissões do BsanControl publicado.
 
 1. O catálogo descreve os recursos disponíveis; a preferência escolhe quais instanciar. Não carregar dados de um recurso apenas para mantê-lo escondido.

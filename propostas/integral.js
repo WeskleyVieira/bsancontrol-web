@@ -1,0 +1,70 @@
+/* Nova apresentação sobre os componentes originais. Nenhum renderizador de negócio é substituído. */
+(function(){'use strict';
+ const $=id=>document.getElementById(id),el=(t,c,text)=>{const n=document.createElement(t);if(c)n.className=c;if(text!=null)n.textContent=text;return n;};
+ const prefs=new Map(),registry=new Map();let lastRoute='',scheduled=false,expanded=null;
+ const alias={'r-geral':'overview','r-diario':'diario','r-canais':'marketplaces','r-abc':'abc','r-forecast':'forecast','v-lista':'vendas','v-raiox':'raiox','g-vendas':'ger-vendas',diagnostico:'diag',anuncios:'produtos','g-forecast':'previsao',publicidade:'ads','g-metas':'metas','g-full':'full','o-envios':'envios','o-estoque':'estoque','o-projecao':'projecao','pv-fila':'pv-fila','a-tarefas':'tarefas','a-promocoes':'promos','a-ads':'ac-ads','a-alinhamentos':'alinhamentos','a-pendencias':'pendencias','f-dre':'dre','f-comissao':'comissao','f-fechamento':'gestao-fechamento','f-custos':'gestao-custos','f-carteiras':'gestao-carteiras'};
+ const modes={'p-catalogo':'catalog','p-pendencias':'tasks','p-entradas':'entries','p-materiais':'materials','p-embalagens':'pack','p-preparacao':'prep','p-homologacao':'review','p-apuracao':'sales','p-atualizacao':'sync','p-integracao':'publication'};
+ const button=(t,fn,cls='')=>{const b=el('button',cls,t);b.type='button';b.onclick=fn;return b;};
+ const sidebar=el('aside','review-sidebar review-ui'),brand=el('div','review-brand');brand.append(el('b','','B'),el('strong','','BsanControl'));sidebar.append(brand,el('small','review-caption','REVISÃO INTEGRAL · DADOS FICTÍCIOS'));const nav=el('nav');nav.setAttribute('aria-label','Áreas e abas do BsanControl');sidebar.append(nav);document.body.prepend(sidebar);
+ const bar=el('header','review-topbar review-ui'),crumb=el('div','review-crumb'),actions=el('div','review-top-actions');bar.append(button('☰',()=>document.body.classList.toggle('review-menu-open'),'review-menu'),crumb,actions);
+ const role=el('select');role.setAttribute('aria-label','Perfil da revisão');for(const[p,t]of [['direcao','Direção'],['coordenacao','Coordenação'],['gestor','Gestor'],['compradora','Compradora'],['estoque','Estoque'],['posvenda','Pós-venda']])role.append(new Option(t,p));role.value=BCAUTH.user.perfil;role.onchange=()=>{const u=new URL(location.href);u.searchParams.set('perfil',role.value);location.href=u.href;};
+ actions.append(el('span','review-tag','Prévia isolada'),role,button('Mapa',()=>mapDialog()));document.body.insertBefore(bar,sidebar.nextSibling);
+ const workspace=el('div','review-workspace');document.body.append(workspace);
+ function mountChrome(){
+  const context=$('bc-global-context'),heading=$('bc-page-title')?.parentElement.parentElement;
+  if(context&&context.parentElement!==workspace)workspace.prepend(context);
+  if(heading&&heading.parentElement!==workspace&&heading!==workspace)context?.after(heading);
+  const originalActions=document.querySelector('.bc-header-top');if(originalActions&&originalActions.parentElement!==actions)actions.append(originalActions);
+  for(const page of document.querySelectorAll('.page'))if(page.parentElement!==workspace)workspace.append(page);
+ }
+ function current(){return typeof bcGroupedCurrent==='function'?bcGroupedCurrent():null;}
+ function route(){const c=current();return c?c.group.id+'/'+c.item.id:activePage;}
+ function settings(key=route()){if(!prefs.has(key)){try{prefs.set(key,JSON.parse(localStorage.getItem('layout:'+BCAUTH.user.perfil+':'+key))||{mode:'essential',items:{},order:[]});}catch{prefs.set(key,{mode:'essential',items:{},order:[]});}}return prefs.get(key);}
+ function persist(){localStorage.setItem('layout:'+BCAUTH.user.perfil+':'+route(),JSON.stringify(settings()));}
+ function open(group,id){restore();bcGroupedOpen(group,id);document.body.classList.remove('review-menu-open');schedule();window.scrollTo(0,0);history.replaceState(null,'','#'+group+'/'+id);}
+ function sidebarSync(){const groups=bcGroupedCatalogue(),c=current();const signature=JSON.stringify([groups.map(g=>[g.id,g.items.map(i=>[i.id,i.disabled])]),c?.group.id,c?.item.id]);if(nav.dataset.signature===signature)return;nav.dataset.signature=signature;nav.replaceChildren();for(const g of groups){const section=el('section','review-nav-group'),head=button(g.label+' '+(c?.group.id===g.id?'⌄':'›'),()=>open(g.id));head.className='review-nav-area';head.setAttribute('aria-expanded',String(c?.group.id===g.id));section.append(head);if(c?.group.id===g.id)for(const item of g.items){if(item.disabled)continue;const b=button(item.label,()=>open(g.id,item.id));b.dataset.reviewRoute=g.id+'/'+item.id;if(c.item.id===item.id)b.setAttribute('aria-current','page');section.append(b);}nav.append(section);}crumb.textContent=c?c.group.label+' / '+c.item.label:'BsanControl';}
+ const selectors='.res-block,.res-chart,.res-deck,.ger-block,.ger-summary,.op-block,.op-chart,.sum-kpis,.fin-reading,.ac4-block,.ac6-block,.cc,.met-section,.met-rota,.met-resumo,.met-route,.met-quick,.met-kpis,.fc-products,.fc-kpis,.fc-chart,.pv-section,.pv-metrics,.pv-priority-grid,.ger-products,.gs-page > div';
+ function nativeVisible(node,page){for(let p=node;p&&p!==page;p=p.parentElement){if(p.classList?.contains('review-widget'))continue;if(p.hidden||getComputedStyle(p).display==='none')return false;}return true;}
+ function titleOf(node){const text=node.querySelector('h2,h3,h4,summary,.cc-title,.chart-title,.kpi-eye')?.textContent?.trim();return text||node.querySelector('canvas')?.getAttribute('aria-label')||node.querySelector('canvas')?.id||(/kpis|resumo|metrics/.test(node.className)?'Indicadores do resultado':node.querySelector('table')?'Tabela detalhada':'Análise da aba');}
+ function decorate(){const page=document.querySelector('.page.on');if(!page)return;const key=route(),s=settings(key);if(key!==lastRoute){registry.clear();lastRoute=key;}
+  let toolbar=page.querySelector(':scope > .review-toolbar');if(!toolbar){toolbar=el('div','review-toolbar review-ui');toolbar.append(el('span','','Mesmos indicadores e controles da plataforma original'),button('Essencial',()=>preset('essential')),button('Todos os recursos',()=>preset('all')),button('＋ Personalizar',()=>personalize(),'review-primary'));page.prepend(toolbar);}
+  // O renderizador pode substituir um painel inteiro sem trocar a rota. Remova
+  // seus registros antes de atribuir IDs aos componentes recém-renderizados.
+  for(const[id,item]of registry)if(!item.node.isConnected||!nativeVisible(item.node,page))registry.delete(id);
+  for(const widget of page.querySelectorAll('.review-widget')){const id=widget.dataset.reviewWidget,node=widget.querySelector('.review-body')?.firstElementChild;if(node&&nativeVisible(node,page)&&!registry.has(id)){const title=titleOf(node);widget.setAttribute('aria-label',title);widget.querySelector('.review-widget-head strong').textContent=title;registry.set(id,{id,title,node,widget});}}
+  const candidates=[...page.querySelectorAll(selectors)].filter(n=>!n.closest('.review-ui,dialog')&&!n.classList.contains('review-body')&&!n.closest('.review-widget')&&!n.parentElement.closest(selectors));
+  for(const node of candidates){if(!nativeVisible(node,page))continue;const title=titleOf(node),base=node.id||node.querySelector('canvas')?.id||title;let id=key+'::'+base;let i=2;while([...registry.values()].some(v=>v.id===id&&v.node!==node))id=key+'::'+base+'::'+i++;
+   const widget=el('section','review-widget'),head=el('div','review-widget-head review-ui'),body=el('div','review-body');widget.dataset.reviewWidget=id;widget.setAttribute('aria-label',title);head.append(el('strong','',title));const controls=el('div');controls.append(button('⤢ Ampliar',()=>expand(widget,title)),button('×',()=>{settings().items[id]=false;persist();apply();}));head.append(controls);node.before(widget);body.append(node);widget.append(head,body);registry.set(id,{id,title,node,widget});
+  }
+  // Mantém os registros dos nós que sobreviveram ao renderizador original e descarta os antigos.
+  for(const[id,item]of registry)if(!item.widget.isConnected)registry.delete(id);
+  apply();
+ }
+ function apply(){const s=settings(),items=[...registry.values()];for(const[item,i]of items.map((x,i)=>[x,i])){const shown=s.items[item.id]??(s.mode==='all'||i<3);item.widget.dataset.reviewHidden=String(!shown);item.widget.hidden=!shown;}
+  // A ordem muda somente entre irmãos: não desloca um componente para fora do seu contexto original.
+  if(s.order.length){const ranked=items.slice().sort((a,b)=>(s.order.indexOf(a.id)<0?999:s.order.indexOf(a.id))-(s.order.indexOf(b.id)<0?999:s.order.indexOf(b.id)));for(const item of ranked){const siblings=ranked.filter(x=>x.widget.parentElement===item.widget.parentElement);if(siblings.length>1)for(const other of siblings)item.widget.parentElement.append(other.widget);}}
+ }
+ function preset(mode){settings().mode=mode;settings().items={};persist();apply();}
+ const modal=el('dialog','review-dialog review-ui');modal.setAttribute('aria-labelledby','review-dialog-title');document.body.append(modal);modal.addEventListener('close',restore);
+ function dialog(title){restore();modal.replaceChildren();const head=el('header'),h=el('h2','',title);h.id='review-dialog-title';head.append(h,button('Tela cheia',()=>modal.classList.toggle('review-full')),button('Fechar',()=>{restore();modal.close();}));const body=el('div','review-dialog-body');modal.append(head,body);if(!modal.open)modal.showModal();return body;}
+ function personalize(){if(activePage==='cadastro-produtos'){$('cadastro-produtos-frame')?.contentWindow.postMessage({type:'review-personalize'},location.origin);return;}const host=dialog('Personalizar · '+(current()?.item.label||activePage));host.append(el('p','','Estes são os componentes originais desta tela. Controles, colunas, detalhes e ações continuam dentro dos respectivos blocos.'));for(const item of registry.values()){const row=el('article'),label=el('label'),check=el('input');check.type='checkbox';check.checked=!item.widget.hidden;check.onchange=()=>{settings().items[item.id]=check.checked;persist();apply();};label.append(check,el('strong','',item.title));row.append(label,button('↑',()=>move(item,-1)),button('↓',()=>move(item,1)));host.append(row);}host.append(button('Restaurar padrão essencial',()=>{prefs.set(route(),{mode:'essential',items:{},order:[]});persist();apply();personalize();}),el('p','review-small','Algumas leituras são abertas pelo filtro, nível ou detalhe original. Personalize novamente depois de abrir esse contexto para escolher seus blocos.'));}
+ function move(item,dir){const list=[...registry.keys()],i=list.indexOf(item.id),j=i+dir;if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];settings().order=list;persist();apply();personalize();}
+ function expand(widget,title){const host=dialog(title),marker=el('div','review-placeholder');marker.style.minHeight=widget.offsetHeight+'px';widget.before(marker);host.append(widget);expanded={widget,marker};window.BCReviewCharts?.activate(widget);for(const canvas of widget.querySelectorAll('canvas'))Chart.getChart(canvas)?.resize();}
+ function restore(){if(!expanded)return;expanded.marker.replaceWith(expanded.widget);for(const c of expanded.widget.querySelectorAll('canvas'))Chart.getChart(c)?.resize();expanded=null;modal.classList.remove('review-full');}
+ function mapDialog(){const host=dialog('Estrutura integral do BsanControl'),grid=el('div','review-map');for(const g of bcGroupedCatalogue()){const section=el('section');section.append(el('h3','',g.label));for(const i of g.items){const b=button(i.label,()=>{modal.close();open(g.id,i.id);});b.dataset.reviewTarget=g.id+'/'+i.id;b.disabled=!!i.disabled;section.append(b);}grid.append(section);}host.append(grid,el('p','review-small','Telas e renderizadores originais com a nova apresentação. Dados e gravações somente neste ambiente local.'));}
+ function sync(){scheduled=false;mountChrome();sidebarSync();decorate();}
+ function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(sync);}
+ new MutationObserver(records=>{if(records.some(r=>!r.target.closest?.('.review-ui')&&[...r.addedNodes].some(n=>n.nodeType===1&&!n.classList?.contains('review-ui')&&!n.classList?.contains('review-widget')&&!n.classList?.contains('review-body'))))schedule();}).observe(document.body,{childList:true,subtree:true});
+ const oldGo=goPage;goPage=function(){restore();const result=oldGo.apply(this,arguments);schedule();return result;};
+ document.addEventListener('change',e=>{if(!e.target.closest('.review-ui'))schedule();});document.addEventListener('click',e=>{if(!e.target.closest('.review-ui'))schedule();});
+ document.body.classList.add('review-integral','light');if(typeof isDark!=='undefined')isDark=false;
+ if($('d-start'))$('d-start').value='2026-11-01';if($('d-end'))$('d-end').value='2026-11-16';
+ if(typeof BCNav==='object'){BCNav.ready=true;BCNav.month='2026-11';BCNav.company='Bsan Shop';BCNav.marketplace='Mercado Livre';}if(typeof PONTO_SEL!=='undefined')PONTO_SEL='Bsan';
+ if(typeof _MET_MES!=='undefined')_MET_MES='2026-11';if(typeof _COM_MES!=='undefined')_COM_MES='2026-11';
+ const parts=location.hash.replace(/^#/,'').split('/'),oldId=parts.at(-1);let group=parts[0],id=alias[oldId]||oldId;
+ if(modes[oldId]){group='cadastro-produtos';id='cadastro-'+modes[oldId];}
+ if(group==='produtos')group='cadastro-produtos';if(group==='posvenda')group='pos-venda';
+ const groups=bcGroupedCatalogue();if(!groups.some(g=>g.id===group&&g.items.some(i=>i.id===id&&!i.disabled))){group='gerencial';id='panorama';}
+ bcGroupedOpen(group,id);schedule();
+ window.BCReviewIntegral={version:1,catalogue:()=>bcGroupedCatalogue(),manifest:()=>fetch('/revisao/manifesto').then(r=>r.json()),scan(){const p=document.querySelector('.page.on');return{route:route(),widgets:[...registry.values()].map(w=>({id:w.id,title:w.title,hidden:w.widget.hidden})),tables:p?.querySelectorAll('table').length||0,columns:p?.querySelectorAll('th').length||0,charts:p?.querySelectorAll('canvas').length||0,controls:p?.querySelectorAll('input,select,textarea').length||0};}};
+})();

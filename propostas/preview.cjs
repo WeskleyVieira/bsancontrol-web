@@ -10,5 +10,5 @@ function createServer(){return http.createServer((req,res)=>{
  else{res.writeHead(404);res.end('Não encontrado');return;}
  res.writeHead(200,{'Content-Type':type+'; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"});res.end(body);
  });}
-if(require.main===module){const server=createServer();server.listen(Number(process.env.PROPOSTA_PORT)||0,'127.0.0.1',()=>console.log('PROPOSTA_URL=http://127.0.0.1:'+server.address().port+'/'));}
+if(require.main===module){require('./integral-server.cjs').createIntegralServer().then(({server})=>server.listen(Number(process.env.PROPOSTA_PORT)||59833,'127.0.0.1',()=>console.log('PROPOSTA_INTEGRAL=http://127.0.0.1:'+server.address().port+'/'))).catch(e=>{console.error(e.message);process.exitCode=1;});}
 module.exports={createServer};

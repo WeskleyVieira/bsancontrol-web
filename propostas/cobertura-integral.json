@@ -1,0 +1,242 @@
+{
+  "date": "2026-11-17",
+  "sourceHash": "a1a4f12bd5faa2cc19053d178f5425a581ea6fae2005887ec4736666482ed5bd",
+  "sourceNamedFunctions": 1524,
+  "data": "fictitious",
+  "routes": [
+    {
+      "route": "resultados/overview",
+      "label": "Visão Geral",
+      "title": "Visão Geral",
+      "error": ""
+    },
+    {
+      "route": "resultados/diario",
+      "label": "Diário",
+      "title": "Diário",
+      "error": ""
+    },
+    {
+      "route": "resultados/marketplaces",
+      "label": "Marketplaces",
+      "title": "Marketplaces",
+      "error": ""
+    },
+    {
+      "route": "resultados/abc",
+      "label": "Curva ABC",
+      "title": "Curva ABC",
+      "error": ""
+    },
+    {
+      "route": "resultados/forecast",
+      "label": "Forecast",
+      "title": "Forecast",
+      "error": ""
+    },
+    {
+      "route": "vendas/vendas",
+      "label": "Vendas",
+      "title": "Vendas",
+      "error": ""
+    },
+    {
+      "route": "vendas/raiox",
+      "label": "Raio-X",
+      "title": "Raio-X",
+      "error": ""
+    },
+    {
+      "route": "gerencial/panorama",
+      "label": "Panorama",
+      "title": "Panorama",
+      "error": ""
+    },
+    {
+      "route": "gerencial/ger-vendas",
+      "label": "Vendas da operação",
+      "title": "Vendas da operação",
+      "error": ""
+    },
+    {
+      "route": "gerencial/diag",
+      "label": "Diagnóstico",
+      "title": "Diagnóstico",
+      "error": ""
+    },
+    {
+      "route": "gerencial/produtos",
+      "label": "Anúncios",
+      "title": "Anúncios",
+      "error": ""
+    },
+    {
+      "route": "gerencial/previsao",
+      "label": "Forecast",
+      "title": "Forecast",
+      "error": ""
+    },
+    {
+      "route": "gerencial/ads",
+      "label": "Publicidade",
+      "title": "Publicidade",
+      "error": ""
+    },
+    {
+      "route": "gerencial/metas",
+      "label": "Metas",
+      "title": "Metas",
+      "error": ""
+    },
+    {
+      "route": "gerencial/full",
+      "label": "Full",
+      "title": "Full",
+      "error": ""
+    },
+    {
+      "route": "operacao/envios",
+      "label": "Envios",
+      "title": "Envios",
+      "error": ""
+    },
+    {
+      "route": "operacao/estoque",
+      "label": "Estoque",
+      "title": "Estoque",
+      "error": ""
+    },
+    {
+      "route": "operacao/projecao",
+      "label": "Projeção",
+      "title": "Projeção",
+      "error": ""
+    },
+    {
+      "route": "cadastro-produtos/cadastro-catalog",
+      "label": "Catálogo",
+      "title": "Catálogo",
+      "error": ""
+    },
+    {
+      "route": "cadastro-produtos/cadastro-tasks",
+      "label": "Pendências de custo",
+      "title": "Pendências de custo",
+      "error": ""
+    },
+    {
+      "route": "cadastro-produtos/cadastro-entries",
+      "label": "Entradas de compra",
+      "title": "Entradas de compra",
+      "error": ""
+    },
+    {
+      "route": "cadastro-produtos/cadastro-materials",
+      "label": "Materiais",
+      "title": "Materiais",
+      "error": ""
+    },
+    {
+      "route": "cadastro-produtos/cadastro-pack",
+      "label": "Embalagens",
+      "title": "Embalagens",
+      "error": ""
+    },
+    {
+      "route": "cadastro-produtos/cadastro-prep",
+      "label": "Preparação de embalagens",
+      "title": "Preparação de embalagens",
+      "error": ""
+    },
+    {
+      "route": "cadastro-produtos/cadastro-review",
+      "label": "Homologação",
+      "title": "Homologação",
+      "error": ""
+    },
+    {
+      "route": "cadastro-produtos/cadastro-sales",
+      "label": "Apuração de custos",
+      "title": "Apuração de custos",
+      "error": ""
+    },
+    {
+      "route": "cadastro-produtos/cadastro-sync",
+      "label": "Atualização",
+      "title": "Atualização",
+      "error": ""
+    },
+    {
+      "route": "cadastro-produtos/cadastro-publication",
+      "label": "Integração",
+      "title": "Integração",
+      "error": ""
+    },
+    {
+      "route": "pos-venda/pv-fila",
+      "label": "Atendimentos",
+      "title": "Atendimentos",
+      "error": ""
+    },
+    {
+      "route": "acompanhamento/tarefas",
+      "label": "Tarefas",
+      "title": "Tarefas",
+      "error": ""
+    },
+    {
+      "route": "acompanhamento/promos",
+      "label": "Promoções",
+      "title": "Promoções",
+      "error": ""
+    },
+    {
+      "route": "acompanhamento/ac-ads",
+      "label": "Ads",
+      "title": "Ads",
+      "error": ""
+    },
+    {
+      "route": "acompanhamento/alinhamentos",
+      "label": "Alinhamentos",
+      "title": "Alinhamentos",
+      "error": ""
+    },
+    {
+      "route": "acompanhamento/pendencias",
+      "label": "Pendências",
+      "title": "Pendências",
+      "error": ""
+    },
+    {
+      "route": "financeiro/dre",
+      "label": "DRE",
+      "title": "DRE",
+      "error": ""
+    },
+    {
+      "route": "financeiro/comissao",
+      "label": "Comissão",
+      "title": "Comissão",
+      "error": ""
+    },
+    {
+      "route": "financeiro/gestao-fechamento",
+      "label": "Fechamento",
+      "title": "Fechamento",
+      "error": ""
+    },
+    {
+      "route": "financeiro/gestao-custos",
+      "label": "Custos",
+      "title": "Custos",
+      "error": ""
+    },
+    {
+      "route": "financeiro/gestao-carteiras",
+      "label": "Carteiras",
+      "title": "Carteiras",
+      "error": ""
+    }
+  ]
+}

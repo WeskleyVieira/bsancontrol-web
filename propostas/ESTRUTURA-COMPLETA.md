@@ -1,5 +1,7 @@
 # Estrutura completa para revisão do BsanControl
 
+> Histórico do protótipo anterior. A versão atual usa as telas originais completas e está documentada em [COBERTURA-INTEGRAL.md](COBERTURA-INTEGRAL.md) e [README.md](README.md). A relação de oito áreas e 39 destinos foi conservada; os blocos recriados descritos neste documento foram substituídos pelos renderizadores originais.
+
 Esta versão amplia a proposta inicial do Panorama para uma prévia visual navegável da plataforma. Ela contém oito áreas e 39 abas demonstrativas. Não modifica as telas publicadas, APIs, dados, permissões ou regras oficiais. Os conteúdos são amostras fictícias para avaliar organização, densidade, identificação, filtros e transições; não equivalem à implementação de todos os fluxos de produção.
 
 ## Navegação

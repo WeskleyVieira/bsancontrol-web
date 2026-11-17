@@ -1,4 +1,47 @@
-# Proposta de experiência: BsanControl personalizável
+# Prévia integral do BsanControl · 17/11/2026
+
+A versão atual aplica a nova navegação e apresentação à **estrutura original inteira**, em vez de substituir telas por composições demonstrativas. Usa o catálogo de navegação nativo: oito áreas e 39 destinos funcionais. O item original “Anúncios · em breve” de Acompanhamento continua desabilitado.
+
+O HTML original é lido em memória de `T:/Meu Drive/Business Intelligence/Grupo Bsan/BsanControl.html`. Os conjuntos de dados são substituídos por exemplos fictícios. Renderizadores, modelos de negócio, filtros, tabelas, gráficos, detalhes e formulários continuam sendo os originais. Os módulos web e o serviço de Produtos também são os originais, com banco SQLite exclusivamente em memória.
+
+**Abrir:** `http://127.0.0.1:59833/?revisao=integral#gerencial/panorama`. O botão **Mapa** reúne toda a estrutura. O menu lateral expande as abas da área ativa. **Todos os recursos** mostra os blocos da leitura; **Essencial** e **Personalizar** permitem escolher a apresentação, com preferências por aba e perfil neste navegador. Algumas análises aparecem depois de selecionar um produto, um filtro ou um detalhe, seguindo o fluxo original. Formulários de cadastro mantêm seus registros e campos completos.
+
+O padrão inclui densidade ajustável pelo controle Visual original, tema claro/escuro, tabelas compactas, cores sem bordas espessas nos gráficos e ampliação de blocos sem clonar seus controles. Tabelas e gráficos conservam também seus visualizadores nativos. A personalização altera a apresentação; não modifica denominadores, valores, linhas de produtos ou regras financeiras.
+
+## Executar
+
+Requer Node 24 com SQLite e acesso ao HTML original acima. A variável `BSAN_REVIEW_SOURCE` permite indicar outra cópia desse HTML. A partir da raiz do repositório:
+
+```powershell
+npm ci --prefix propostas
+node propostas/preview.cjs
+```
+
+O servidor escuta somente em `127.0.0.1:59833`. `PROPOSTA_PORT` permite outra porta. Abrir o arquivo HTML diretamente não inicia esta versão. O HTML gerado original e os dados de SAIDA não são copiados para o Git.
+
+## Cobertura e validação
+
+Veja [COBERTURA-INTEGRAL.md](COBERTURA-INTEGRAL.md) para as 39 rotas e o método de conferência. Os testes comparam as 1.524 funções nomeadas originais, inclusive internas, byte a byte; esse número representa funções, não indicadores. Todos os IDs estáticos originais permanecem presentes. Foram verificados navegação pelas 39 abas, Metas diário/acumulado, Raio-X, formulários de Produtos, preferências ao trocar de aba, ampliação e apresentação móvel.
+
+```powershell
+node --test propostas/integral.test.cjs propostas/workspace.test.cjs
+```
+
+Resultado: 15 testes passaram, sendo seis da revisão integral e nove de regressão do protótipo anterior. Os testes antigos de 175 blocos não são utilizados como prova de cobertura desta versão.
+
+## Limites da revisão
+
+Esta é a migração da **estrutura para a prévia**, sem implantação em produção. Os valores são fictícios; perfis e ações usam adaptadores locais. Cadastros, tratativas e fechamento de demonstração não alteram registros reais e desaparecem ao reiniciar o servidor. Pagamentos, credenciais, integrações externas e coletores reais não são executados nem homologados aqui. As permissões oficiais precisarão ser verificadas na integração com o servidor de produção.
+
+A prioridade desta versão é a fidelidade das telas. Ocultar um bloco não garante que o modelo original deixe de calculá-lo. Não há promessa de redução de consultas ou tempo de carregamento: a divisão de consultas e o carregamento sob demanda em produção estão descritos em [CARREGAMENTO.md](CARREGAMENTO.md).
+
+Somente `propostas/` foi alterado. As correções de ponto/casa, filtros do gestor e coletor Tiny não foram modificadas. O branch da proposta permanece separado da plataforma publicada.
+
+## Histórico do protótipo anterior
+
+As descrições abaixo referem-se ao protótipo substituído, mantido para rastreabilidade. Seus 175 blocos recriados e os limites então registrados não descrevem o servidor integral atual.
+
+# Proposta anterior de experiência: BsanControl personalizável
 
 ## Versão atual · 17/11/2026
 

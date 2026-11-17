@@ -1,5 +1,7 @@
 # Recursos da proposta personalizável
 
+> Inventário histórico do protótipo de 175 blocos recriados. A prévia atual executa as telas originais completas; sua cobertura está em [COBERTURA-INTEGRAL.md](COBERTURA-INTEGRAL.md). Esta lista não é usada como comprovação de migração integral.
+
 Inventário de apresentação conferido no HTML e nos módulos visuais do BsanControl em 17/11/2026. Os 175 blocos abaixo são composições de interface, não 175 indicadores financeiros independentes. Cada aba tem uma entrada essencial e uma biblioteca de análises.
 
 Os dados e as decisões são demonstrativos. Cálculos, regras completas de diagnóstico, consultas, formulários, permissões, importações e publicação precisam ser integrados e homologados contra a aplicação original; este inventário não certifica paridade funcional.
