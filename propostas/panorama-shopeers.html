@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Proposta · Estrutura completa do BsanControl</title>
+<link rel="stylesheet" href="/workspace.css">
+<script src="/workspace-catalog.js"></script>
+<script src="/workspace.js"></script>
 <style>
 :root{color-scheme:light;--bg:#f5f7fa;--surface:#fff;--soft:#f0f3f8;--line:#e3e8f0;--text:#19243a;--muted:#657189;--accent:#2862e6;--accent-soft:#edf3ff;--good:#137846;--good-soft:#ecf7f0;--warn:#94600b;--warn-soft:#fff6e5;--bad:#c43a47;--bad-soft:#fff0f1;--reference:#94a0b4;--radius:12px}
 :root[data-theme=dark]{color-scheme:dark;--bg:#0c111b;--surface:#131c2b;--soft:#1b2638;--line:#29354a;--text:#e9eef7;--muted:#a0aec5;--accent:#82acff;--accent-soft:#1c304d;--good:#68d89b;--good-soft:#162e27;--warn:#f6c66b;--warn-soft:#30291c;--bad:#ff8991;--bad-soft:#34212a;--reference:#8190a9}
@@ -122,7 +125,7 @@
   {id:'financeiro',name:'Financeiro',glyph:'publicidade',pages:[['f-dre','DRE'],['f-comissao','Comissão'],['f-fechamento','Fechamento'],['f-custos','Custos'],['f-carteiras','Carteiras']]}
  ];
  const ROUTES=new Map(AREAS.flatMap(a=>a.pages.map(([id,name])=>[id,{id,name,area:a}]))),LEGACY=new Set(['panorama','anuncios','diagnostico','publicidade']);
- const FIXTURES=[{id:'bs-ml',point:'Bsan',company:'Bsan Shop',market:'Mercado Livre',source:'ml',scale:1},{id:'bs-sh',point:'Bsan',company:'Bsan Shop',market:'Shopee',source:'shopee',scale:1},{id:'bs-am',point:'Bsan',company:'Bsan Shop',market:'Amazon',source:'amazon',scale:1},{id:'pf-ml',point:'Powerfull',company:'Powerfull Imports',market:'Mercado Livre',source:'ml',scale:.78},{id:'pf-sh',point:'Powerfull',company:'Powerfull Imports',market:'Shopee',source:'shopee',scale:.72},{id:'pf-am',point:'Powerfull',company:'Powerfull Imports',market:'Amazon',source:'amazon',scale:.68}];
+ const FIXTURES=[{id:'bs-she',point:'Bsan',company:'Bsan Shop',market:'Shein',source:'shopee',scale:.21},{id:'bs-tem',point:'Bsan',company:'Bsan Shop',market:'Temu',source:'shopee',scale:.014},{id:'jw-kw',point:'Bsan',company:'Jowcase',market:'Kwai Shop',source:'shopee',scale:.02},{id:'jw-ma',point:'Bsan',company:'Jowcase',market:'Magazine Luiza',source:'ml',scale:.14},{id:'bs-ml',point:'Bsan',company:'Bsan Shop',market:'Mercado Livre',source:'ml',scale:1},{id:'bs-sh',point:'Bsan',company:'Bsan Shop',market:'Shopee',source:'shopee',scale:1},{id:'bs-am',point:'Bsan',company:'Bsan Shop',market:'Amazon',source:'amazon',scale:1},{id:'pf-ml',point:'Powerfull',company:'Powerfull Imports',market:'Mercado Livre',source:'ml',scale:.78},{id:'pf-sh',point:'Powerfull',company:'Powerfull Imports',market:'Shopee',source:'shopee',scale:.72},{id:'pf-am',point:'Powerfull',company:'Powerfull Imports',market:'Amazon',source:'amazon',scale:.68}];
  Object.assign(S,{point:'Bsan',company:'Bsan Shop',market:'Mercado Livre',role:'direcao',area:'gerencial',competence:'2026-11',taskView:'fila',taskStatus:'all',moduleQuery:'',returnRoute:null,selectedProduct:null});
  const routeState=new Map(),localKeys=['query','filter','mode','sort','ascending','tablePage','selectedProduct','taskView','taskStatus','curveFilter','returnRoute'];const rememberPage={},caseStatuses=new Map();let activeSheet=null,selectedDemoCase=null;
  for(const [id,r]of ROUTES)titles[id]=r.name;
@@ -138,7 +141,7 @@
  }
  all=()=>scopedRows();
  function selectControl(id,label,options,value){return '<label>'+label+'<select id="'+id+'">'+options.map(([v,n])=>'<option value="'+esc(v)+'" '+(v===value?'selected':'')+'>'+esc(n)+'</option>').join('')+'</select></label>';}
- function globalContext(){const points=S.role==='gestor'?[['Bsan','Bsan · carteira de demonstração']]:[['','Grupo'],['Bsan','Bsan'],['Powerfull','Powerfull']],companies=[...new Set(FIXTURES.filter(o=>!S.point||o.point===S.point).map(o=>o.company))];return '<div class="global-context">'+selectControl('scope-point','Visualizando',points,S.point)+selectControl('scope-company','Empresa',[['','Todas as empresas'],...companies.map(v=>[v,v])],S.company)+selectControl('scope-market','Marketplace',[['','Todos os marketplaces'],...['Mercado Livre','Shopee','Amazon'].map(v=>[v,v])],S.market)+selectControl('scope-period','Período de análise',Object.entries(M.periods).map(([k,v])=>[k,v.label]),S.period)+'</div>';}
+ function globalContext(){const points=S.role==='gestor'?[['Bsan','Bsan · carteira de demonstração']]:[['','Grupo'],['Bsan','Bsan'],['Powerfull','Powerfull']],companies=[...new Set(FIXTURES.filter(o=>!S.point||o.point===S.point).map(o=>o.company))];return '<div class="global-context">'+selectControl('scope-point','Visualizando',points,S.point)+selectControl('scope-company','Empresa',[['','Todas as empresas'],...companies.map(v=>[v,v])],S.company)+selectControl('scope-market','Marketplace',[['','Todos os marketplaces'],...['Mercado Livre','Shopee','Amazon','Shein','Temu','Kwai Shop','Magazine Luiza'].map(v=>[v,v])],S.market)+selectControl('scope-period','Período de análise',Object.entries(M.periods).map(([k,v])=>[k,v.label]),S.period)+'</div>';}
  function chrome(){const r=ROUTES.get(S.page),area=r.area;M.operations.selection={name:scopeText()};S.operation='selection';document.querySelector('.nav-label').textContent='ÁREAS DA PLATAFORMA';document.querySelector('.sidebar-bottom').innerHTML='<strong>'+area.name+' / '+r.name+'</strong><span>Proposta integral · dados fictícios</span><button class="map-link" data-action="structure-map">Ver estrutura completa</button>';
   $('navigation').innerHTML=AREAS.map(a=>{const pages=a.pages.filter(([id])=>allowed(ROUTES.get(id)));if(!pages.length)return '';return '<div class="nav-group"><button class="area-button" data-area="'+a.id+'" aria-expanded="'+(a.id===area.id)+'">'+icon(a.glyph)+'<span>'+a.name+'</span><span class="nav-chevron">'+(a.id===area.id?'⌄':'›')+'</span></button>'+(a.id===area.id?'<div class="area-pages">'+pages.map(([id,name])=>'<button data-route="'+id+'" '+(id===S.page?'aria-current="page"':'')+'>'+name+'</button>').join('')+'</div>':'')+'</div>';}).join('');
   document.querySelector('.topbar-title').innerHTML='<button class="menu-btn" aria-label="Abrir navegação" data-action="menu">☰</button><strong>'+area.name+'</strong><span>/</span><span id="breadcrumb">'+r.name+'</span>';
@@ -220,6 +223,8 @@
  const oldFiltered=filtered;filtered=function(){return oldFiltered().filter(r=>!S.curveFilter||r.curve===S.curveFilter);};
  const oldTableUpdate=tableUpdate;tableUpdate=function(){if(LEGACY.has(S.page)||S.page==='r-abc'||S.page==='g-forecast'||S.page==='g-metas')oldTableUpdate();};
 
+ const workspace=window.BsanWorkspace.install({S,M,chrome,saveState,moduleHeader,scopeText,navigate,jump,toast,routeName:()=>ROUTES.get(S.page).name,nameOf:id=>ROUTES.get(id)?.area.name+' / '+ROUTES.get(id)?.name});
+ render=workspace.render;tableUpdate=workspace.render;
  render();if(location.hash==='#estrutura')mapDialog();
 })();
 </script>

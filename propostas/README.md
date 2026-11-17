@@ -1,10 +1,28 @@
-# Proposta de experiência: Panorama
+# Proposta de experiência: BsanControl personalizável
+
+## Versão atual · 17/11/2026
+
+A prévia contém oito áreas, 39 abas e 175 blocos de apresentação catalogados a partir do HTML e dos módulos visuais do BsanControl. Os blocos são composições de indicadores, gráficos, tabelas e leituras; não são 175 métricas financeiras independentes. O inventário está em [RECURSOS-PERSONALIZAVEIS.md](RECURSOS-PERSONALIZAVEIS.md).
+
+Cada aba abre com uma visão essencial. **Personalizar** permite adicionar, retirar, ordenar e mudar a largura dos blocos, com preferência salva por aba e perfil simulado neste navegador. **Todas as análises** mostra o conjunto da aba. **Ver recursos originais** apresenta a correspondência com as fontes, filtros e ações originais. As tabelas preservam as colunas e têm CSV, ampliação e tela cheia; o mesmo elemento é movido para o diálogo e devolvido ao fechar.
+
+O carregamento é real nesta prévia: recursos removidos não são montados; recursos fora da área visível aguardam a rolagem. As oito famílias de dados fictícios têm consultas distintas, compartilhadas pelos blocos do mesmo contexto. Trocas de aba cancelam consultas pendentes. Ponto, empresa, canal, período, competência, perfil, critério ABC e operações escolhidas compõem a chave da consulta. Erros não exibem valores do contexto anterior.
+
+**Limites:** a prévia redesenha a apresentação, não é uma cópia funcional homologada da plataforma. Formulários, importação, aprovação, permissões reais e publicação não foram integrados. Os métodos de projeção, regras de diagnóstico e custos são cenários demonstrativos; a integração deve reutilizar os modelos originais e validar paridade. Alguns controles e ações originais estão documentados no inventário e não executam seu fluxo completo aqui. O ganho de desempenho em produção ainda precisa ser medido após dividir as consultas reais; nenhum percentual de melhora foi estimado.
+
+Não há leitura de SAIDA, banco, credenciais, contas de teste ou API de produção. Os valores da interface e das imagens são fictícios. Nenhum dado do Drive é incluído no Git. Apenas arquivos em `propostas/` foram alterados.
+
+Execute `node propostas/preview.cjs` e abra a URL de loopback exibida. O servidor publica somente arquivos explícitos e consultas GET de dados fictícios. Esta versão usa módulos e consultas locais e precisa desse servidor; abrir o HTML diretamente pelo sistema de arquivos não oferece a experiência completa.
+
+Testes: `node --test propostas/workspace.test.cjs`. Cobrem os 175 renderizadores, totais e identidades, ausência de Ads, limites exatos de cor, seleção de operações/critério ABC, preferências e isolamento do servidor. Validação no navegador: abas das oito áreas, adição/persistência de blocos, tabela e gráfico ampliados, tela cheia, restauração e menu/personalização no celular de 390 × 844 sem transbordamento horizontal da página.
+
+## Histórico da proposta inicial
 
 Protótipo para avaliar a organização visual antes de integrar uma mudança ao BsanControl. Inspirado na estrutura do Shopeers indicado pelo usuário, com identidade e regras próprias do BsanControl.
 
 Todos os dados são fictícios e ficam dentro do HTML. Não há chamadas à API, leitura de configurações, autenticação ou gravação na operação. As telas de apoio demonstram o percurso de investigação, sem substituir os módulos de produção.
 
-Execute `node propostas/preview.cjs` e abra a URL local exibida. Também é possível abrir `panorama-shopeers.html` diretamente no navegador; a cópia para a área de transferência depende das permissões do navegador.
+Execute `node propostas/preview.cjs` e abra a URL local exibida. A cópia para a área de transferência depende das permissões do navegador.
 
 Percursos para avaliar:
 
