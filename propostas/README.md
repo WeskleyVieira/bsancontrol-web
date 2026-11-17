@@ -21,3 +21,11 @@ Esta proposta é mantida em branch próprio. Não altera o HTML publicado, cálc
 Validação: scripts compilados; nove cenários com totais e agregação consistentes; navegação Panorama → prioridade → produto; lentes de anúncio/SKU; cópia de código; CSV do filtro; paginação; ampliação da tabela e do gráfico; tema claro/escuro; celular 390 × 844 sem rolagem horizontal da página. Prévia salva em panorama-desktop.jpg.
 
 Referência visual indicada pelo usuário: https://dribbble.com/shots/26628350-Shopeers-AI-Powered-B2B-eCommerce-Analytics-Dashboard
+
+## Atualização: estrutura completa
+
+A proposta agora tem oito áreas e 39 abas demonstrativas. O menu lateral expande as abas da área ativa. O botão Mapa reúne todos os destinos em uma visão clicável. Veja ESTRUTURA-COMPLETA.md para o inventário, os percursos e os limites desta prévia.
+
+Verificados: abertura das 39 abas no navegador; 36 combinações de ponto, marketplace e período; agregação por SKU; contexto compartilhado; busca por aba; competência financeira independente; simulação de perfil; ida e volta entre tarefa, anúncio e Raio-X; ampliação; e menu no celular.
+
+Imagens de revisão: estrutura-completa.jpg e acompanhamento-completo.jpg. A interface publicada não foi alterada.
