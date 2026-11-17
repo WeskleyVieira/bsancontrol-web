@@ -17,7 +17,7 @@
   function schedule(){if(!pending){pending=true;requestAnimationFrame(apply);}}
   document.body.classList.add('review-integral','studio-products','light');root.classList.add('page','on');
   store=BCReviewPreferences.create(storage,'temporary-products');makeStudio();
-  window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent)return;const d=e.data||{};
+  window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent)return;const d=e.data||{};if(d.type==='review-appearance'){document.documentElement.dataset.reviewBrand=d.brand==='jowcase'?'jowcase':'bsan';}
    if(d.type==='bsan-produtos-theme'||d.type==='bsan-produtos-auth'){document.body.classList.toggle('light',d.theme==='light');schedule();}
    if(['review-user','review-personalize','bsan-produtos-auth'].includes(d.type)&&typeof d.identity==='string'&&d.identity!==identity){restoreZoom();studio.restore();identity=d.identity;layouts.clear();store=BCReviewPreferences.create(localStorage,'products:'+identity);makeStudio();schedule();}
    if(d.type==='review-personalize'){apply();studio.openLibrary();}

@@ -52,3 +52,11 @@ A composição usa CSS e os elementos reais: a árvore funcional, IDs, eventos e
 **Etapas posteriores à revisão visual:** integração e homologação com o servidor oficial, sincronização de preferências entre dispositivos, divisão de consultas/carregamento sob demanda e IA. Nenhum desses itens é apresentado como já implantado. O painel publicado não foi alterado.
 
 Ver [VALIDACAO-STUDIO.md](VALIDACAO-STUDIO.md) para o escopo e a evidência desta revisão.
+
+## Complemento aprovado para a prévia: identidade e captura
+
+Identidade visual selecionável entre Bsan Shop e Jowcase, preservando as cores semânticas de margem/TACOS. Curva A verde, B âmbar e C vermelho, com texto acompanhando a cor. Tema claro permanece inicial. Período compacto com abertura de controles completos sob demanda.
+
+Movimento progressivo, sem laço contínuo: 4,2 segundos, reprodução manual e opção de desligar. Respeitar movimento reduzido do dispositivo e conservar a geometria final e os valores das séries.
+
+As fotografias diárias de Tarefas, Promoções e Ads seguem os recortes exemplificados pelo usuário: resumo geral, progresso por tipo e quadro dos gestores. Reutilizar o gerador e os modelos nativos. Não confundir preferência de widgets com escopo do relatório; usar responsável, operação, competência e carteira temporal do Acompanhamento. Copiar imagem e Baixar PNG são saídas igualmente disponíveis, sem envio automático ao grupo. Alinhamentos e Pendências têm captura correspondente ao recorte da tela. A prévia identifica expressamente os dados fictícios nas imagens.

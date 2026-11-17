@@ -12,6 +12,15 @@ Prévia navegável para revisão visual antes de integrar ao painel publicado. O
 - Links dos indicadores e ações nativas abrem vendas, operação, anúncio ou SKU; voltar à origem preserva o recorte.
 - Claro inicial, escuro opcional, menu retrátil, ferramentas na base e escala no controle Visual. Preferências por identidade/página neste navegador; ainda sem sincronização entre dispositivos.
 
+## Movimento, identidade e fotografias do acompanhamento
+
+- **Preferências → Identidade visual:** Bsan Shop (ciano `#00B1EB`, lavanda `#B186FF`) ou Jowcase (azul `#2871FA`, violeta `#6717CD`). A escolha fica salva por identidade neste navegador. Controles usam tons derivados para leitura; marcas dos canais e sinais de desempenho conservam sua função.
+- **Animação dos gráficos:** formação progressiva de 4,2 segundos, com barras/bolhas/fatias sequenciais e linhas reveladas da esquerda para a direita. O botão ↻ reproduz novamente. É possível desligar; a preferência de movimento reduzido do dispositivo também é respeitada. Valores, escalas e cálculos não mudam.
+- **Curva A/B/C:** verde, âmbar e vermelho em cards, Pareto, participação e etiquetas; a linha acumulada tem cor distinta das barras. TACOS mantém a régua financeira própria.
+- **Período:** datas e atalho em uma linha; painel compacto com atalhos, mês completo e intervalo personalizado. A consulta só muda após Aplicar.
+- **Acompanhamento → Imagem para o grupo:** em Tarefas, Promoções e Ads, reutiliza o relatório executivo nativo: seis indicadores, progresso por tipo, momento de cada gestor, competência e carteira temporal. Não depende dos widgets visíveis. Alinhamentos e Pendências também têm captura do recorte atual. A prévia permite **Copiar imagem** ou **Baixar PNG**; não envia ao WhatsApp. Bibliotecas servidas localmente, carregadas apenas ao gerar.
+- **Escala:** valores e títulos dos componentes antigos são normalizados; a ampliação mantém leitura maior. A revisão inclui os dez fluxos reais de Produtos e os KPIs de Comissão.
+
 Os dez fluxos de Produtos usam o aplicativo e o serviço originais, com SQLite somente em memória. Cadastros e ações demonstrativas desaparecem ao reiniciar o servidor. O HTML original é lido em memória de `T:/Meu Drive/Business Intelligence/Grupo Bsan/BsanControl.html`; os dados privados são substituídos. Nem o HTML gerado nem os arquivos de SAIDA são copiados para o Git.
 
 ## Executar
@@ -28,10 +37,10 @@ O servidor escuta apenas em `127.0.0.1:59833`. `PROPOSTA_PORT` permite mudar a p
 ## Validação
 
 ```powershell
-node --test propostas/integral.test.cjs propostas/integral-preferences.test.cjs propostas/studio.test.cjs propostas/workspace.test.cjs
+node --test propostas/integral.test.cjs propostas/integral-preferences.test.cjs propostas/studio.test.cjs propostas/experience.test.cjs propostas/workspace.test.cjs
 ```
 
-21 testes aprovados: seis da adaptação integral, dois de preferências, quatro da composição Studio e nove do protótipo anterior. A paridade compara 1.524 funções nomeadas nativas, inclusive internas, byte a byte, além de todos os IDs estáticos. **Funções e blocos não são contagem de indicadores.** Os testes antigos de 175 blocos não provam cobertura da versão integral.
+27 testes aprovados: seis da adaptação integral, dois de preferências, quatro da composição Studio, seis de movimento/identidade e nove do protótipo anterior. A paridade compara 1.524 funções nomeadas nativas, inclusive internas, byte a byte, além de todos os IDs estáticos. **Funções e blocos não são contagem de indicadores.** Os testes antigos de 175 blocos não provam cobertura da versão integral.
 
 [VALIDACAO-STUDIO.md](VALIDACAO-STUDIO.md) registra os percursos e limites; [COBERTURA-INTEGRAL.md](COBERTURA-INTEGRAL.md) e [cobertura-integral.json](cobertura-integral.json) registram os 39 destinos nativos. [DIRETRIZES-REDESENHO.md](DIRETRIZES-REDESENHO.md) contém as decisões de experiência.
 
