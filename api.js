@@ -56,7 +56,14 @@ const _gzCache = new Map();
 // (21/10/2026) o cache vale até o próximo db-sync (que chama /api/cache/clear); 12h é só rede de segurança. Antes: 15 min — com o
 // Render Free hibernando, cada acordada relia a base inteira do Supabase (17 GB de egress em out/26 → restrição do plano free).
 const GZ_TTL = +(process.env.CACHE_TTL_MS || 12 * 3600 * 1000);
-const GZ_CAP = 90 * 1024 * 1024;   // ~90MB de teto (Render free tem 512MB)
+// (17/11/2026) 90 → 48 MB: com o ano inteiro em cache, a troca de período montava a consulta nova por cima dele e o processo
+// passava de 512 MB (OOM em 10, 12 e 17/11 → 502). A folga fica p/ a consulta em montagem.
+const GZ_CAP = 48 * 1024 * 1024;
+// FILA DAS ROTAS PESADAS (17/11/2026): o painel pede dataset/detalhe/extras/margens AO MESMO TEMPO ao trocar de período; com o
+// ano inteiro cada montagem passa de 100 MB (linhas do banco + objetos + JSON + gzip) e os picos somados estouravam os 512 MB.
+// Na falta de cache, uma montagem por vez; cache HIT e 304 não entram na fila.
+let _filaPesada = Promise.resolve();
+function naFilaPesada(fn) { const p = _filaPesada.then(fn, fn); _filaPesada = p.then(() => {}, () => {}); return p; }
 // VERSÃO DOS DADOS (ETag): muda a cada db-sync (cache/clear), a cada escrita que mexe nos extras e a cada reinício. O navegador guarda a
 // resposta e, na próxima abertura, só pergunta "mudou?" (If-None-Match) → 304 sem corpo e SEM consultar o banco. Corta o tráfego
 // do Render (4,8 GB de respostas em out/26) e o egress do Supabase: cada usuário baixa os dados 1x por atualização, não 1x por abertura.
@@ -575,9 +582,16 @@ const server = http.createServer(async (req, res) => {
       const etag = pesada ? etagDe(ckey) : null, vers = etag ? { ETag: etag, "Cache-Control": "private, no-cache" } : {};
       if (etag && String(req.headers["if-none-match"] || "") === etag) { res.writeHead(304, vers); return res.end(); }   // não mudou: o navegador usa a cópia dele
       if (pesada && aceitaGz) { const hit = gzCacheGet(ckey); if (hit) { res.writeHead(200, Object.assign({ "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "HIT" }, vers)); return res.end(hit); } }
-      const out = await rotaGET(u, user);
+      if (pesada && aceitaGz) {
+        // monta na fila; quem esperou relê o cache (outra aba/usuário pode ter montado a mesma chave enquanto isso)
+        const buf = await naFilaPesada(async () => { const hit = gzCacheGet(ckey); if (hit) return hit;
+          const out = await rotaGET(u, user); if (out === null) return null;
+          const b = zlib.gzipSync(JSON.stringify(out)); gzCacheSet(ckey, b); return b; });
+        if (buf === null) return J(res, { erro: "rota não encontrada" }, 404);
+        res.writeHead(200, Object.assign({ "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "MISS" }, vers)); return res.end(buf);
+      }
+      const out = pesada ? await naFilaPesada(() => rotaGET(u, user)) : await rotaGET(u, user);
       if (out === null) return J(res, { erro: "rota não encontrada" }, 404);
-      if (pesada && aceitaGz) { const buf = zlib.gzipSync(Buffer.from(JSON.stringify(out))); gzCacheSet(ckey, buf); res.writeHead(200, Object.assign({ "Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip", "Access-Control-Allow-Origin": "*", "X-Cache": "MISS" }, vers)); return res.end(buf); }
       return JZ(req, res, out);
     }
     // ── estático ──
