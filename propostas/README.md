@@ -1,5 +1,7 @@
 # Prévia integral do BsanControl · 17/11/2026
 
+**Redesenho em andamento:** os requisitos de experiência estão em [DIRETRIZES-REDESENHO.md](DIRETRIZES-REDESENHO.md). A cobertura funcional abaixo não significa que a composição de todas as páginas tenha sido redesenhada. Nesta revisão, o cabeçalho ganhou busca e ações compactas; o menu lateral é retrátil; tema e preferências são lembrados por identidade. Mapa, escala e perfil simulado ficam em **Preferências e ferramentas**.
+
 A versão atual aplica a nova navegação e apresentação à **estrutura original inteira**, em vez de substituir telas por composições demonstrativas. Usa o catálogo de navegação nativo: oito áreas e 39 destinos funcionais. O item original “Anúncios · em breve” de Acompanhamento continua desabilitado.
 
 O HTML original é lido em memória de `T:/Meu Drive/Business Intelligence/Grupo Bsan/BsanControl.html`. Os conjuntos de dados são substituídos por exemplos fictícios. Renderizadores, modelos de negócio, filtros, tabelas, gráficos, detalhes e formulários continuam sendo os originais. Os módulos web e o serviço de Produtos também são os originais, com banco SQLite exclusivamente em memória.
@@ -24,10 +26,10 @@ O servidor escuta somente em `127.0.0.1:59833`. `PROPOSTA_PORT` permite outra po
 Veja [COBERTURA-INTEGRAL.md](COBERTURA-INTEGRAL.md) para as 39 rotas e o método de conferência. Os testes comparam as 1.524 funções nomeadas originais, inclusive internas, byte a byte; esse número representa funções, não indicadores. Todos os IDs estáticos originais permanecem presentes. Foram verificados navegação pelas 39 abas, Metas diário/acumulado, Raio-X, formulários de Produtos, preferências ao trocar de aba, ampliação e apresentação móvel.
 
 ```powershell
-node --test propostas/integral.test.cjs propostas/workspace.test.cjs
+node --test propostas/integral.test.cjs propostas/integral-preferences.test.cjs propostas/workspace.test.cjs
 ```
 
-Resultado: 15 testes passaram, sendo seis da revisão integral e nove de regressão do protótipo anterior. Os testes antigos de 175 blocos não são utilizados como prova de cobertura desta versão.
+Resultado: 17 testes passaram, sendo seis da revisão integral, dois de persistência/isolamento de preferências e nove de regressão do protótipo anterior. Os testes antigos de 175 blocos não são utilizados como prova de cobertura desta versão.
 
 ## Limites da revisão
 

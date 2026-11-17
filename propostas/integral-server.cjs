@@ -2,7 +2,7 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
 const {createData}=require('./integral-data.cjs'),{build}=require('./integral-source.cjs'),{createApi}=require('./integral-api.cjs');
 async function createIntegralServer(){const data=createData(),source=build(data),api=await createApi(data),assets={
- '/revisao/bootstrap.js':['integral-bootstrap.js','text/javascript'], '/revisao/charts.js':['integral-charts.js','text/javascript'], '/revisao/integral.js':['integral.js','text/javascript'], '/revisao/integral.css':['integral.css','text/css'], '/revisao/produtos.js':['integral-products.js','text/javascript'], '/revisao/produtos.css':['integral-products.css','text/css'],
+ '/revisao/bootstrap.js':['integral-bootstrap.js','text/javascript'], '/revisao/preferencias.js':['integral-preferences.js','text/javascript'], '/revisao/charts.js':['integral-charts.js','text/javascript'], '/revisao/integral.js':['integral.js','text/javascript'], '/revisao/integral.css':['integral.css','text/css'], '/revisao/produtos.js':['integral-products.js','text/javascript'], '/revisao/produtos.css':['integral-products.css','text/css'],
  '/revisao/vendor/chart.js':['node_modules/chart.js/dist/chart.umd.js','text/javascript'], '/revisao/vendor/labels.js':['node_modules/chartjs-plugin-datalabels/dist/chartjs-plugin-datalabels.min.js','text/javascript'], '/revisao/vendor/xlsx.js':['node_modules/xlsx/dist/xlsx.full.min.js','text/javascript']
  };
  const server=http.createServer(async(req,res)=>{const u=new URL(req.url,'http://localhost');try{

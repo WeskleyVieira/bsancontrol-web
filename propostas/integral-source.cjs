@@ -24,8 +24,9 @@ function transform(input,data){
  for(const key of ['DETALHE','ROWS','SKU_MON','SKU_MKT','SKU_MKT_MON','TOP10','TOP10_EM'])if(!substitutions.includes(key))throw Error('Fonte mudou: não foi possível isolar '+key);
  html=html.replace(/https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/Chart.js\/4.4.1\/chart.umd.min.js/g,'/revisao/vendor/chart.js').replace(/https:\/\/cdn.jsdelivr.net\/npm\/chartjs-plugin-datalabels@2.2.0\/dist\/chartjs-plugin-datalabels.min.js/g,'/revisao/vendor/labels.js');
  html=html.replace(/<script src="https:\/\/cdn.sheetjs.com\/[^>]+><\/script>/,'<script src="/revisao/vendor/xlsx.js"></script>');
- html=html.replace('</head>','<link rel="stylesheet" href="/revisao/integral.css"><script src="/revisao/dados.js"></script><script src="/revisao/bootstrap.js"></script><script src="/revisao/charts.js"></script></head>');
+ html=html.replace('</head>','<link rel="stylesheet" href="/revisao/integral.css"><script src="/revisao/dados.js"></script><script src="/revisao/bootstrap.js"></script><script src="/revisao/preferencias.js"></script><script src="/revisao/charts.js"></script></head>');
  html=html.replace('</body>','<script src="/revisao/integral.js"></script></body>');
+ html=html.replace(/<body([^>]*)>/,'<body$1><script>document.body.classList.add("review-integral");document.body.classList.toggle("light",window.BCReviewPreferenceStore?.theme!=="dark");</script>');
  return{html,manifest:{sourceHash:sha(input),scripts,functions,substitutions,generated:'2026-11-17',data:'fictitious',rendererStrategy:'original-functions-retained'}};
 }
 function build(data,file=process.env.BSAN_REVIEW_SOURCE||defaultSource){return transform(fs.readFileSync(file,'utf8'),data);}
