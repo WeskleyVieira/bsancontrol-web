@@ -16,7 +16,8 @@ body.review-integral :is(.studio-widget,#bc-review-type) .fc-product>h3{font-siz
 /* Curva A/B/C é uma classificação consistente, independentemente da marca. */
 [data-studio-curve=A]{--studio-curve:#13976B;--studio-curve-bg:#EAF7F1}[data-studio-curve=B]{--studio-curve:#B77704;--studio-curve-bg:#FFF5DF}[data-studio-curve=C]{--studio-curve:#CD364B;--studio-curve-bg:#FFF0F2}
 body.review-integral :is([data-studio-curve],#bc-review-curve):not(.studio-kpi){color:var(--studio-curve)!important;background:var(--studio-curve-bg)!important;border-color:var(--studio-curve)!important}
-body.review-integral :is(.studio-kpi,#bc-review-curve)[data-studio-curve]{border-top:3px solid var(--studio-curve)!important}body.review-integral :is(.studio-kpi,#bc-review-curve)[data-studio-curve] .sum-value{color:var(--studio-curve)!important}
+body.review-integral .studio-kpi[data-studio-curve]{--studio-kpi-tone:var(--studio-curve)}
+body.review-integral :is(.studio-kpi,#bc-review-curve)[data-studio-curve] .sum-value{color:var(--studio-curve)!important}
 body.review-integral:not(.light) [data-studio-curve]{--studio-curve-bg:#192836}body.review-integral:not(.light) [data-studio-curve=A]{--studio-curve:#5DD3A7}body.review-integral:not(.light) [data-studio-curve=B]{--studio-curve:#F6C261}body.review-integral:not(.light) [data-studio-curve=C]{--studio-curve:#FF8E9E}
 
 /* Período: gatilho em uma linha e painel compacto, com os mesmos controles nativos. */
@@ -30,6 +31,48 @@ body.review-integral #bc-range-menu .bc-period-modes{margin:10px 0!important;pad
 body.review-integral #bc-range-menu .bc-period-quick{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}body.review-integral #bc-range-menu .bc-period-quick button{padding:8px 10px!important;min-height:50px!important;border-radius:8px!important;gap:3px!important}body.review-integral #bc-range-menu .bc-period-quick strong{font-size:11px!important;font-weight:550!important}body.review-integral #bc-range-menu .bc-period-quick small{font-size:10px!important}
 body.review-integral #bc-range-menu .bc-period-body{max-height:360px!important;overflow:auto!important}body.review-integral #bc-range-menu .bc-period-panel p{font-size:10px!important;line-height:1.5!important;margin:6px 0!important}body.review-integral #bc-range-menu .bc-period-panel footer{margin-top:10px!important;padding-top:10px!important;gap:8px!important}
 body.review-integral #bc-range-menu .bc-period-selection{padding:9px 10px!important;margin-top:10px!important}body.review-integral #bc-range-menu .bc-period-selection strong{font-size:12px!important}body.review-integral #bc-range-menu .bc-calendar-page h3{font-size:12px!important}body.review-integral #bc-range-menu .bc-calendar-days button{width:100%!important;min-height:28px!important;padding:4px!important}body.review-integral #bc-range-menu .bc-month-grid button{min-height:36px!important;font-size:11px!important}
+
+/* A seleção usa superfícies preenchidas e o foco do teclado tem um contorno próprio. */
+body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas,.bc-period-modes){
+  border-radius:11px!important;
+  padding:4px!important;
+  gap:4px!important;
+  background:var(--surf2)!important;
+}
+body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas){width:fit-content;max-width:100%;flex-wrap:wrap}
+body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas,.bc-period-modes)>button{
+  border-color:transparent!important;
+  background:transparent!important;
+  border-radius:8px!important;
+}
+body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas,.ac4-levels,.ger-chips,.ger-agenda-families,.bc-period-modes,.bc-period-quick,.bc-month-grid,.bc-calendar-endpoints) button[aria-pressed=true]{
+  border-color:transparent!important;
+  background:var(--a3)!important;
+  color:var(--a)!important;
+  font-weight:650!important;
+}
+body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas,.bc-period-modes)>button[aria-pressed=true]{
+  box-shadow:0 1px 4px #14274416!important;
+}
+body.review-integral #bc-range-menu .bc-period-panel{border-color:var(--bdr)!important}
+body.review-integral #bc-range-menu .bc-calendar-days button{
+  position:relative;
+  width:min(100%,32px)!important;
+  height:32px!important;
+  border-color:transparent!important;
+  border-radius:50%!important;
+}
+body.review-integral #bc-range-menu .bc-calendar-days button[aria-current=date]:not(.is-endpoint){box-shadow:none!important}
+body.review-integral #bc-range-menu .bc-calendar-days button[aria-current=date]:not(.is-endpoint)::after{
+  content:'';
+  position:absolute;
+  left:calc(50% - 2px);
+  bottom:4px;
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:var(--a);
+}
 
 /* Prévia do PNG antes de baixar/copiar. */
 body.review-integral dialog.studio-print-dialog{width:1000px;max-width:calc(100vw - 32px);max-height:90dvh;padding:20px;border:1px solid var(--bdr);border-radius:14px;background:var(--surf);color:var(--t);overflow:auto}.studio-print-dialog::backdrop{background:#111B3066}.studio-print-dialog>header{display:flex;justify-content:space-between;align-items:center;gap:20px}.studio-print-dialog h2{font-size:19px;margin:0}.studio-print-dialog button{font-size:11px!important;min-height:32px!important;padding:6px 10px!important}.studio-print-intro,.studio-print-status{font-size:11px;line-height:1.6;color:var(--t2);margin:12px 0}.studio-print-controls{display:flex;gap:12px;align-items:end}.studio-print-controls label{font-size:10px;display:flex;gap:5px;flex-direction:column;flex:1}.studio-print-controls select{font-size:11px;min-height:34px;padding:7px 9px}.studio-print-preview{background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;max-height:55dvh;overflow:auto;padding:10px}.studio-print-preview:empty{display:none}.studio-print-preview img{display:block;width:100%;height:auto;border-radius:6px}.studio-print-dialog>footer{display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--bdr);padding-top:14px;margin-top:14px}

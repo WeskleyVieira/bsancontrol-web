@@ -55,16 +55,29 @@ body.review-integral #ger-sub-panorama .studio-kind-chart>div[style*="position:r
 .review-integral .studio-widget.res-goal-strip>button{width:auto}
 
 /* Tonalidade acompanha a classificação da origem e a cor de marca sinaliza seleção. */
-.studio-kpi:is([data-bc-result=good],[data-margin-tone=good],[data-tone=good]){--studio-kpi-tone:var(--bc-good)}
-.studio-kpi:is([data-bc-result=attention],[data-margin-tone=attention],[data-tone=attention]){--studio-kpi-tone:var(--bc-attention)}
-.studio-kpi:is([data-bc-result=bad],[data-margin-tone=bad],[data-tone=bad]){--studio-kpi-tone:var(--bc-bad)}
-.studio-kpi:is([data-bc-result=info],[data-margin-tone=info],[data-tone=info]){--studio-kpi-tone:var(--bc-info)}
+:is(.studio-kpi,#res-forecast-pacing .sum-card):is([data-bc-result=good],[data-margin-tone=good],[data-tone=good]){--studio-kpi-tone:var(--bc-good)}
+:is(.studio-kpi,#res-forecast-pacing .sum-card):is([data-bc-result=attention],[data-margin-tone=attention],[data-tone=attention]){--studio-kpi-tone:var(--bc-attention)}
+:is(.studio-kpi,#res-forecast-pacing .sum-card):is([data-bc-result=bad],[data-margin-tone=bad],[data-tone=bad]){--studio-kpi-tone:var(--bc-bad)}
+:is(.studio-kpi,#res-forecast-pacing .sum-card):is([data-bc-result=info],[data-margin-tone=info],[data-tone=info]){--studio-kpi-tone:var(--bc-info)}
 .studio-kpi.ac6-kpi{--studio-kpi-tone:var(--ac6-grade,var(--bc-info))}
-body.review-integral .page.on.studio-active-page .studio-widget.studio-kpi {
-  border-top:2px solid var(--studio-kpi-tone,var(--bdr))!important;
-  background:color-mix(in srgb,var(--studio-kpi-tone,var(--surf)) 7%,var(--surf))!important;
+body.review-integral .page.on.studio-active-page :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card) {
+  border:1px solid var(--bdr)!important;
+  background:var(--surf)!important;
+  box-shadow:0 2px 7px #14274412!important;
   align-self:stretch;
 }
+body.review-integral .page.on.studio-active-page :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card)>:is(h3,.kpi-eye,.fc-kpi-title) {
+  display:inline-block;
+  align-self:flex-start;
+  width:fit-content;
+  max-width:100%;
+  padding:4px 8px;
+  border-radius:8px;
+  background:color-mix(in srgb,var(--studio-kpi-tone,var(--t3)) 14%,var(--surf));
+  color:color-mix(in srgb,var(--studio-kpi-tone,var(--t2)) 64%,var(--t))!important;
+  font-weight:600!important;
+}
+.review-integral .studio-kpi:has(>.studio-kpi-detail)>:is(h3,.kpi-eye,.fc-kpi-title){max-width:calc(100% - 18px)!important}
 
 /* Comissão mantém filtros, composição e histórico nas seções da apuração. */
 .review-integral [data-studio-route="financeiro/comissao"] #com-ctrl{order:2}
@@ -72,7 +85,10 @@ body.review-integral .page.on.studio-active-page .studio-widget.studio-kpi {
 .review-integral [data-studio-route="financeiro/comissao"] #com-lancar-box{order:4}
 .review-integral [data-studio-route="financeiro/comissao"] #com-ctrl .bc-com-heading h2{font-size:19px!important}
 .review-integral [data-studio-route="financeiro/comissao"] .bc-com-kpi{padding:15px;min-width:0}
-.review-integral [data-studio-route="financeiro/comissao"] .bc-com-kpi.is-bonus{border-top:2px solid var(--a);background:var(--a3)}
+.review-integral [data-studio-route="financeiro/comissao"] .bc-com-kpi.is-bonus{border-color:var(--bdr);background:var(--surf)}
+.review-integral [data-studio-route="financeiro/comissao"] .bc-com-kpi.is-bonus h3{
+  width:fit-content;padding:4px 8px;border-radius:8px;background:var(--a3);color:var(--a)
+}
 .review-integral [data-studio-route="financeiro/comissao"] .bc-com-table{max-width:100%;overflow:auto}
 .review-integral [data-studio-route="financeiro/comissao"] :is(#com-tbl,#com-det){container-type:inline-size}
 @container (max-width:540px){
@@ -97,7 +113,7 @@ body.review-integral #met-root .studio-widget .met-objetivo{
   justify-content:flex-start;
 }
 body.review-integral #met-root .studio-widget .met-objetivo[aria-pressed=true]{
-  border-color:var(--a);
+  border-color:transparent;
   background:var(--a3);
 }
 body.review-integral #met-root .studio-widget .met-objetivo .met-value{font-size:clamp(16px,2cqi,23px)!important}
@@ -121,7 +137,7 @@ body.review-integral #met-root .studio-widget .met-objetivo .met-value{font-size
   margin:8px 0!important;
 }
 .studio-met-day-picker .met-dia-chip{width:100%!important;min-width:0!important;padding:4px 2px!important}
-.studio-met-day-picker .met-dia-chip[aria-pressed=true]{border-color:var(--a)!important;outline:1px solid var(--a);outline-offset:-2px}
+.studio-met-day-picker .met-dia-chip[aria-pressed=true]{border-color:transparent!important;background:var(--a3)!important;font-weight:700}
 .studio-met-day-legend{display:flex;flex-wrap:wrap;gap:4px 14px;list-style:none;margin:0;padding:0;font-size:11px}
 .studio-met-selected{color:var(--a)}
 .studio-met-good{color:var(--bc-good)}
@@ -143,6 +159,37 @@ body.review-integral #met-root .studio-widget .met-objetivo .met-value{font-size
 @media (max-width:850px){
   body.review-integral .page.on.studio-active-page .studio-widget.studio-kpi[data-size=third]{--studio-span:6!important}
 }
+
+.review-integral #res-forecast-pacing>.sum-kpis{
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))!important;
+  gap:9px!important;
+  margin:12px 0!important;
+}
+.review-integral #res-forecast-pacing .sum-card>.sum-value{
+  margin:8px 0 4px;
+  overflow-wrap:anywhere;
+}
+.review-integral #res-forecast-pacing .studio-pacing-track{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,255px),1fr));
+  gap:12px;
+  padding:0;
+  margin:12px 0;
+}
+.studio-pacing-reading{
+  display:grid;
+  align-content:start;
+  gap:8px;
+  min-width:0;
+  border-radius:10px;
+  padding:12px;
+  background:var(--surf2);
+}
+.studio-pacing-label{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
+.studio-pacing-label>span{font-size:12px;font-weight:600}
+.studio-pacing-label>strong{font-size:16px;line-height:1.2;font-variant-numeric:tabular-nums}
+.studio-pacing-reading>.res-progress{margin:0;width:100%}
+.studio-pacing-reading>small{color:var(--t2);line-height:1.45}
 
 /* Mantém juntas as ações da página, a seleção que elas alteram e sua leitura. */
 .review-integral .studio-widget-actions-only{justify-content:flex-end;margin-bottom:6px}

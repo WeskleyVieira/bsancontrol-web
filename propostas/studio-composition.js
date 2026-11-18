@@ -52,6 +52,12 @@
     }
     if(n.matches('.res-goal-strip')){push(n,'list',textOf(n.querySelector(':scope>strong'))||'Meta de faturamento do mês',true,{sequence:20.5,layoutSize:'third',sourceId:'res-goal-strip'});return;}
     if(n.querySelector(':scope>.res-share-track')){push(n,'list','Participação dos canais',true,{sequence:20.6,layoutSize:'wide',sourceId:'res-share-track'});return;}
+    if(n.id==='res-forecast-pacing'){
+     push(n,'list','Ritmo do mês e distância para a meta',false,{
+      sequence:12,layoutSize:'full',defaultVisible:true,canExpand:false
+     });
+     return;
+    }
     if(workflowDisclosure(n)){push(n,'help',titleOf(n,'Ajustar consulta'),true,{sequence:12});return;}
     if(n.matches('details,.bc-reading-guide')){
      const isTable=n.querySelector('table');
@@ -126,6 +132,33 @@
    if(source)for(const n of [...source.children])walk(n);
    return{found,controls,support};
   }
+  function arrangeForecastPacing(panel){
+   const track=panel.querySelector('.res-pacing-track');
+   if(!track)return;
+   const [calendar,calendarBar,target,targetBar]=track.children;
+   if(!calendar?.matches('span')||!target?.matches('span')||
+    !calendarBar?.matches('.res-progress')||!targetBar?.matches('.res-progress'))return;
+   track.classList.add('studio-pacing-track');
+   cleanup.push(()=>track.classList.remove('studio-pacing-track'));
+   const reads=[
+    [calendar,calendarBar,'Progresso do calendário','No mês aberto, conta os dias corridos até a referência.'],
+    [target,targetBar,'Meta de faturamento atingida','Realizado em relação à meta das operações com objetivo cadastrado.']
+   ];
+   for(const [label,bar,title,description]of reads){
+    const value=textOf(label).split(':').at(-1).trim();
+    const hasValue=value.endsWith('%');
+    const row=own(make('div','studio-pacing-reading'));
+    const heading=make('div','studio-pacing-label');
+    heading.append(make('span','',title),make('strong','',hasValue?value:'Indisponível'));
+    row.append(heading);
+    track.append(row);
+    if(hasValue)move(bar,row);
+    else bar.classList.add('studio-support-source');
+    row.append(make('small','',description));
+    label.classList.add('studio-support-source');
+    cleanup.push(()=>{row.remove();label.classList.remove('studio-support-source');bar.classList.remove('studio-support-source');});
+   }
+  }
   function arrangeMetas(routePanel){
    const heading=routePanel.querySelector(':scope>.met-section-heading');
    const calendar=routePanel.querySelector(':scope>.met-calendario');
@@ -137,7 +170,7 @@
    const selected=routePanel.parentElement.querySelector('.met-objetivo[aria-pressed=true]');
    const isCost=selected?.matches('#met-indicador-ads,#met-indicador-tacos');
    for(const [tone,label]of [
-    ['selected','Contorno · dia selecionado'],
+    ['selected','Fundo colorido · dia selecionado'],
     ['good',isCost?'✓ Dentro do limite':'✓ No plano ou acima'],
     ['attention',isCost?'! Acima do limite':'! Abaixo do plano'],
     ['neutral','· Sem comparação neste dia']
@@ -242,6 +275,7 @@
     w.prepend(head);
    }
    if(w.matches('.met-rota'))arrangeMetas(w);
+   if(w.id==='res-forecast-pacing')arrangeForecastPacing(w);
    if(item.kind==='table'){const tools=own(make('div','studio-table-tools studio-ui'));tableTools(item,tools);head.after(tools);cleanup.push(()=>tools.remove());}return w;
   }
   function apply(){if(!host)return;const order=state.order||[];const sorted=widgets.slice().sort((a,b)=>{const ai=order.indexOf(a.id),bi=order.indexOf(b.id);return(ai<0?999:ai)-(bi<0?999:bi)||a.rank-b.rank;});
