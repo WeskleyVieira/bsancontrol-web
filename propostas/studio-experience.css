@@ -10,18 +10,18 @@ html:has(>body.review-integral.light){background:#fff!important}
 body.review-integral.light{
   --bg:#fff;
   --surf:#fff;
-  --surf2:#f6f4f1;
-  --surf3:#eeebe7;
-  --bdr:#d8d1cb;
-  --bdr2:#b9afa7;
+  --surf2:#f5f4f6;
+  --surf3:#eeedf0;
+  --bdr:#d8d5dc;
+  --bdr2:#b6b1be;
   --t:#25212a;
   --t2:#514b56;
   --t3:#6a636e;
   --card-bg:var(--surf);
-  --studio-chrome:#faf8f6;
+  --studio-chrome:#faf9fc;
   --studio-field-background:var(--surf);
-  --studio-field-border:#a09892;
-  --studio-shadow:0 1px 2px #35263009,0 5px 14px #35263009;
+  --studio-field-border:#98939f;
+  --studio-shadow:0 1px 2px #28242e09,0 5px 14px #28242e09;
   --bc-surface:var(--surf);
   --bc-raised:var(--surf2);
   --bc-border:var(--bdr);
@@ -95,6 +95,10 @@ body.review-integral.light .page.on.studio-active-page :is(.studio-widget.studio
 }
 body.review-integral.light .page.on.studio-active-page .studio-widget.studio-kpi{
   gap:5px;
+}
+body.review-integral.light .page.on.studio-active-page
+  :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card):is([data-bc-result=attention],[data-margin-tone=attention],[data-tone=attention]){
+  --studio-kpi-wash:var(--studio-chrome);
 }
 body.review-integral.light .page.on.studio-active-page
   :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card)>:is(h3,.kpi-eye,.fc-kpi-title){
