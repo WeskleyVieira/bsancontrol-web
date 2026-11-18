@@ -102,7 +102,12 @@
     if(n.matches(controlGroups)||n.matches('nav,[role=tablist]')&&!n.closest('table')){controls.push(n);return;}
     if(n.matches('[role=group]')&&/indicador da rota/i.test(n.getAttribute('aria-label')||'')){push(n,'list','Objetivos do mês',true);return;}
     const hasTable=!!n.querySelector('table'),canvas=n.querySelectorAll('canvas').length;
-    if(n.matches('.cc,.op-chart,.fc-chart,.res-chart,.met-chart')&&canvas){push(n,'chart',titleOf(n,'Evolução do período'));return;}
+    if(n.matches('.cc,.op-chart,.fc-chart,.res-chart,.met-chart')&&canvas){
+     const id=n.querySelector('canvas').id;
+     const layoutSize={ 'res-overview-evolution':'wide','res-overview-contribution':'third' }[id];
+     push(n,'chart',titleOf(n,'Evolução do período'),false,{layoutSize});
+     return;
+    }
     if(n.matches('.cc,.op-chart,.fc-chart,.res-chart')&&hasTable){push(n,'table',titleOf(n,'Registros da análise'),p.flow==='list'||p.flow==='form');return;}
     if(n.matches('.cc,.op-chart,.fc-chart,.res-chart')&&!canvas){push(n,'empty',titleOf(n,'Leitura complementar'));return;}
     if(n.matches(sections)&&n.querySelector(cardGroups)){for(const c of [...n.children])walk(c);return;}
@@ -200,7 +205,17 @@
   }
   function compactCard(n,item){
    const details=make('details','studio-kpi-detail studio-ui'),summary=make('summary','','i');summary.setAttribute('aria-label','Entender '+item.title);details.append(summary);let count=0;
-   for(const p of [...n.querySelectorAll(':scope>p,:scope>.sum-note')]){const t=textOf(p);if(p.matches('.sum-delta,.met-quick-label')||/^[+−-].*(?:R\$|%|p\.p\.)/.test(t))continue;if(!t)continue;move(p,details);count++;}
+   for(const p of n.querySelectorAll(':scope>p,:scope>.sum-note')){
+    const t=textOf(p);
+    if(!t||p.matches('.met-quick-label'))continue;
+    if(p.matches('.sum-delta')||/^[+−-].*(?:R\$|%|p\.p\.)/.test(t)){
+     p.classList.add('studio-kpi-comparison');
+     cleanup.push(()=>p.classList.remove('studio-kpi-comparison'));
+     continue;
+    }
+    move(p,details);
+    count++;
+   }
    if(count){n.append(own(details));cleanup.push(()=>details.remove());const value=textOf(n.querySelector('.sum-value,.kpi-val,strong'));if(!value.includes('%')){const ratio=textOf(details).match(/[-−+]?\d[\d.,]*\s*%[^·.;]{0,28}/);if(ratio&&/margem|pos.ads|pre.ads/i.test(C.normalize(item.title))){const foot=own(make('small','studio-kpi-foot',ratio[0]));n.append(foot);cleanup.push(()=>foot.remove());}}}
    const value=n.querySelector('.sum-value,.kpi-val,strong');if(value){const hint=textOf(details);if(/parcial/i.test(item.title+' '+hint)||/estimad|rateio/i.test(hint)){const flag=make('span','studio-estimate',/parcial/i.test(item.title+' '+hint)?'Parcial':'Estimado');n.append(own(flag));cleanup.push(()=>flag.remove());}}
    const drill=options.drilldown?.(item);if(drill&&!n.querySelector('button')){const link=own(btn(drill.label,drill.run,'studio-kpi-open studio-ui'));n.append(link);cleanup.push(()=>link.remove());}
@@ -292,6 +307,9 @@
     page.style.setProperty('--studio-sales-table-order',salesTable?.widget.style.order||'900');
    }
    const hidden=widgets.filter(i=>i.widget.dataset.studioHidden==='true').length;host.querySelector('.studio-library-trigger').textContent='Adicionar widgets'+(hidden?' · '+hidden:'');
+   for(const button of host.querySelectorAll('[data-studio-mode]')){
+    button.setAttribute('aria-pressed',String(button.dataset.studioMode===state.mode));
+   }
    requestAnimationFrame(()=>{for(const item of widgets.filter(i=>i.widget.dataset.studioHidden!=='true'))for(const c of item.widget.querySelectorAll('canvas'))window.Chart?.getChart(c)?.resize();});
   }
   function reorder(id,direction){const list=widgets.slice().sort((a,b)=>{const ai=state.order.indexOf(a.id),bi=state.order.indexOf(b.id);return(ai<0?999:ai)-(bi<0?999:bi)||a.rank-b.rank;}).map(w=>w.id),i=list.indexOf(id),j=i+direction;if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];state.order=list;save();renderLibrary(id);}
@@ -312,7 +330,14 @@
    }
    const collected=collect(page,p,source);
    const refresh=route==='resultados/overview'&&collected.controls.find(n=>n.matches('button')&&textOf(n)==='Atualizar Visão Geral');
-   host=own(make('div','studio-workspace'));const tools=own(make('div','studio-page-tools studio-ui')),purposeText=make('p','studio-purpose',p.purpose),libraryButton=btn('Adicionar widgets',()=>openLibrary(),'studio-library-trigger studio-primary'),all=btn('Todas as análises',()=>{state.mode='all';state.items={};save();}),essential=btn('Visão essencial',()=>{state.mode='essential';state.items={};save();}),filterButton=btn('Filtros',()=>{state.filtersOpen=!state.filtersOpen;options.persist();page.classList.toggle('studio-filters-open',state.filtersOpen);}),aboutButton=btn('Sobre os dados',()=>{about.open=!about.open;if(about.open)about.scrollIntoView({block:'nearest'});});tools.append(purposeText,filterButton,essential,all,libraryButton,aboutButton);
+   host=own(make('div','studio-workspace'));const tools=own(make('div','studio-page-tools studio-ui')),purposeText=make('p','studio-purpose',p.purpose),libraryButton=btn('Adicionar widgets',()=>openLibrary(),'studio-library-trigger studio-primary'),all=btn('Todas as análises',()=>{state.mode='all';state.items={};save();}),essential=btn('Visão essencial',()=>{state.mode='essential';state.items={};save();}),filterButton=btn('Filtros',()=>{state.filtersOpen=!state.filtersOpen;options.persist();page.classList.toggle('studio-filters-open',state.filtersOpen);}),aboutButton=btn('Sobre os dados',()=>{about.open=!about.open;if(about.open)about.scrollIntoView({block:'nearest'});});
+   const views=make('div','studio-view-options');
+   views.setAttribute('role','group');
+   views.setAttribute('aria-label','Composição da página');
+   essential.dataset.studioMode='essential';
+   all.dataset.studioMode='all';
+   views.append(essential,all);
+   tools.append(purposeText,filterButton,views,libraryButton,aboutButton);
    if(refresh){
     const requery=btn('Reconsultar',()=>refresh.click());
     requery.title='Consultar novamente os dados disponíveis para o recorte selecionado';

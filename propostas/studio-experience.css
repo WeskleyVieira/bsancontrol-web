@@ -6,18 +6,22 @@ body.review-integral{
   --studio-field-background:var(--surf2);
   --studio-field-border:var(--bdr2);
 }
-html:has(>body.review-integral.light){background:#e8eef5!important}
+html:has(>body.review-integral.light){background:#fff!important}
 body.review-integral.light{
-  --bg:#e8eef5;
-  --surf:#fcfdff;
-  --surf2:#eef3f9;
-  --surf3:#e2eaf4;
-  --bdr:#b4c2d4;
-  --bdr2:#9aabc1;
+  --bg:#fff;
+  --surf:#fff;
+  --surf2:#f6f4f1;
+  --surf3:#eeebe7;
+  --bdr:#d8d1cb;
+  --bdr2:#b9afa7;
+  --t:#25212a;
+  --t2:#514b56;
+  --t3:#6a636e;
   --card-bg:var(--surf);
-  --studio-chrome:#f2f5fa;
-  --studio-field-background:#f3f6fa;
-  --studio-field-border:#7386a0;
+  --studio-chrome:#faf8f6;
+  --studio-field-background:var(--surf);
+  --studio-field-border:#a09892;
+  --studio-shadow:0 1px 2px #35263009,0 5px 14px #35263009;
   --bc-surface:var(--surf);
   --bc-raised:var(--surf2);
   --bc-border:var(--bdr);
@@ -28,11 +32,110 @@ body.review-integral.studio-products.light{
   --raised:var(--surf2);
   --line:var(--bdr);
 }
-.review-integral.light :is(.review-sidebar,.review-topbar){background:var(--studio-chrome)}
+.review-integral.light .review-sidebar{background:var(--studio-chrome)}
+.review-integral.light .review-topbar{background:var(--surf)}
+.review-integral.light .review-sidebar button{border-radius:8px}
+.review-integral.light .review-sidebar button:hover{background:var(--surf3)}
+.review-integral.light .review-sidebar button[aria-current=page]{
+  background:var(--a3);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--a) 18%,var(--a3));
+}
+.review-integral.light .review-sidebar button:focus-visible{
+  outline:2px solid var(--a);
+  outline-offset:-2px;
+}
 .review-integral.light :is(.bc-reading-guide,.studio-about,.studio-met-day-picker){
   background:var(--surf2);
 }
 .review-integral.light .studio-about{border-radius:8px;padding-inline:12px}
+
+/* A área de consulta é uma superfície própria sobre o fundo branco. */
+body.review-integral.light #bc-global-context:not([hidden]){
+  box-sizing:border-box;
+  padding:10px 12px!important;
+  border:1px solid var(--bdr)!important;
+  border-radius:12px;
+  background:var(--studio-chrome)!important;
+}
+body.review-integral.light .studio-page-tools button:not(.studio-primary,[aria-pressed]){
+  background-color:var(--studio-chrome)!important;
+}
+body.review-integral.light .studio-active-page .studio-primary:hover{
+  background:color-mix(in srgb,var(--a) 85%,var(--t))!important;
+}
+.review-integral .studio-view-options{
+  display:inline-flex;
+  flex-wrap:wrap;
+  gap:2px;
+  padding:3px;
+  border-radius:10px;
+  background:var(--surf2);
+}
+body.review-integral .studio-page-tools .studio-view-options>button{
+  min-height:30px!important;
+  border-color:transparent!important;
+  background:transparent!important;
+  color:var(--t2);
+}
+body.review-integral .studio-page-tools .studio-view-options>button[aria-pressed=true]{
+  background:var(--a3)!important;
+  color:var(--a)!important;
+  font-weight:650!important;
+}
+body.review-integral .studio-view-options>button:focus-visible{
+  outline:2px solid var(--a);
+  outline-offset:-2px;
+}
+
+/* O tom do indicador aparece no rótulo e na superfície do card. */
+body.review-integral.light .page.on.studio-active-page :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card){
+  --studio-kpi-wash:color-mix(in srgb,var(--studio-kpi-tone,var(--a)) 7%,var(--surf));
+  background:linear-gradient(145deg,var(--studio-kpi-wash),var(--surf) 70%)!important;
+  box-shadow:var(--studio-shadow)!important;
+}
+body.review-integral.light .page.on.studio-active-page .studio-widget.studio-kpi{
+  gap:5px;
+}
+body.review-integral.light .page.on.studio-active-page
+  :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card)>:is(h3,.kpi-eye,.fc-kpi-title){
+  background:color-mix(in srgb,var(--studio-kpi-tone,var(--a)) 12%,var(--surf));
+}
+body.review-integral.light .page.on .studio-kpi[data-bc-result=info]>.sum-value{
+  color:var(--t)!important;
+}
+body.review-integral .page.on.studio-active-page .studio-kpi>p.studio-kpi-comparison{
+  align-self:flex-start;
+  min-height:0!important;
+  margin:0!important;
+  padding:2px 6px!important;
+  background:var(--surf2);
+  border-radius:5px;
+  font-size:11px!important;
+  font-variant-numeric:tabular-nums;
+}
+body.review-integral .page.on.studio-active-page .studio-kpi>button.studio-kpi-open{
+  padding:4px 0!important;
+  min-height:26px!important;
+  font-size:11px!important;
+  font-weight:600;
+}
+body.review-integral .page.on.studio-active-page .studio-kpi>button.studio-kpi-open:hover{
+  text-decoration:underline;
+}
+body.review-integral.light .page.on.studio-active-page .studio-widget.studio-kind-chart{
+  box-shadow:var(--studio-shadow)!important;
+}
+body.review-integral.light .studio-widget .studio-widget-head>h2{
+  font-weight:650!important;
+}
+body.review-integral.light .studio-kind-table thead th{
+  background:var(--surf2);
+}
+@media (max-width:1100px){
+  body.review-integral [data-studio-route="resultados/overview"] .studio-kind-chart[data-size=third]:has(#res-overview-contribution){
+    --studio-span:12!important;
+  }
+}
 html[data-review-brand=bsan] body.review-integral{--studio-brand-primary:#00B1EB;--studio-brand-secondary:#B186FF;--a:#6440A8;--a2:#B186FF;--a3:#F3EEFF;--bc-accent:#6440A8;--bc-info:#0086B3;--accent:#6440A8}
 html[data-review-brand=jowcase] body.review-integral{--studio-brand-primary:#2871FA;--studio-brand-secondary:#6717CD;--a:#6717CD;--a2:#2871FA;--a3:#F2EAFC;--bc-accent:#6717CD;--bc-info:#2871FA;--accent:#6717CD}
 html[data-review-brand] body.review-integral:not(.light){--a:#B99BEF;--a3:#292039;--bc-accent:#B99BEF;--accent:#B99BEF}
