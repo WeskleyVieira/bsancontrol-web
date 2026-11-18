@@ -16,12 +16,25 @@
  function signature(chart){return JSON.stringify([chart.config.type,chart.data.labels,chart.data.datasets.map(d=>[d.label,d.type,d.data.map(v=>v&&typeof v==='object'?[v.x,v.y,v.r]:v)])]);}
  function state(chart){let s=states.get(chart);if(!s){s={signature:'',progress:1,frame:0,start:0,pending:false,restores:new Map()};states.set(chart,s);}return s;}
  function palette(){return brands[root?.BCReviewPreferenceStore?.brand||'bsan']||brands.bsan;}
- function motion(){return !!root&&root.BCReviewPreferenceStore?.motion!=='off'&&!root.matchMedia('(prefers-reduced-motion: reduce)').matches;}
+ const durations = {calm:4200, medium:2400, fast:1100, off:0};
+ function duration(){return !root||root.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : (durations[root.BCReviewPreferenceStore?.motion] ?? durations.calm);}
+ function motion(){return duration()>0;}
  function visible(chart){const r=chart.canvas?.getBoundingClientRect?.();return !!r&&r.width>0&&r.height>0&&r.bottom>0&&r.top<root.innerHeight&&r.right>0&&r.left<root.innerWidth;}
  function cancel(s){if(s.frame)root?.cancelAnimationFrame(s.frame);s.frame=0;}
  function finish(chart){const s=state(chart);cancel(s);s.progress=1;s.pending=false;s.start=0;for(const fn of s.restores.values())fn();s.restores.clear();}
- function schedule(chart){const s=state(chart);if(!s.pending||s.frame||!motion()||!visible(chart))return;
-  s.frame=root.requestAnimationFrame(now=>{s.frame=0;if(!chart.ctx||!chart.canvas?.isConnected){finish(chart);return;}if(!s.start)s.start=now;s.progress=clamp((now-s.start)/4200);if(s.progress===1)s.pending=false;chart.draw();});
+ function schedule(chart){
+  const s=state(chart);
+  if(!s.pending||s.frame||!motion()||!visible(chart))return;
+  s.frame=root.requestAnimationFrame(now=>{
+   s.frame=0;
+   const time=duration();
+   if(!time||!chart.ctx||!chart.canvas?.isConnected){finish(chart);return;}
+   // Preserve progress when the user changes speed while the chart is forming.
+   if(s.start) s.progress=clamp(s.progress+(now-s.start)/time);
+   s.start=now;
+   if(s.progress===1)s.pending=false;
+   chart.draw();
+  });
  }
  const observer=root&&typeof root.IntersectionObserver==='function'?new root.IntersectionObserver(entries=>{for(const entry of entries){const c=canvases.get(entry.target);if(entry.isIntersecting&&c)schedule(c);}},{threshold:.06}):null;
  function replay(chart){if(!chart?.ctx)return;const s=state(chart);cancel(s);s.progress=motion()?0:1;s.start=0;s.pending=motion();chart.draw();}
@@ -71,7 +84,7 @@
   beforeDestroy(chart){finish(chart);if(chart.canvas){observer?.unobserve(chart.canvas);canvases.delete(chart.canvas);}},
   afterDestroy(chart){states.delete(chart);},
   runtime:{installLast(){root.Chart?.unregister(plugin);root.Chart?.register(plugin);plugin.runtime.refresh();},replay,finish,activate(node){for(const canvas of node.querySelectorAll('canvas'))replay(root.Chart?.getChart(canvas));},refresh(){for(const chart of Object.values(root.Chart?.instances||{})){if(!chart.ctx||!chart.canvas)continue;if(!motion())finish(chart);chart.update('none');}},brands,curves},
-  model:{step,signature,geometry,curveLabel,brands,curves}
+  model:{step,signature,geometry,curveLabel,brands,curves,durations}
  };
  return plugin;
 });

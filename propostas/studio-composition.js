@@ -22,12 +22,23 @@
    function walk(n){if(n.nodeType!==1||n.matches(skip)||!sourceVisible(n,root))return;
     if(n.matches('.res-abc-operation-picker')){controls.push(n);return;}
     if(n.matches('details,.bc-reading-guide')){push(n,n.querySelector('table')?'table':'help',titleOf(n,'Critérios e detalhes da análise'));return;}
+    if(n.id==='ac4-continuity-summary'){push(n,'list','Continuidade dos casos');return;}
     if(n.matches('#sync-panel')){push(n,'list','Atualização e cobertura do catálogo',true);return;}
     if(n.matches('.ger-context')&&/^(qual |escolha |nenhum )/i.test(textOf(n.querySelector('h2')))){push(n,'empty',titleOf(n,'Escolha o que deseja consultar'),true);return;}
     if(n.matches('.met-comparacao,.met-retomada,.met-alerta,.met-dia-grid,.met-regra,.met-ritmo')){push(n,'list',titleOf(n,n.matches('.met-alerta')?'Atenção à margem':n.matches('.met-dia-grid')?'Limite e realizado no mês':'Orientação para a rota'),true);return;}
     if(n.matches('.met-calendario,.met-filtros,.met-ref')){controls.push(n);return;}
     if(n.matches('.op-context,.ger-context,.sum-intro,.res-coverage,.sum-intro-copy')){support.push(n);for(const action of n.querySelectorAll('button,a[href]'))controls.push(action);return;}
-    if(n.matches(cardGroups)){const cards=[...n.children].filter(c=>c.matches(cardSelector)||c.matches('article')&&c.querySelector('.sum-value,.kpi-val'));if(cards.length){for(const c of cards)push(c,'kpi',titleOf(c,'Indicador'));return;}}
+    if(n.matches(cardGroups)){
+     const cards=[...n.children].filter(c=>c.matches(cardSelector)||c.matches('article')&&c.querySelector('.sum-value,.kpi-val'));
+     if(cards.length){
+      const isDirectionSummary=n.id==='ac4-summary'&&cards.length===6&&cards.every(c=>c.matches('.ac6-kpi'));
+      cards.forEach((card,index)=>{
+       push(card,'kpi',titleOf(card,'Indicador'));
+       if(isDirectionSummary)found.at(-1).directionSummaryRank=index;
+      });
+      return;
+     }
+    }
     if(n.matches(cardSelector)&&n.querySelector('.sum-value,.kpi-val,strong')){push(n,'kpi',titleOf(n,'Indicador'));return;}
     if(n.matches('[role=alert],.op-warning,.res-warning,.diary-coverage,.ac4-error,.pv-error')){if(textOf(n))push(n,'signal',titleOf(n,'Atenção neste recorte'),true);return;}
     if(n.matches('form')){push(n,'form',titleOf(n,p.flow==='form'?'Cadastro e filtros':'Filtros da consulta'),true);return;}

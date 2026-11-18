@@ -42,3 +42,277 @@ body.review-integral :is(.studio-active-page,#bc-review-scale) :is(.res-operatio
 
 /* Modais são centrados no viewport; a biblioteca mantém sua composição lateral. */
 body.review-integral dialog:modal:not(.studio-library):not(:fullscreen){position:fixed!important;inset:0!important;margin:auto!important;transform:none!important}
+/* O resumo de casos ocupa uma linha própria dentro da composição de Acompanhamento. */
+.review-integral #ac4-continuity-summary.studio-widget {
+  padding: 16px;
+}
+.review-integral #ac4-continuity-summary .ac4-domain-stats > div {
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--bdr);
+  border-radius: 8px;
+  background: var(--surf2);
+}
+.review-integral #ac4-continuity-summary .ac4-domain-stats span {
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+body.review-integral .review-tools-dialog {
+  width: 500px;
+}
+.review-tools-dialog > header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surf);
+}
+.review-tools-dialog .studio-appearance {
+  margin-bottom: 0;
+}
+.review-native-tools .studio-utility-list #bc-actions {
+  display: grid;
+  gap: 6px;
+  background: transparent;
+}
+body.review-integral .review-native-tools :is(.studio-utility, .bc-base-menu > summary) {
+  box-sizing: border-box;
+  display: flex !important;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 48px !important;
+  padding: 9px 12px !important;
+  border: 1px solid var(--bdr) !important;
+  border-radius: 9px;
+  background: var(--surf) !important;
+  color: var(--t) !important;
+  text-align: left;
+  white-space: normal;
+}
+body.review-integral .review-native-tools .studio-utility[hidden] {
+  display: none !important;
+}
+body.review-integral .review-native-tools :is(.studio-utility, .bc-base-menu > summary):hover {
+  border-color: var(--a) !important;
+}
+.review-native-tools .bc-base-menu > summary::after {
+  content: '+';
+  margin-left: auto;
+  color: var(--a);
+  font-size: 17px;
+}
+.review-native-tools .bc-base-menu[open] > summary::after {
+  content: '−';
+}
+.studio-tool-marker {
+  flex: 0 0 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  background: var(--a3);
+  color: var(--a);
+  border-radius: 7px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.studio-tool-label {
+  display: grid;
+  gap: 2px;
+}
+.studio-tool-label strong {
+  font-size: 12px;
+  font-weight: 650;
+}
+.studio-tool-label small {
+  color: var(--t2);
+  font-size: 11px;
+  font-weight: 400;
+}
+.review-native-tools .studio-update-fields {
+  width: 100%;
+  margin: 0;
+  padding: 4px 12px;
+  border: 1px solid var(--bdr);
+  border-radius: 9px;
+  background: var(--surf2);
+}
+.studio-update-fields > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) 1.5fr;
+  gap: 10px;
+  padding: 8px 0;
+}
+.studio-update-fields > div + div {
+  border-top: 1px solid var(--bdr);
+}
+.studio-update-fields :is(dt, dd) {
+  margin: 0;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.studio-update-fields dt {
+  color: var(--t2);
+}
+body.review-integral .studio-update-fields .chip {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--t);
+  font: inherit;
+  white-space: normal;
+}
+.review-native-tools .bc-base-menu #hdr-period {
+  display: none;
+}
+
+body.review-integral dialog.studio-tool-dialog {
+  width: min(740px, calc(100vw - 28px));
+  max-height: 88dvh;
+  padding: 0;
+  overscroll-behavior: contain;
+}
+body.review-integral dialog[data-tool="exec-overlay"] {
+  width: min(960px, calc(100vw - 28px));
+}
+body.review-integral dialog[data-tool="modal"] {
+  width: min(560px, calc(100vw - 28px));
+}
+.studio-tool-dialog > :is(#guide-overlay, #exec-overlay, #modal).show {
+  position: static;
+  display: block;
+  inset: auto;
+  padding: 22px;
+  background: var(--surf);
+  backdrop-filter: none;
+  overflow: visible;
+}
+.studio-tool-dialog :is(.guide-box, .modal-box) {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+.studio-tool-dialog :is(.guide-title, .modal-title, .exec-title) {
+  font-size: 20px;
+  line-height: 1.35;
+  color: var(--t);
+  margin: 0 0 4px;
+}
+.studio-tool-dialog :is(.guide-sub, .modal-sub, .exec-period) {
+  color: var(--t2);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.studio-tool-dialog .guide-item {
+  padding: 11px 12px;
+  margin: 0 0 6px;
+  border: 1px solid var(--bdr);
+  border-radius: 9px;
+  background: var(--surf2);
+}
+.studio-guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.studio-guide-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: 8px;
+}
+.studio-guide-sections .guide-item {
+  margin: 0;
+}
+.studio-guide-sections .guide-icon {
+  display: none;
+}
+.studio-tool-dialog .guide-tip {
+  color: var(--a);
+}
+.studio-tool-dialog .guide-close-btn {
+  width: auto;
+  color: var(--surf);
+  padding: 7px 13px;
+  margin: 0;
+}
+.studio-tool-dialog .exec-header {
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--bdr);
+}
+.studio-tool-dialog .exec-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.studio-tool-dialog .exec-card {
+  padding: 14px;
+  background: var(--surf2);
+  border-radius: 10px;
+}
+.studio-tool-dialog .exec-card-accent {
+  display: none;
+}
+.studio-tool-dialog .exec-eye,
+.studio-tool-dialog .exec-section-title {
+  color: var(--t2);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+}
+.studio-tool-dialog .exec-val {
+  font-size: 24px;
+  line-height: 1.2;
+}
+.studio-tool-dialog .exec-mkt-row {
+  background: var(--surf2);
+}
+.studio-tool-dialog .exec-mkt-vals {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 10px;
+}
+.studio-tool-dialog .drop-zone {
+  border: 1px dashed var(--a);
+  background: var(--a3);
+  border-radius: 10px;
+  padding: 22px 14px;
+}
+.studio-tool-dialog .drop-zone:focus-within {
+  outline: 2px solid var(--a);
+  outline-offset: 3px;
+}
+.studio-tool-dialog .drop-icon {
+  display: none;
+}
+.studio-tool-dialog .drop-lbl {
+  font-size: 14px;
+  font-weight: 650;
+}
+.studio-tool-dialog .drop-hint {
+  margin-top: 4px;
+}
+html[data-review-motion="off"] .studio-replay {
+  display: none;
+}
+@media (max-width: 440px) {
+  .studio-tool-dialog > :is(#guide-overlay, #exec-overlay, #modal).show {
+    padding: 14px;
+  }
+  .studio-tool-dialog .exec-card {
+    padding: 10px;
+  }
+  .studio-tool-dialog .exec-val {
+    font-size: 19px;
+  }
+}

@@ -28,4 +28,10 @@ test('A/B/C usam verde, âmbar e vermelho nas duas identidades',()=>{
 });
 test('marca e movimento persistem por identidade sem redefinir o layout',()=>{
  const values=new Map(),storage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},a=P.create(storage,'direcao');a.setBrand('jowcase');a.setMotion('off');a.setLayout('tarefas',{composition:3,mode:'all',items:{x:true},sizes:{x:'wide'},order:['x']});const reopened=P.create(storage,'direcao');assert.equal(reopened.brand,'jowcase');assert.equal(reopened.motion,'off');assert.equal(reopened.getLayout('tarefas').sizes.x,'wide');assert.equal(P.create(storage,'gestor').brand,'bsan');assert.equal(P.create(storage,'gestor').motion,'calm');
+ for(const speed of ['calm','medium','fast','off']){
+  a.setMotion(speed);
+  assert.equal(P.create(storage,'direcao').motion,speed);
+ }
+ assert.ok(M.durations.calm>M.durations.medium&&M.durations.medium>M.durations.fast);
+ assert.equal(M.durations.off,0);
 });

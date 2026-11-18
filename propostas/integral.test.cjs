@@ -26,6 +26,7 @@ test('dados demonstrativos preenchem todos os canais e mantêm contratos finance
  assert.equal(new Set(data.DETALHE.map(r=>r.date.slice(0,7))).size,12);assert.equal(data.ESTOQUE.length>0,true);assert.ok(Object.keys(data.FULL_REL.contas).length>=4);
  for(const r of data.DETALHE.slice(0,100))assert.ok(Math.abs(r.fat-r.ctp-r.imp-r.mc-(r.fat-r.liq))<.03);
  assert.equal(data.COMISSAO.length,data.COMISSAO_DET.length);assert.ok(data.COMISSAO_DET.every(r=>r.Faturamento_obj>0&&r.MC_obj>0));
+ assert.deepEqual([...new Set(data.ROWS.map(r=>r.ponto))].sort(),['Bsan','Powerfull']);
  assert.ok(data.ADS.every(r=>r.inv>=0));assert.ok(data.ENVIOS.every(r=>r.empresa&&r.plataforma));
 });
 test('servidor usa os módulos reais de Produtos com armazenamento em memória e não publica arquivos do projeto',async()=>{

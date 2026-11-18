@@ -57,6 +57,6 @@ Ver [VALIDACAO-STUDIO.md](VALIDACAO-STUDIO.md) para o escopo e a evidência dest
 
 Identidade visual selecionável entre Bsan Shop e Jowcase, preservando as cores semânticas de margem/TACOS. Curva A verde, B âmbar e C vermelho, com texto acompanhando a cor. Tema claro permanece inicial. Período compacto com abertura de controles completos sob demanda.
 
-Movimento progressivo, sem laço contínuo: 4,2 segundos, reprodução manual e opção de desligar. Respeitar movimento reduzido do dispositivo e conservar a geometria final e os valores das séries.
+Movimento progressivo com três ritmos (4,2 s, 2,4 s e 1,1 s), reprodução manual e opção de desligar. Respeitar movimento reduzido do dispositivo e conservar a geometria final e os valores das séries.
 
 As fotografias diárias de Tarefas, Promoções e Ads seguem os recortes exemplificados pelo usuário: resumo geral, progresso por tipo e quadro dos gestores. Reutilizar o gerador e os modelos nativos. Não confundir preferência de widgets com escopo do relatório; usar responsável, operação, competência e carteira temporal do Acompanhamento. Copiar imagem e Baixar PNG são saídas igualmente disponíveis, sem envio automático ao grupo. Alinhamentos e Pendências têm captura correspondente ao recorte da tela. A prévia identifica expressamente os dados fictícios nas imagens.
