@@ -46,6 +46,20 @@
  function profile(route){return profiles[route]||{route,purpose:'Acompanhe o resultado e aprofunde a análise.',flow:'dashboard',metrics:[],essential:[]};}
  function rank(item,p){if(item.sequence!=null)return item.sequence;if(item.kind==='kpi'){const title=normalize(item.title).replace(/^margem /,''),n=p.metrics.findIndex(k=>title===k||title.startsWith(k+' ')||title.startsWith(k+' ·'));return n<0?9:n;}if(item.kind==='form')return 10;if(item.kind==='chart')return 20;if(item.kind==='signal')return 21;if(item.kind==='list')return 23;if(item.kind==='table')return 30;return 40;}
  function defaultSize(item){if(item.layoutSize)return item.layoutSize;if(item.kind==='kpi')return'compact';if(['table','form','empty','help','embed'].includes(item.kind)||normalize(item.title)==='prioridades do recorte'||normalize(item.title)==='operacoes e objetivos do mes')return'full';if(/modalidade|participacao/.test(normalize(item.title)))return'third';if(/relacao entre|pareto|historico|rota|faturamento e margem/.test(normalize(item.title)))return'wide';return'half';}
- function defaults(items,p){const ranked=items.slice().sort((a,b)=>rank(a,p)-rank(b,p)),counts={},kpiKeys=new Set();let essentialKpis=0;return ranked.map(item=>{if(item.n?.id==='ac4-continuity-summary')return{...item,size:'full',essential:false};counts[item.kind]=(counts[item.kind]||0)+1;const title=normalize(item.title).replace(/^margem /,''),key=title.match(/^(faturamento|unidades|pedidos|pos-ads|pre-ads)/)?.[0]||title;const firstKpi=item.kind==='kpi'&&!kpiKeys.has(key)&&essentialKpis<4;if(firstKpi){kpiKeys.add(key);essentialKpis++;}const chosen=item.kind!=='kpi'&&item.kind!=='help'&&p.essential.some(k=>normalize(item.title).includes(k));return{...item,size:defaultSize(item),essential:item.required||firstKpi||item.kind==='signal'||item.kind==='chart'&&counts.chart<=2||item.kind==='table'&&counts.table===1||item.kind==='list'&&counts.list===1||chosen&&counts[item.kind]<=4};});}
+ function defaults(items,p){
+  const ranked=items.slice().sort((a,b)=>rank(a,p)-rank(b,p)),counts={},kpiKeys=new Set();
+  return ranked.map(item=>{
+   if(item.n?.id==='ac4-continuity-summary')return{...item,size:'full',essential:false};
+   const kind=item.kind,count=counts[kind]=(counts[kind]||0)+1;
+   const title=normalize(item.title).replace(/^margem /,'');
+   const key=title.match(/^(faturamento|unidades|pedidos|pos-ads|pre-ads)/)?.[0]||title;
+   const firstKpi=kind==='kpi'&&!item.secondary&&!kpiKeys.has(key)&&kpiKeys.size<4;
+   if(firstKpi)kpiKeys.add(key);
+   const chosen=kind!=='kpi'&&kind!=='help'&&p.essential.some(k=>title.includes(k));
+   const essential=Boolean(item.required||item.defaultVisible||firstKpi||kind==='signal'||
+    kind==='chart'&&count<=2||kind==='table'&&count===1||kind==='list'&&count===1||chosen&&count<=4);
+   return{...item,size:defaultSize(item),essential};
+  });
+ }
  return{profiles,profile,normalize,rank,sizes,defaults,defaultSize};
 });

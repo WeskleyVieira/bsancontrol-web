@@ -3,6 +3,15 @@ const{test}=require('node:test'),assert=require('node:assert/strict'),fs=require
 const C=require('./studio-catalogue.js'),P=require('./integral-preferences.js');
 test('a composição tem finalidade e fluxo explícitos para os 39 destinos nativos',()=>{const original=JSON.parse(fs.readFileSync(path.join(__dirname,'cobertura-integral.json'),'utf8').replace(/^\ufeff/,''));assert.equal(Object.keys(C.profiles).length,39);for(const{route}of original.routes){const p=C.profiles[route];assert.ok(p,route);assert.ok(p.purpose.length>25);assert.ok(['dashboard','list','detail','form'].includes(p.flow));}});
 test('o resumo essencial prioriza receita, volume, pedidos e Pós-Ads sem confundir ticket com pedidos',()=>{const p=C.profile('gerencial/panorama'),titles=['Faturamento','Pedidos identificados','Unidades','Ticket dos pedidos identificados','Pré-Ads','Publicidade','TACOS','Pós-Ads'];const items=titles.map(title=>({title,kind:'kpi'}));const selected=C.defaults(items,p).filter(i=>i.essential).map(i=>i.title);assert.deepEqual(selected,['Faturamento','Unidades','Pedidos identificados','Pós-Ads']);});
+test('seis indicadores operacionais ficam juntos e a abertura financeira segue disponível como complemento',()=>{
+ const titles=['Faturamento finalizado','Unidades finalizadas','Pedidos identificados','Margem registrada','Margem das vendas','Ticket dos pedidos'];
+ const active=titles.map(title=>({title,kind:'kpi',layoutSize:'third',defaultVisible:true}));
+ const detail=['Faturamento','Pré-Ads'].map(title=>({title,kind:'kpi',secondary:true}));
+ const layout=C.defaults([...detail,...active],C.profile('vendas/vendas'));
+ assert.equal(layout.length,8);
+ assert.deepEqual(new Set(layout.filter(item=>item.essential).map(item=>item.title)),new Set(titles));
+ assert.ok(layout.filter(item=>item.essential).every(item=>item.size==='third'));
+});
 test('larguras complementares compõem a grade; fluxos obrigatórios permanecem disponíveis',()=>{assert.equal(C.sizes.wide+C.sizes.third,12);assert.equal(C.defaultSize({kind:'chart',title:'Faturamento e margem por dia'}),'wide');const result=C.defaults([{kind:'form',title:'Registrar custo',required:true},{kind:'table',title:'Custos',required:true}],C.profile('financeiro/gestao-custos'));assert.ok(result.every(i=>i.essential));
  const cards=Array.from({length:6},(_,sequence)=>({kind:'kpi',title:'Indicador '+sequence,sequence,layoutSize:'third',required:true}));
  const continuity={kind:'list',title:'Continuidade dos casos',n:{id:'ac4-continuity-summary'}};

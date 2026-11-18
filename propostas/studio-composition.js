@@ -5,6 +5,7 @@
  const skip='.studio-ui,.review-ui,.studio-workspace,.bc-products-status[hidden],.res-legacy,.bc-viz-tools,.bc-table-tools,.bc-scroll-cue,script,style,dialog';
  const cardSelector='.sum-card,.kpi,.pv-metric,.met-quick-card,.met-card,.fc-kpi,.product-kpi,.bc-com-kpi';
  const cardGroups='.sum-kpis,.kpis,.kpi-row,.pv-metrics,.fc-kpis,.met-quick,.met-kpis,.ac6-hero,.product-kpis';
+ const cardDecks='.cards,.res-account-deck,.res-deck,.res-top-grid,.ac6-owner-grid,.fc-products,.admin-grid';
  const resultSources={
   'resultados/overview':'res-overview',
   'resultados/diario':'res-diario',
@@ -12,7 +13,8 @@
   'resultados/abc':'res-abc',
   'resultados/forecast':'res-metas'
  };
- const controlGroups='.ger-controls,.op-controls,.res-controls,.ac4-controls,.ac4-filters,.perf-fbar,.ds-modes,.sum-actions,.met-views,.fc-controls,.fc-tabs,.res-tabs,.ac6-tabs,.ac4-levels,.fc-chart-controls';
+ const pageControls='.diary-period-controls,.ger-agenda,.ger-chips,.ac4-scope,.ac4-actions,.pv-heading,.bc-entry-toolbar,.fin-links,.ds-status-tabs,.met-views,.fc-tabs,.res-tabs,.ac6-tabs,.ac4-levels,.met-filtros,.fc-chart-controls,.res-abc-operation-picker,#com-ctrl,#com-kpis,#com-lancar-box,#bc-env-launch,#bc-import-launch,#vnd-filter-bar,#vnd-pager';
+ const controlGroups='.ger-controls,.op-controls,.res-controls,.ac4-controls,.ac4-filters,.perf-fbar,.ds-modes,.sum-actions,.fc-controls';
  const sections='.op-block,.ger-block,.res-block,.sum-section,.ac4-block,.ac6-block,.fin-reading,.fc-products,.pv-section,.gs-page>div';
  const textOf=n=>(n?.textContent||'').replace(/\s+/g,' ').trim();
  const btn=(label,fn,cls='')=>{const b=make('button','studio-button '+cls,label);b.type='button';b.onclick=fn;return b;};
@@ -25,32 +27,62 @@
   function move(n,target,before=null){if(!n.parentNode)return;const mark=document.createComment('studio:source');n.before(mark);moving.add(n);if(n.nodeType===1)n.dataset.studioManaged='true';placements.push({n,mark});target.insertBefore(n,before);}
   function restore(){if(working)return;working=true;for(const fn of cleanup.reverse())fn();cleanup=[];for(const {n,mark}of placements.reverse()){if(mark.isConnected)mark.replaceWith(n);else n.remove();}placements=[];host?.remove();host=null;widgets=[];working=false;}
   function collect(root,p,source){const found=[],controls=[],support=[],used=new Set();
-   function push(n,kind,title,required=false,layout={}){if(used.has(n))return;used.add(n);found.push({n,kind,title:title||titleOf(n,names[kind]),required,...layout});}
+   function push(n,kind,title,required=false,layout={}){
+    if(used.has(n))return;
+    used.add(n);
+    const layoutSize=kind==='list'&&n.matches(cardDecks)?'full':undefined;
+    found.push({n,kind,title:title||titleOf(n,names[kind]),required,layoutSize,...layout});
+   }
+   function workflowDisclosure(n){
+    if(!n.matches('details'))return false;
+    if(n.matches('#fc-advanced')||n.querySelector(':scope>div input:not([type=hidden]),:scope>div select')){
+     return /escolher|ajustar|selecionar|m[eé]todo|cen[aá]rio|refer[eê]ncia|per[ií]odo/i.test(textOf(n.querySelector(':scope>summary')));
+    }
+    return false;
+   }
    function walk(n){if(n.nodeType!==1||n.matches(skip)||!sourceVisible(n,root))return;
-    if(n.matches('#com-ctrl,#com-kpis,#com-lancar-box')){controls.push(n);return;}
+    if(n.matches(pageControls)){controls.push(n);return;}
     if(n.id==='com-tbl'){push(n,'list','Comissão por operação',true,{sequence:22,layoutSize:'full',keepHeadings:true,canExpand:false});return;}
     if(n.id==='com-det'){if(n.children.length)push(n,'list','Composição e histórico da operação',true,{sequence:24,layoutSize:'full',keepHeadings:true,canExpand:false});return;}
     if(n.matches('.met-objetivos,.met-rota')){const objectives=n.matches('.met-objetivos');push(n,'list',objectives?'Objetivos do mês':'Rota e histórico',true,{sequence:objectives?13:14,layoutSize:'full',sourceId:objectives?'met-objetivos':'met-rota'});return;}
     if(n.matches('.met-planejamento')){push(n,'help',titleOf(n,'Planejamento e referências'),true,{sequence:15,sourceId:'met-planejamento'});return;}
+    if(n.matches('.ger-agenda-margin')){
+     push(n,'help','Resultado da operação',false,{defaultVisible:true,sequence:12,sourceId:'ger-agenda-margin'});
+     return;
+    }
     if(n.matches('.res-goal-strip')){push(n,'list',textOf(n.querySelector(':scope>strong'))||'Meta de faturamento do mês',true,{sequence:20.5,layoutSize:'third',sourceId:'res-goal-strip'});return;}
     if(n.querySelector(':scope>.res-share-track')){push(n,'list','Participação dos canais',true,{sequence:20.6,layoutSize:'wide',sourceId:'res-share-track'});return;}
-    if(p.route==='resultados/overview'&&n.matches('.res-audit>p')&&/^Carregando /.test(textOf(n))){push(n,'empty','Consultando a Visão Geral',true);return;}
-    if(n.matches('.res-abc-operation-picker')){controls.push(n);return;}
-    if(n.matches('details,.bc-reading-guide')){push(n,n.querySelector('table')?'table':'help',titleOf(n,'Critérios e detalhes da análise'));return;}
+    if(workflowDisclosure(n)){push(n,'help',titleOf(n,'Ajustar consulta'),true,{sequence:12});return;}
+    if(n.matches('details,.bc-reading-guide')){
+     const isTable=n.querySelector('table');
+     push(n,isTable?'table':'help',titleOf(n,'Critérios e detalhes da análise'));
+     return;
+    }
     if(n.id==='ac4-continuity-summary'){push(n,'list','Continuidade dos casos');return;}
     if(n.matches('#sync-panel')){push(n,'list','Atualização e cobertura do catálogo',true);return;}
     if(n.matches('.ger-context')&&/^(qual |escolha |nenhum )/i.test(textOf(n.querySelector('h2')))){push(n,'empty',titleOf(n,'Escolha o que deseja consultar'),true);return;}
     if(n.matches('.met-comparacao,.met-retomada,.met-alerta,.met-dia-grid,.met-regra,.met-ritmo')){push(n,'list',titleOf(n,n.matches('.met-alerta')?'Atenção à margem':n.matches('.met-dia-grid')?'Limite e realizado no mês':'Orientação para a rota'),true);return;}
     if(n.matches('.met-calendario,.met-filtros,.met-ref')){controls.push(n);return;}
+    if(n.matches('.ger-overview-grid')&&p.route==='gerencial/produtos'){
+     push(n,'list','Curvas e saúde da margem',false,{sequence:11,layoutSize:'full',defaultVisible:true});
+     return;
+    }
+    if(n.matches('#materials-panel,#pack-panel,#prep-panel,#review-panel,#sales-panel,#publication-panel')){
+     push(n,'form',titleOf(n,textOf(n.querySelector('h2'))||'Cadastro'),true,{keepHeadings:true,nativeTitle:true,canExpand:false});
+     return;
+    }
     if(n.matches('.op-context,.ger-context,.sum-intro,.res-coverage,.sum-intro-copy')){support.push(n);for(const action of n.querySelectorAll('button,a[href]'))controls.push(action);return;}
     if(n.matches(cardGroups)){
      const cards=[...n.children].filter(c=>c.matches(cardSelector)||c.matches('article')&&c.querySelector('.sum-value,.kpi-val'));
      if(cards.length){
       const sixCards=cards.length===6;
+      const secondary=n.matches('.bc-margin-kpis');
       const isSummary=sixCards&&n.matches('#ac4-summary,.res-main-kpis');
       cards.forEach((card,index)=>{
        push(card,'kpi',titleOf(card,'Indicador'),isSummary,{
         layoutSize:sixCards||n.matches('.met-quick')?'third':undefined,
+        defaultVisible:sixCards&&!secondary,
+        secondary,
         sequence:isSummary?index:undefined
        });
       });
@@ -71,12 +103,20 @@
     if(n.matches(sections)&&hasTable){push(n,'table',titleOf(n,'Registros da análise'),p.flow==='list'||p.flow==='form');return;}
     if(n.matches(sections)&&canvas&&!n.querySelector(cardGroups)){push(n,'chart',titleOf(n,'Acompanhamento do período'));return;}
     if(n.matches(sections)&&n.querySelector('article,.res-account,.fin-tile,.ac6-owner-card,.res-product,.op-signal')){push(n,'list',titleOf(n,'Prioridades do recorte'));return;}
-    if(n.matches('.cards,.fin-deck,.res-account-deck,.res-deck,.res-top-grid,.ac6-owner-grid')&&n.children.length){push(n,'list',titleOf(n,p.flow==='form'?'Registros do cadastro':'Composição do resultado'),p.flow==='form');return;}
-    if(n.matches('.tbl-wrap,.table-wrap,.op-table-wrap,.ger-table-wrap,.bc-table-scroll')&&hasTable){push(n,'table',titleOf(n,'Registros da análise'),p.flow==='list'||p.flow==='form');return;}
+    if(n.matches(cardDecks+',.fin-deck')&&n.children.length){push(n,'list',titleOf(n,p.flow==='form'?'Registros do cadastro':'Composição do resultado'),p.flow==='form');return;}
+    if(n.matches('.tbl-wrap,.table-wrap,.op-table-wrap,.ger-table-wrap,.bc-table-scroll')&&hasTable){
+     const fallback=p.route==='vendas/vendas'?'Vendas do filtro':'Registros da análise';
+     push(n,'table',titleOf(n,fallback),p.flow==='list'||p.flow==='form');return;
+    }
     if(n.matches('table')){push(n,'table','Registros da análise',p.flow==='list'||p.flow==='form');return;}
     if(n.matches('section,article')&&n.querySelector(':scope>dl,:scope>progress,:scope>[role=progressbar]')){push(n,'list',titleOf(n,'Acompanhamento do recorte'));return;}
     if(n.matches('section,article')&&!n.querySelector('table,canvas,article,section')&&/nenhum|sem registro|não há/i.test(textOf(n))){push(n,'empty',titleOf(n,'Sem registros neste recorte'),true);return;}
-    if(n.matches('p')&&textOf(n)){if(n.getAttribute('role')==='status')controls.push(n);else support.push(n);return;}
+    if(n.matches('p')&&textOf(n)){
+     const status=/^carregando|^consultando|^selecione uma|^escolha uma|^nenhum |^n[aã]o foi poss[ií]vel|^seu acesso n[aã]o permite/i;
+     if(n.matches('[role=status]')||status.test(textOf(n)))controls.push(n);
+     else support.push(n);
+     return;
+    }
     if(n.matches('button,a[href],label,input,select,textarea')){controls.push(n);return;}
     if(n.matches('h1,h2,h3,h4')){support.push(n);return;}
     if(n.matches('#rx-empty,.empty,.op-empty,.ac4-empty')&&textOf(n)){push(n,'empty',titleOf(n,'Escolha o que deseja consultar'),true);return;}
@@ -147,19 +187,44 @@
   function save(){options.persist();apply();}
   function tableTools(item,container){
    const table=item.n.matches('table')?item.n:item.n.querySelector('table');if(!table)return;
-   const rows=table.tBodies?[...table.tBodies].reduce((s,b)=>s+b.rows.length,0):0,headers=[...(table.tHead?.rows?.[table.tHead.rows.length-1]?.cells||[])];
-   const info=make('span','studio-table-count',rows.toLocaleString('pt-BR')+' linhas carregadas · '+headers.filter(h=>!h.hidden).length+' colunas');container.append(info);
+   const rows=[...table.tBodies].flatMap(body=>[...body.rows]),headers=[...(table.tHead?.rows?.[0]?.cells||[])];
+   const simpleRow=row=>[...row.cells].every(cell=>cell.colSpan===1&&cell.rowSpan===1);
+   const dataRows=rows.filter(simpleRow);
+   const canChoose=table.tHead?.rows.length===1&&simpleRow(table.tHead.rows[0])&&
+    rows.every(row=>row.cells.length===1&&row.cells[0].colSpan===headers.length||row.cells.length===headers.length&&simpleRow(row));
+   const info=make('span','studio-table-count');
+   const updateCount=()=>{info.textContent=dataRows.length.toLocaleString('pt-BR')+' linhas carregadas'+
+    (canChoose?' · '+headers.filter(h=>!h.hidden&&getComputedStyle(h).display!=='none').length+' colunas':'');};
+   container.append(info);
    const cols=make('details','studio-columns studio-ui'),label=make('summary','','Colunas');cols.append(label);const menu=make('div','studio-columns-menu');cols.append(menu);
    const config=()=>{state.tables??={};return state.tables[item.id]??=( {hidden:[],density:'compact'} );};
    const originals=[];
-   headers.forEach((h,index)=>{if(h.hidden||getComputedStyle(h).display==='none')return;const key=textOf(h)||'Coluna '+(index+1),cells=[...table.rows].flatMap(r=>r.cells[index]?[r.cells[index]]:[]),before=cells.map(c=>c.hidden);originals.push(()=>cells.forEach((c,i)=>{c.hidden=before[i];}));const row=make('label'),input=make('input');input.type='checkbox';input.checked=!config().hidden.includes(key);const paint=()=>cells.forEach((c,i)=>{c.hidden=before[i]||!input.checked;});paint();input.onchange=()=>{config().hidden= input.checked?config().hidden.filter(k=>k!==key):[...new Set([...config().hidden,key])];paint();options.persist();};row.append(input,make('span','',key));menu.append(row);});
-   const density=make('select');density.setAttribute('aria-label','Densidade de '+item.title);for(const[v,t]of [['compact','Compacta'],['comfortable','Confortável']])density.append(new Option(t,v));density.value=config().density;density.onchange=()=>{config().density=density.value;item.widget.dataset.density=density.value;options.persist();};item.widget.dataset.density=config().density;container.append(cols,density);cleanup.push(()=>originals.forEach(fn=>fn()));
+   if(canChoose)headers.forEach((h,index)=>{
+    if(h.hidden||getComputedStyle(h).display==='none')return;
+    const key=textOf(h)||'Coluna '+(index+1);
+    const cells=[h,...dataRows.map(row=>row.cells[index])],before=cells.map(c=>c.hidden);
+    originals.push(()=>cells.forEach((cell,i)=>{cell.hidden=before[i];}));
+    const row=make('label'),input=make('input');
+    input.type='checkbox';input.checked=!config().hidden.includes(key);
+    const paint=()=>cells.forEach((cell,i)=>{cell.hidden=before[i]||!input.checked;});
+    paint();
+    input.onchange=()=>{config().hidden=input.checked?config().hidden.filter(k=>k!==key):[...new Set([...config().hidden,key])];paint();updateCount();options.persist();};
+    row.append(input,make('span','',key));menu.append(row);
+   });
+   const density=make('select');density.setAttribute('aria-label','Densidade de '+item.title);for(const[v,t]of [['compact','Compacta'],['comfortable','Confortável']])density.append(new Option(t,v));density.value=config().density;density.onchange=()=>{config().density=density.value;item.widget.dataset.density=density.value;options.persist();};item.widget.dataset.density=config().density;
+   updateCount();
+   if(menu.children.length)container.append(cols);
+   container.append(density);
+   cleanup.push(()=>originals.forEach(fn=>fn()));
   }
   function widget(item){const w=item.n,head=own(make('header','studio-widget-head studio-ui')),actions=make('div','studio-widget-actions');item.widget=w;const original={hidden:w.hidden,order:w.style.order,span:w.style.getPropertyValue('--studio-span'),label:w.getAttribute('aria-label')};w.classList.add('studio-widget','studio-kind-'+item.kind);moving.add(w);w.dataset.studioManaged='true';w.dataset.studioWidget=item.id;w.setAttribute('aria-label',item.title);cleanup.push(()=>{w.style.order=original.order;w.style.setProperty('--studio-span',original.span);w.classList.remove('studio-widget','studio-kind-'+item.kind,'studio-kpi');delete w.dataset.studioHidden;delete w.dataset.studioWidget;delete w.dataset.size;delete w.dataset.density;if(original.label==null)w.removeAttribute('aria-label');else w.setAttribute('aria-label',original.label);head.remove();});
    const title=make('h2','',item.title);head.append(title,actions);const size=make('select');size.setAttribute('aria-label','Largura de '+item.title);for(const[v,t]of [['compact','1/4'],['third','1/3'],['half','1/2'],['wide','2/3'],['full','Inteira']])size.append(new Option(t,v));size.value=state.sizes[item.id]||item.size;size.onchange=()=>{state.sizes[item.id]=size.value;save();};
+   if(item.nativeTitle){title.hidden=true;head.classList.add('studio-widget-actions-only');}
+   const individualChart=item.kind==='chart'&&w.querySelectorAll('canvas').length===1;
+   if(individualChart){w.classList.add('studio-single-chart');cleanup.push(()=>w.classList.remove('studio-single-chart'));}
    actions.append(size);
    if(item.canExpand!==false){
-    const expandButton=btn('↗',()=>{const native=item.kind==='chart'&&w.querySelector('button[aria-label^="Ampliar gráfico"],.bc-viz-tools button');if(native)native.click();else options.expand(w,item.title);},'studio-expand');
+    const expandButton=btn('↗',()=>{const native=individualChart&&w.querySelector('button[aria-label^="Ampliar gráfico"],.bc-viz-tools button');if(native)native.click();else options.expand(w,item.title);},'studio-expand');
     expandButton.setAttribute('aria-label','Ampliar '+item.title);
     actions.append(expandButton);
    }
@@ -171,7 +236,7 @@
    if(item.kind==='kpi'){w.classList.add('studio-kpi');compactCard(w,item);}
    else if(item.kind!=='help'){
     if(!item.keepHeadings){
-     const selector=w.matches('.res-goal-strip')?':scope>strong':w.querySelector(':scope>.res-share-track')?':scope>h2,:scope>h3':':scope>h2,:scope>h3,:scope>h4,:scope>.cc-hdr .cc-title,:scope>.cc-hdr .cc-sub,:scope>.op-note';
+     const selector=w.matches('.res-goal-strip')?':scope>strong':':scope>h2,:scope>h3,:scope>h4,:scope>.cc-hdr .cc-title';
      for(const caption of w.querySelectorAll(selector)){caption.classList.add('studio-native-caption');cleanup.push(()=>caption.classList.remove('studio-native-caption'));}
     }
     w.prepend(head);
@@ -179,8 +244,19 @@
    if(w.matches('.met-rota'))arrangeMetas(w);
    if(item.kind==='table'){const tools=own(make('div','studio-table-tools studio-ui'));tableTools(item,tools);head.after(tools);cleanup.push(()=>tools.remove());}return w;
   }
-  function apply(){if(!host)return;const grid=host.querySelector('.studio-grid');const order=state.order||[];const sorted=widgets.slice().sort((a,b)=>{const ai=order.indexOf(a.id),bi=order.indexOf(b.id);return(ai<0?999:ai)-(bi<0?999:bi)||a.rank-b.rank;});
-   for(const [index,item]of sorted.entries()){const visible=item.required||(state.items[item.id]??(state.mode==='all'||item.essential));item.widget.dataset.studioHidden=String(!visible);item.widget.dataset.size=state.sizes[item.id]||item.size;item.widget.style.setProperty('--studio-span',C.sizes[item.widget.dataset.size]||6);item.widget.style.order=String(index+20);}
+  function apply(){if(!host)return;const order=state.order||[];const sorted=widgets.slice().sort((a,b)=>{const ai=order.indexOf(a.id),bi=order.indexOf(b.id);return(ai<0?999:ai)-(bi<0?999:bi)||a.rank-b.rank;});
+   const sales=route==='vendas/vendas';
+   for(const [index,item]of sorted.entries()){
+    const visible=item.required||(state.items[item.id]??(state.mode==='all'||item.essential));
+    item.widget.dataset.studioHidden=String(!visible);
+    item.widget.dataset.size=state.sizes[item.id]||item.size;
+    item.widget.style.setProperty('--studio-span',C.sizes[item.widget.dataset.size]||6);
+    item.widget.style.order=String(20+index*(sales?8:1));
+   }
+   if(sales){
+    const salesTable=sorted.find(item=>item.kind==='table'&&item.n.matches('#tbl-vendas,:has(#tbl-vendas)'));
+    page.style.setProperty('--studio-sales-table-order',salesTable?.widget.style.order||'900');
+   }
    const hidden=widgets.filter(i=>i.widget.dataset.studioHidden==='true').length;host.querySelector('.studio-library-trigger').textContent='Adicionar widgets'+(hidden?' · '+hidden:'');
    requestAnimationFrame(()=>{for(const item of widgets.filter(i=>i.widget.dataset.studioHidden!=='true'))for(const c of item.widget.querySelectorAll('canvas'))window.Chart?.getChart(c)?.resize();});
   }
@@ -212,13 +288,21 @@
    }
    primary=own(make('div','studio-primary-controls'));advanced=own(make('details','studio-filter-panel'));advanced.append(make('summary','','Filtros e referências'));const filterBody=own(make('div','studio-filter-body'));advanced.append(filterBody);const grid=own(make('div','studio-grid'));about=own(make('details','studio-about'));about.append(make('summary','','Contexto, critérios e fontes'));const aboutBody=own(make('div','studio-about-body'));about.append(aboutBody);host.append(tools,primary,advanced,grid,about);page.prepend(host);
    function through(n){for(let parent=n.parentElement;parent&&parent!==page;parent=parent.parentElement){if(parent.classList.contains('studio-through'))continue;parent.classList.add('studio-through');const current=parent;cleanup.push(()=>current.classList.remove('studio-through'));}}
-   const controls=collected.controls.filter(n=>n!==refresh);
-   for(const n of controls){const t=textOf(n);const important=p.flow==='form'||n.matches('nav,[role=tablist],.met-views,.fc-tabs,.res-tabs,.ac6-tabs,.ac4-levels,.met-filtros,.fc-chart-controls,.res-abc-operation-picker,#com-ctrl,#com-kpis,#com-lancar-box')||/PRODUTO \(SKU\)|Consultar SKU|Procurar produtos|Agrupar itens|Lente|Visão|Colunas|Competência/i.test(t);through(n);n.classList.add('studio-native-control',important?'studio-primary-control':'studio-advanced-control');cleanup.push(()=>n.classList.remove('studio-native-control','studio-primary-control','studio-advanced-control'));}
+   for(const n of collected.controls){
+    if(n===refresh)continue;
+    const rootFilter=n.parentElement===source&&n.matches('.op-controls,.res-controls')&&p.route.startsWith('resultados/');
+    const important=rootFilter||p.flow==='form'||n.matches(pageControls+',nav,p,[role=tablist],[role=status]')||
+     /PRODUTO \(SKU\)|Consultar SKU|Procurar produtos|Agrupar itens|Lente|Colunas|Competência|Tentar novamente/i.test(textOf(n));
+    const presentation=important?'studio-primary-control':'studio-advanced-control';
+    through(n);
+    n.classList.add('studio-native-control',presentation);
+    cleanup.push(()=>n.classList.remove('studio-native-control',presentation));
+   }
    for(const n of collected.support){const text=textOf(n);if(text)aboutBody.append(make('p','',text));if(!n.querySelector('button,a,input,select,textarea')){n.classList.add('studio-support-source');cleanup.push(()=>n.classList.remove('studio-support-source'));}else{through(n);n.classList.add('studio-context-actions');cleanup.push(()=>n.classList.remove('studio-context-actions'));for(const leaf of n.querySelectorAll('h1,h2,h3,h4,p,strong'))if(!leaf.querySelector('button,a,input,select')&&!leaf.closest('button,a')){leaf.classList.add('studio-support-source');cleanup.push(()=>leaf.classList.remove('studio-support-source'));}}}
    const reference=collected.support.map(textOf).join(' ').match(/(?:refer[eê]ncia|autom[aá]tica|m[eê]s anterior)[^.]{0,100}\d{2}\/\d{2}\/\d{4}[^.]{0,100}/i);if(reference){const caption=own(make('p','studio-reference',reference[0]));host.append(caption);}
    function sourceKey(n){const path=[];for(let cur=n;cur&&cur!==page;cur=cur.parentElement){if(cur.id){path.unshift('#'+cur.id);break;}path.unshift(cur.tagName.toLowerCase()+':'+[...cur.parentElement.children].filter(c=>!c.matches('.studio-ui,.studio-workspace')).indexOf(cur));}return path.join('/');}
    const ids=new Map(),items=collected.found.map(item=>{const nativeId=item.sourceId||item.n.id||item.n.querySelector('canvas')?.id||sourceKey(item.n),base=route+'::v3:'+item.kind+':'+nativeId,count=(ids.get(base)||0)+1;ids.set(base,count);return{...item,id:base+(count>1?':'+count:''),rank:0};});
-   widgets=C.defaults(items,p).sort((a,b)=>C.rank(a,p)-C.rank(b,p));widgets.forEach((item,index)=>{item.rank=index;through(item.n);widget(item);});page.dataset.studioRoute=route;page.classList.add('studio-active-page');page.classList.toggle('studio-filters-open',state.filtersOpen===true);const composedPage=page;cleanup.push(()=>{composedPage.classList.remove('studio-active-page','studio-filters-open');delete composedPage.dataset.studioRoute;});primary.hidden=true;advanced.hidden=true;filterButton.hidden=!page.querySelector('.studio-advanced-control');aboutButton.hidden=about.hidden=!aboutBody.children.length;working=false;apply();document.dispatchEvent(new CustomEvent('bc-review-composed',{detail:{page,route}}));if(library?.open)renderLibrary();
+   widgets=C.defaults(items,p).sort((a,b)=>C.rank(a,p)-C.rank(b,p));widgets.forEach((item,index)=>{item.rank=index;through(item.n);widget(item);});page.dataset.studioRoute=route;page.classList.add('studio-active-page');page.classList.toggle('studio-filters-open',state.filtersOpen===true);const composedPage=page;cleanup.push(()=>{composedPage.classList.remove('studio-active-page','studio-filters-open');delete composedPage.dataset.studioRoute;composedPage.style.removeProperty('--studio-sales-table-order');});primary.hidden=true;advanced.hidden=true;filterButton.hidden=!page.querySelector('.studio-advanced-control');aboutButton.hidden=about.hidden=!aboutBody.children.length;working=false;apply();document.dispatchEvent(new CustomEvent('bc-review-composed',{detail:{page,route}}));if(library?.open)renderLibrary();
   }
   return{compose,restore,openLibrary,isManaged:n=>moving.has(n)||n.nodeType===1&&(n.dataset.studioOwned||n.dataset.studioManaged),scan:()=>({version:3,route,revision,widgets:widgets.map(i=>({id:i.id,title:i.title,kind:i.kind,size:state.sizes[i.id]||i.size,visible:i.widget.dataset.studioHidden!=='true',required:i.required})),tables:widgets.filter(i=>i.kind==='table').length,charts:widgets.filter(i=>i.kind==='chart').length})};
  }
