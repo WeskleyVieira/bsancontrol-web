@@ -32,35 +32,52 @@ body.review-integral.studio-products.light{
   --raised:var(--surf2);
   --line:var(--bdr);
 }
-.review-integral.light .review-sidebar{background:var(--studio-chrome)}
-.review-integral.light .review-topbar{background:var(--surf)}
-.review-integral.light .review-sidebar button{border-radius:8px}
-.review-integral.light .review-sidebar button:hover{background:var(--surf3)}
-.review-integral.light .review-sidebar button[aria-current=page]{
+body.review-integral:not(.light){
+  --studio-chrome:#191923;
+  --studio-shadow:0 1px 2px #0003,0 6px 18px #0002;
+  --bg:#111118;
+  --surf:#1c1c26;
+  --surf2:#252531;
+  --surf3:#30303f;
+  --bdr:#3c3c4b;
+  --bdr2:#575768;
+  --studio-field-background:var(--surf);
+  --studio-field-border:#78788a;
+  --card-bg:var(--surf);
+  --bc-surface:var(--surf);
+  --bc-raised:var(--surf2);
+  --bc-border:var(--bdr);
+}
+html:has(>body.review-integral:not(.light)){background:#111118!important}
+.review-integral .review-sidebar{background:var(--studio-chrome)}
+.review-integral .review-topbar{background:var(--surf)}
+.review-integral .review-sidebar button{border-radius:8px}
+.review-integral .review-sidebar button:hover{background:var(--surf3)}
+.review-integral .review-sidebar button[aria-current=page]{
   background:var(--a3);
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--a) 18%,var(--a3));
 }
-.review-integral.light .review-sidebar button:focus-visible{
+.review-integral .review-sidebar button:focus-visible{
   outline:2px solid var(--a);
   outline-offset:-2px;
 }
-.review-integral.light :is(.bc-reading-guide,.studio-about,.studio-met-day-picker){
+.review-integral :is(.bc-reading-guide,.studio-about,.studio-met-day-picker){
   background:var(--surf2);
 }
-.review-integral.light .studio-about{border-radius:8px;padding-inline:12px}
+.review-integral .studio-about{border-radius:8px;padding-inline:12px}
 
 /* A área de consulta é uma superfície própria sobre o fundo branco. */
-body.review-integral.light #bc-global-context:not([hidden]){
+body.review-integral #bc-global-context:not([hidden]){
   box-sizing:border-box;
   padding:10px 12px!important;
   border:1px solid var(--bdr)!important;
   border-radius:12px;
   background:var(--studio-chrome)!important;
 }
-body.review-integral.light .studio-page-tools button:not(.studio-primary,[aria-pressed]){
+body.review-integral .studio-page-tools button:not(.studio-primary,[aria-pressed]){
   background-color:var(--studio-chrome)!important;
 }
-body.review-integral.light .studio-active-page .studio-primary:hover{
+body.review-integral .studio-active-page .studio-primary:hover{
   background:color-mix(in srgb,var(--a) 85%,var(--t))!important;
 }
 .review-integral .studio-view-options{
@@ -88,23 +105,23 @@ body.review-integral .studio-view-options>button:focus-visible{
 }
 
 /* O tom do indicador aparece no rótulo e na superfície do card. */
-body.review-integral.light .page.on.studio-active-page :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card){
+body.review-integral .page.on.studio-active-page :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card){
   --studio-kpi-wash:color-mix(in srgb,var(--studio-kpi-tone,var(--a)) 7%,var(--surf));
   background:linear-gradient(145deg,var(--studio-kpi-wash),var(--surf) 70%)!important;
   box-shadow:var(--studio-shadow)!important;
 }
-body.review-integral.light .page.on.studio-active-page .studio-widget.studio-kpi{
+body.review-integral .page.on.studio-active-page .studio-widget.studio-kpi{
   gap:5px;
 }
-body.review-integral.light .page.on.studio-active-page
+body.review-integral .page.on.studio-active-page
   :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card):is([data-bc-result=attention],[data-margin-tone=attention],[data-tone=attention]){
   --studio-kpi-wash:var(--studio-chrome);
 }
-body.review-integral.light .page.on.studio-active-page
+body.review-integral .page.on.studio-active-page
   :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card)>:is(h3,.kpi-eye,.fc-kpi-title){
   background:color-mix(in srgb,var(--studio-kpi-tone,var(--a)) 12%,var(--surf));
 }
-body.review-integral.light .page.on .studio-kpi[data-bc-result=info]>.sum-value{
+body.review-integral .page.on .studio-kpi[data-bc-result=info]>.sum-value{
   color:var(--t)!important;
 }
 body.review-integral .page.on.studio-active-page .studio-kpi>p.studio-kpi-comparison{
@@ -126,13 +143,13 @@ body.review-integral .page.on.studio-active-page .studio-kpi>button.studio-kpi-o
 body.review-integral .page.on.studio-active-page .studio-kpi>button.studio-kpi-open:hover{
   text-decoration:underline;
 }
-body.review-integral.light .page.on.studio-active-page .studio-widget.studio-kind-chart{
+body.review-integral .page.on.studio-active-page .studio-widget.studio-kind-chart{
   box-shadow:var(--studio-shadow)!important;
 }
-body.review-integral.light .studio-widget .studio-widget-head>h2{
+body.review-integral .studio-widget .studio-widget-head>h2{
   font-weight:650!important;
 }
-body.review-integral.light .studio-kind-table thead th{
+body.review-integral .studio-kind-table thead th{
   background:var(--surf2);
 }
 @media (max-width:1100px){
@@ -588,3 +605,141 @@ html[data-review-motion="off"] .studio-replay {
     font-size: 19px;
   }
 }
+
+/* Um único desenho para os indicadores e seus comandos nos dois temas. */
+body.review-integral .page.on.studio-active-page .studio-kpi.sum-card{
+  position:relative;
+  gap:7px;
+  padding:16px 18px 12px!important;
+  border-radius:14px!important;
+  font-variant-numeric:tabular-nums;
+}
+body.review-integral .page.on.studio-active-page :is(.studio-kpi.sum-card,#res-forecast-pacing .sum-card)>h3:has(.studio-metric-icon){
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:0;
+  background:transparent;
+  color:var(--t2)!important;
+}
+.studio-metric-icon{
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:27px;
+  height:27px;
+  border-radius:9px;
+  color:color-mix(in srgb,var(--studio-kpi-tone,var(--a)) 76%,var(--t));
+  background:color-mix(in srgb,var(--studio-kpi-tone,var(--a)) 14%,var(--surf));
+}
+.studio-metric-icon svg{width:16px;height:16px}
+body.review-integral .page.on .studio-kpi.sum-card>p{
+  order:2;
+  margin:0!important;
+  min-height:0!important;
+  color:var(--t2);
+}
+body.review-integral .page.on .studio-kpi.sum-card>:is(.studio-estimate,.studio-kpi-foot){order:2}
+body.review-integral .page.on.studio-active-page .studio-kpi.sum-card>button{
+  order:4;
+  align-self:stretch;
+  margin: auto 0 0!important;
+  padding:8px 0 0!important;
+  border:0!important;
+  border-top:1px solid var(--bdr)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:var(--a)!important;
+  min-height:27px!important;
+  text-align:left;
+  font-size:11px!important;
+  font-weight:600!important;
+}
+body.review-integral .page.on .studio-kpi.sum-card>button::after{content:' →';margin-left:4px}
+body.review-integral .page.on.studio-active-page .studio-kpi.sum-card:has(.studio-daily-trend){
+  background:linear-gradient(108deg,var(--surf) 37%,color-mix(in srgb,var(--a) 8%,var(--surf)))!important;
+  container-type:inline-size;
+}
+.studio-daily-trend{
+  position:absolute;
+  top:41px;
+  right:16px;
+  width:24%;
+  max-width:110px;
+  margin:0;
+  color:var(--a);
+  pointer-events:none;
+}
+.studio-daily-trend svg{display:block;width:100%;height:34px}
+.studio-daily-trend path{fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.studio-daily-trend figcaption{text-align:right;font-size:10px;color:var(--t3)}
+@container(max-width:320px){
+  .studio-daily-trend{position:static;align-self:start;width:100%;max-width:100%;display:flex;align-items:center;gap:6px}
+  .studio-daily-trend svg{width:64px;height:22px}
+}
+.studio-kpi .studio-register-meter{
+  appearance:none;
+  width:100%;
+  height:5px;
+  border:0;
+  border-radius:9px;
+  overflow:hidden;
+  background:var(--surf3);
+  color:var(--studio-kpi-tone,var(--a));
+}
+.studio-register-meter::-webkit-progress-bar{background:var(--surf3)}
+.studio-register-meter::-webkit-progress-value{background:currentColor;border-radius:9px}
+.studio-register-meter::-moz-progress-bar{background:currentColor;border-radius:9px}
+.review-integral .studio-kind-chart>.studio-widget-head,
+.review-integral .studio-kind-table>.studio-widget-head{
+  padding-bottom:10px;
+  border-bottom:1px solid var(--bdr);
+}
+.review-integral .review-sidebar .review-nav-active>svg{
+  box-sizing:content-box;
+  padding:5px;
+  margin:-5px;
+  border-radius:7px;
+  background:var(--a3);
+  color:var(--a);
+}
+
+.review-integral .page.on .ac4-scope:has(.studio-portfolio-filters){
+  display:flex!important;
+  flex-flow:row wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:10px 14px!important;
+  background:var(--studio-chrome)!important;
+}
+.review-integral .ac4-scope:has(.studio-portfolio-filters)>h2{display:none}
+.review-integral .studio-portfolio-filters[open]{flex-basis:100%}
+.review-integral .studio-portfolio-filters summary{cursor:pointer;font-size:12px;font-weight:650;color:var(--t)}
+.review-integral .studio-portfolio-filters summary small{font-size:11px;font-weight:450;color:var(--t2);margin-left:10px}
+.review-integral .studio-portfolio-fields{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:end;
+  gap:10px;
+  margin-block:12px 6px;
+}
+.review-integral .studio-portfolio-fields .ac4-scope-controls{display:contents!important}
+.review-integral .studio-portfolio-fields label{max-width:100%}
+.review-integral .studio-portfolio-filters+.ac4-breadcrumb,
+.review-integral .ac4-scope:has(.studio-portfolio-filters) .ac4-breadcrumb{margin:0;font-size:12px}
+.review-integral .studio-portfolio-analyses{
+  border-radius:8px;
+  color:var(--t2);
+}
+.review-integral .studio-portfolio-analyses summary{
+  padding:8px 10px;
+  font-size:12px;
+  cursor:pointer;
+}
+.review-integral .studio-portfolio-analyses[open]{background:var(--surf2);padding:4px}
+.review-integral .ac4-levels .ac4-export-actions{margin-inline-start:auto}
+.review-integral .studio-workspace>.studio-about{order:-90}
+.review-integral .studio-workspace>.studio-about:not([open]){display:none}
+.review-integral .studio-about .studio-guide-copy{grid-column:1/-1}
+.review-integral .studio-guide-copy h3{margin:4px 0 6px}

@@ -23,6 +23,7 @@
  function create(options){
   let state=null,working=false,placements=[],cleanup=[],widgets=[],host=null,primary=null,advanced=null,about=null,page=null,route='',library=null,filterText='',dragId='',revision=0;
   const moving=new WeakSet();
+  const openPortfolioFilters=new Set();
   function own(n){if(n.nodeType===1)n.dataset.studioOwned='true';return n;}
   function move(n,target,before=null){if(!n.parentNode)return;const mark=document.createComment('studio:source');n.before(mark);moving.add(n);if(n.nodeType===1)n.dataset.studioManaged='true';placements.push({n,mark});target.insertBefore(n,before);}
   function restore(){if(working)return;working=true;for(const fn of cleanup.reverse())fn();cleanup=[];for(const {n,mark}of placements.reverse()){if(mark.isConnected)mark.replaceWith(n);else n.remove();}placements=[];host?.remove();host=null;widgets=[];working=false;}
@@ -203,11 +204,106 @@
    }
    cleanup.push(()=>picker.remove());
   }
+  function groupPortfolioAnalyses(toolbar){
+   const names=['Comparar carteiras','Casos e continuidade','Referências econômicas'];
+   const analyses=[...toolbar.children].filter(n=>n.matches('button')&&names.includes(textOf(n)));
+   if(!analyses.length)return;
+   const menu=own(make('details','studio-portfolio-analyses studio-ui'));
+   const active=analyses.find(n=>n.classList.contains('on'));
+   const trigger=make('summary','',active?textOf(active):'Análises da carteira');
+   menu.append(trigger);
+   analyses[0].before(menu);
+   for(const button of analyses)move(button,menu);
+   menu.addEventListener('keydown',event=>{
+    if(event.key==='Escape'){menu.open=false;trigger.focus();}
+   });
+   cleanup.push(()=>menu.remove());
+  }
+  function compactPortfolioFilters(scope){
+   const controls=[...scope.querySelectorAll(':scope>.ac4-scope-controls,:scope>label:has(select)')];
+   if(!controls.length)return;
+   const currentRoute=route;
+   const panel=own(make('details','studio-portfolio-filters studio-ui'));
+   const temporal=scope.querySelector(':scope>label select')?.selectedOptions[0]?.textContent;
+   const summary=make('summary','','Filtros da carteira');
+   if(temporal)summary.append(make('small','',temporal));
+   panel.append(summary);
+   scope.prepend(panel);
+   panel.open=openPortfolioFilters.has(currentRoute);
+   panel.ontoggle=()=>{
+    if(!panel.isConnected)return;
+    if(panel.open)openPortfolioFilters.add(currentRoute);
+    else openPortfolioFilters.delete(currentRoute);
+   };
+   const fields=make('div','studio-portfolio-fields');
+   panel.append(fields);
+   for(const control of controls)move(control,fields);
+   const note=scope.querySelector(':scope>p.ac4-note');
+   if(note)move(note,panel);
+   cleanup.push(()=>panel.remove());
+  }
+  function addDailyTrend(card,title){
+   const canvas=page.querySelector('#res-overview-evolution');
+   if(!canvas)return;
+   const frame=requestAnimationFrame(()=>{
+    const data=window.Chart?.getChart(canvas)?.data;
+    const series=data?.datasets.find(dataset=>dataset.label===title)?.data;
+    if(!series)return;
+    const values=series.filter(Number.isFinite);
+    if(values.length<2)return;
+    const low=Math.min(...values),high=Math.max(...values);
+    const dates=data.labels.map(label=>Date.parse(label));
+    const span=dates.at(-1)-dates[0];
+    if(!Number.isFinite(span)||span<=0)return;
+    const figure=own(make('figure','studio-daily-trend'));
+    figure.style.color=title==='Faturamento'?'var(--studio-brand-primary)':'var(--studio-brand-secondary)';
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 100 34');
+    svg.setAttribute('aria-hidden','true');
+    const path=document.createElementNS(svg.namespaceURI,'path');
+    let line='',lastDate=null;
+    series.forEach((value,i)=>{
+     if(!Number.isFinite(value)){lastDate=null;return;}
+     const x=2+96*(dates[i]-dates[0])/span;
+     const y=high===low?17:30-26*(value-low)/(high-low);
+     line+=(dates[i]-lastDate===86400000?'L':'M')+x.toFixed(2)+' '+y.toFixed(2);
+     lastDate=dates[i];
+    });
+    path.setAttribute('d',line);
+    svg.append(path);
+    figure.append(svg,make('figcaption','','Por dia'));
+    figure.title=title+' por dia · '+data.labels[0]+' — '+data.labels.at(-1);
+    card.append(figure);
+    cleanup.push(()=>figure.remove());
+   });
+   cleanup.push(()=>cancelAnimationFrame(frame));
+  }
   function compactCard(n,item){
+   const icons={'Faturamento':'chart','Pós-Ads':'money','Pré-Ads':'money','Publicidade':'manage','Unidades':'box','Pedidos identificados':'sales','Demandas em acompanhamento':'tasks','O que foi registrado':'tasks','Efeito medido':'chart','Ainda sem registro':'panel','Atrasadas agora':'tasks','Retornos vencidos':'chat'};
+   const heading=n.querySelector(':scope>h3'),iconName=icons[item.title];
+   if(heading&&iconName&&options.icon){
+    const marker=own(make('span','studio-metric-icon'));
+    marker.append(options.icon(iconName));
+    heading.prepend(marker);
+    cleanup.push(()=>marker.remove());
+   }
+   if(route==='resultados/overview'&&['Faturamento','Pós-Ads'].includes(item.title))addDailyTrend(n,item.title);
+   if(n.matches('.ac6-kpi')){
+    const value=textOf(n.querySelector('.sum-value')).match(/^(\d+)\/(\d+)$/);
+    if(value&&Number(value[2])>0){
+     const meter=own(make('progress','studio-register-meter'));
+     meter.max=Number(value[2]);
+     meter.value=Number(value[1]);
+     meter.setAttribute('aria-label',item.title);
+     n.querySelector('.sum-value').after(meter);
+     cleanup.push(()=>meter.remove());
+    }
+   }
    const details=make('details','studio-kpi-detail studio-ui'),summary=make('summary','','i');summary.setAttribute('aria-label','Entender '+item.title);details.append(summary);let count=0;
    for(const p of n.querySelectorAll(':scope>p,:scope>.sum-note')){
     const t=textOf(p);
-    if(!t||p.matches('.met-quick-label'))continue;
+    if(!t||p.matches('.met-quick-label')||n.matches('.ac6-kpi'))continue;
+    if(route==='resultados/overview'&&/^(Ticket:|TACOS:)/.test(t))continue;
     if(p.matches('.sum-delta')||/^[+−-].*(?:R\$|%|p\.p\.)/.test(t)){
      p.classList.add('studio-kpi-comparison');
      cleanup.push(()=>p.classList.remove('studio-kpi-comparison'));
@@ -346,9 +442,26 @@
     cleanup.push(()=>refresh.classList.remove('studio-support-source'));
    }
    primary=own(make('div','studio-primary-controls'));advanced=own(make('details','studio-filter-panel'));advanced.append(make('summary','','Filtros e referências'));const filterBody=own(make('div','studio-filter-body'));advanced.append(filterBody);const grid=own(make('div','studio-grid'));about=own(make('details','studio-about'));about.append(make('summary','','Contexto, critérios e fontes'));const aboutBody=own(make('div','studio-about-body'));about.append(aboutBody);host.append(tools,primary,advanced,grid,about);page.prepend(host);
+   const readingGuide=resultSourceId&&page.querySelector(':scope>.bc-reading-guide');
+   if(readingGuide){
+    const section=make('section','studio-guide-copy');
+    section.append(make('h3','',textOf(readingGuide.querySelector('summary'))));
+    for(const paragraph of readingGuide.querySelectorAll(':scope>p'))section.append(paragraph.cloneNode(true));
+    aboutBody.prepend(section);
+    readingGuide.classList.add('studio-support-source');
+    cleanup.push(()=>readingGuide.classList.remove('studio-support-source'));
+    aboutButton.textContent='Guia e fontes';
+   }
+   about.id='studio-about-'+page.id;
+   aboutButton.setAttribute('aria-controls',about.id);
+   aboutButton.setAttribute('aria-expanded','false');
+   const infoPanel=about;
+   infoPanel.ontoggle=()=>aboutButton.setAttribute('aria-expanded',String(infoPanel.open));
    function through(n){for(let parent=n.parentElement;parent&&parent!==page;parent=parent.parentElement){if(parent.classList.contains('studio-through'))continue;parent.classList.add('studio-through');const current=parent;cleanup.push(()=>current.classList.remove('studio-through'));}}
    for(const n of collected.controls){
     if(n===refresh)continue;
+    if(n.matches('.ac4-levels'))groupPortfolioAnalyses(n);
+    if(n.matches('.ac4-scope'))compactPortfolioFilters(n);
     const rootFilter=n.parentElement===source&&n.matches('.op-controls,.res-controls')&&p.route.startsWith('resultados/');
     const important=rootFilter||p.flow==='form'||n.matches(pageControls+',nav,p,[role=tablist],[role=status]')||
      /PRODUTO \(SKU\)|Consultar SKU|Procurar produtos|Agrupar itens|Lente|Colunas|Competência|Tentar novamente/i.test(textOf(n));
