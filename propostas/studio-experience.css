@@ -1,4 +1,38 @@
 /* Identidade da marca e sinais de desempenho têm funções diferentes. */
+body.review-integral{
+  --studio-field-height:36px;
+  --studio-field-font:12px;
+  --studio-field-radius:8px;
+  --studio-field-background:var(--surf2);
+  --studio-field-border:var(--bdr2);
+}
+html:has(>body.review-integral.light){background:#e8eef5!important}
+body.review-integral.light{
+  --bg:#e8eef5;
+  --surf:#fcfdff;
+  --surf2:#eef3f9;
+  --surf3:#e2eaf4;
+  --bdr:#b4c2d4;
+  --bdr2:#9aabc1;
+  --card-bg:var(--surf);
+  --studio-chrome:#f2f5fa;
+  --studio-field-background:#f3f6fa;
+  --studio-field-border:#7386a0;
+  --bc-surface:var(--surf);
+  --bc-raised:var(--surf2);
+  --bc-border:var(--bdr);
+}
+body.review-integral.studio-products.light{
+  --panel:var(--surf);
+  --surface:var(--surf);
+  --raised:var(--surf2);
+  --line:var(--bdr);
+}
+.review-integral.light :is(.review-sidebar,.review-topbar){background:var(--studio-chrome)}
+.review-integral.light :is(.bc-reading-guide,.studio-about,.studio-met-day-picker){
+  background:var(--surf2);
+}
+.review-integral.light .studio-about{border-radius:8px;padding-inline:12px}
 html[data-review-brand=bsan] body.review-integral{--studio-brand-primary:#00B1EB;--studio-brand-secondary:#B186FF;--a:#6440A8;--a2:#B186FF;--a3:#F3EEFF;--bc-accent:#6440A8;--bc-info:#0086B3;--accent:#6440A8}
 html[data-review-brand=jowcase] body.review-integral{--studio-brand-primary:#2871FA;--studio-brand-secondary:#6717CD;--a:#6717CD;--a2:#2871FA;--a3:#F2EAFC;--bc-accent:#6717CD;--bc-info:#2871FA;--accent:#6717CD}
 html[data-review-brand] body.review-integral:not(.light){--a:#B99BEF;--a3:#292039;--bc-accent:#B99BEF;--accent:#B99BEF}
@@ -40,10 +74,16 @@ body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas,.bc-pe
   background:var(--surf2)!important;
 }
 body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas){width:fit-content;max-width:100%;flex-wrap:wrap}
+body.review-integral :is(.page,#met-root,#bc-range-menu) :is(.fc-chart-controls,.met-views,.met-rota-metricas,.bc-period-modes)>button{
+  min-height:32px!important;
+  padding:5px 10px!important;
+  font-size:12px!important;
+  line-height:1.4!important;
+  border-radius:8px!important;
+}
 body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas,.bc-period-modes)>button{
   border-color:transparent!important;
   background:transparent!important;
-  border-radius:8px!important;
 }
 body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas,.ac4-levels,.ger-chips,.ger-agenda-families,.bc-period-modes,.bc-period-quick,.bc-month-grid,.bc-calendar-endpoints) button[aria-pressed=true]{
   border-color:transparent!important;
@@ -79,7 +119,89 @@ body.review-integral dialog.studio-print-dialog{width:1000px;max-width:calc(100v
 @media(max-width:700px){body.review-integral #bc-range-menu .bc-period-panel{left:10px!important;right:10px!important;width:auto!important;max-width:calc(100vw - 20px)!important;padding:12px!important;max-height:calc(100dvh - 110px)!important}.studio-brand-choices{grid-template-columns:1fr}.studio-motion-label{align-items:start;flex-direction:column;gap:7px}.studio-print-controls{align-items:stretch;flex-direction:column}body.review-integral :is(.studio-widget,#bc-review-type).studio-kpi .sum-value{font-size:22px!important}}
 @media(prefers-reduced-motion:reduce){.studio-replay{display:none!important}}
 
-body.review-integral #bc-global-context #bc-range-menu .bc-period-trigger{min-height:20px!important;display:flex!important;align-items:center!important;gap:8px!important}body.review-integral #bc-global-context #bc-range-menu .bc-period-trigger-text{flex-direction:row!important;align-items:center!important;gap:8px!important}body.review-integral #bc-global-context #bc-range-menu #bc-range-label{white-space:nowrap!important;font-size:11px!important}body.review-integral #bc-global-context #bc-range-menu>summary{min-height:35px!important;padding:7px 10px!important}
+body.review-integral #bc-global-context #bc-range-menu .bc-period-trigger-text{flex-direction:row!important;align-items:center!important;gap:8px!important}
+
+/* Controles de consulta, cadastro e modais compartilham a mesma medida. */
+body.review-integral :is(.studio-widget-actions,.studio-table-tools){
+  --studio-field-height:30px;
+  --studio-field-font:11px;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel)
+  :is(select,textarea,input:where(:not([type=checkbox],[type=radio],[type=range],[type=color],[type=button],[type=submit],[type=reset],[type=file],[type=image],[type=hidden]))){
+  box-sizing:border-box;
+  min-height:var(--studio-field-height)!important;
+  font-family:inherit!important;
+  font-size:var(--studio-field-font)!important;
+  font-weight:500!important;
+  line-height:1.4!important;
+  padding:6px 10px!important;
+  border:1px solid var(--studio-field-border)!important;
+  border-radius:var(--studio-field-radius)!important;
+  background-color:var(--studio-field-background)!important;
+  color:var(--t)!important;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel)
+  :is(select,input):where(:not([multiple],[size]:not([size="1"]),[type=checkbox],[type=radio],[type=range],[type=color],[type=button],[type=submit],[type=reset],[type=file],[type=image],[type=hidden])){
+  height:var(--studio-field-height)!important;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel) textarea{
+  min-height:72px!important;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel) select:where(:not([multiple],[size]:not([size="1"]))){
+  appearance:none;
+  padding-inline-end:28px!important;
+  background-image:linear-gradient(45deg,transparent 50%,var(--t2) 51%),linear-gradient(135deg,var(--t2) 50%,transparent 51%)!important;
+  background-position:right 14px center,right 9px center!important;
+  background-size:5px 5px!important;
+  background-repeat:no-repeat!important;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel) :is(select,input,textarea):disabled{
+  background-color:var(--surf3,var(--surf2))!important;
+  border-color:var(--bdr2)!important;
+  color:var(--t2)!important;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel)
+  :is(select,input,textarea):focus-visible{
+  outline:2px solid var(--a)!important;
+  outline-offset:2px;
+}
+body.review-integral :is(#bc-global-context,.op-controls,.ger-controls,.pv-filters,.ac4-controls,.met-filtros) :is(label,label>span){
+  font-size:11px!important;
+  font-weight:550;
+}
+body.review-integral :is(.bc-view-heading,.studio-page-tools,.op-controls,.ger-controls,.pv-filters,.ac4-controls) button{
+  min-height:var(--studio-field-height)!important;
+  font-size:var(--studio-field-font)!important;
+  padding:6px 11px!important;
+  border-radius:var(--studio-field-radius)!important;
+}
+body.review-integral :is(.bc-view-heading,.studio-page-tools,.op-controls,.ger-controls,.pv-filters,.ac4-controls)
+  button:where(:not(.studio-primary,.studio-add,.primary,[aria-pressed],[data-tone],[type=submit])){
+  border-color:var(--studio-field-border)!important;
+}
+
+body.review-integral #bc-global-context #bc-range-menu>summary{
+  display:flex;
+  padding:0!important;
+  min-height:var(--studio-field-height)!important;
+}
+body.review-integral #bc-global-context #bc-range-menu .bc-period-trigger{
+  height:var(--studio-field-height);
+  min-height:var(--studio-field-height)!important;
+  font-size:var(--studio-field-font)!important;
+  padding:0 10px!important;
+  background:var(--studio-field-background);
+  border:1px solid var(--studio-field-border)!important;
+  border-radius:var(--studio-field-radius)!important;
+}
+body.review-integral #bc-global-context #bc-range-menu #bc-range-label{font-size:var(--studio-field-font)!important}
+
+@media(forced-colors:active){
+  body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel) select{
+    appearance:auto;
+    background-image:none!important;
+  }
+}
 
 body.review-integral :is(.studio-active-page,#bc-review-scale) :is(.res-operation-result,.res-channel-revenue,.ger-agenda-count,.op-big,.bc-com-kpi>strong){font-size:23px!important;line-height:1.3!important}
 
