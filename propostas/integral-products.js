@@ -9,8 +9,21 @@
   function settings(){const k=key();if(!layouts.has(k))layouts.set(k,store?.getLayout(k)||{mode:'essential',items:{},order:[],sizes:{},tables:{}});return layouts.get(k);}
   function persist(){store?.setLayout(key(),settings());}
   const dialog=document.createElement('dialog');dialog.className='review-dialog studio-ui';dialog.setAttribute('aria-label','Análise ampliada');document.body.append(dialog);
-  function restoreZoom(){if(!expanded)return;expanded.marker.replaceWith(expanded.node);expanded=null;parent.postMessage({type:'bsan-produtos-table-view',open:false},location.origin);}
-  function expand(node,title){restoreZoom();dialog.replaceChildren();const h=document.createElement('header'),t=document.createElement('h2'),full=document.createElement('button'),close=document.createElement('button');t.textContent=title;full.textContent='Tela cheia';full.onclick=()=>dialog.classList.toggle('review-full');close.textContent='Fechar';close.onclick=()=>dialog.close();h.append(t,full,close);const body=document.createElement('div');body.className='review-dialog-body';dialog.append(h,body);const marker=document.createComment('origem da análise ampliada');node.before(marker);body.append(node);expanded={node,marker};parent.postMessage({type:'bsan-produtos-table-view',open:true},location.origin);dialog.showModal();}
+  function restoreZoom(){
+   dialog.classList.remove('review-full');
+   if(!expanded)return;
+   expanded.marker.replaceWith(expanded.node);
+   expanded=null;
+   parent.postMessage({type:'bsan-produtos-table-view',open:false},location.origin);
+  }
+  function expand(node,title){restoreZoom();dialog.replaceChildren();const h=document.createElement('header'),t=document.createElement('h2'),full=document.createElement('button'),close=document.createElement('button');t.textContent=title;full.textContent='Tela cheia';
+   full.setAttribute('aria-pressed','false');
+   full.onclick=()=>{
+    const large=dialog.classList.toggle('review-full');
+    full.textContent=large?'Restaurar tamanho':'Tela cheia';
+    full.setAttribute('aria-pressed',String(large));
+   };
+   close.textContent='Fechar';close.onclick=()=>dialog.close();h.append(t,full,close);const body=document.createElement('div');body.className='review-dialog-body';dialog.append(h,body);const marker=document.createComment('origem da análise ampliada');node.before(marker);body.append(node);expanded={node,marker};parent.postMessage({type:'bsan-produtos-table-view',open:true},location.origin);dialog.showModal();}
   dialog.addEventListener('close',restoreZoom);
   function makeStudio(){studio=BCReviewStudio.create({settings,persist,expand,onLibrary:open=>parent.postMessage({type:'bsan-produtos-table-view',open},location.origin)});}
   function apply(){pending=false;if(!studio||expanded)return;studio.compose(root,key());}

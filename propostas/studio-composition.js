@@ -13,7 +13,7 @@
   'resultados/abc':'res-abc',
   'resultados/forecast':'res-metas'
  };
- const pageControls='.diary-period-controls,.ger-agenda,.ger-chips,.ac4-scope,.ac4-actions,.pv-heading,.bc-entry-toolbar,.fin-links,.ds-status-tabs,.met-views,.fc-tabs,.res-tabs,.ac6-tabs,.ac4-levels,.met-filtros,.fc-chart-controls,.res-abc-operation-picker,#com-ctrl,#com-kpis,#com-lancar-box,#bc-env-launch,#bc-import-launch,#vnd-filter-bar,#vnd-pager';
+ const pageControls='.diary-period-controls,.ger-agenda,.ger-chips,.ac4-scope,.ac4-actions,.pv-heading,.bc-entry-toolbar,.fin-links,.ds-status-tabs,.met-views,.fc-tabs,.res-tabs,.ac6-tabs,.ac4-levels,.met-filtros,.fc-chart-controls,.res-abc-operation-picker,#com-ctrl,#com-kpis,#com-lancar-box,#bc-env-launch,#bc-import-launch,#vnd-filter-bar,#vnd-pager,#vrx-suggestions,#vrx-result>.ger-context:has(.sum-actions),#vrx-result .ger-rx-benchmark';
  const controlGroups='.ger-controls,.op-controls,.res-controls,.ac4-controls,.ac4-filters,.perf-fbar,.ds-modes,.sum-actions,.fc-controls';
  const sections='.op-block,.ger-block,.res-block,.sum-section,.ac4-block,.ac6-block,.fin-reading,.fc-products,.pv-section,.gs-page>div';
  const textOf=n=>(n?.textContent||'').replace(/\s+/g,' ').trim();

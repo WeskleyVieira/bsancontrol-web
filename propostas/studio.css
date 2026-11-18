@@ -249,3 +249,6 @@ body.review-integral .studio-widget.ger-overview-grid{
   .review-integral .studio-widget-head h2{overflow-wrap:anywhere}
   .review-integral .studio-products .studio-kind-form{overflow:visible}
 }
+/* A identificação acompanha a consulta e a referência introduz os cards por operação. */
+.studio-active-page #vrx-result > .ger-context.studio-primary-control {order:8}
+.studio-active-page #vrx-result .ger-rx-benchmark.studio-primary-control {order:11}

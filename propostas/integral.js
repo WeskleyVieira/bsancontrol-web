@@ -118,7 +118,14 @@
  }
  function preset(mode){settings().mode=mode;settings().items={};persist();apply();}
  const modal=el('dialog','review-dialog review-ui');modal.setAttribute('aria-labelledby','review-dialog-title');document.body.append(modal);modal.addEventListener('close',restore);
- function dialog(title){restore();modal.replaceChildren();const head=el('header'),h=el('h2','',title);h.id='review-dialog-title';head.append(h,button('Tela cheia',()=>modal.classList.toggle('review-full')),button('Fechar',()=>{restore();modal.close();}));const body=el('div','review-dialog-body');modal.append(head,body);if(!modal.open)modal.showModal();return body;}
+ function dialog(title){restore();modal.replaceChildren();const head=el('header'),h=el('h2','',title);h.id='review-dialog-title';modal.classList.remove('review-full');
+  const full=button('Tela cheia',()=>{
+   const large=modal.classList.toggle('review-full');
+   full.textContent=large?'Restaurar tamanho':'Tela cheia';
+   full.setAttribute('aria-pressed',String(large));
+  });
+  full.setAttribute('aria-pressed','false');
+  head.append(h,full,button('Fechar',()=>{restore();modal.close();}));const body=el('div','review-dialog-body');modal.append(head,body);if(!modal.open)modal.showModal();return body;}
  function personalize(){if(activePage==='cadastro-produtos'){$('cadastro-produtos-frame')?.contentWindow.postMessage({type:'review-personalize',identity:preferenceIdentity},location.origin);return;}const host=dialog('Personalizar · '+(current()?.item.label||activePage));host.append(el('p','','Estes são os componentes originais desta tela. Controles, colunas, detalhes e ações continuam dentro dos respectivos blocos.'));for(const item of registry.values()){const row=el('article'),label=el('label'),check=el('input');check.type='checkbox';check.checked=!item.widget.hidden;check.onchange=()=>{settings().items[item.id]=check.checked;persist();apply();};label.append(check,el('strong','',item.title));row.append(label,button('↑',()=>move(item,-1)),button('↓',()=>move(item,1)));host.append(row);}host.append(button('Restaurar padrão essencial',()=>{prefs.set(route(),{mode:'essential',items:{},order:[]});persist();apply();personalize();}),el('p','review-small','Algumas leituras são abertas pelo filtro, nível ou detalhe original. Personalize novamente depois de abrir esse contexto para escolher seus blocos.'));}
  function move(item,dir){const list=[...registry.keys()],i=list.indexOf(item.id),j=i+dir;if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];settings().order=list;persist();apply();personalize();}
  function expand(widget,title){
