@@ -64,16 +64,70 @@
  function dialog(title){restore();modal.replaceChildren();const head=el('header'),h=el('h2','',title);h.id='review-dialog-title';head.append(h,button('Tela cheia',()=>modal.classList.toggle('review-full')),button('Fechar',()=>{restore();modal.close();}));const body=el('div','review-dialog-body');modal.append(head,body);if(!modal.open)modal.showModal();return body;}
  function personalize(){if(activePage==='cadastro-produtos'){$('cadastro-produtos-frame')?.contentWindow.postMessage({type:'review-personalize',identity:preferenceIdentity},location.origin);return;}const host=dialog('Personalizar · '+(current()?.item.label||activePage));host.append(el('p','','Estes são os componentes originais desta tela. Controles, colunas, detalhes e ações continuam dentro dos respectivos blocos.'));for(const item of registry.values()){const row=el('article'),label=el('label'),check=el('input');check.type='checkbox';check.checked=!item.widget.hidden;check.onchange=()=>{settings().items[item.id]=check.checked;persist();apply();};label.append(check,el('strong','',item.title));row.append(label,button('↑',()=>move(item,-1)),button('↓',()=>move(item,1)));host.append(row);}host.append(button('Restaurar padrão essencial',()=>{prefs.set(route(),{mode:'essential',items:{},order:[]});persist();apply();personalize();}),el('p','review-small','Algumas leituras são abertas pelo filtro, nível ou detalhe original. Personalize novamente depois de abrir esse contexto para escolher seus blocos.'));}
  function move(item,dir){const list=[...registry.keys()],i=list.indexOf(item.id),j=i+dir;if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];settings().order=list;persist();apply();personalize();}
- function expand(widget,title){const host=dialog(title),marker=el('div','review-placeholder');marker.style.minHeight=widget.offsetHeight+'px';widget.before(marker);host.append(widget);expanded={widget,marker};window.BCReviewCharts?.activate(widget);for(const canvas of widget.querySelectorAll('canvas'))Chart.getChart(canvas)?.resize();}
- function restore(){if(!expanded)return;expanded.marker.replaceWith(expanded.widget);for(const c of expanded.widget.querySelectorAll('canvas'))Chart.getChart(c)?.resize();expanded=null;modal.classList.remove('review-full');}
+ function expand(widget,title){
+  const scope=widget.closest('#met-root');
+  const marker=el('div','review-placeholder');
+  marker.style.minHeight=widget.offsetHeight+'px';
+  if(scope)scope.append(modal);
+  const host=dialog(title);
+  widget.before(marker);
+  host.append(widget);
+  expanded={widget,marker,scope};
+  window.BCReviewCharts?.activate(widget);
+  for(const canvas of widget.querySelectorAll('canvas'))window.Chart?.getChart(canvas)?.resize();
+ }
+ function restore(){
+  if(!expanded)return;
+  const {widget,marker,scope}=expanded;
+  expanded=null;
+  marker.replaceWith(widget);
+  modal.classList.remove('review-full');
+  if(scope&&!modal.open)document.body.append(modal);
+  for(const canvas of widget.querySelectorAll('canvas'))window.Chart?.getChart(canvas)?.resize();
+ }
+ modal.addEventListener('close',()=>{
+  if(!modal.open&&modal.parentElement!==document.body)document.body.append(modal);
+  schedule();
+ });
+ function returnToMetas(event){
+  if(!expanded?.scope)return;
+  const action=event.target.closest(event.type==='change'?'#met-ref-dia':'[onclick*="met"]');
+  if(!action||action.matches('.met-ampliar-cabecalho button'))return;
+  restore();
+  modal.close();
+ }
+ modal.addEventListener('click',returnToMetas,true);
+ modal.addEventListener('change',returnToMetas,true);
  function mapDialog(){const host=dialog('Estrutura integral do BsanControl'),grid=el('div','review-map');for(const g of bcGroupedCatalogue()){const section=el('section');section.append(el('h3','',g.label));for(const i of g.items){const b=button(i.label,()=>{modal.close();open(g.id,i.id);});b.dataset.reviewTarget=g.id+'/'+i.id;b.disabled=!!i.disabled;section.append(b);}grid.append(section);}host.append(grid,el('p','review-small','Telas e renderizadores originais com a nova apresentação. Dados e gravações somente neste ambiente local.'));}
  function snapshot(){const c=current();return{route:route(),label:c?.item.label||'',ponto:typeof PONTO_SEL==='undefined'?'':PONTO_SEL,company:BCNav.company,marketplace:BCNav.marketplace,month:BCNav.month,dates:Object.fromEntries(['d-start','d-end','d2-start','d2-end'].filter(id=>$(id)).map(id=>[id,$(id).value])),compare:typeof cmpMode==='undefined'?'':cmpMode};}
  function goBack(){const origin=trail.pop();if(!origin)return;pendingOrigin=null;lastView=null;restore();studio?.restore();PONTO_SEL=origin.ponto;BCNav.company=origin.company;BCNav.marketplace=origin.marketplace;BCNav.month=origin.month;for(const[id,value]of Object.entries(origin.dates))if($(id))$(id).value=value;if(typeof cmpMode!=='undefined')cmpMode=origin.compare;if(typeof bcNavRefresh==='function')bcNavRefresh();const[g,i]=origin.route.split('/');open(g,i);}
  const backButton=button('Voltar',goBack,'review-context-back review-ui');workspace.prepend(backButton);backButton.hidden=true;
- function sync(){scheduled=false;if(document.querySelector('dialog[open]')||document.documentElement.dataset.studioCapturing==='true')return;mountChrome();sidebarSync();const next=snapshot();if(lastView&&lastView.route!==next.route)trail.push(pendingOrigin?.route===lastView.route?pendingOrigin:lastView);lastView=next;pendingOrigin=null;backButton.hidden=!trail.length;backButton.textContent=trail.length?'← Voltar a '+trail.at(-1).label:'Voltar';decorate();}
+ function sync(){
+  scheduled=false;
+  if(expanded&&!modal.isConnected){
+   modal.close();
+   restore();
+   if(!modal.isConnected)document.body.append(modal);
+  }
+  if(document.querySelector('dialog[open]')||document.documentElement.dataset.studioCapturing==='true')return;
+  mountChrome();
+  sidebarSync();
+  const next=snapshot();
+  if(lastView&&lastView.route!==next.route)trail.push(pendingOrigin?.route===lastView.route?pendingOrigin:lastView);
+  lastView=next;
+  pendingOrigin=null;
+  backButton.hidden=!trail.length;
+  backButton.textContent=trail.length?'← Voltar a '+trail.at(-1).label:'Voltar';
+  decorate();
+ }
  document.addEventListener('close',()=>schedule(),true);
  function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(sync);}
- new MutationObserver(records=>{if(records.some(r=>!r.target.closest?.('.review-ui,.studio-ui,[data-studio-owned=true]')&&[...r.addedNodes].some(n=>n.nodeType===1&&!n.classList?.contains('review-ui')&&!n.classList?.contains('review-widget')&&!n.classList?.contains('review-body')&&!studio?.isManaged(n))))schedule();}).observe(document.body,{childList:true,subtree:true});
+ const generatedChrome='.review-ui,.studio-ui,[data-studio-owned=true],.bc-reading-guide,.bc-viz-tools,.bc-table-tools';
+ new MutationObserver(records=>{
+  const sourceChanged=records.some(record=>!record.target.closest?.(generatedChrome)&&[...record.addedNodes].some(node=>
+   node.nodeType===1&&!node.matches(generatedChrome+',.review-widget,.review-body')&&!studio?.isManaged(node)));
+  if(sourceChanged)schedule();
+ }).observe(document.body,{childList:true,subtree:true});
  const oldGo=goPage;goPage=function(){restore();studio?.restore();const result=oldGo.apply(this,arguments);schedule();return result;};
  document.addEventListener('click',e=>{if(!e.target.closest('.studio-ui,.review-ui')&&e.target.closest('button,a,canvas'))pendingOrigin=snapshot();},true);
  document.addEventListener('change',e=>{if(!e.target.closest('.review-ui,.studio-ui'))schedule();});document.addEventListener('click',e=>{if(!e.target.closest('.review-ui,.studio-ui'))schedule();});
