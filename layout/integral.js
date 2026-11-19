@@ -9,7 +9,10 @@
  const paths={panel:['M4 4h16v16H4z','M9 4v16'],search:['M21 21l-5-5','M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0'],settings:['M3 6h4m4 0h10M3 12h10m4 0h4M3 18h2m4 0h12','M11 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0M17 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0M9 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0'],chart:['M4 3v17h17','M8 14l4-5 4 2 5-7'],sales:['M5 7h14l1 14H4z','M8 7V5a4 4 0 0 1 8 0v2'],manage:['M4 7h16M4 17h16','M9 4v6M15 14v6'],box:['M3 7l9-5 9 5v10l-9 5-9-5z','M3 7l9 5 9-5M12 12v10'],products:['M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z'],chat:['M4 4h16v12H9l-5 5z','M8 8h8M8 12h5'],tasks:['M7 4h10v3H7z','M7 5H4v16h16V5h-3M8 12l2 2 5-5M8 18h8'],money:['M3 5h17v16H3z','M3 5V3h15v2M15 11h6v5h-6z']};
  function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.65');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');for(const d of paths[name]||paths.panel){const p=document.createElementNS(svg.namespaceURI,'path');p.setAttribute('d',d);svg.append(p);}return svg;}
  function iconButton(name,label,fn,cls=''){const b=button('',fn,'review-icon-button '+cls);b.append(icon(name));b.setAttribute('aria-label',label);b.title=label;return b;}
- const sidebar=el('aside','review-sidebar review-ui'),brand=el('div','review-brand'),collapse=iconButton('panel','Recolher menu lateral',()=>toggleSidebar(),'review-collapse');brand.append(el('b','','B'),el('strong','','BsanControl'),collapse);sidebar.append(brand);const nav=el('nav');nav.setAttribute('aria-label','Áreas e abas do BsanControl');sidebar.append(nav);document.body.prepend(sidebar);
+ const sidebar=el('aside','review-sidebar review-ui'),brand=el('div','review-brand'),collapse=iconButton('panel','Recolher menu lateral',()=>toggleSidebar(),'review-collapse');const home=button('',()=>{const target=homePage();if(target)open(target.group.id,target.item.id);},'review-home');
+ home.append(el('b','','B'),el('strong','','BsanControl'));
+ home.setAttribute('aria-label','BsanControl · Página inicial');
+ brand.append(home,collapse);sidebar.append(brand);const nav=el('nav');nav.setAttribute('aria-label','Áreas e abas do BsanControl');sidebar.append(nav);document.body.prepend(sidebar);
  const bar=el('header','review-topbar review-ui'),crumb=el('div','review-crumb'),actions=el('div','review-top-actions'),menu=iconButton('panel','Expandir menu lateral',()=>toggleSidebar(),'review-menu');
  const search=el('form','review-search'),searchInput=el('input'),searchResults=el('div','review-search-results');search.setAttribute('role','search');searchInput.type='search';searchInput.placeholder='Buscar uma página ou ferramenta';searchInput.setAttribute('aria-label','Buscar no BsanControl');searchInput.autocomplete='off';searchResults.hidden=true;searchResults.setAttribute('aria-label','Resultados da busca');searchResults.setAttribute('role','region');search.append(icon('search'),searchInput,el('kbd','','Ctrl K'),searchResults);search.onsubmit=e=>{e.preventDefault();searchResults.querySelector('button')?.click();};searchInput.oninput=()=>searchPages();searchInput.onfocus=()=>searchPages();searchInput.onkeydown=e=>{if(e.key==='Escape'){searchResults.hidden=true;searchInput.blur();}if(e.key==='ArrowDown'){e.preventDefault();searchResults.querySelector('button')?.focus();}};
  bar.append(menu,search,actions);
@@ -199,19 +202,25 @@
  const parts=location.hash.replace(/^#/,'').split('/'),oldId=parts.at(-1);let group=parts[0],id=alias[oldId]||oldId;
  if(modes[oldId]){group='cadastro-produtos';id='cadastro-'+modes[oldId];}
  if(group==='produtos')group='cadastro-produtos';if(group==='posvenda')group='pos-venda';
- const groups=bcGroupedCatalogue();
+ function homePage(){
+  const groups=bcGroupedCatalogue();
+  const results=groups.find(g=>g.id==='resultados');
+  const overview=results?.items.find(i=>i.id==='overview'&&!i.disabled);
+  if(overview)return {group:results,item:overview};
+  const first=groups.find(g=>g.items.some(i=>!i.disabled));
+  return first&&{group:first,item:first.items.find(i=>!i.disabled)};
+ }
  const available=(g,i)=>bcGroupedCatalogue().some(group=>group.id===g&&group.items.some(item=>item.id===i&&!item.disabled));
  // Produtos confirma os recursos do ponto apenas depois de iniciar o aplicativo incorporado.
  const requestedProduct=group==='cadastro-produtos'&&!available(group,id)&&available(group,'cadastro-catalog')?id:null;
  if(requestedProduct)id='cadastro-catalog';
  if(!available(group,id)){
-  const active=current();
-  const fallback=groups.find(g=>g.items.some(i=>!i.disabled));
-  group=active?.group.id||fallback?.id;
-  id=active?.item.id||fallback?.items.find(i=>!i.disabled)?.id;
+  const initial=homePage();
+  group=initial?.group.id;
+  id=initial?.item.id;
  }
- function drilldown(item){if(!/^(resultados|gerencial|vendas)\//.test(route()))return null;const title=BCStudioCatalogue.normalize(item.title),operation=BCNav.company&&BCNav.marketplace;let group,id,label;if(/^(faturamento|unidades|pedidos)/.test(title)){[group,id,label]=operation?['gerencial','ger-vendas','Ver vendas']:['vendas','vendas','Ver vendas'];}else if(/^(pos-ads|pre-ads|margem)/.test(title)){[group,id,label]=operation?['gerencial','produtos','Ver anúncios']:['resultados','marketplaces','Ver operações'];}else if(/^(publicidade|tacos|investimento)/.test(title)){[group,id,label]=operation?['gerencial','ads','Ver publicidade']:['resultados','marketplaces','Ver operações'];}else return null;if(!bcGroupedCatalogue().some(g=>g.id===group&&g.items.some(i=>i.id===id&&!i.disabled)))return null;return{label,run:()=>open(group,id)};}
- if(window.BCReviewStudio)studio=BCReviewStudio.create({icon,settings,persist,expand,navigate:open,drilldown,productLibrary:()=>$('cadastro-produtos-frame')?.contentWindow.postMessage({type:'review-personalize',identity:preferenceIdentity},location.origin)});
+ function drilldown(item){if(!/^(resultados|gerencial|vendas)\//.test(route()))return null;const title=BCStudioCatalogue.normalize(item.title),operation=BCNav.company&&BCNav.marketplace;let group,id,label;if(/^(faturamento|unidades|pedidos)/.test(title)){[group,id,label]=operation?['gerencial','ger-vendas','Ver vendas']:['vendas','vendas','Ver vendas'];}else if(/^(pos-ads|pre-ads|margem)/.test(title)){[group,id,label]=operation?['gerencial','produtos','Ver anúncios']:['resultados','marketplaces','Ver operações'];}else if(/^(publicidade|tacos|investimento)/.test(title)){[group,id,label]=operation?['gerencial','ads','Ver publicidade']:['resultados','marketplaces','Ver operações'];}else return null;if(route()===group+'/'+id||!available(group,id))return null;return{label,run:()=>open(group,id)};}
+ if(window.BCReviewStudio)studio=BCReviewStudio.create({icon,settings,persist,expand,navigate:open,canNavigate:available,drilldown,productLibrary:()=>$('cadastro-produtos-frame')?.contentWindow.postMessage({type:'review-personalize',identity:preferenceIdentity},location.origin)});
  if(requestedProduct){
   const followProduct=e=>{
    if(e.origin!==location.origin||e.source!==$('cadastro-produtos-frame')?.contentWindow||e.data?.type!=='bsan-produtos-state')return;

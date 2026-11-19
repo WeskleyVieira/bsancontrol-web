@@ -23,6 +23,7 @@
  function create(options){
   let state=null,working=false,placements=[],cleanup=[],widgets=[],host=null,primary=null,advanced=null,about=null,page=null,route='',library=null,filterText='',dragId='',revision=0;
   const moving=new WeakSet();
+  let guideRoute='';
   const openPortfolioFilters=new Set();
   function own(n){if(n.nodeType===1)n.dataset.studioOwned='true';return n;}
   function move(n,target,before=null){if(!n.parentNode)return;const mark=document.createComment('studio:source');n.before(mark);moving.add(n);if(n.nodeType===1)n.dataset.studioManaged='true';placements.push({n,mark});target.insertBefore(n,before);}
@@ -42,6 +43,15 @@
     return false;
    }
    function walk(n){if(n.nodeType!==1||n.matches(skip)||!sourceVisible(n,root))return;
+    if(n.matches('.bc-reading-guide'))return;
+    if(n.id==='ger-empty'){
+     if(textOf(n))controls.push(n);
+     return;
+    }
+    if(n.matches('.ds-facts')){
+     if(n.children.length)push(n,'signal','Pontos de atenção nas vendas',true,{layoutSize:'full',canExpand:false});
+     return;
+    }
     if(n.matches(pageControls)){controls.push(n);return;}
     if(n.id==='com-tbl'){push(n,'list','Comissão por operação',true,{sequence:22,layoutSize:'full',keepHeadings:true,canExpand:false});return;}
     if(n.id==='com-det'){if(n.children.length)push(n,'list','Composição e histórico da operação',true,{sequence:24,layoutSize:'full',keepHeadings:true,canExpand:false});return;}
@@ -60,7 +70,7 @@
      return;
     }
     if(workflowDisclosure(n)){push(n,'help',titleOf(n,'Ajustar consulta'),true,{sequence:12});return;}
-    if(n.matches('details,.bc-reading-guide')){
+    if(n.matches('details')){
      const isTable=n.querySelector('table');
      push(n,isTable?'table':'help',titleOf(n,'Critérios e detalhes da análise'));
      return;
@@ -299,7 +309,7 @@
      cleanup.push(()=>meter.remove());
     }
    }
-   const details=make('details','studio-kpi-detail studio-ui'),summary=make('summary','','i');summary.setAttribute('aria-label','Entender '+item.title);details.append(summary);let count=0;
+   const details=make('details','studio-kpi-detail studio-ui'),summary=make('summary','','Detalhes');summary.setAttribute('aria-label','Detalhes de '+item.title);details.append(summary);let count=0;
    for(const p of n.querySelectorAll(':scope>p,:scope>.sum-note')){
     const t=textOf(p);
     if(!t||p.matches('.met-quick-label')||n.matches('.ac6-kpi'))continue;
@@ -415,7 +425,7 @@
    for(const item of ordered){if(!C.normalize(item.title+' '+names[item.kind]).includes(C.normalize(filterText)))continue;const row=make('article','studio-library-item');row.dataset.widgetId=item.id;row.draggable=true;row.ondragstart=e=>{dragId=item.id;e.dataTransfer.setData('text/plain',item.id);};row.ondragover=e=>e.preventDefault();row.ondrop=e=>{e.preventDefault();if(!dragId||dragId===item.id)return;const ids=ordered.map(i=>i.id).filter(id=>id!==dragId);ids.splice(ids.indexOf(item.id),0,dragId);state.order=ids;save();renderLibrary(dragId);};row.append(mini(item));const body=make('div','studio-library-item-copy');body.append(make('span','studio-kind-label',names[item.kind]),make('h3','',item.title),make('p','',purpose(item)));const controls=make('div','studio-library-item-controls'),selected=item.widget.dataset.studioHidden!=='true',choose=btn(item.required?'Fixo nesta página':selected?'Remover':'Adicionar',()=>{state.items[item.id]=!selected;save();renderLibrary(item.id);},selected?'studio-selected':'studio-add');choose.disabled=item.required;choose.setAttribute('aria-label',(selected?'Remover ':'Adicionar ')+item.title);choose.setAttribute('aria-pressed',String(selected));controls.append(choose,btn('↑',()=>reorder(item.id,-1)),btn('↓',()=>reorder(item.id,1)));controls.children[1].setAttribute('aria-label','Mover '+item.title+' para cima');controls.children[2].setAttribute('aria-label','Mover '+item.title+' para baixo');const size=make('select');size.setAttribute('aria-label','Tamanho de '+item.title);for(const[v,t]of [['compact','Compacto'],['third','Um terço'],['half','Meia largura'],['wide','Amplo'],['full','Largura inteira']])size.append(new Option(t,v));size.value=state.sizes[item.id]||item.size;size.onchange=()=>{state.sizes[item.id]=size.value;save();};controls.append(size);body.append(controls);row.append(body);list.append(row);}
    if(!list.children.length)list.append(make('p','studio-empty-search','Nenhum widget encontrado nesta página.'));const footer=make('footer');footer.append(btn('Restaurar composição sugerida',()=>{state.mode='essential';state.items={};state.order=[];state.sizes={};state.tables={};save();renderLibrary();}),make('small','','Arraste um cartão para mudar a ordem ou use as setas.'));library.append(list,footer);if(focusId)library.querySelector('[data-widget-id="'+CSS.escape(focusId)+'"]')?.scrollIntoView({block:'nearest'});if(position!=null&&focused?.type==='search'){search.focus();search.setSelectionRange(position,position);}
   }
-  function purpose(item){if(item.kind==='kpi')return'Acompanhe o valor e a referência. A composição detalhada fica no ícone de informação.';if(item.kind==='table')return'Consulte os registros, ajuste colunas e abra o detalhe sem perder o recorte.';if(item.kind==='chart')return'Leia evolução e comparação; amplie para investigar os pontos da série.';if(item.kind==='form')return'Campos e ações do fluxo, com seus vínculos e validações preservados.';return'Identifique prioridades e aprofunde os itens deste recorte.';}
+  function purpose(item){if(item.kind==='kpi')return'Acompanhe o valor e a referência. A composição detalhada fica em Detalhes.';if(item.kind==='table')return'Consulte os registros, ajuste colunas e abra o detalhe sem perder o recorte.';if(item.kind==='chart')return'Leia evolução e comparação; amplie para investigar os pontos da série.';if(item.kind==='form')return'Campos e ações do fluxo, com seus vínculos e validações preservados.';return'Identifique prioridades e aprofunde os itens deste recorte.';}
   function compose(nextPage,nextRoute){if(working||!nextPage)return;working=true;working=false;restore();working=true;page=nextPage;route=nextRoute;revision++;const p=C.profile(route);state=options.settings();if(state.composition!==3){state.composition=3;state.items={};state.order=[];state.sizes={};state.tables={};state.mode='essential';options.persist();}state.sizes??={};state.tables??={};
    const resultSourceId=resultSources[route],source=resultSourceId?page.querySelector('#'+resultSourceId):page;
    if(resultSourceId){
@@ -426,7 +436,7 @@
    }
    const collected=collect(page,p,source);
    const refresh=route==='resultados/overview'&&collected.controls.find(n=>n.matches('button')&&textOf(n)==='Atualizar Visão Geral');
-   host=own(make('div','studio-workspace'));const tools=own(make('div','studio-page-tools studio-ui')),purposeText=make('p','studio-purpose',p.purpose),libraryButton=btn('Adicionar widgets',()=>openLibrary(),'studio-library-trigger studio-primary'),all=btn('Todas as análises',()=>{state.mode='all';state.items={};save();}),essential=btn('Visão essencial',()=>{state.mode='essential';state.items={};save();}),filterButton=btn('Filtros',()=>{state.filtersOpen=!state.filtersOpen;options.persist();page.classList.toggle('studio-filters-open',state.filtersOpen);}),aboutButton=btn('Sobre os dados',()=>{about.open=!about.open;if(about.open)about.scrollIntoView({block:'nearest'});});
+   host=own(make('div','studio-workspace'));const tools=own(make('div','studio-page-tools studio-ui')),purposeText=make('p','studio-purpose',p.purpose),libraryButton=btn('Adicionar widgets',()=>openLibrary(),'studio-library-trigger studio-primary'),all=btn('Todas as análises',()=>{state.mode='all';state.items={};save();}),essential=btn('Visão essencial',()=>{state.mode='essential';state.items={};save();}),filterButton=btn('Filtros',()=>{state.filtersOpen=!state.filtersOpen;options.persist();page.classList.toggle('studio-filters-open',state.filtersOpen);}),aboutButton=btn('Como ler esta página',()=>{about.open=!about.open;guideRoute=about.open?route:'';if(about.open)about.scrollIntoView({block:'nearest'});},'studio-guide-button');
    const views=make('div','studio-view-options');
    views.setAttribute('role','group');
    views.setAttribute('aria-label','Composição da página');
@@ -441,29 +451,51 @@
     refresh.classList.add('studio-support-source');
     cleanup.push(()=>refresh.classList.remove('studio-support-source'));
    }
-   primary=own(make('div','studio-primary-controls'));advanced=own(make('details','studio-filter-panel'));advanced.append(make('summary','','Filtros e referências'));const filterBody=own(make('div','studio-filter-body'));advanced.append(filterBody);const grid=own(make('div','studio-grid'));about=own(make('details','studio-about'));about.append(make('summary','','Contexto, critérios e fontes'));const aboutBody=own(make('div','studio-about-body'));about.append(aboutBody);host.append(tools,primary,advanced,grid,about);page.prepend(host);
-   const readingGuide=resultSourceId&&page.querySelector(':scope>.bc-reading-guide');
-   if(readingGuide){
-    const section=make('section','studio-guide-copy');
-    section.append(make('h3','',textOf(readingGuide.querySelector('summary'))));
-    for(const paragraph of readingGuide.querySelectorAll(':scope>p'))section.append(paragraph.cloneNode(true));
-    aboutBody.prepend(section);
-    readingGuide.classList.add('studio-support-source');
-    cleanup.push(()=>readingGuide.classList.remove('studio-support-source'));
-    aboutButton.textContent='Guia e fontes';
+   primary=own(make('div','studio-primary-controls'));advanced=own(make('details','studio-filter-panel'));advanced.append(make('summary','','Filtros e referências'));const filterBody=own(make('div','studio-filter-body'));advanced.append(filterBody);const grid=own(make('div','studio-grid'));about=own(make('details','studio-about'));about.append(make('summary','','Guia de leitura'));const aboutBody=own(make('div','studio-about-body'));about.append(aboutBody);host.append(tools,primary,advanced,grid,about);page.prepend(host);
+   const guides=[...page.querySelectorAll('.bc-reading-guide')].filter(n=>sourceVisible(n.parentElement,page));
+   const guide=guides.find(n=>sourceVisible(n,page))||guides[0];
+   const gerKey={'gerencial/panorama':'panorama','gerencial/ger-vendas':'gerVendas','gerencial/diag':'diagnostico','gerencial/produtos':'anuncios','gerencial/ads':'publicidade','gerencial/previsao':'forecastAnuncios','gerencial/full':'full'}[route];
+   const spec=typeof BCAreas==='undefined'?null:BCAreas[gerKey]||Object.values(BCAreas).find(area=>{
+    const root=page.matches(area.selector)?page:page.querySelector(area.selector);
+    return root&&sourceVisible(root,page);
+   });
+   const lines=guide?[...guide.querySelectorAll(':scope>p')].map(textOf):[];
+   const reading=lines.length?lines:spec?[spec.read,spec.scope,spec.next]:[p.purpose];
+   if(C.guidance[route])reading.push(C.guidance[route]);
+   const section=make('section','studio-guide-copy');
+   for(const line of reading.filter(Boolean))section.append(make('p','',line));
+   aboutBody.append(section);
+   for(const native of guides){
+    native.classList.add('studio-support-source');
+    cleanup.push(()=>native.classList.remove('studio-support-source'));
    }
+   if(guideRoute!==route)guideRoute='';
+   about.open=guideRoute===route;
    about.id='studio-about-'+page.id;
    aboutButton.setAttribute('aria-controls',about.id);
    aboutButton.setAttribute('aria-expanded','false');
    const infoPanel=about;
-   infoPanel.ontoggle=()=>aboutButton.setAttribute('aria-expanded',String(infoPanel.open));
+   infoPanel.ontoggle=()=>{if(infoPanel.isConnected){guideRoute=infoPanel.open?route:'';aboutButton.setAttribute('aria-expanded',String(infoPanel.open));}};
    function through(n){for(let parent=n.parentElement;parent&&parent!==page;parent=parent.parentElement){if(parent.classList.contains('studio-through'))continue;parent.classList.add('studio-through');const current=parent;cleanup.push(()=>current.classList.remove('studio-through'));}}
    for(const n of collected.controls){
     if(n===refresh)continue;
+    if(n.id==='ger-empty'&&route==='gerencial/ger-vendas'){
+     // Preserve the native empty state for the other Gerencial tabs.
+     const prompt=own(make('section','studio-operation-prompt studio-ui'));
+     const company=document.getElementById('bc-company'),market=document.getElementById('bc-marketplace');
+     const field=company?.value?market:company;
+     prompt.append(make('h2','','Escolha a operação'),make('p','',company?.value?'Selecione o marketplace de '+company.selectedOptions[0].text+' para ver pedidos, tarifas e custos no período.':'Selecione a empresa e o marketplace para consultar os pedidos, tarifas e custos da operação.'));
+     if(field&&!field.disabled)prompt.append(btn(company?.value?'Escolher marketplace':'Escolher empresa',()=>{field.focus();try{field.showPicker?.();}catch{};}));
+     if(options.canNavigate?.('vendas','vendas'))prompt.append(btn('Ver vendas de todos os marketplaces',()=>options.navigate('vendas','vendas')));
+     n.before(prompt);
+     n.classList.add('studio-support-source');
+     cleanup.push(()=>{prompt.remove();n.classList.remove('studio-support-source');});
+     continue;
+    }
     if(n.matches('.ac4-levels'))groupPortfolioAnalyses(n);
     if(n.matches('.ac4-scope'))compactPortfolioFilters(n);
     const rootFilter=n.parentElement===source&&n.matches('.op-controls,.res-controls')&&p.route.startsWith('resultados/');
-    const important=rootFilter||p.flow==='form'||n.matches(pageControls+',nav,p,[role=tablist],[role=status]')||
+    const important=n.id==='ger-empty'||rootFilter||p.flow==='form'||n.matches(pageControls+',nav,p,[role=tablist],[role=status]')||
      /PRODUTO \(SKU\)|Consultar SKU|Procurar produtos|Agrupar itens|Lente|Colunas|Competência|Tentar novamente/i.test(textOf(n));
     const presentation=important?'studio-primary-control':'studio-advanced-control';
     through(n);
