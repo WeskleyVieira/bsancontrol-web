@@ -50,14 +50,23 @@ for (const flag of [undefined, '0', '1']) {
     for (const url of ['/', '/acompanhamento.html']) {
       const html = await (await request(url)).text();
       assert.equal(html.includes('src="/layout/boot.js"'), enabled);
+      assert.equal(html.includes('/layout/typography.css'), enabled);
       assert.equal(html.includes('/revisao/bootstrap.js'), false);
+    }
+    const font = await request('/layout/inter-latin-wght-normal.woff2');
+    assert.equal(font.status, enabled ? 200 : 404);
+    if (enabled) {
+      assert.equal(font.headers.get('Content-Type'), 'font/woff2');
+      assert.equal(Buffer.from(await font.arrayBuffer()).toString('ascii', 0, 4), 'wOF2');
     }
     const direct = await (await request('/produtos')).text();
     assert.equal(direct.includes('/layout/'), false);
     const embedded = await request('/produtos?embedded=1');
     assert.match(embedded.headers.get('Content-Security-Policy'), /script-src 'self'/);
-    assert.equal((await embedded.text()).includes('/layout/integral-products.js'), enabled);
-    for (const asset of ['boot.js', 'studio.css', 'vendor/html-to-image.js', 'vendor/html2canvas.js']) {
+    const product = await embedded.text();
+    assert.equal(product.includes('/layout/typography.css'), enabled);
+    assert.equal(product.includes('/layout/integral-products.js'), enabled);
+    for (const asset of ['boot.js', 'studio.css', 'typography.css', 'vendor/html-to-image.js', 'vendor/html2canvas.js']) {
       assert.equal((await request('/layout/' + asset)).status, enabled ? 200 : 404, asset);
     }
     assert.equal((await request('/api/sessao')).status, 401);
