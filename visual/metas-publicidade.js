@@ -1,15 +1,53 @@
 /* bc-metas-publicidade-v2: total mensal disponível não é uma série diária. */
 function _metPublicidadeMensal(R,k){const ops=R.M.comAds,known=ops.length>0&&ops.every(o=>Number.isFinite(o.adsR)&&Number.isFinite(o.fatR)&&(Number.isFinite(_metNum(o.d?.Ads_real,null))||(Number.isFinite(_metNum(o.l?.ads,null))&&Number.isFinite(_metNum(o.l?.afiliados,null))))),ads=known?ops.reduce((s,o)=>s+o.adsR,0):null,fat=known?ops.reduce((s,o)=>s+o.fatR,0):null,actual=k==='ads'?ads:fat>0?ads/fat:null,target=R.month[k];return{actual,target,gap:actual==null||target==null?null:actual-target};}
+function _metLeituraObservada(R){
+ const fontes=R.adsFontes,ops=R.M.comAds;
+ let gasto=0,receita=0,cobertos=0;
+ const vendasConciliadas=ops.length>0&&ops.every(o=>o.concilia);
+ const rows=R.rows.map(row=>{
+  const apurado=row.dia<=R.limite;
+  const informado=apurado&&fontes.length>0&&fontes.every(f=>f.dias.has(row.date));
+  const midia=informado?fontes.reduce((s,f)=>s+f.dias.get(row.date),0):null;
+  const fat=informado&&vendasConciliadas?ops.reduce((s,o)=>s+o.fatD[row.dia-1],0):null;
+  if(informado){gasto+=midia;receita+=fat??0;cobertos++;}
+  const real={...row.real,adsCamp:midia,tacosCamp:fat>0?midia/fat:null};
+  const acumReal={...row.acumReal,adsCamp:apurado&&cobertos?gasto:null,tacosCamp:apurado&&receita>0?gasto/receita:null};
+  return {...row,real,acumReal,cobertos,informado};
+ });
+ return {...R,rows,pos:rows[R.cut-1]||null,adsValid:false,adsReportValid:cobertos>0,observada:cobertos>0};
+}
+function _metRotuloObservado(k,acumulado){
+ if(k==='ads')return acumulado?'Mídia nos dias informados (parcial)':'Mídia informada no dia (parcial)';
+ return acumulado?'TACOS de mídia nos dias informados (parcial)':'TACOS de mídia no dia (parcial)';
+}
+function metAbrirDemonstrativo(){
+ const detalhe=document.querySelector('#met-root details[data-met-persist="demonstrativo"]');
+ if(!detalhe)return;
+ detalhe.open=true;
+ detalhe.scrollIntoView({block:'start'});
+ detalhe.querySelector('summary')?.focus({preventScroll:true});
+}
+function _metCalendarioPublicidade(R){
+ const botoes=R.rows.map(row=>{
+  const ativo=row.dia===R.cut,habilitado=row.dia<=R.limite;
+  const status=row.informado?'mídia informada':habilitado?'sem registro diário':'fora do corte';
+  return '<button type="button" id="met-dia-'+row.dia+'" class="met-dia-chip'+(ativo?' met-active':'')+'" aria-label="'+row.dia+' · '+status+'" aria-pressed="'+ativo+'" '+
+   (habilitado?'onclick="metReferencia('+row.dia+')"':'disabled')+'>'+row.dia+'<small aria-hidden="true">'+(row.informado?'•':'·')+'</small></button>';
+ });
+ return '<div class="met-calendario" data-met-observado role="group" aria-label="Selecionar dia de análise">'+botoes.join('')+'</div>';
+}
 function _metHistoricoPublicidadeHTML(R,k){
- const dia=R.rows[R.cut-1];
+ R=_metLeituraObservada(R);
+ const dia=R.pos;
  const ate=R.limite?R.rows[R.limite-1].date:null;
- const seletor=dia&&ate?'<label class="met-ref">Analisar até<input id="met-ref-dia" type="date" min="'+R.M.mes+'-01" max="'+ate+'" value="'+dia.date+'" onchange="metReferencia(this.value)"></label>':'';
+ const seletor=dia&&ate?'<label class="met-ref">Analisar até<input id="met-ref-dia" type="date" min="'+R.M.mes+'-01" max="'+ate+'" value="'+dia.date+'" onclick="if(this.showPicker){try{this.showPicker()}catch{}}" onchange="metReferencia(this.value)"></label>':'';
  const motivo=!R.ok?'O realizado diário aguarda a conciliação da base de vendas.':!R.limite?'Ainda não há dia apurado neste mês.':'Os gastos diários das operações selecionadas ainda não conciliam com os totais mensais.';
  const modo=(v,label)=>'<button id="met-grafico-'+v+'" class="met-btn" aria-pressed="'+(_MET_CHART_MODE===v)+'" onclick="metGrafico(this.dataset.periodo)" data-periodo="'+v+'">'+label+'</button>';
  const titulo='Resultado diário e posição acumulada';
- const comparacoes=dia?_metComparacoesHTML({...R,pos:dia,adsReportValid:false},k):'';
+ const comparacoes=dia?_metComparacoesHTML(R,k):'';
+ const cobertura=R.observada?'<p class="met-nota">Mídia parcial dos dias informados em todas as operações do recorte. O acumulado considera somente esses dias. O TACOS parcial divide essa mídia pelo faturamento conciliado dos mesmos dias. O desvio exige o gasto completo, incluindo afiliados.</p>':'';
  return '<div class="met-section-heading"><h3>'+_metEsc(_MET_METRICAS[k].nome)+' · histórico diário</h3>'+seletor+'</div>'+
-  '<p class="met-nota">'+motivo+' O plano continua disponível quando há meta cadastrada. O traço (—) indica que falta uma apuração para o realizado ou o desvio.</p>'+
+  '<p class="met-nota">'+motivo+' O traço (—) indica falta de apuração.</p>'+cobertura+'<button class="met-btn" type="button" onclick="metAbrirDemonstrativo()">Ver demonstrativo diário</button>'+_metCalendarioPublicidade(R)+
   comparacoes+'<article class="met-chart"><div class="met-ampliar-cabecalho"><h4>'+titulo+'</h4>'+_metBotaoAmpliar('c-met-rota',titulo)+'</div>'+
   '<div class="met-rota-metricas" role="group" aria-label="Leitura do gráfico">'+modo('diario','Diário')+modo('acumulado','Acumulado')+'</div>'+
   '<p>'+(k==='ads'?'A referência diária divide o orçamento mensal pelos dias do mês. O acumulado soma essas parcelas até a data.':'O teto de TACOS é percentual e vale tanto para o dia quanto para o acumulado.')+'</p>'+

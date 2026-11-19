@@ -7284,7 +7284,7 @@ function _metCaptureUI(root){
  _MET_UI.set(scope,state);
 }
 function _metDetails(key,title,body,cls='met-expande'){
- const open=_MET_UI.get(_MET_UI_SCOPE)?.open[key]===true;
+ const open=_MET_UI.get(_MET_UI_SCOPE)?.open[key]??(key==='demonstrativo');
  return '<details class="'+cls+'" data-met-persist="'+_metEsc(key)+'"'+(open?' open':'')+'><summary>'+title+'</summary>'+body+'</details>';
 }
 function _metMount(root,html,foco,scroll){
@@ -7518,16 +7518,54 @@ function _metReferenciasHTML(R,k){
 
 /* bc-metas-publicidade-v2: total mensal disponível não é uma série diária. */
 function _metPublicidadeMensal(R,k){const ops=R.M.comAds,known=ops.length>0&&ops.every(o=>Number.isFinite(o.adsR)&&Number.isFinite(o.fatR)&&(Number.isFinite(_metNum(o.d?.Ads_real,null))||(Number.isFinite(_metNum(o.l?.ads,null))&&Number.isFinite(_metNum(o.l?.afiliados,null))))),ads=known?ops.reduce((s,o)=>s+o.adsR,0):null,fat=known?ops.reduce((s,o)=>s+o.fatR,0):null,actual=k==='ads'?ads:fat>0?ads/fat:null,target=R.month[k];return{actual,target,gap:actual==null||target==null?null:actual-target};}
+function _metLeituraObservada(R){
+ const fontes=R.adsFontes,ops=R.M.comAds;
+ let gasto=0,receita=0,cobertos=0;
+ const vendasConciliadas=ops.length>0&&ops.every(o=>o.concilia);
+ const rows=R.rows.map(row=>{
+  const apurado=row.dia<=R.limite;
+  const informado=apurado&&fontes.length>0&&fontes.every(f=>f.dias.has(row.date));
+  const midia=informado?fontes.reduce((s,f)=>s+f.dias.get(row.date),0):null;
+  const fat=informado&&vendasConciliadas?ops.reduce((s,o)=>s+o.fatD[row.dia-1],0):null;
+  if(informado){gasto+=midia;receita+=fat??0;cobertos++;}
+  const real={...row.real,adsCamp:midia,tacosCamp:fat>0?midia/fat:null};
+  const acumReal={...row.acumReal,adsCamp:apurado&&cobertos?gasto:null,tacosCamp:apurado&&receita>0?gasto/receita:null};
+  return {...row,real,acumReal,cobertos,informado};
+ });
+ return {...R,rows,pos:rows[R.cut-1]||null,adsValid:false,adsReportValid:cobertos>0,observada:cobertos>0};
+}
+function _metRotuloObservado(k,acumulado){
+ if(k==='ads')return acumulado?'Mídia nos dias informados (parcial)':'Mídia informada no dia (parcial)';
+ return acumulado?'TACOS de mídia nos dias informados (parcial)':'TACOS de mídia no dia (parcial)';
+}
+function metAbrirDemonstrativo(){
+ const detalhe=document.querySelector('#met-root details[data-met-persist="demonstrativo"]');
+ if(!detalhe)return;
+ detalhe.open=true;
+ detalhe.scrollIntoView({block:'start'});
+ detalhe.querySelector('summary')?.focus({preventScroll:true});
+}
+function _metCalendarioPublicidade(R){
+ const botoes=R.rows.map(row=>{
+  const ativo=row.dia===R.cut,habilitado=row.dia<=R.limite;
+  const status=row.informado?'mídia informada':habilitado?'sem registro diário':'fora do corte';
+  return '<button type="button" id="met-dia-'+row.dia+'" class="met-dia-chip'+(ativo?' met-active':'')+'" aria-label="'+row.dia+' · '+status+'" aria-pressed="'+ativo+'" '+
+   (habilitado?'onclick="metReferencia('+row.dia+')"':'disabled')+'>'+row.dia+'<small aria-hidden="true">'+(row.informado?'•':'·')+'</small></button>';
+ });
+ return '<div class="met-calendario" data-met-observado role="group" aria-label="Selecionar dia de análise">'+botoes.join('')+'</div>';
+}
 function _metHistoricoPublicidadeHTML(R,k){
- const dia=R.rows[R.cut-1];
+ R=_metLeituraObservada(R);
+ const dia=R.pos;
  const ate=R.limite?R.rows[R.limite-1].date:null;
- const seletor=dia&&ate?'<label class="met-ref">Analisar até<input id="met-ref-dia" type="date" min="'+R.M.mes+'-01" max="'+ate+'" value="'+dia.date+'" onchange="metReferencia(this.value)"></label>':'';
+ const seletor=dia&&ate?'<label class="met-ref">Analisar até<input id="met-ref-dia" type="date" min="'+R.M.mes+'-01" max="'+ate+'" value="'+dia.date+'" onclick="if(this.showPicker){try{this.showPicker()}catch{}}" onchange="metReferencia(this.value)"></label>':'';
  const motivo=!R.ok?'O realizado diário aguarda a conciliação da base de vendas.':!R.limite?'Ainda não há dia apurado neste mês.':'Os gastos diários das operações selecionadas ainda não conciliam com os totais mensais.';
  const modo=(v,label)=>'<button id="met-grafico-'+v+'" class="met-btn" aria-pressed="'+(_MET_CHART_MODE===v)+'" onclick="metGrafico(this.dataset.periodo)" data-periodo="'+v+'">'+label+'</button>';
  const titulo='Resultado diário e posição acumulada';
- const comparacoes=dia?_metComparacoesHTML({...R,pos:dia,adsReportValid:false},k):'';
+ const comparacoes=dia?_metComparacoesHTML(R,k):'';
+ const cobertura=R.observada?'<p class="met-nota">Mídia parcial dos dias informados em todas as operações do recorte. O acumulado considera somente esses dias. O TACOS parcial divide essa mídia pelo faturamento conciliado dos mesmos dias. O desvio exige o gasto completo, incluindo afiliados.</p>':'';
  return '<div class="met-section-heading"><h3>'+_metEsc(_MET_METRICAS[k].nome)+' · histórico diário</h3>'+seletor+'</div>'+
-  '<p class="met-nota">'+motivo+' O plano continua disponível quando há meta cadastrada. O traço (—) indica que falta uma apuração para o realizado ou o desvio.</p>'+
+  '<p class="met-nota">'+motivo+' O traço (—) indica falta de apuração.</p>'+cobertura+'<button class="met-btn" type="button" onclick="metAbrirDemonstrativo()">Ver demonstrativo diário</button>'+_metCalendarioPublicidade(R)+
   comparacoes+'<article class="met-chart"><div class="met-ampliar-cabecalho"><h4>'+titulo+'</h4>'+_metBotaoAmpliar('c-met-rota',titulo)+'</div>'+
   '<div class="met-rota-metricas" role="group" aria-label="Leitura do gráfico">'+modo('diario','Diário')+modo('acumulado','Acumulado')+'</div>'+
   '<p>'+(k==='ads'?'A referência diária divide o orçamento mensal pelos dias do mês. O acumulado soma essas parcelas até a data.':'O teto de TACOS é percentual e vale tanto para o dia quanto para o acumulado.')+'</p>'+
@@ -7666,8 +7704,8 @@ function _metComparacoesHTML(R,k){
  let h='<div class="met-comparacoes" aria-label="Dia selecionado e posição acumulada">';
  for(const acumulado of [false,true]){const c=_metComparacao(R,k,acumulado);if(!c)continue;
   const id=acumulado?'met-resumo-acumulado':'met-resumo-dia',data=_metDia(c.date),nomeMeta=k==='ads'?'Referência de orçamento':k==='tacos'?'Teto de TACOS':k==='margem'?'Meta de margem':'Planejado',nomeReal=c.parcial?(k==='tacos'?'TACOS de campanha, sem afiliados':'Ads de campanha, sem afiliados'):acumulado?'Realizado acumulado':'Realizado no dia';
-  h+='<section id="'+id+'-box" class="met-comparacao" aria-labelledby="'+id+'"><h4 id="'+id+'">'+(acumulado?'Acumulado até '+data:'Dia selecionado · '+data)+'</h4><p class="met-nota">'+E(info.nome)+(acumulado?' · desde o início do mês.':' · somente este dia.')+' Referência: '+_metReferenciaNome(R.M,k)+'.'+'</p><dl>'+medida(nomeMeta,fmt(c.meta))+medida(nomeReal,fmt(c.exibido))+medida(acumulado?'Desvio acumulado':'Desvio do dia',delta(c.desvio))+'</dl><p class="met-comparacao-status '+c.classe+'">'+E(c.status)+'</p>';
-  if(c.parcial)h+='<p class="met-nota">O valor mostrado não inclui afiliados. O desvio do indicador completo fica indisponível.</p>';
+  h+='<section id="'+id+'-box" class="met-comparacao" aria-labelledby="'+id+'"><h4 id="'+id+'">'+(acumulado?'Acumulado até '+data:'Dia selecionado · '+data)+'</h4><p class="met-nota">'+E(info.nome)+(acumulado?' · desde o início do mês.':' · somente este dia.')+' Referência: '+_metReferenciaNome(R.M,k)+'.'+'</p><dl>'+medida(nomeMeta,fmt(c.meta))+medida(R.observada?_metRotuloObservado(k,acumulado):nomeReal,fmt(c.exibido))+medida(acumulado?'Desvio acumulado':'Desvio do dia',delta(c.desvio))+'</dl><p class="met-comparacao-status '+c.classe+'">'+E(R.observada?(acumulado?R.pos.cobertos+' de '+R.cut+' dias com mídia informada.':R.pos.informado?'Mídia informada pela fonte diária.':'Sem registro de mídia nesta data.'):c.status)+'</p>';
+  if(c.parcial&&!R.observada)h+='<p class="met-nota">O valor mostrado não inclui afiliados. O desvio do indicador completo fica indisponível.</p>';
   if(k==='mc'||k==='margem')h+='<p class="met-nota">Resultado estimado, com rateio de custos mensais.</p>';
   h+='</section>';
  }
@@ -7677,7 +7715,7 @@ function _metComparacoesHTML(R,k){
 function _metDemonstrativoHTML(R,k){
  const info=_MET_METRICAS[k],parcial=['ads','tacos'].includes(k)&&!R.adsValid&&R.adsReportValid,field=parcial?(k==='tacos'?'tacosCamp':'adsCamp'):k,acumulado=_MET_TABLE_MODE==='acumulado',label=acumulado?'acumulado':'do dia',E=_metEsc;
  const fmt=v=>v===null?'—':info.unidade==='%'?(100*v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':_metBRL2(v),delta=v=>info.unidade==='%'?(100*v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' p.p.':_metBRL2(v);
- let h='<div class="met-tabela-tools" role="group" aria-label="Modo do demonstrativo"><span>Mostrar:</span>'+[['diario','Diário'],['acumulado','Acumulado']].map(([v,n])=>'<button id="met-tabela-'+v+'" class="met-btn" aria-pressed="'+(_MET_TABLE_MODE===v)+'" onclick="metTabela(\''+v+'\')">'+n+'</button>').join('')+'</div><div class="met-table-wrap" data-met-scroll="demonstrativo"><table class="met-table met-daily-table"><caption>'+E(info.nome)+(parcial?' · campanha sem afiliados':'')+' · '+(acumulado?'acumulado desde 01/'+R.M.mes.slice(5):'valores de cada dia')+(R.limite?' · referência até '+_metDia(R.rows[R.limite-1].date):' · sem dia apurado')+'</caption><thead><tr><th scope="col">Data</th><th scope="col">Plano '+label+'</th><th scope="col">Informado '+label+'</th><th scope="col">Desvio '+label+'</th></tr></thead><tbody>';
+ let h='<div class="met-tabela-tools" role="group" aria-label="Modo do demonstrativo"><span>Mostrar:</span>'+[['diario','Diário'],['acumulado','Acumulado']].map(([v,n])=>'<button id="met-tabela-'+v+'" class="met-btn" aria-pressed="'+(_MET_TABLE_MODE===v)+'" onclick="metTabela(\''+v+'\')">'+n+'</button>').join('')+'</div><div class="met-table-wrap" data-met-scroll="demonstrativo"><table class="met-table met-daily-table"><caption>'+E(info.nome)+(R.observada?' · mídia parcial dos dias informados':parcial?' · campanha sem afiliados':'')+' · '+(acumulado?'acumulado desde 01/'+R.M.mes.slice(5):'valores de cada dia')+(R.limite?' · referência até '+_metDia(R.rows[R.limite-1].date):' · sem dia apurado')+'</caption><thead><tr><th scope="col">Data</th><th scope="col">Plano '+label+'</th><th scope="col">'+(R.observada?_metRotuloObservado(k,acumulado):'Informado '+label)+'</th><th scope="col">Desvio '+label+'</th></tr></thead><tbody>';
  for(const row of R.rows){const a=(acumulado?row.acumReal:row.real)[field],p=(acumulado?row.acumPlan:row.plan)[k];h+='<tr'+(row.dia===R.cut?' class="met-selected-row"':'')+'><th scope="row">'+_metDia(row.date)+(row.estado==='base'?'':'<small>'+(row.estado==='futuro'?'Futuro':row.estado==='fora_corte'?'Parcial / fora do histórico':'Sem dados')+'</small>')+'</th><td>'+fmt(p)+'</td><td>'+fmt(a)+'</td><td>'+(a===null||p===null||parcial?'—':delta(a-p))+'</td></tr>';}
  h+='</tbody></table></div><p class="met-nota">Dias parciais, futuros ou sem valores completos não recebem julgamento de desempenho.</p>';
  return _metDetails('demonstrativo','Demonstrativo diário · plano, realizado e desvio',h);
@@ -7708,7 +7746,7 @@ function _metRotaHTML(R,metric){
 }
 
 function _metRouteChart(R,k,modo='acumulado'){
- if((k==='ads'||k==='tacos')&&R.M.comAds.length&&(!R.adsReportValid||!R.pos))_metPublicidadeMensalChart(R,k);
+ if((k==='ads'||k==='tacos')&&R.M.comAds.length&&(!R.adsReportValid||!R.pos)){_metPublicidadeMensalChart(R,k);R=_metLeituraObservada(R);}
  const el=document.getElementById('c-met-rota');if(!el||typeof Chart==='undefined'||(!R.pos&&!['ads','tacos'].includes(k)))return;
  const info=_MET_METRICAS[k]||_MET_METRICAS.fat,percent=info.unidade==='%',factor=percent?100:1,rec=R.recovery[k];
  const colors=typeof isDark==='undefined'||isDark?['#fbbf24','#34d399','#a5b4fc','#aeb8cd']:['#92400e','#047857','#4338ca','#475569'];
@@ -7717,6 +7755,7 @@ function _metRouteChart(R,k,modo='acumulado'){
  const linha=R.rows.map(r=>r[pk][k]===null?null:r[pk][k]*factor),real=R.rows.map(r=>r[rk][k]!==null?r[rk][k]*factor:null);
  let datasets=[serie((diario?'Plano do dia · ':'Plano acumulado · ')+_metReferenciaNome(R.M,k),linha,colors[0],true),{...serie(k==='mc'||k==='margem'?'Realizado estimado'+(diario?' no dia':' acumulado'):'Realizado'+(diario?' no dia':' acumulado'),real,colors[1]),...(diario?{type:'bar',borderWidth:0}: {})}];
  if(['ads','tacos'].includes(k)&&!R.adsValid&&R.adsReportValid){datasets=datasets.filter((d,i)=>i!==1);datasets.push({...serie(k==='tacos'?'TACOS de campanha (sem afiliados)':'Ads de campanha (sem afiliados)',R.rows.map(r=>{const v=r[rk][k==='tacos'?'tacosCamp':'adsCamp'];return v==null?null:v*factor;}),colors[2]),...(diario?{type:'bar',borderWidth:0}:{})});}
+ if(R.observada&&datasets.length>1)datasets[1].label=_metRotuloObservado(k,!diario);
  if(['ads','tacos'].includes(k)&&(!R.adsReportValid||!R.pos))datasets=datasets.slice(0,1);
  if(!diario&&rec&&rec.remaining>0&&R.cut<R.M.dm&&k!=='ads'&&R.pos.acumReal[k]<R.pos.acumPlan[k]){const start=R.pos.acumReal[k],peso=R.M.cumW[R.M.dm]-R.M.cumW[R.cut];datasets.push(serie('Ritmo de recuperação (simulação)',R.rows.map(r=>r.dia<R.cut?null:r.dia===R.cut?start:(start+rec.remaining*(R.M.cumW[r.dia]-R.M.cumW[R.cut])/peso)),colors[2],true));}
  charts['c-met-rota']=new Chart(el,{type:'line',data:{labels:R.rows.map(r=>String(r.dia)),datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',axis:'x',intersect:false},onClick:(event,points)=>{if(points.length){const d=points[0].index+1;if(d<=R.limite)setTimeout(()=>metReferencia(d),0);}},plugins:{legend:{labels:{color:colors[3]}},datalabels:{display:false},tooltip:{padding:12,titleFont:{size:14},bodyFont:{size:14},bodySpacing:6,callbacks:{label:c=>c.dataset.label+': '+(percent?(+c.raw).toLocaleString('pt-BR',{maximumFractionDigits:2})+'%':_metBRL(c.raw))}}},scales:{x:{title:{display:true,text:'Dia do mês',color:colors[3]},ticks:{color:colors[3]}},y:{title:{display:true,text:info.unidade,color:colors[3]},ticks:{color:colors[3]}}}}});

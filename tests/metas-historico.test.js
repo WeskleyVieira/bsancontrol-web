@@ -62,3 +62,33 @@ test('Ads e TACOS conservam gráfico e demonstrativo quando só existe apuraçã
   assert.match(c._metPublicidadeMensalHTML(futuro,k),/sem dia apurado/);
  }
 });
+
+test('mídia parcial preserva dias informados, lacunas e denominador do TACOS no acumulado',()=>{
+ const pagina=require('../visual/dados-operacao-correcoes').corrigirMetasPublicidade(html),c=runtime(pagina);
+ const f=fixture(),{M}=calculate(c,f);
+ const diario=[{...f.ads[0],inv:7},{...f.ads[2],inv:0},{...f.ads[3],inv:8}];
+ const R=c._metRoute(M,diario,2),parcial=c._metLeituraObservada(R);
+ assert.equal(R.adsReportValid,false);
+ assert.equal(parcial.rows[0].real.adsCamp,7);
+ assert.equal(parcial.pos.real.adsCamp,null);
+ assert.equal(parcial.pos.acumReal.adsCamp,7);
+ assert.equal(parcial.pos.acumReal.tacosCamp,.07);
+ assert.equal(parcial.rows[2].real.adsCamp,0);
+ assert.equal(parcial.rows[2].acumReal.tacosCamp,.035);
+ assert.equal(parcial.pos.cobertos,1);
+ assert.equal(R.recovery.ads.next,null);
+ assert.equal(c._metComparacao(parcial,'ads',true).desvio,null);
+ for(const k of ['ads','tacos']){
+  const tela=c._metPublicidadeMensalHTML(R,k);
+  assert.match(tela,/data-met-observado/);
+  assert.match(tela,/aria-label="2 · sem registro diário" aria-pressed="true"/);
+  assert.match(tela,/1 de 2 dias com mídia informada/);
+  c._metRouteChart(R,k,'diario');
+  const series=c.charts['c-met-rota'].config.data.datasets;
+  assert.match(series[1].label,/parcial/);
+  assert.deepEqual(Array.from(series[1].data.slice(0,3)),[k==='ads'?7:.07*100,null,0]);
+ }
+ const outro={...M.comAds[0],l:{...M.comAds[0].l,operacao:'Outra · Amazon'}};
+ const combinado=c._metRoute({...M,comAds:[...M.comAds,outro]},diario,2);
+ assert.equal(c._metLeituraObservada(combinado).pos.real.adsCamp,null);
+});
