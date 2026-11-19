@@ -3,7 +3,7 @@ const fs=require('node:fs'),crypto=require('node:crypto'),acorn=require('acorn')
 const defaultSource='T:/Meu Drive/Business Intelligence/Grupo Bsan/BsanControl.html';
 function sha(s){return crypto.createHash('sha256').update(s).digest('hex');}
 function transform(input,data){
- const fonte=require('../visual/metas-historico-correcoes').incluirOrcamentoDiario(input);
+ const fonte=require('../visual/dados-operacao-correcoes').corrigirMetasPublicidade(require('../visual/metas-historico-correcoes').incluirOrcamentoDiario(input));
  const substitutions=[],functions=[],scripts=[];let count=0;
  let html=fonte.replace(/<script([^>]*)>([\s\S]*?)<\/script>/g,(whole,attrs,js)=>{
   if(!js.trim()||/application\/json/.test(attrs))return whole;
