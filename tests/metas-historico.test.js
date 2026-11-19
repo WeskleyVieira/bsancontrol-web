@@ -14,3 +14,24 @@ test('TACOS parcial acumulado usa gasto e faturamento acumulados do mesmo recort
 test('gráficos e demonstrativo identificam componente parcial sem marcar o indicador completo',()=>{const c=runtime(),f=fixture('2026-10',true,5),{R}=calculate(c,f);c._metRouteChart(R,'tacos','acumulado');const chart=c.charts['c-met-rota'].config;assert(chart.data.datasets.some(d=>d.label==='TACOS de campanha (sem afiliados)'&&d.data[30]===1));assert(!chart.data.datasets.some(d=>d.label==='Realizado acumulado'));const table=c._metDemonstrativoHTML(R,'tacos');assert(table.includes('campanha sem afiliados'));assert(table.includes('1,00%'));});
 test('fonte de Ads ausente conserva comparação mensal, sem criar gasto diário',()=>{const c=runtime(),f=fixture();f.ads=[];const {R}=calculate(c,f);assert.equal(R.adsReportValid,false);assert.equal(R.rows[0].real.ads,null);assert(c._metRotaHTML(R,'ads').includes('data-met-publicidade="mensal"'));});
 test('integração remove guardas legadas repetidas e é idempotente em CRLF',()=>{const {apply}=require('../visual/integrar'),out=apply(html.replace(/\r?\n/g,'\r\n'));assert.equal(apply(out),out);assert.equal(out.split('return _metPublicidadeMensalChart(R,k);').length-1,1);assert.equal(out.split('return painel+_metPublicidadeMensalHTML(R,k);').length-1,1);assert(out.includes('A comissão publicada permanece congelada'));});
+
+test('orçamento diário distingue plano, saldo após o corte e cobertura parcial',()=>{
+ const {incluirOrcamentoDiario}=require('../visual/metas-historico-correcoes');
+ const pagina=incluirOrcamentoDiario(html);
+ assert.equal(incluirOrcamentoDiario(pagina),pagina);
+ const c=runtime();
+ vm.runInContext(pagina.slice(pagina.indexOf('function _metOrcamentoDiarioHTML('),pagina.indexOf('function _renderGerMetas(')),c);
+ const f=fixture('2026-11',false);
+ const {M}=calculate(c,f);
+ const rota=c._metRoute(M,f.ads,2);
+ assert.equal(rota.cut,2);
+ const painel=c._metOrcamentoDiarioHTML(rota);
+ assert.match(painel,/Planejado por dia<\/span><strong>R\$\s*1,67/);
+ assert.match(painel,/Disponível por dia restante<\/span><strong>R\$\s*1,71/);
+ assert.match(painel,/após 02\/11.*28 dias restantes/);
+ const parcial=c._metOrcamentoDiarioHTML(c._metRoute(M,[],2));
+ assert.match(parcial,/Disponível por dia restante<\/span><strong>—/);
+ assert.match(parcial,/Aguardando conciliação/);
+ const fim=calculate(c,fixture()).R;
+ assert.match(c._metOrcamentoDiarioHTML(fim),/O mês terminou/);
+});

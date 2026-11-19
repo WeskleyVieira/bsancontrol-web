@@ -7705,6 +7705,21 @@ function _metRouteChart(R,k,modo='acumulado'){
  charts['c-met-rota']=new Chart(el,{type:'line',data:{labels:R.rows.map(r=>String(r.dia)),datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',axis:'x',intersect:false},onClick:(event,points)=>{if(points.length){const d=points[0].index+1;if(d<=R.limite)setTimeout(()=>metReferencia(d),0);}},plugins:{legend:{labels:{color:colors[3]}},datalabels:{display:false},tooltip:{padding:12,titleFont:{size:14},bodyFont:{size:14},bodySpacing:6,callbacks:{label:c=>c.dataset.label+': '+(percent?(+c.raw).toLocaleString('pt-BR',{maximumFractionDigits:2})+'%':_metBRL(c.raw))}}},scales:{x:{title:{display:true,text:'Dia do mês',color:colors[3]},ticks:{color:colors[3]}},y:{title:{display:true,text:info.unidade,color:colors[3]},ticks:{color:colors[3]}}}}});
 }
 
+function _metOrcamentoDiarioHTML(R){
+ const {M,month,recovery}=R;
+ if(!M.comAds.length)return '';
+ const previsto=month.ads===null?null:month.ads/M.dm;
+ const disponivel=M.fechado||M.futuro?null:recovery.ads.next;
+ let motivo;
+ if(previsto===null)motivo='Orçamento mensal incompleto para as operações selecionadas.';
+ else if(M.fechado||!R.next)motivo='O mês terminou. Consulte o orçamento planejado e o gasto realizado.';
+ else if(M.futuro)motivo='O acompanhamento do saldo começa com a primeira apuração do mês.';
+ else if(disponivel===null)motivo='Aguardando conciliação diária de vendas, Ads e afiliados.';
+ else motivo='Saldo após '+_metDia(R.pos.date)+' dividido pelos '+(M.dm-R.cut)+' dias restantes do mês.';
+ return '<section class="met-orcamento-diario" aria-labelledby="met-ads-diario-titulo"><h3 id="met-ads-diario-titulo">Orçamento diário de publicidade</h3>'+
+  '<div class="met-orcamento-valores"><div><span>Planejado por dia</span><strong>'+_metBRL2(previsto)+'</strong><p>Orçamento mensal de Ads e afiliados dividido por '+M.dm+' dias.</p></div>'+
+  '<div><span>Disponível por dia restante</span><strong>'+_metBRL2(disponivel)+'</strong><p>'+motivo+'</p></div></div></section>';
+}
 function _renderGerMetas(){
  const root=document.getElementById('met-root');if(!root)return;
  _metCaptureUI(root);
@@ -7741,6 +7756,7 @@ function _renderGerMetas(){
  const visoes=[['rota','Rota e histórico'],['mensal','Visão mensal']];
  if(!visoes.some(([v])=>v===_MET_VIEW))_MET_VIEW='rota';
  h+='<nav class="met-views" aria-label="Leituras das metas">'+visoes.map(([v,n])=>`<button class="met-btn${_MET_VIEW===v?' met-active':''}" aria-pressed="${_MET_VIEW===v}" onclick="metVisao('${v}')">${n}</button>`).join('')+'</nav>';
+ h+=_metOrcamentoDiarioHTML(route);
  h+=_metDetails('planejamento','Planejamento e referências · '+E(_metRegraNome(M)),_metRegraHTML(M)+_metReferenciasHTML(route,_MET_METRIC)+'<div class="met-context-body"><p>'+E(statusMes)+'. '+(M.congelado?'Comissão congelada.':'A atualização pode conter valores parciais. O último dia da base fica separado por precaução.')+'</p><p>Último dia informado: '+E(M.ultima?dt(M.ultima)+'/'+M.mes.slice(0,4):'não disponível')+'. Cada operação pode ter seu próprio momento de atualização.</p></div>','met-planejamento');
  if(_MET_VIEW!=='mensal'){
   h+=_metRotaHTML(route,_MET_METRIC);

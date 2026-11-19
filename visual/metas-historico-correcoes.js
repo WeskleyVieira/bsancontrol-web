@@ -1,4 +1,27 @@
 'use strict';
+function _metOrcamentoDiarioHTML(R){
+ const {M,month,recovery}=R;
+ if(!M.comAds.length)return '';
+ const previsto=month.ads===null?null:month.ads/M.dm;
+ const disponivel=M.fechado||M.futuro?null:recovery.ads.next;
+ let motivo;
+ if(previsto===null)motivo='Orçamento mensal incompleto para as operações selecionadas.';
+ else if(M.fechado||!R.next)motivo='O mês terminou. Consulte o orçamento planejado e o gasto realizado.';
+ else if(M.futuro)motivo='O acompanhamento do saldo começa com a primeira apuração do mês.';
+ else if(disponivel===null)motivo='Aguardando conciliação diária de vendas, Ads e afiliados.';
+ else motivo='Saldo após '+_metDia(R.pos.date)+' dividido pelos '+(M.dm-R.cut)+' dias restantes do mês.';
+ return '<section class="met-orcamento-diario" aria-labelledby="met-ads-diario-titulo"><h3 id="met-ads-diario-titulo">Orçamento diário de publicidade</h3>'+
+  '<div class="met-orcamento-valores"><div><span>Planejado por dia</span><strong>'+_metBRL2(previsto)+'</strong><p>Orçamento mensal de Ads e afiliados dividido por '+M.dm+' dias.</p></div>'+
+  '<div><span>Disponível por dia restante</span><strong>'+_metBRL2(disponivel)+'</strong><p>'+motivo+'</p></div></div></section>';
+}
+function incluirOrcamentoDiario(html){
+ const inicio='function _renderGerMetas(';
+ const planejamento=" h+=_metDetails('planejamento',";
+ if(html.includes('function _metOrcamentoDiarioHTML('))return html;
+ if(!html.includes(inicio)||!html.includes(planejamento))throw Error('Não foi possível localizar a visão mensal de Metas.');
+ return html.replace(inicio,()=>_metOrcamentoDiarioHTML.toString()+'\n'+inicio)
+  .replace(planejamento,()=>' h+=_metOrcamentoDiarioHTML(route);\n'+planejamento);
+}
 function corrigirHistoricoMetas(html){
  function patch(before,after){if(html.includes(before)){if(html.split(before).length!==2)throw Error('Contrato de histórico ambíguo: '+before.slice(0,60));html=html.replace(before,after);}else if(!html.includes(after))throw Error('Contrato de histórico mudou: '+before.slice(0,60));}
  function section(name,next,edit){const a=html.indexOf('function '+name+'('),b=html.indexOf('function '+next+'(',a);if(a<0||b<0)throw Error('Seção histórica ausente: '+name);html=html.slice(0,a)+edit(html.slice(a,b))+html.slice(b);}
@@ -17,6 +40,6 @@ function corrigirHistoricoMetas(html){
  const before=" if(k==='ads'&&!R.adsValid&&R.adsReportValid)datasets.push({...serie('Ads de campanha (sem afiliados)',R.rows.map(r=>r[rk].adsCamp),colors[2]),...(diario?{type:'bar',borderWidth:0}:{})});",after=" if(['ads','tacos'].includes(k)&&!R.adsValid&&R.adsReportValid){datasets=datasets.filter((d,i)=>i!==1);datasets.push({...serie(k==='tacos'?'TACOS de campanha (sem afiliados)':'Ads de campanha (sem afiliados)',R.rows.map(r=>{const v=r[rk][k==='tacos'?'tacosCamp':'adsCamp'];return v==null?null:v*factor;}),colors[2]),...(diario?{type:'bar',borderWidth:0}:{})});}";
  patch(before,after);
  section('_metDemonstrativoHTML','_metRotaHTML',s=>{const before="const info=_MET_METRICAS[k],acumulado=_MET_TABLE_MODE==='acumulado',",after="const info=_MET_METRICAS[k],parcial=['ads','tacos'].includes(k)&&!R.adsValid&&R.adsReportValid,field=parcial?(k==='tacos'?'tacosCamp':'adsCamp'):k,acumulado=_MET_TABLE_MODE==='acumulado',";if(!s.includes(after))s=s.replace(before,after);s=s.replace("const a=(acumulado?row.acumReal:row.real)[k],","const a=(acumulado?row.acumReal:row.real)[field],").replace("a===null||p===null?'—':delta(a-p)","a===null||p===null||parcial?'—':delta(a-p)").replace("E(info.nome)+' · '+(acumulado?","E(info.nome)+(parcial?' · campanha sem afiliados':'')+' · '+(acumulado?");return s;});
- return html;
+ return incluirOrcamentoDiario(html);
 }
-module.exports={corrigirHistoricoMetas};
+module.exports={corrigirHistoricoMetas,incluirOrcamentoDiario};
