@@ -188,17 +188,19 @@
    const hint=make('p','studio-met-day-hint','Selecione uma data para ver o resultado do dia e a posição acumulada até ali.');
    const reference=textOf(routePanel.parentElement.querySelector('.met-planejamento>summary')).split(' · ').slice(1).join(' · ');
    const legend=make('ul','studio-met-day-legend');
-   const selected=routePanel.parentElement.querySelector('.met-objetivo[aria-pressed=true]');
-   const isCost=selected?.matches('#met-indicador-ads,#met-indicador-tacos');
+   const custo=!!calendar.querySelector('[data-met-estado]');
+   const parcial=!!calendar.querySelector('[data-met-parcial="true"]');
    const observado=calendar.hasAttribute('data-met-observado');
-   for(const [tone,label]of observado?[
-    ['selected','Dia selecionado'],['neutral','• Mídia informada'],['neutral','· Sem medição']
+   if(custo){
+    picker.classList.add('studio-met-cost-picker');
+    if(parcial)hint.textContent='As cores comparam a mídia parcial informada com o limite do dia. A apuração consolidada depende da cobertura de todos os gastos.';
+   }
+   const estados=custo?[
+    ['selected','Contorno · dia selecionado'],['good','✓ Dentro do limite'],['bad','! Acima do limite'],['neutral','· Sem comparação']
    ]:[
-    ['selected','Fundo colorido · dia selecionado'],
-    ['good',isCost?'✓ Dentro do limite':'✓ No plano ou acima'],
-    ['attention',isCost?'! Acima do limite':'! Abaixo do plano'],
-    ['neutral','· Sem comparação neste dia']
-   ])legend.append(make('li','studio-met-'+tone,label));
+    ['selected','Fundo colorido · dia selecionado'],['good','✓ No plano ou acima'],['attention','! Abaixo do plano'],['neutral','· Sem comparação neste dia']
+   ];
+   for(const [tone,label]of estados)legend.append(make('li','studio-met-'+tone,label));
    picker.append(make('h4','','Dia de análise'),hint);
    if(reference&&!observado)picker.append(make('p','studio-met-day-hint','Referência usada · '+reference));
    heading.after(picker);
@@ -211,14 +213,6 @@
    if(nativeLegend&&/^[✓!]/.test(textOf(nativeLegend))){
     nativeLegend.classList.add('studio-support-source');
     cleanup.push(()=>nativeLegend.classList.remove('studio-support-source'));
-   }
-   for(const day of calendar.querySelectorAll('button[aria-label$="dentro do limite"]')){
-    const symbol=day.querySelector('small');
-    if(!symbol)continue;
-    const original=symbol.textContent;
-    symbol.textContent='✓';
-    day.classList.add('met-ritmo-ok');
-    cleanup.push(()=>{symbol.textContent=original;day.classList.remove('met-ritmo-ok');});
    }
    cleanup.push(()=>picker.remove());
   }
