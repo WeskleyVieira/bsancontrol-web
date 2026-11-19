@@ -61,5 +61,28 @@
    return{...item,size:defaultSize(item),essential};
   });
  }
- return{profiles,profile,normalize,rank,sizes,defaults,defaultSize};
+ const guidance={
+  'gerencial/metas':'Selecione o mês e um objetivo. Compare o realizado com o planejado no mesmo dia e abra o histórico para conferir o desvio.',
+  'financeiro/comissao':'Selecione a competência e abra uma operação. Confira a margem usada na apuração e se o bônus já foi registrado.',
+  'pos-venda/pv-fila':'Comece pelos atendimentos atrasados. Abra o caso e confira o último contato, o responsável e o próximo prazo.',
+  'acompanhamento/tarefas':'Compare demandas e ações registradas por gestor. Confira o efeito medido e abra a fila para identificar a próxima ação.',
+  'acompanhamento/promos':'Confira promoções sem registro por responsável. Use o progresso por tipo para identificar ajustes de preço ou margem.',
+  'acompanhamento/ac-ads':'Confira as ações de publicidade sem registro e os retornos vencidos. Abra a fila para revisar o anúncio ou a campanha.',
+  'acompanhamento/alinhamentos':'Confira quem aguarda resposta e o próximo retorno. Abra o alinhamento para verificar as evidências e o combinado.',
+  'acompanhamento/pendencias':'Confira a origem e o responsável por cada pendência. Abra a fonte indicada para entender o que falta.',
+  'financeiro/gestao-fechamento':'Escolha a competência e confira a situação de cada operação antes de registrar o fechamento.',
+  'financeiro/gestao-custos':'Selecione a competência e confira operação, valor e referência do custo antes de lançar ou revisar.',
+  'financeiro/gestao-carteiras':'Localize a operação e confira seu responsável e o histórico antes de alterar a carteira.',
+  'cadastro-produtos/cadastro-catalog':'Procure pelo SKU e confira identificação, custo e situação da ficha no ponto selecionado.',
+  'cadastro-produtos/cadastro-tasks':'Abra uma pendência para identificar o dado que falta no cadastro do produto.',
+  'cadastro-produtos/cadastro-entries':'Localize a entrada e confira quantidade e custo dos itens antes de registrar uma compra.',
+  'cadastro-produtos/cadastro-materials':'Confira a unidade de compra e o custo de cada material antes de usá-lo numa composição.',
+  'cadastro-produtos/cadastro-pack':'Abra uma composição para conferir quais materiais entram na embalagem e em que quantidade.',
+  'cadastro-produtos/cadastro-prep':'Selecione a ficha de preparo e confira os insumos e o consumo por unidade.',
+  'cadastro-produtos/cadastro-review':'Abra a versão do produto, confira a composição e as pendências antes de homologar o custo.',
+  'cadastro-produtos/cadastro-sales':'Localize a venda e confira qual custo estava vigente na data da operação.',
+  'cadastro-produtos/cadastro-sync':'Confira a última atualização de cada conta e quais produtos entraram na cobertura.',
+  'cadastro-produtos/cadastro-publication':'Confira a situação da integração e abra o item para identificar quais dados aguardam publicação.'
+ };
+ return{guidance,profiles,profile,normalize,rank,sizes,defaults,defaultSize};
 });
