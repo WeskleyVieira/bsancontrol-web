@@ -24,6 +24,12 @@ function corrigirMetasPublicidade(html){
  if(!html.includes(semSerie))html=html.replace(rec,semSerie+'\n'+rec);
  const corte="' · dados disponíveis até '+_metDia(R.M.mes+'-'+String(R.limite).padStart(2,'0'))";
  html=html.replace(corte,"(R.limite?' · referência até '+_metDia(R.rows[R.limite-1].date):' · sem dia apurado')");
+ const inicioDia=" for(const row of R.rows){const future=row.date>M.hoje,";
+ const diaComCusto=" for(const row of R.rows){if(k==='ads'||k==='tacos'){h+=_metBotaoDiaPublicidade(R,k,row);continue;}const future=row.date>M.hoje,";
+ if(!html.includes(diaComCusto)){
+  if(!html.includes(inicioDia))throw Error('Calendário de Metas ausente.');
+  html=html.replace(inicioDia,diaComCusto);
+ }
  const ajustes=[
   ["medida(nomeReal,fmt(c.exibido))","medida(R.observada?_metRotuloObservado(k,acumulado):nomeReal,fmt(c.exibido))"],
   ["E(c.status)","E(R.observada?(acumulado?R.pos.cobertos+' de '+R.cut+' dias com mídia informada.':R.pos.informado?'Mídia informada pela fonte diária.':'Sem registro de mídia nesta data.'):c.status)"],

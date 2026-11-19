@@ -81,7 +81,7 @@ test('mídia parcial preserva dias informados, lacunas e denominador do TACOS no
  for(const k of ['ads','tacos']){
   const tela=c._metPublicidadeMensalHTML(R,k);
   assert.match(tela,/data-met-observado/);
-  assert.match(tela,/aria-label="2 · sem registro diário" aria-pressed="true"/);
+  assert.match(tela,/aria-label="2 · (sem registro diário|sem taxa diária disponível)" aria-pressed="true"/);
   assert.match(tela,/1 de 2 dias com mídia informada/);
   c._metRouteChart(R,k,'diario');
   const series=c.charts['c-met-rota'].config.data.datasets;
@@ -91,4 +91,18 @@ test('mídia parcial preserva dias informados, lacunas e denominador do TACOS no
  const outro={...M.comAds[0],l:{...M.comAds[0].l,operacao:'Outra · Amazon'}};
  const combinado=c._metRoute({...M,comAds:[...M.comAds,outro]},diario,2);
  assert.equal(c._metLeituraObservada(combinado).pos.real.adsCamp,null);
+});
+
+test('dias de Ads e TACOS comparam o realizado do dia com o teto, inclusive na leitura parcial',()=>{
+ const c=runtime(require('../visual/dados-operacao-correcoes').corrigirMetasPublicidade(html));
+ for(const [k,teto] of [['ads',5.60],['tacos',.03]]){
+  for(const parcial of [false,true]){
+   const R={cut:1,limite:1,adsValid:!parcial},campo=parcial?(k==='ads'?'adsCamp':'tacosCamp'):k;
+   const botao=(v,t,dia=1)=>c._metBotaoDiaPublicidade(R,k,{dia,real:{[campo]:v},plan:{[k]:t}});
+   for(const valor of [0,teto/2,teto])assert.match(botao(valor,teto),/data-met-estado="dentro"/);
+   assert.match(botao(teto*2,teto),/data-met-estado="acima"/);
+   for(const html of [botao(null,teto),botao(1,null),botao(0,teto,2)])assert.match(html,/data-met-estado="neutro"/);
+   if(parcial)assert.match(botao(teto,teto),/mídia parcial · dentro do limite/);
+  }
+ }
 });
