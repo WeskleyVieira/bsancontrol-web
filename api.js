@@ -16,7 +16,8 @@ const lancamento = require("./lancamento");
 const writeStore = require("./datasets-versionados");
 const acessos = require("./acessos");
 const usuarios = require("./usuarios").criarServico(dbx, {userReferences:async id=>[...await produtosIntegration.userReferences(id),...await posVenda.references(id)]});
-const produtosIntegration = require("./produtos/integration").createIntegration({dbx,resolveSession:sessaoDe});
+const studioLayout = require("./layout/http");
+const produtosIntegration = require("./produtos/integration").createIntegration({dbx,resolveSession:sessaoDe,renderEmbedded:studioLayout.enabled ? studioLayout.product : null});
 if(process.env.PRODUTOS_ENABLED==='1' && String(process.env.JWT_SECRET||'').length<32)throw Error('Produtos exige JWT_SECRET com pelo menos 32 caracteres.');
 const acompanhamentoRegistros = require('./acompanhamento-registros');
 const alinhamentosRegistros = require('./alinhamentos-registros');
@@ -594,6 +595,7 @@ const server = http.createServer(async (req, res) => {
       if (out === null) return J(res, { erro: "rota não encontrada" }, 404);
       return JZ(req, res, out);
     }
+    if (studioLayout.enabled && studioLayout.serve(req, res, u.pathname)) return;
     // ── estático ──
     let p = decodeURIComponent(u.pathname); if (p === "/") p = INDEX;
     if (AUTH_REQ && p !== INDEX) { res.writeHead(404); return res.end("not found"); }   // online: só a página enxuta (não expõe .js/.json)
@@ -603,7 +605,7 @@ const server = http.createServer(async (req, res) => {
       if (e) { res.writeHead(404); return res.end("not found"); }
       const ext = path.extname(fp).toLowerCase();
       const ct = ext === ".html" ? "text/html; charset=utf-8" : ext === ".js" ? "text/javascript" : ext === ".xlsx" ? "application/octet-stream" : "text/plain";
-      res.writeHead(200, { "Content-Type": ct }); res.end(d);
+      res.writeHead(200, { "Content-Type": ct }); res.end(studioLayout.enabled && p === INDEX ? studioLayout.main(d.toString("utf8")) : d);
     });
   } catch (e) { J(res, { ok: false, codigo: e.codigo || "ERRO_INTERNO", erro: e.message }, e.status || 500); }
 });
