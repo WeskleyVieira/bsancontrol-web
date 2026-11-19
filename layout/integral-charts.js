@@ -60,8 +60,8 @@
    if(abc&&type==='line'&&/acumulad/i.test(dataset.label||'')){dataset.borderColor=p.secondary;dataset.pointBackgroundColor=p.secondary;}
    if(type==='line'){dataset.borderWidth=2.2;if(typeof dataset.pointRadius!=='function')dataset.pointRadius=2.5;dataset.pointHoverRadius=5;}
   });
-  const enlarged=!!chart.canvas?.closest?.('dialog[open]');const legend=chart.options.plugins?.legend;if(legend?.labels){legend.labels.usePointStyle=true;legend.labels.boxWidth=8;legend.labels.boxHeight=8;legend.labels.padding=14;legend.labels.font={...legend.labels.font,family:'Inter, Segoe UI, sans-serif',size:enlarged?14:11};}
-  for(const scale of Object.values(chart.options.scales||{}))if(scale.ticks)scale.ticks.font={...scale.ticks.font,family:'Inter, Segoe UI, sans-serif',size:enlarged?14:11};
+  const enlarged=!!chart.canvas?.closest?.('dialog[open]');const legend=chart.options.plugins?.legend;if(legend?.labels){legend.labels.usePointStyle=true;legend.labels.boxWidth=8;legend.labels.boxHeight=8;legend.labels.padding=14;legend.labels.font={...legend.labels.font,family:'Inter, Segoe UI, sans-serif',size:enlarged?14:12,weight:500};}
+  for(const scale of Object.values(chart.options.scales||{}))if(scale.ticks)scale.ticks.font={...scale.ticks.font,family:'Inter, Segoe UI, sans-serif',size:enlarged?14:12,weight:400};
  }
  function geometry(chart,index,progress){const meta=chart.getDatasetMeta(index),type=meta.type,restore=[];
   if(type==='line'){

@@ -1,0 +1,79 @@
+/* Tipografia do painel e do módulo de Produtos incorporado. */
+@font-face {
+  font-family: Inter;
+  src: url("./inter-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --studio-font: Inter, "Segoe UI", sans-serif;
+  --studio-text: 13px;
+  --studio-label: 12px;
+  --studio-section: 15px;
+  --studio-title: 26px;
+  --studio-value: 25px;
+}
+@media (max-width: 700px) {
+  :root { --studio-title: 23px; --studio-value: 21px; }
+}
+
+/* A camada preserva a hierarquia mesmo quando as abas carregam CSS legado depois. */
+@layer studio-type {
+  :is(body.review-integral, #bc-login),
+  :is(body.review-integral, #bc-login) :where(*) {
+    font-family: var(--studio-font) !important;
+  }
+  body.review-integral :is(code, kbd, samp, .bc-technical),
+  body.review-integral :is(code, kbd, samp, .bc-technical) * {
+    font-family: ui-monospace, Consolas, monospace !important;
+  }
+  body.review-integral #bc-page-title {
+    font-size: var(--studio-title) !important;
+    font-weight: 600 !important;
+    line-height: 1.22 !important;
+    letter-spacing: -.035em !important;
+  }
+  body.review-integral :is(.studio-widget-head h2, .studio-library h3, dialog > header h2) {
+    font-size: var(--studio-section) !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    letter-spacing: -.015em !important;
+  }
+  body.review-integral :is(.studio-purpose, .studio-guide-copy p, .studio-kpi-detail p, .studio-kind-table td) {
+    font-size: var(--studio-text) !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+  }
+  body.review-integral :where(.sum-button, .ds-modes button, .review-tools-content button, .studio-button, .review-context-back, .review-nav-area, [data-review-route], .review-sidebar-settings,
+    .studio-kpi-detail summary, .studio-columns > summary, .bc-period-trigger-text, #bc-range-label,
+    select, input:not([type=checkbox],[type=radio]), textarea) {
+    font-size: var(--studio-label) !important;
+    font-weight: 500 !important;
+    line-height: 1.4 !important;
+  }
+  body.review-integral :is(.studio-kpi h3, .studio-kpi .kpi-eye, .studio-kpi .fc-kpi-title,
+    .studio-kind-table th, .bc-field-label, .studio-button[aria-pressed=true], .studio-primary,
+    [aria-current=page]) {
+    font-size: var(--studio-label) !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+  }
+  body.review-integral :is(.studio-kpi .sum-value, .studio-kpi .kpi-val, .product-kpi > strong,
+    .fc-kpi > strong, .met-quick-value, .bc-com-kpi > strong) {
+    font-size: var(--studio-value) !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    letter-spacing: -.03em !important;
+    font-variant-numeric: tabular-nums !important;
+  }
+  body.review-integral :is(.studio-kpi-foot, .studio-reference, .studio-table-count, .studio-kpi-comparison, .studio-estimate) {
+    font-size: var(--studio-label) !important;
+    font-weight: 400 !important;
+    line-height: 1.45 !important;
+  }
+  body.review-integral :is(.studio-kind-table, .studio-kpi-comparison, .bc-period-trigger-text) {
+    font-variant-numeric: tabular-nums;
+  }
+}

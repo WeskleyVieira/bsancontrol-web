@@ -18,7 +18,7 @@ function body(req){return new Promise((resolve,reject)=>{let size=0,parts=[],bad
 function serveAsset(req,res,u,renderEmbedded){const file=files[u.pathname];if(!file)return false;
   if(req.method!=='GET'){json(res,{erro:'Método não permitido.'},405);return true;}
   res.writeHead(200,{'Content-Type':file[1],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',
-    'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' https: data:; base-uri 'none'; form-action 'self'; frame-ancestors 'self'"});
+    'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; img-src 'self' https: data:; base-uri 'none'; form-action 'self'; frame-ancestors 'self'"});
   const data=fs.readFileSync(path.join(__dirname,'web',file[0]));
   res.end(renderEmbedded && file[0]==='index.html' && u.searchParams.get('embedded')==='1' ? renderEmbedded(data.toString('utf8')) : data);return true;
 }
