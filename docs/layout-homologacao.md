@@ -17,3 +17,18 @@ Cada execução cria dois arquivos SQLite temporários com dados fictícios, hab
 - A suíte do painel roda com `node --test "tests/*.test.js"`.
 
 A comparação de totais com a operação real e a validação com contas de uso diário pertencem à fase seguinte.
+
+## Fase 2 · Reconciliação com a base publicada
+
+Em 19/11/2026, o painel de referência em `0fb14e4` e o novo layout em `7f7fcf1` foram executados em instâncias locais autenticadas. Uma transação PostgreSQL de leitura repetível forneceu a mesma fotografia para as duas bases SQLite independentes. A última venda publicada nessa fotografia tinha data de 18/11/2026. Contas locais reproduziram o perfil, a referência de carteira e as restrições de três usuários ativos. As senhas e os tokens de produção ficaram na origem.
+
+| Área | Recortes e resultados conferidos no navegador |
+| --- | --- |
+| Forecast por SKU | De 01 a 18/11, consolidado, operação e pontos autorizados. Foram conferidos realizado, esperado, projeção, unidades, margem apurada, os primeiros 12 produtos e a composição por operação do primeiro SKU. |
+| Metas | Outubro e novembro de 2026, na mesma operação. Comparação dos cinco objetivos, valores, referências e saldos. |
+| Comissão | Outubro e novembro. Comparação de bônus registrado, operações com registro, operações para conferir e detalhe de uma operação selecionada. |
+| Acompanhamento | Carteiras de Tarefas, Promoções e Ads, seus indicadores e quadros de gestores. Alinhamentos e Pendências foram comparados para cada ponto autorizado nos recortes testados. |
+
+Coincidiram 78 conjuntos de resultados entre as interfaces, 27 para Direção, 27 para Coordenação e 24 para Gestor. Outros 74 controles passaram, incluindo somas de faturamento e unidades nas vendas finalizadas, composição do SKU, metas publicadas, bônus por operação e consistência entre demandas registradas e pendentes. A suíte do painel passou nos 653 testes. O demonstrativo com valores reais foi entregue localmente.
+
+A fase 2 cobre a leitura dos quatro módulos acima. O piloto com as contas habituais da equipe e a decisão de publicação seguem como marcos posteriores.
