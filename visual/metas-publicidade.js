@@ -27,14 +27,23 @@ function metAbrirDemonstrativo(){
  detalhe.scrollIntoView({block:'start'});
  detalhe.querySelector('summary')?.focus({preventScroll:true});
 }
-function _metCalendarioPublicidade(R){
- const botoes=R.rows.map(row=>{
-  const ativo=row.dia===R.cut,habilitado=row.dia<=R.limite;
-  const status=row.informado?'mídia informada':habilitado?'sem registro diário':'fora do corte';
-  return '<button type="button" id="met-dia-'+row.dia+'" class="met-dia-chip'+(ativo?' met-active':'')+'" aria-label="'+row.dia+' · '+status+'" aria-pressed="'+ativo+'" '+
-   (habilitado?'onclick="metReferencia('+row.dia+')"':'disabled')+'>'+row.dia+'<small aria-hidden="true">'+(row.informado?'•':'·')+'</small></button>';
- });
- return '<div class="met-calendario" data-met-observado role="group" aria-label="Selecionar dia de análise">'+botoes.join('')+'</div>';
+function _metBotaoDiaPublicidade(R,k,row){
+ const habilitado=row.dia<=R.limite,ativo=row.dia===R.cut,parcial=!R.adsValid;
+ const valor=parcial?row.real[k==='ads'?'adsCamp':'tacosCamp']:row.real[k],limite=row.plan[k];
+ const medido=habilitado&&Number.isFinite(valor),comparavel=medido&&Number.isFinite(limite);
+ const excedido=comparavel&&valor-limite>Number.EPSILON*Math.max(1,Math.abs(limite),Math.abs(valor))*8;
+ const estado=comparavel?(excedido?'acima':'dentro'):'neutro';
+ const status=!habilitado?'fora do corte':!medido?(k==='tacos'?'sem taxa diária disponível':'sem registro diário'):
+  !comparavel?'sem limite cadastrado':(parcial?'mídia parcial · ':'')+(excedido?'acima do limite':'dentro do limite');
+ const formatar=k==='ads'?_metBRL2:_metPct;
+ const detalhe=medido?' · '+formatar(valor)+(comparavel?' / limite '+formatar(limite):''):'';
+ const rotulo=row.dia+' · '+status;
+ return '<button type="button" id="met-dia-'+row.dia+'" class="met-dia-chip'+(ativo?' met-active':'')+
+  '" data-met-estado="'+estado+'" data-met-parcial="'+parcial+'" title="'+rotulo+detalhe+'" aria-label="'+rotulo+'" aria-pressed="'+ativo+'" '+
+  (habilitado?'onclick="metReferencia('+row.dia+')"':'disabled')+'>'+row.dia+'<small aria-hidden="true">'+(comparavel?(excedido?'!':'✓'):'·')+'</small></button>';
+}
+function _metCalendarioPublicidade(R,k){
+ return '<div class="met-calendario" data-met-observado role="group" aria-label="Selecionar dia de análise">'+R.rows.map(row=>_metBotaoDiaPublicidade(R,k,row)).join('')+'</div>';
 }
 function _metHistoricoPublicidadeHTML(R,k){
  R=_metLeituraObservada(R);
@@ -47,7 +56,7 @@ function _metHistoricoPublicidadeHTML(R,k){
  const comparacoes=dia?_metComparacoesHTML(R,k):'';
  const cobertura=R.observada?'<p class="met-nota">Mídia parcial dos dias informados em todas as operações do recorte. O acumulado considera somente esses dias. O TACOS parcial divide essa mídia pelo faturamento conciliado dos mesmos dias. O desvio exige o gasto completo, incluindo afiliados.</p>':'';
  return '<div class="met-section-heading"><h3>'+_metEsc(_MET_METRICAS[k].nome)+' · histórico diário</h3>'+seletor+'</div>'+
-  '<p class="met-nota">'+motivo+' O traço (—) indica falta de apuração.</p>'+cobertura+'<button class="met-btn" type="button" onclick="metAbrirDemonstrativo()">Ver demonstrativo diário</button>'+_metCalendarioPublicidade(R)+
+  '<p class="met-nota">'+motivo+' O traço (—) indica falta de apuração.</p>'+cobertura+'<button class="met-btn" type="button" onclick="metAbrirDemonstrativo()">Ver demonstrativo diário</button>'+_metCalendarioPublicidade(R,k)+
   comparacoes+'<article class="met-chart"><div class="met-ampliar-cabecalho"><h4>'+titulo+'</h4>'+_metBotaoAmpliar('c-met-rota',titulo)+'</div>'+
   '<div class="met-rota-metricas" role="group" aria-label="Leitura do gráfico">'+modo('diario','Diário')+modo('acumulado','Acumulado')+'</div>'+
   '<p>'+(k==='ads'?'A referência diária divide o orçamento mensal pelos dias do mês. O acumulado soma essas parcelas até a data.':'O teto de TACOS é percentual e vale tanto para o dia quanto para o acumulado.')+'</p>'+
