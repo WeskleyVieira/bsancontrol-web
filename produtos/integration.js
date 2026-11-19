@@ -3,7 +3,7 @@ const {openStore}=require('./store');const {createService}=require('./service');
 const path=require('node:path');
 const RESTRICTED=new Set(['estoque','compradora','posvenda']);
 const approvalEligible=require('../acessos').aprovador;
-function createIntegration({dbx,userDe,mustChangePassword,resolveSession}){
+function createIntegration({dbx,userDe,mustChangePassword,resolveSession,renderEmbedded}){
  let promise, productStore;
  const eligible=approvalEligible;
  const resolveUser=async req=>{if(resolveSession){const user=await resolveSession(req);if(!user||user.recusado)return null;return {...user,efetivas:{...user.efetivas,'produtos.custos.aprovar':user.efetivas?.['produtos.custos.aprovar']===true&&eligible(user)},trocar_senha:!!user.trocar};}
@@ -25,7 +25,7 @@ function createIntegration({dbx,userDe,mustChangePassword,resolveSession}){
  const handle=async(req,res,u)=>{
    const productPath=u.pathname==='/produtos'||u.pathname.startsWith('/produtos/')||u.pathname==='/api/produtos'||u.pathname.startsWith('/api/produtos/');
    if(productPath){if(process.env.PRODUTOS_ENABLED!=='1'){json(res,{erro:'Produtos ainda não está habilitado neste ambiente.'},503);return true;}
-     try{if(serveAsset(req,res,u))return true;assertUserAccess(await resolveUser(req),u.pathname.slice('/api/produtos'.length));if(!await (await getHandler())(req,res,u))json(res,{erro:'Rota de Produtos não encontrada.'},404);return true;}catch(e){if(e instanceof ProdutoError)json(res,{erro:e.message},e.status);else json(res,{erro:'Produtos não está disponível. Confira a configuração do módulo.'},503);return true;}}
+     try{if(serveAsset(req,res,u,renderEmbedded))return true;assertUserAccess(await resolveUser(req),u.pathname.slice('/api/produtos'.length));if(!await (await getHandler())(req,res,u))json(res,{erro:'Rota de Produtos não encontrada.'},404);return true;}catch(e){if(e instanceof ProdutoError)json(res,{erro:e.message},e.status);else json(res,{erro:'Produtos não está disponível. Confira a configuração do módulo.'},503);return true;}}
    // These operational users must never fall through legacy routes, which only knew the original three profiles.
    if(resolveSession)return false; // The current host owns session validation and all legacy authorization.
    const user=await resolveUser(req);

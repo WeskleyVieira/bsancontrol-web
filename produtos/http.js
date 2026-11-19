@@ -15,11 +15,12 @@ function body(req){return new Promise((resolve,reject)=>{let size=0,parts=[],bad
   req.on('error',reject);req.on('end',()=>{if(bad)return reject(new ProdutoError('Solicitação muito grande.',413));
     try{const x=JSON.parse(Buffer.concat(parts).toString()||'{}');if(!x||Array.isArray(x)||typeof x!=='object')throw 0;resolve(x);}catch{reject(new ProdutoError('JSON inválido.'));}});
 });}
-function serveAsset(req,res,u){const file=files[u.pathname];if(!file)return false;
+function serveAsset(req,res,u,renderEmbedded){const file=files[u.pathname];if(!file)return false;
   if(req.method!=='GET'){json(res,{erro:'Método não permitido.'},405);return true;}
   res.writeHead(200,{'Content-Type':file[1],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',
     'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' https: data:; base-uri 'none'; form-action 'self'; frame-ancestors 'self'"});
-  res.end(fs.readFileSync(path.join(__dirname,'web',file[0])));return true;
+  const data=fs.readFileSync(path.join(__dirname,'web',file[0]));
+  res.end(renderEmbedded && file[0]==='index.html' && u.searchParams.get('embedded')==='1' ? renderEmbedded(data.toString('utf8')) : data);return true;
 }
 function assertUserAccess(user,rest=''){if(!user)throw new ProdutoError('Entre para acessar Produtos.',401);
       if(user.trocar_senha)throw new ProdutoError('Troque a senha inicial para acessar Produtos.',428);

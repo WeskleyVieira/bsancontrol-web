@@ -1,0 +1,745 @@
+/* Identidade da marca e sinais de desempenho têm funções diferentes. */
+body.review-integral{
+  --studio-field-height:36px;
+  --studio-field-font:12px;
+  --studio-field-radius:8px;
+  --studio-field-background:var(--surf2);
+  --studio-field-border:var(--bdr2);
+}
+html:has(>body.review-integral.light){background:#fff!important}
+body.review-integral.light{
+  --bg:#fff;
+  --surf:#fff;
+  --surf2:#f5f4f6;
+  --surf3:#eeedf0;
+  --bdr:#d8d5dc;
+  --bdr2:#b6b1be;
+  --t:#25212a;
+  --t2:#514b56;
+  --t3:#6a636e;
+  --card-bg:var(--surf);
+  --studio-chrome:#faf9fc;
+  --studio-field-background:var(--surf);
+  --studio-field-border:#98939f;
+  --studio-shadow:0 1px 2px #28242e09,0 5px 14px #28242e09;
+  --bc-surface:var(--surf);
+  --bc-raised:var(--surf2);
+  --bc-border:var(--bdr);
+}
+body.review-integral.studio-products.light{
+  --panel:var(--surf);
+  --surface:var(--surf);
+  --raised:var(--surf2);
+  --line:var(--bdr);
+}
+body.review-integral:not(.light){
+  --studio-chrome:#191923;
+  --studio-shadow:0 1px 2px #0003,0 6px 18px #0002;
+  --bg:#111118;
+  --surf:#1c1c26;
+  --surf2:#252531;
+  --surf3:#30303f;
+  --bdr:#3c3c4b;
+  --bdr2:#575768;
+  --studio-field-background:var(--surf);
+  --studio-field-border:#78788a;
+  --card-bg:var(--surf);
+  --bc-surface:var(--surf);
+  --bc-raised:var(--surf2);
+  --bc-border:var(--bdr);
+}
+html:has(>body.review-integral:not(.light)){background:#111118!important}
+.review-integral .review-sidebar{background:var(--studio-chrome)}
+.review-integral .review-topbar{background:var(--surf)}
+.review-integral .review-sidebar button{border-radius:8px}
+.review-integral .review-sidebar button:hover{background:var(--surf3)}
+.review-integral .review-sidebar button[aria-current=page]{
+  background:var(--a3);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--a) 18%,var(--a3));
+}
+.review-integral .review-sidebar button:focus-visible{
+  outline:2px solid var(--a);
+  outline-offset:-2px;
+}
+.review-integral :is(.bc-reading-guide,.studio-about,.studio-met-day-picker){
+  background:var(--surf2);
+}
+.review-integral .studio-about{border-radius:8px;padding-inline:12px}
+
+/* A área de consulta é uma superfície própria sobre o fundo branco. */
+body.review-integral #bc-global-context:not([hidden]){
+  box-sizing:border-box;
+  padding:10px 12px!important;
+  border:1px solid var(--bdr)!important;
+  border-radius:12px;
+  background:var(--studio-chrome)!important;
+}
+body.review-integral .studio-page-tools button:not(.studio-primary,[aria-pressed]){
+  background-color:var(--studio-chrome)!important;
+}
+body.review-integral .studio-active-page .studio-primary:hover{
+  background:color-mix(in srgb,var(--a) 85%,var(--t))!important;
+}
+.review-integral .studio-view-options{
+  display:inline-flex;
+  flex-wrap:wrap;
+  gap:2px;
+  padding:3px;
+  border-radius:10px;
+  background:var(--surf2);
+}
+body.review-integral .studio-page-tools .studio-view-options>button{
+  min-height:30px!important;
+  border-color:transparent!important;
+  background:transparent!important;
+  color:var(--t2);
+}
+body.review-integral .studio-page-tools .studio-view-options>button[aria-pressed=true]{
+  background:var(--a3)!important;
+  color:var(--a)!important;
+  font-weight:650!important;
+}
+body.review-integral .studio-view-options>button:focus-visible{
+  outline:2px solid var(--a);
+  outline-offset:-2px;
+}
+
+/* O tom do indicador aparece no rótulo e na superfície do card. */
+body.review-integral .page.on.studio-active-page :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card){
+  --studio-kpi-wash:color-mix(in srgb,var(--studio-kpi-tone,var(--a)) 7%,var(--surf));
+  background:linear-gradient(145deg,var(--studio-kpi-wash),var(--surf) 70%)!important;
+  box-shadow:var(--studio-shadow)!important;
+}
+body.review-integral .page.on.studio-active-page .studio-widget.studio-kpi{
+  gap:5px;
+}
+body.review-integral .page.on.studio-active-page
+  :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card):is([data-bc-result=attention],[data-margin-tone=attention],[data-tone=attention]){
+  --studio-kpi-wash:var(--studio-chrome);
+}
+body.review-integral .page.on.studio-active-page
+  :is(.studio-widget.studio-kpi,#res-forecast-pacing .sum-card)>:is(h3,.kpi-eye,.fc-kpi-title){
+  background:color-mix(in srgb,var(--studio-kpi-tone,var(--a)) 12%,var(--surf));
+}
+body.review-integral .page.on .studio-kpi[data-bc-result=info]>.sum-value{
+  color:var(--t)!important;
+}
+body.review-integral .page.on.studio-active-page .studio-kpi>p.studio-kpi-comparison{
+  align-self:flex-start;
+  min-height:0!important;
+  margin:0!important;
+  padding:2px 6px!important;
+  background:var(--surf2);
+  border-radius:5px;
+  font-size:11px!important;
+  font-variant-numeric:tabular-nums;
+}
+body.review-integral .page.on.studio-active-page .studio-kpi>button.studio-kpi-open{
+  padding:4px 0!important;
+  min-height:26px!important;
+  font-size:11px!important;
+  font-weight:600;
+}
+body.review-integral .page.on.studio-active-page .studio-kpi>button.studio-kpi-open:hover{
+  text-decoration:underline;
+}
+body.review-integral .page.on.studio-active-page .studio-widget.studio-kind-chart{
+  box-shadow:var(--studio-shadow)!important;
+}
+body.review-integral .studio-widget .studio-widget-head>h2{
+  font-weight:650!important;
+}
+body.review-integral .studio-kind-table thead th{
+  background:var(--surf2);
+}
+@media (max-width:1100px){
+  body.review-integral [data-studio-route="resultados/overview"] .studio-kind-chart[data-size=third]:has(#res-overview-contribution){
+    --studio-span:12!important;
+  }
+}
+html[data-review-brand=bsan] body.review-integral{--studio-brand-primary:#00B1EB;--studio-brand-secondary:#B186FF;--a:#6440A8;--a2:#B186FF;--a3:#F3EEFF;--bc-accent:#6440A8;--bc-info:#0086B3;--accent:#6440A8}
+html[data-review-brand=jowcase] body.review-integral{--studio-brand-primary:#2871FA;--studio-brand-secondary:#6717CD;--a:#6717CD;--a2:#2871FA;--a3:#F2EAFC;--bc-accent:#6717CD;--bc-info:#2871FA;--accent:#6717CD}
+html[data-review-brand] body.review-integral:not(.light){--a:#B99BEF;--a3:#292039;--bc-accent:#B99BEF;--accent:#B99BEF}
+.review-integral .review-brand>b{background:linear-gradient(135deg,var(--studio-brand-primary,#00B1EB),var(--studio-brand-secondary,#B186FF))!important}
+.studio-appearance{border:0;border-bottom:1px solid var(--bdr);margin:0 0 18px;padding:0 0 18px;min-width:0}.studio-appearance legend{font-size:12px;font-weight:600;padding-bottom:10px}.studio-brand-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}.studio-brand-choice{display:flex;align-items:center;gap:9px;border:1px solid var(--bdr);border-radius:10px;padding:12px;cursor:pointer}.studio-brand-choice:has(input:checked){border-color:var(--a);background:var(--a3)}.studio-brand-choice input{width:15px;min-height:0!important;accent-color:var(--a)}.studio-brand-choice strong,.studio-brand-choice small{display:block}.studio-brand-choice strong{font-size:12px}.studio-brand-choice small{font-size:10px;color:var(--t3);margin-top:3px}.studio-brand-swatch{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#00B1EB 50%,#B186FF 50%);flex-shrink:0}.studio-brand-swatch[data-brand=jowcase]{background:linear-gradient(135deg,#2871FA 50%,#6717CD 50%)}.studio-motion-label{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:14px;font-size:11px}.studio-motion-label select{font-size:11px!important;min-height:32px!important;padding:6px 8px!important;max-width:230px}.studio-motion-note{font-size:10px;color:var(--t3);display:block;margin-top:8px}
+
+/* Escala comum inclusive para os renderizadores legados que usam seletores com ID. */
+body.review-integral :is(.studio-widget,#bc-review-type).studio-kpi .sum-value,body.review-integral :is(.studio-widget,#bc-review-type).studio-kpi .kpi-val,body.review-integral :is(.studio-widget,#bc-review-type).studio-kpi .fc-kpi-value,body.review-integral :is(.studio-widget,#bc-review-type).studio-kpi .met-quick-value,body.review-integral :is(.studio-widget,#bc-review-type).studio-kpi>strong{font-size:25px!important;line-height:1.25!important;font-weight:650!important;letter-spacing:-.6px}
+body.review-integral :is(.studio-widget,#bc-review-type) h2{font-size:13px!important;line-height:1.5!important}body.review-integral :is(.studio-widget,#bc-review-type) h3,body.review-integral :is(.studio-widget,#bc-review-type) h4{font-size:12px!important;line-height:1.5!important}body.review-integral :is(.studio-widget,#bc-review-type) p{font-size:11px!important;line-height:1.6!important}
+body.review-integral :is(.studio-widget,#bc-review-type) :is(.res-account-value,.fc-kpi-value,.fin-amount,.ac6-value,.ac6-count,.ac4-number,.ac6-number,.met-dia-numero,.met-numero,.met-big,.product-kpi>strong){font-size:23px!important;line-height:1.3!important}
+body.review-integral :is(.studio-widget,#bc-review-type) td,body.review-integral :is(.studio-widget,#bc-review-type) td strong{font-size:11px!important;line-height:1.5!important}body.review-integral :is(.studio-widget,#bc-review-type) th{font-size:10px!important;line-height:1.4!important}
+body.review-integral :is(.studio-widget,#bc-review-type) button:not(.studio-button){font-size:11px!important;min-height:30px!important}body.review-integral :is(.studio-widget,#bc-review-type) label,body.review-integral :is(.studio-widget,#bc-review-type) small{font-size:10px!important}
+body.review-integral :is(.studio-widget,#bc-review-type) .fc-product>h3{font-size:13px!important}.studio-widget .fc-product{padding:14px!important}.studio-widget .fc-product-pair .fc-kpi-value{font-size:20px!important}.studio-widget .met-quick-label{font-size:10px!important;color:var(--t2);margin:0!important}
+
+/* Curva A/B/C é uma classificação consistente, independentemente da marca. */
+[data-studio-curve=A]{--studio-curve:#13976B;--studio-curve-bg:#EAF7F1}[data-studio-curve=B]{--studio-curve:#B77704;--studio-curve-bg:#FFF5DF}[data-studio-curve=C]{--studio-curve:#CD364B;--studio-curve-bg:#FFF0F2}
+body.review-integral :is([data-studio-curve],#bc-review-curve):not(.studio-kpi){color:var(--studio-curve)!important;background:var(--studio-curve-bg)!important;border-color:var(--studio-curve)!important}
+body.review-integral .studio-kpi[data-studio-curve]{--studio-kpi-tone:var(--studio-curve)}
+body.review-integral :is(.studio-kpi,#bc-review-curve)[data-studio-curve] .sum-value{color:var(--studio-curve)!important}
+body.review-integral:not(.light) [data-studio-curve]{--studio-curve-bg:#192836}body.review-integral:not(.light) [data-studio-curve=A]{--studio-curve:#5DD3A7}body.review-integral:not(.light) [data-studio-curve=B]{--studio-curve:#F6C261}body.review-integral:not(.light) [data-studio-curve=C]{--studio-curve:#FF8E9E}
+
+/* Período: gatilho em uma linha e painel compacto, com os mesmos controles nativos. */
+body.review-integral #bc-temporal{width:auto!important;min-width:0!important;max-width:100%!important}body.review-integral #bc-range-menu{min-width:0!important;width:auto!important}
+body.review-integral #bc-range-menu>summary{padding:7px 10px!important;min-height:35px!important;border-radius:9px!important}body.review-integral #bc-range-menu>summary>.bc-field-label{display:none!important}body.review-integral #bc-range-menu .bc-period-trigger{gap:8px!important}body.review-integral #bc-range-menu .bc-period-trigger-text{display:flex!important;align-items:center;gap:9px;white-space:nowrap}body.review-integral #bc-range-choice{order:2;font-size:10px!important;font-weight:500!important;background:var(--a3);color:var(--a);padding:3px 6px;border-radius:5px}body.review-integral #bc-range-label{font-size:11px!important;line-height:1.5!important}body.review-integral #bc-range-menu .bc-line-icon{width:15px!important;height:15px!important}
+body.review-integral #bc-range-menu .bc-period-panel{box-sizing:border-box!important;width:430px!important;max-width:calc(100vw - 24px)!important;padding:16px!important;border-radius:12px!important;max-height:min(560px,calc(100dvh - 90px))!important;box-shadow:0 12px 38px #1F29421C!important;gap:10px!important}
+body.review-integral #bc-range-menu .bc-period-panel:has(#bc-period-custom:not([hidden])){width:560px!important}
+body.review-integral #bc-range-menu .bc-period-heading{margin:0!important;gap:12px!important}body.review-integral #bc-range-menu .bc-period-heading h2{font-size:16px!important;line-height:1.4!important;margin:0!important}body.review-integral #bc-range-menu .bc-period-heading p{font-size:10px!important;line-height:1.5!important;margin:4px 0 0!important}
+body.review-integral #bc-range-menu .bc-period-panel button,body.review-integral #bc-range-menu .bc-period-panel select,body.review-integral #bc-range-menu .bc-period-panel input{font-size:11px!important;min-height:30px!important;padding:6px 8px!important;line-height:1.4!important}
+body.review-integral #bc-range-menu .bc-period-modes{margin:10px 0!important;padding:3px!important;gap:3px!important;border-radius:8px!important}body.review-integral #bc-range-menu .bc-period-modes button{padding:5px 7px!important;min-height:29px!important}
+body.review-integral #bc-range-menu .bc-period-quick{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}body.review-integral #bc-range-menu .bc-period-quick button{padding:8px 10px!important;min-height:50px!important;border-radius:8px!important;gap:3px!important}body.review-integral #bc-range-menu .bc-period-quick strong{font-size:11px!important;font-weight:550!important}body.review-integral #bc-range-menu .bc-period-quick small{font-size:10px!important}
+body.review-integral #bc-range-menu .bc-period-body{max-height:360px!important;overflow:auto!important}body.review-integral #bc-range-menu .bc-period-panel p{font-size:10px!important;line-height:1.5!important;margin:6px 0!important}body.review-integral #bc-range-menu .bc-period-panel footer{margin-top:10px!important;padding-top:10px!important;gap:8px!important}
+body.review-integral #bc-range-menu .bc-period-selection{padding:9px 10px!important;margin-top:10px!important}body.review-integral #bc-range-menu .bc-period-selection strong{font-size:12px!important}body.review-integral #bc-range-menu .bc-calendar-page h3{font-size:12px!important}body.review-integral #bc-range-menu .bc-calendar-days button{width:100%!important;min-height:28px!important;padding:4px!important}body.review-integral #bc-range-menu .bc-month-grid button{min-height:36px!important;font-size:11px!important}
+
+/* A seleção usa superfícies preenchidas e o foco do teclado tem um contorno próprio. */
+body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas,.bc-period-modes){
+  border-radius:11px!important;
+  padding:4px!important;
+  gap:4px!important;
+  background:var(--surf2)!important;
+}
+body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas){width:fit-content;max-width:100%;flex-wrap:wrap}
+body.review-integral :is(.page,#met-root,#bc-range-menu) :is(.fc-chart-controls,.met-views,.met-rota-metricas,.bc-period-modes)>button{
+  min-height:32px!important;
+  padding:5px 10px!important;
+  font-size:12px!important;
+  line-height:1.4!important;
+  border-radius:8px!important;
+}
+body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas,.bc-period-modes)>button{
+  border-color:transparent!important;
+  background:transparent!important;
+}
+body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas,.ac4-levels,.ger-chips,.ger-agenda-families,.bc-period-modes,.bc-period-quick,.bc-month-grid,.bc-calendar-endpoints) button[aria-pressed=true]{
+  border-color:transparent!important;
+  background:var(--a3)!important;
+  color:var(--a)!important;
+  font-weight:650!important;
+}
+body.review-integral :is(.fc-chart-controls,.met-views,.met-rota-metricas,.bc-period-modes)>button[aria-pressed=true]{
+  box-shadow:0 1px 4px #14274416!important;
+}
+body.review-integral #bc-range-menu .bc-period-panel{border-color:var(--bdr)!important}
+body.review-integral #bc-range-menu .bc-calendar-days button{
+  position:relative;
+  width:min(100%,32px)!important;
+  height:32px!important;
+  border-color:transparent!important;
+  border-radius:50%!important;
+}
+body.review-integral #bc-range-menu .bc-calendar-days button[aria-current=date]:not(.is-endpoint){box-shadow:none!important}
+body.review-integral #bc-range-menu .bc-calendar-days button[aria-current=date]:not(.is-endpoint)::after{
+  content:'';
+  position:absolute;
+  left:calc(50% - 2px);
+  bottom:4px;
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:var(--a);
+}
+
+/* Prévia do PNG antes de baixar/copiar. */
+body.review-integral dialog.studio-print-dialog{width:1000px;max-width:calc(100vw - 32px);max-height:90dvh;padding:20px;border:1px solid var(--bdr);border-radius:14px;background:var(--surf);color:var(--t);overflow:auto}.studio-print-dialog::backdrop{background:#111B3066}.studio-print-dialog>header{display:flex;justify-content:space-between;align-items:center;gap:20px}.studio-print-dialog h2{font-size:19px;margin:0}.studio-print-dialog button{font-size:11px!important;min-height:32px!important;padding:6px 10px!important}.studio-print-intro,.studio-print-status{font-size:11px;line-height:1.6;color:var(--t2);margin:12px 0}.studio-print-controls{display:flex;gap:12px;align-items:end}.studio-print-controls label{font-size:10px;display:flex;gap:5px;flex-direction:column;flex:1}.studio-print-controls select{font-size:11px;min-height:34px;padding:7px 9px}.studio-print-preview{background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;max-height:55dvh;overflow:auto;padding:10px}.studio-print-preview:empty{display:none}.studio-print-preview img{display:block;width:100%;height:auto;border-radius:6px}.studio-print-dialog>footer{display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--bdr);padding-top:14px;margin-top:14px}
+@media(max-width:700px){body.review-integral #bc-range-menu .bc-period-panel{left:10px!important;right:10px!important;width:auto!important;max-width:calc(100vw - 20px)!important;padding:12px!important;max-height:calc(100dvh - 110px)!important}.studio-brand-choices{grid-template-columns:1fr}.studio-motion-label{align-items:start;flex-direction:column;gap:7px}.studio-print-controls{align-items:stretch;flex-direction:column}body.review-integral :is(.studio-widget,#bc-review-type).studio-kpi .sum-value{font-size:22px!important}}
+@media(prefers-reduced-motion:reduce){.studio-replay{display:none!important}}
+
+body.review-integral #bc-global-context #bc-range-menu .bc-period-trigger-text{flex-direction:row!important;align-items:center!important;gap:8px!important}
+
+/* Controles de consulta, cadastro e modais compartilham a mesma medida. */
+body.review-integral :is(.studio-widget-actions,.studio-table-tools){
+  --studio-field-height:30px;
+  --studio-field-font:11px;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel)
+  :is(select,textarea,input:where(:not([type=checkbox],[type=radio],[type=range],[type=color],[type=button],[type=submit],[type=reset],[type=file],[type=image],[type=hidden]))){
+  box-sizing:border-box;
+  min-height:var(--studio-field-height)!important;
+  font-family:inherit!important;
+  font-size:var(--studio-field-font)!important;
+  font-weight:500!important;
+  line-height:1.4!important;
+  padding:6px 10px!important;
+  border:1px solid var(--studio-field-border)!important;
+  border-radius:var(--studio-field-radius)!important;
+  background-color:var(--studio-field-background)!important;
+  color:var(--t)!important;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel)
+  :is(select,input):where(:not([multiple],[size]:not([size="1"]),[type=checkbox],[type=radio],[type=range],[type=color],[type=button],[type=submit],[type=reset],[type=file],[type=image],[type=hidden])){
+  height:var(--studio-field-height)!important;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel) textarea{
+  min-height:72px!important;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel) select:where(:not([multiple],[size]:not([size="1"]))){
+  appearance:none;
+  padding-inline-end:28px!important;
+  background-image:linear-gradient(45deg,transparent 50%,var(--t2) 51%),linear-gradient(135deg,var(--t2) 50%,transparent 51%)!important;
+  background-position:right 14px center,right 9px center!important;
+  background-size:5px 5px!important;
+  background-repeat:no-repeat!important;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel) :is(select,input,textarea):disabled{
+  background-color:var(--surf3,var(--surf2))!important;
+  border-color:var(--bdr2)!important;
+  color:var(--t2)!important;
+}
+body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel)
+  :is(select,input,textarea):focus-visible{
+  outline:2px solid var(--a)!important;
+  outline-offset:2px;
+}
+body.review-integral :is(#bc-global-context,.op-controls,.ger-controls,.pv-filters,.ac4-controls,.met-filtros) :is(label,label>span){
+  font-size:11px!important;
+  font-weight:550;
+}
+body.review-integral :is(.bc-view-heading,.studio-page-tools,.op-controls,.ger-controls,.pv-filters,.ac4-controls) button{
+  min-height:var(--studio-field-height)!important;
+  font-size:var(--studio-field-font)!important;
+  padding:6px 11px!important;
+  border-radius:var(--studio-field-radius)!important;
+}
+body.review-integral :is(.bc-view-heading,.studio-page-tools,.op-controls,.ger-controls,.pv-filters,.ac4-controls)
+  button:where(:not(.studio-primary,.studio-add,.primary,[aria-pressed],[data-tone],[type=submit])){
+  border-color:var(--studio-field-border)!important;
+}
+
+body.review-integral #bc-global-context #bc-range-menu>summary{
+  display:flex;
+  padding:0!important;
+  min-height:var(--studio-field-height)!important;
+}
+body.review-integral #bc-global-context #bc-range-menu .bc-period-trigger{
+  height:var(--studio-field-height);
+  min-height:var(--studio-field-height)!important;
+  font-size:var(--studio-field-font)!important;
+  padding:0 10px!important;
+  background:var(--studio-field-background);
+  border:1px solid var(--studio-field-border)!important;
+  border-radius:var(--studio-field-radius)!important;
+}
+body.review-integral #bc-global-context #bc-range-menu #bc-range-label{font-size:var(--studio-field-font)!important}
+
+@media(forced-colors:active){
+  body.review-integral :is(#bc-global-context,.page,dialog,.bc-period-panel) select{
+    appearance:auto;
+    background-image:none!important;
+  }
+}
+
+body.review-integral :is(.studio-active-page,#bc-review-scale) :is(.res-operation-result,.res-channel-revenue,.ger-agenda-count,.op-big,.bc-com-kpi>strong){font-size:23px!important;line-height:1.3!important}
+
+/* Modais são centrados no viewport; a biblioteca mantém sua composição lateral. */
+body.review-integral dialog:modal:not(.studio-library):not(:fullscreen){position:fixed!important;inset:0!important;margin:auto!important;transform:none!important}
+/* O resumo de casos ocupa uma linha própria dentro da composição de Acompanhamento. */
+.review-integral #ac4-continuity-summary.studio-widget {
+  padding: 16px;
+}
+.review-integral #ac4-continuity-summary .ac4-domain-stats > div {
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--bdr);
+  border-radius: 8px;
+  background: var(--surf2);
+}
+.review-integral #ac4-continuity-summary .ac4-domain-stats span {
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+body.review-integral .review-tools-dialog {
+  width: 500px;
+}
+.review-tools-dialog > header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surf);
+}
+.review-tools-dialog .studio-appearance {
+  margin-bottom: 0;
+}
+.review-native-tools .studio-utility-list #bc-actions {
+  display: grid;
+  gap: 6px;
+  background: transparent;
+}
+body.review-integral .review-native-tools :is(.studio-utility, .bc-base-menu > summary) {
+  box-sizing: border-box;
+  display: flex !important;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 48px !important;
+  padding: 9px 12px !important;
+  border: 1px solid var(--bdr) !important;
+  border-radius: 9px;
+  background: var(--surf) !important;
+  color: var(--t) !important;
+  text-align: left;
+  white-space: normal;
+}
+body.review-integral .review-native-tools .studio-utility[hidden] {
+  display: none !important;
+}
+body.review-integral .review-native-tools :is(.studio-utility, .bc-base-menu > summary):hover {
+  border-color: var(--a) !important;
+}
+.review-native-tools .bc-base-menu > summary::after {
+  content: '+';
+  margin-left: auto;
+  color: var(--a);
+  font-size: 17px;
+}
+.review-native-tools .bc-base-menu[open] > summary::after {
+  content: '−';
+}
+.studio-tool-marker {
+  flex: 0 0 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  background: var(--a3);
+  color: var(--a);
+  border-radius: 7px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.studio-tool-label {
+  display: grid;
+  gap: 2px;
+}
+.studio-tool-label strong {
+  font-size: 12px;
+  font-weight: 650;
+}
+.studio-tool-label small {
+  color: var(--t2);
+  font-size: 11px;
+  font-weight: 400;
+}
+.review-native-tools .studio-update-fields {
+  width: 100%;
+  margin: 0;
+  padding: 4px 12px;
+  border: 1px solid var(--bdr);
+  border-radius: 9px;
+  background: var(--surf2);
+}
+.studio-update-fields > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) 1.5fr;
+  gap: 10px;
+  padding: 8px 0;
+}
+.studio-update-fields > div + div {
+  border-top: 1px solid var(--bdr);
+}
+.studio-update-fields :is(dt, dd) {
+  margin: 0;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.studio-update-fields dt {
+  color: var(--t2);
+}
+body.review-integral .studio-update-fields .chip {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--t);
+  font: inherit;
+  white-space: normal;
+}
+.review-native-tools .bc-base-menu #hdr-period {
+  display: none;
+}
+
+body.review-integral dialog.studio-tool-dialog {
+  width: min(740px, calc(100vw - 28px));
+  max-height: 88dvh;
+  padding: 0;
+  overscroll-behavior: contain;
+}
+body.review-integral dialog[data-tool="exec-overlay"] {
+  width: min(960px, calc(100vw - 28px));
+}
+body.review-integral dialog[data-tool="modal"] {
+  width: min(560px, calc(100vw - 28px));
+}
+.studio-tool-dialog > :is(#guide-overlay, #exec-overlay, #modal).show {
+  position: static;
+  display: block;
+  inset: auto;
+  padding: 22px;
+  background: var(--surf);
+  backdrop-filter: none;
+  overflow: visible;
+}
+.studio-tool-dialog :is(.guide-box, .modal-box) {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+.studio-tool-dialog :is(.guide-title, .modal-title, .exec-title) {
+  font-size: 20px;
+  line-height: 1.35;
+  color: var(--t);
+  margin: 0 0 4px;
+}
+.studio-tool-dialog :is(.guide-sub, .modal-sub, .exec-period) {
+  color: var(--t2);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.studio-tool-dialog .guide-item {
+  padding: 11px 12px;
+  margin: 0 0 6px;
+  border: 1px solid var(--bdr);
+  border-radius: 9px;
+  background: var(--surf2);
+}
+.studio-guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.studio-guide-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: 8px;
+}
+.studio-guide-sections .guide-item {
+  margin: 0;
+}
+.studio-guide-sections .guide-icon {
+  display: none;
+}
+.studio-tool-dialog .guide-tip {
+  color: var(--a);
+}
+.studio-tool-dialog .guide-close-btn {
+  width: auto;
+  color: var(--surf);
+  padding: 7px 13px;
+  margin: 0;
+}
+.studio-tool-dialog .exec-header {
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--bdr);
+}
+.studio-tool-dialog .exec-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.studio-tool-dialog .exec-card {
+  padding: 14px;
+  background: var(--surf2);
+  border-radius: 10px;
+}
+.studio-tool-dialog .exec-card-accent {
+  display: none;
+}
+.studio-tool-dialog .exec-eye,
+.studio-tool-dialog .exec-section-title {
+  color: var(--t2);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+}
+.studio-tool-dialog .exec-val {
+  font-size: 24px;
+  line-height: 1.2;
+}
+.studio-tool-dialog .exec-mkt-row {
+  background: var(--surf2);
+}
+.studio-tool-dialog .exec-mkt-vals {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 10px;
+}
+.studio-tool-dialog .drop-zone {
+  border: 1px dashed var(--a);
+  background: var(--a3);
+  border-radius: 10px;
+  padding: 22px 14px;
+}
+.studio-tool-dialog .drop-zone:focus-within {
+  outline: 2px solid var(--a);
+  outline-offset: 3px;
+}
+.studio-tool-dialog .drop-icon {
+  display: none;
+}
+.studio-tool-dialog .drop-lbl {
+  font-size: 14px;
+  font-weight: 650;
+}
+.studio-tool-dialog .drop-hint {
+  margin-top: 4px;
+}
+html[data-review-motion="off"] .studio-replay {
+  display: none;
+}
+@media (max-width: 440px) {
+  .studio-tool-dialog > :is(#guide-overlay, #exec-overlay, #modal).show {
+    padding: 14px;
+  }
+  .studio-tool-dialog .exec-card {
+    padding: 10px;
+  }
+  .studio-tool-dialog .exec-val {
+    font-size: 19px;
+  }
+}
+
+/* Um único desenho para os indicadores e seus comandos nos dois temas. */
+body.review-integral .page.on.studio-active-page .studio-kpi.sum-card{
+  position:relative;
+  gap:7px;
+  padding:16px 18px 12px!important;
+  border-radius:14px!important;
+  font-variant-numeric:tabular-nums;
+}
+body.review-integral .page.on.studio-active-page :is(.studio-kpi.sum-card,#res-forecast-pacing .sum-card)>h3:has(.studio-metric-icon){
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:0;
+  background:transparent;
+  color:var(--t2)!important;
+}
+.studio-metric-icon{
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:27px;
+  height:27px;
+  border-radius:9px;
+  color:color-mix(in srgb,var(--studio-kpi-tone,var(--a)) 76%,var(--t));
+  background:color-mix(in srgb,var(--studio-kpi-tone,var(--a)) 14%,var(--surf));
+}
+.studio-metric-icon svg{width:16px;height:16px}
+body.review-integral .page.on .studio-kpi.sum-card>p{
+  order:2;
+  margin:0!important;
+  min-height:0!important;
+  color:var(--t2);
+}
+body.review-integral .page.on .studio-kpi.sum-card>:is(.studio-estimate,.studio-kpi-foot){order:2}
+body.review-integral .page.on.studio-active-page .studio-kpi.sum-card>button{
+  order:4;
+  align-self:stretch;
+  margin: auto 0 0!important;
+  padding:8px 0 0!important;
+  border:0!important;
+  border-top:1px solid var(--bdr)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:var(--a)!important;
+  min-height:27px!important;
+  text-align:left;
+  font-size:11px!important;
+  font-weight:600!important;
+}
+body.review-integral .page.on .studio-kpi.sum-card>button::after{content:' →';margin-left:4px}
+body.review-integral .page.on.studio-active-page .studio-kpi.sum-card:has(.studio-daily-trend){
+  background:linear-gradient(108deg,var(--surf) 37%,color-mix(in srgb,var(--a) 8%,var(--surf)))!important;
+  container-type:inline-size;
+}
+.studio-daily-trend{
+  position:absolute;
+  top:41px;
+  right:16px;
+  width:24%;
+  max-width:110px;
+  margin:0;
+  color:var(--a);
+  pointer-events:none;
+}
+.studio-daily-trend svg{display:block;width:100%;height:34px}
+.studio-daily-trend path{fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.studio-daily-trend figcaption{text-align:right;font-size:10px;color:var(--t3)}
+@container(max-width:320px){
+  .studio-daily-trend{position:static;align-self:start;width:100%;max-width:100%;display:flex;align-items:center;gap:6px}
+  .studio-daily-trend svg{width:64px;height:22px}
+}
+.studio-kpi .studio-register-meter{
+  appearance:none;
+  width:100%;
+  height:5px;
+  border:0;
+  border-radius:9px;
+  overflow:hidden;
+  background:var(--surf3);
+  color:var(--studio-kpi-tone,var(--a));
+}
+.studio-register-meter::-webkit-progress-bar{background:var(--surf3)}
+.studio-register-meter::-webkit-progress-value{background:currentColor;border-radius:9px}
+.studio-register-meter::-moz-progress-bar{background:currentColor;border-radius:9px}
+.review-integral .studio-kind-chart>.studio-widget-head,
+.review-integral .studio-kind-table>.studio-widget-head{
+  padding-bottom:10px;
+  border-bottom:1px solid var(--bdr);
+}
+.review-integral .review-sidebar .review-nav-active>svg{
+  box-sizing:content-box;
+  padding:5px;
+  margin:-5px;
+  border-radius:7px;
+  background:var(--a3);
+  color:var(--a);
+}
+
+.review-integral .page.on .ac4-scope:has(.studio-portfolio-filters){
+  display:flex!important;
+  flex-flow:row wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:10px 14px!important;
+  background:var(--studio-chrome)!important;
+}
+.review-integral .ac4-scope:has(.studio-portfolio-filters)>h2{display:none}
+.review-integral .studio-portfolio-filters[open]{flex-basis:100%}
+.review-integral .studio-portfolio-filters summary{cursor:pointer;font-size:12px;font-weight:650;color:var(--t)}
+.review-integral .studio-portfolio-filters summary small{font-size:11px;font-weight:450;color:var(--t2);margin-left:10px}
+.review-integral .studio-portfolio-fields{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:end;
+  gap:10px;
+  margin-block:12px 6px;
+}
+.review-integral .studio-portfolio-fields .ac4-scope-controls{display:contents!important}
+.review-integral .studio-portfolio-fields label{max-width:100%}
+.review-integral .studio-portfolio-filters+.ac4-breadcrumb,
+.review-integral .ac4-scope:has(.studio-portfolio-filters) .ac4-breadcrumb{margin:0;font-size:12px}
+.review-integral .studio-portfolio-analyses{
+  border-radius:8px;
+  color:var(--t2);
+}
+.review-integral .studio-portfolio-analyses summary{
+  padding:8px 10px;
+  font-size:12px;
+  cursor:pointer;
+}
+.review-integral .studio-portfolio-analyses[open]{background:var(--surf2);padding:4px}
+.review-integral .ac4-levels .ac4-export-actions{margin-inline-start:auto}
+.review-integral .studio-workspace>.studio-about{order:-90}
+.review-integral .studio-workspace>.studio-about:not([open]){display:none}
+.review-integral .studio-about .studio-guide-copy{grid-column:1/-1}
+.review-integral .studio-guide-copy h3{margin:4px 0 6px}
