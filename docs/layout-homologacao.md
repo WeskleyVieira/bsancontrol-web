@@ -1,6 +1,6 @@
 # Homologação do layout do BsanControl
 
-A fase 1 integra a apresentação aprovada em `30170e9` ao painel web a partir de `0fb14e4`. A API entrega a apresentação nova quando `AUTH_REQUIRED=1` e `BSAN_LAYOUT_STUDIO=1`. A configuração padrão entrega o painel anterior. O modo incorporado de Produtos acompanha a apresentação do painel.
+A fase 1 integra a apresentação aprovada em `30170e9` ao painel web a partir de `0fb14e4`. Com `AUTH_REQUIRED=1`, o novo layout é o padrão para todas as contas autenticadas. Para restaurar o anterior, configure `BSAN_LAYOUT_STUDIO=0` no serviço e reinicie-o. Remover a variável e reiniciar reativa o novo visual. O modo incorporado de Produtos acompanha a apresentação do painel.
 
 ## Abrir novamente
 
@@ -31,4 +31,4 @@ Em 19/11/2026, o painel de referência em `0fb14e4` e o novo layout em `7f7fcf1`
 
 Coincidiram 78 conjuntos de resultados entre as interfaces, 27 para Direção, 27 para Coordenação e 24 para Gestor. Outros 74 controles passaram, incluindo somas de faturamento e unidades nas vendas finalizadas, composição do SKU, metas publicadas, bônus por operação e consistência entre demandas registradas e pendentes. A suíte do painel passou nos 653 testes. O demonstrativo com valores reais foi entregue localmente.
 
-A fase 2 cobre a leitura dos quatro módulos acima. O piloto com as contas habituais da equipe e a decisão de publicação seguem como marcos posteriores.
+A fase 2 cobre a leitura dos quatro módulos acima. A publicação foi autorizada para toda a equipe, com acompanhamento durante o uso habitual.

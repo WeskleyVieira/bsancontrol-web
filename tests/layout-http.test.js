@@ -8,15 +8,18 @@ const { mkdtempSync, rmSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
 
-for (const enabled of [false, true]) {
-  test('integração HTTP do layout com a opção ' + (enabled ? 'ligada' : 'desligada'), async t => {
+for (const flag of [undefined, '0', '1']) {
+  const enabled = flag !== '0';
+  test('integração HTTP do layout com a opção ' + (flag ?? 'padrão'), async t => {
     const dir = mkdtempSync(path.join(tmpdir(), 'bsan-layout-http-'));
     const env = {
-      ...process.env, AUTH_REQUIRED: '1', BSAN_LAYOUT_STUDIO: enabled ? '1' : '0',
+      ...process.env, AUTH_REQUIRED: '1',
       BSAN_DB: 'sqlite', SQLITE_FILE: path.join(dir, 'painel.db'), PORT: '0',
       BC_QA_NO_WORKER: '1', PRODUTOS_ENABLED: '1', PRODUTOS_SYNC_ENABLED: '0',
       PRODUTOS_DB_FILE: path.join(dir, 'produtos.db'), JWT_SECRET: require('node:crypto').randomBytes(32).toString('hex')
     };
+    if (flag === undefined) delete env.BSAN_LAYOUT_STUDIO;
+    else env.BSAN_LAYOUT_STUDIO = flag;
     // A API escreve a porta configurada no log. Reserve uma porta de loopback antes de iniciá-la.
     const socket = require('node:net').createServer().listen(0, '127.0.0.1');
     await once(socket, 'listening');

@@ -2,7 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const enabled = process.env.BSAN_LAYOUT_STUDIO === '1' && process.env.AUTH_REQUIRED === '1';
+const enabled = process.env.AUTH_REQUIRED === '1' && (process.env.BSAN_LAYOUT_STUDIO ?? '1') === '1';
 const assets = new Map();
 for (const file of [
   'boot.js', 'integral.js', 'integral.css', 'integral-products.js', 'integral-products.css',
