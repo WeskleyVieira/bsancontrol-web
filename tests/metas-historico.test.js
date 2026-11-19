@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const target=[path.join(__dirname,'../acompanhamento.html'),path.join(__dirname,'../../../BsanControl.html')].find(p=>fs.existsSync(p)),html=fs.readFileSync(target,'utf8');
-function runtime(){const ctx={charts:{},document:{getElementById:()=>({})},Chart:function(canvas,config){this.config=config;},_MET_TABLE_MODE:'diario',_MET_CHART_MODE:'diario',_metDetails:(key,title,body)=>body,_metBotaoAmpliar:()=>'',getComputedStyle:()=>({getPropertyValue:()=>''})};vm.createContext(ctx);const definitions=html.match(/const _MET_METRICAS=.+;/)[0];vm.runInContext(html.slice(html.indexOf('const _metNum='),html.indexOf('let _MET_VIEW='))+definitions+html.slice(html.indexOf('function _metRegraNome('),html.indexOf('function _renderGerMetas(')),ctx);return ctx;}
+function runtime(pagina=html){const ctx={charts:{},document:{getElementById:()=>({})},Chart:function(canvas,config){this.config=config;},_MET_TABLE_MODE:'diario',_MET_CHART_MODE:'diario',_metDetails:(key,title,body)=>body,_metBotaoAmpliar:()=>'',getComputedStyle:()=>({getPropertyValue:()=>''})};vm.createContext(ctx);const definitions=pagina.match(/const _MET_METRICAS=.+;/)[0];vm.runInContext(pagina.slice(pagina.indexOf('const _metNum='),pagina.indexOf('let _MET_VIEW='))+definitions+pagina.slice(pagina.indexOf('function _metRegraNome('),pagina.indexOf('function _renderGerMetas(')),ctx);return ctx;}
 function fixture(month='2026-10',closed=true,afil=0){const days=new Date(Number(month.slice(0,4)),Number(month.slice(5)),0).getDate(),op='Empresa · Amazon',rows=Array.from({length:days},(_,i)=>({date:month+'-'+String(i+1).padStart(2,'0'),emp:'Empresa',mkt:'Amazon',fatMetas:100,mcMetas:20})),L=[{mes:month,operacao:op,faturamento:100*days,mc_bruto:20*days,margem_cont:19*days-afil,ads:days,afiliados:afil,fechado_em:closed?'2026-11-01':null,bonus_final_rs:77.12,progresso_metas:80,teto_pct:10}],D=[{mes:month,operacao:op,DreFat:100*days,DreMc:20*days,DreMargem:19*days-afil,Faturamento_obj:4000,Faturamento_real:100*days,Faturamento_peso:1,MC_obj:.2,MC_peso:1,Ads_obj:50,Ads_real:days+afil,Ads_peso:1,TACOS_obj:.05,TACOS_peso:1,Afiliados:afil}],ads=rows.map(r=>({data:r.date,emp:r.emp,mkt:r.mkt,inv:1}));return{rows,L,D,ads,days};}
 function calculate(c,f,now='2026-11-05T12:00:00Z'){const M=c._metModel(f.L,f.D,f.rows,[],{mes:f.L[0].mes,now});return{M,R:c._metRoute(M,f.ads)};}
 for(const month of ['2026-08','2026-09','2026-10'])test(month+': fechamento da comissão não apaga faturamento diário conciliado',()=>{const c=runtime(),f=fixture(month),{M,R}=calculate(c,f);assert.equal(M.congelado,true);assert.equal(M.ops[0].concilia,true);assert.equal(R.ok,true);assert.equal(R.rows[0].real.fat,100);assert.equal(R.pos.acumReal.fat,100*f.days);assert.equal(R.rows.length,f.days);});
@@ -13,7 +13,7 @@ test('afiliados sem abertura diária deixam somente o componente campanha dispon
 test('TACOS parcial acumulado usa gasto e faturamento acumulados do mesmo recorte',()=>{const c=runtime(),f=fixture('2026-10',true,5);f.rows[1].fatMetas=300;f.L[0].faturamento+=200;f.D[0].DreFat+=200;f.D[0].Faturamento_real+=200;const {R}=calculate(c,f);assert.equal(R.rows[1].acumReal.tacosCamp,2/400);assert.notEqual(R.rows[1].acumReal.tacosCamp,(1/100+1/300)/2);});
 test('gráficos e demonstrativo identificam componente parcial sem marcar o indicador completo',()=>{const c=runtime(),f=fixture('2026-10',true,5),{R}=calculate(c,f);c._metRouteChart(R,'tacos','acumulado');const chart=c.charts['c-met-rota'].config;assert(chart.data.datasets.some(d=>d.label==='TACOS de campanha (sem afiliados)'&&d.data[30]===1));assert(!chart.data.datasets.some(d=>d.label==='Realizado acumulado'));const table=c._metDemonstrativoHTML(R,'tacos');assert(table.includes('campanha sem afiliados'));assert(table.includes('1,00%'));});
 test('fonte de Ads ausente conserva comparação mensal, sem criar gasto diário',()=>{const c=runtime(),f=fixture();f.ads=[];const {R}=calculate(c,f);assert.equal(R.adsReportValid,false);assert.equal(R.rows[0].real.ads,null);assert(c._metRotaHTML(R,'ads').includes('data-met-publicidade="mensal"'));});
-test('integração remove guardas legadas repetidas e é idempotente em CRLF',()=>{const {apply}=require('../visual/integrar'),out=apply(html.replace(/\r?\n/g,'\r\n'));assert.equal(apply(out),out);assert.equal(out.split('return _metPublicidadeMensalChart(R,k);').length-1,1);assert.equal(out.split('return painel+_metPublicidadeMensalHTML(R,k);').length-1,1);assert(out.includes('A comissão publicada permanece congelada'));});
+test('integração remove guardas legadas repetidas e é idempotente em CRLF',()=>{const {apply}=require('../visual/integrar'),out=apply(html.replace(/\r?\n/g,'\r\n'));assert.equal(apply(out),out);assert.equal(out.split('_metPublicidadeMensalChart(R,k);').length-1,1);assert.equal(out.split('return painel+_metPublicidadeMensalHTML(R,k);').length-1,1);assert(out.includes('A comissão publicada permanece congelada'));});
 
 test('orçamento diário distingue plano, saldo após o corte e cobertura parcial',()=>{
  const {incluirOrcamentoDiario}=require('../visual/metas-historico-correcoes');
@@ -34,4 +34,31 @@ test('orçamento diário distingue plano, saldo após o corte e cobertura parcia
  assert.match(parcial,/Aguardando conciliação/);
  const fim=calculate(c,fixture()).R;
  assert.match(c._metOrcamentoDiarioHTML(fim),/O mês terminou/);
+});
+
+test('Ads e TACOS conservam gráfico e demonstrativo quando só existe apuração mensal',()=>{
+ const pagina=require('../visual/dados-operacao-correcoes').corrigirMetasPublicidade(html);
+ const c=runtime(pagina),{M}=calculate(c,fixture());
+ for(const k of ['ads','tacos']){
+  const R=c._metRoute(M,[],5);
+  for(const modo of ['diario','acumulado']){
+   c._MET_TABLE_MODE=modo;
+   const tela=c._metPublicidadeMensalHTML(R,k);
+   assert.match(tela,/Resultado diário e posição acumulada/);
+   assert.match(tela,/Dia selecionado · 05\/10/);
+   assert.match(tela,/Acumulado até 05\/10/);
+   assert.match(tela,/class="met-table met-daily-table"/);
+   assert.match(tela,/<td>—<\/td><td>—<\/td>/);
+   c._metRouteChart(R,k,modo);
+   const diaria=c.charts['c-met-rota'].config.data;
+   assert.equal(diaria.labels.length,31);
+   const plano=modo==='diario'?R.rows[4].plan:R.rows[4].acumPlan;
+   assert.equal(diaria.datasets.length,1);
+   assert.equal(diaria.datasets[0].data[4],plano[k]*(k==='tacos'?100:1));
+   assert.deepEqual(Array.from(c.charts['c-met-publicidade-mensal'].config.data.labels),['2026-10']);
+  }
+  const futuro=c._metRoute({...M,futuro:true},[],0);
+  assert.doesNotThrow(()=>c._metRouteChart(futuro,k));
+  assert.match(c._metPublicidadeMensalHTML(futuro,k),/sem dia apurado/);
+ }
 });
