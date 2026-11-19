@@ -190,14 +190,17 @@
    const legend=make('ul','studio-met-day-legend');
    const selected=routePanel.parentElement.querySelector('.met-objetivo[aria-pressed=true]');
    const isCost=selected?.matches('#met-indicador-ads,#met-indicador-tacos');
-   for(const [tone,label]of [
+   const observado=calendar.hasAttribute('data-met-observado');
+   for(const [tone,label]of observado?[
+    ['selected','Dia selecionado'],['neutral','• Mídia informada'],['neutral','· Sem medição']
+   ]:[
     ['selected','Fundo colorido · dia selecionado'],
     ['good',isCost?'✓ Dentro do limite':'✓ No plano ou acima'],
     ['attention',isCost?'! Acima do limite':'! Abaixo do plano'],
     ['neutral','· Sem comparação neste dia']
    ])legend.append(make('li','studio-met-'+tone,label));
    picker.append(make('h4','','Dia de análise'),hint);
-   if(reference)picker.append(make('p','studio-met-day-hint','Referência usada · '+reference));
+   if(reference&&!observado)picker.append(make('p','studio-met-day-hint','Referência usada · '+reference));
    heading.after(picker);
    move(calendar,picker);
    picker.append(legend);
