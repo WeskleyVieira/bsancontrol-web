@@ -55,6 +55,11 @@
     if(n.matches(pageControls)){controls.push(n);return;}
     if(n.id==='com-tbl'){push(n,'list','Comissão por operação',true,{sequence:22,layoutSize:'full',keepHeadings:true,canExpand:false});return;}
     if(n.id==='com-det'){if(n.children.length)push(n,'list','Composição e histórico da operação',true,{sequence:24,layoutSize:'full',keepHeadings:true,canExpand:false});return;}
+    if(n.matches('.met-orcamento-diario,section[aria-labelledby="met-resumo"],section[aria-labelledby="met-prioridades"],#met-operacao')){
+     const heading=n.querySelector('h3');
+     push(n,'list',textOf(heading),true,{sequence:n.matches('.met-orcamento-diario')?12:16,layoutSize:'full',keepHeadings:true,nativeTitle:true,canExpand:false,sourceId:n.id||n.getAttribute('aria-labelledby')});
+     return;
+    }
     if(n.matches('.met-objetivos,.met-rota')){const objectives=n.matches('.met-objetivos');push(n,'list',objectives?'Objetivos do mês':'Rota e histórico',true,{sequence:objectives?13:14,layoutSize:'full',sourceId:objectives?'met-objetivos':'met-rota'});return;}
     if(n.matches('.met-planejamento')){push(n,'help',titleOf(n,'Planejamento e referências'),true,{sequence:15,sourceId:'met-planejamento'});return;}
     if(n.matches('.ger-agenda-margin')){

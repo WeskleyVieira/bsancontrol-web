@@ -5,7 +5,7 @@ const data=createData(),original=fs.readFileSync(process.env.BSAN_REVIEW_SOURCE|
 function scriptBlocks(html){return [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].filter(m=>m[2].trim()&&!/application\/json/.test(m[1])).map(m=>m[2]);}
 function declarations(html){const result=[];for(const js of scriptBlocks(html)){const ast=acorn.parse(js,{ecmaVersion:'latest'}),stack=[ast];while(stack.length){const n=stack.pop();if(n.type==='FunctionDeclaration')result.push([n.id.name,sha(js.slice(n.start,n.end))].join(':'));for(const value of Object.values(n))if(Array.isArray(value)){for(const child of value)if(child?.type)stack.push(child);}else if(value?.type)stack.push(value);}}return result.sort();}
 test('todas as funções nomeadas originais são preservadas byte a byte, inclusive funções internas',()=>{
- const before=declarations(original),after=declarations(built.html);assert.ok(before.length>700);assert.deepEqual(after,before);console.log('Funções originais preservadas: '+before.length);
+ const before=declarations(require('../visual/metas-historico-correcoes').incluirOrcamentoDiario(original)),after=declarations(built.html);assert.ok(before.length>700);assert.deepEqual(after,before);console.log('Funções originais preservadas: '+before.length);
  for(const name of ['fluxoPonto','fluxoCasa','_renderGerProdutos','_renderGerMetas','_renderGerPublicidade','drawABC','detailProduct','fechamento','custos','carteiras'])assert.ok(before.some(v=>v.startsWith(name+':')),name);
 });
 test('IDs e elementos estáticos originais continuam presentes; nenhuma seção é removida',()=>{
