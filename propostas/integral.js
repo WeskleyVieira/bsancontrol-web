@@ -1,8 +1,9 @@
 /* Nova apresentação sobre os componentes originais. Nenhum renderizador de negócio é substituído. */
 (function(){'use strict';
  const $=id=>document.getElementById(id),el=(t,c,text)=>{const n=document.createElement(t);if(c)n.className=c;if(text!=null)n.textContent=text;return n;};
- const prefs=new Map(),registry=new Map();let lastRoute='',scheduled=false,expanded=null,studio=null,lastView=null,pendingOrigin=null;const trail=[];
+ const prefs=new Map(),registry=new Map();let lastRoute='',expanded=null,studio=null,lastView=null,pendingOrigin=null;const trail=[];
  const preferenceIdentity=String(BCAUTH.user.id),ui=window.BCReviewPreferenceStore||BCReviewPreferences.create(localStorage,preferenceIdentity);
+ const schedule=BCReviewStudio.presentationUpdates(sync,'.review-ui,.studio-ui');
  const alias={'r-geral':'overview','r-diario':'diario','r-canais':'marketplaces','r-abc':'abc','r-forecast':'forecast','v-lista':'vendas','v-raiox':'raiox','g-vendas':'ger-vendas',diagnostico:'diag',anuncios:'produtos','g-forecast':'previsao',publicidade:'ads','g-metas':'metas','g-full':'full','o-envios':'envios','o-estoque':'estoque','o-projecao':'projecao','pv-fila':'pv-fila','a-tarefas':'tarefas','a-promocoes':'promos','a-ads':'ac-ads','a-alinhamentos':'alinhamentos','a-pendencias':'pendencias','f-dre':'dre','f-comissao':'comissao','f-fechamento':'gestao-fechamento','f-custos':'gestao-custos','f-carteiras':'gestao-carteiras'};
  const modes={'p-catalogo':'catalog','p-pendencias':'tasks','p-entradas':'entries','p-materiais':'materials','p-embalagens':'pack','p-preparacao':'prep','p-homologacao':'review','p-apuracao':'sales','p-atualizacao':'sync','p-integracao':'publication'};
  const button=(t,fn,cls='')=>{const b=el('button',cls,t);b.type='button';b.onclick=fn;return b;};
@@ -170,7 +171,6 @@
  function goBack(){const origin=trail.pop();if(!origin)return;pendingOrigin=null;lastView=null;restore();studio?.restore();PONTO_SEL=origin.ponto;BCNav.company=origin.company;BCNav.marketplace=origin.marketplace;BCNav.month=origin.month;for(const[id,value]of Object.entries(origin.dates))if($(id))$(id).value=value;if(typeof cmpMode!=='undefined')cmpMode=origin.compare;if(typeof bcNavRefresh==='function')bcNavRefresh();const[g,i]=origin.route.split('/');open(g,i);}
  const backButton=button('Voltar',goBack,'review-context-back review-ui');workspace.prepend(backButton);backButton.hidden=true;
  function sync(){
-  scheduled=false;
   if(expanded&&!modal.isConnected){
    modal.close();
    restore();
@@ -188,7 +188,7 @@
   decorate();
  }
  document.addEventListener('close',()=>schedule(),true);
- function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(sync);}
+
  const generatedChrome='.review-ui,.studio-ui,[data-studio-owned=true],.bc-reading-guide,.bc-viz-tools,.bc-table-tools';
  new MutationObserver(records=>{
   const sourceChanged=records.some(record=>!record.target.closest?.(generatedChrome)&&[...record.addedNodes].some(node=>
@@ -197,7 +197,6 @@
  }).observe(document.body,{childList:true,subtree:true});
  const oldGo=goPage;goPage=function(){restore();studio?.restore();const result=oldGo.apply(this,arguments);schedule();return result;};
  document.addEventListener('click',e=>{if(!e.target.closest('.studio-ui,.review-ui')&&e.target.closest('button,a,canvas'))pendingOrigin=snapshot();},true);
- document.addEventListener('change',e=>{if(!e.target.closest('.review-ui,.studio-ui'))schedule();});document.addEventListener('click',e=>{if(!e.target.closest('.review-ui,.studio-ui'))schedule();});
  document.body.classList.add('review-integral');document.body.classList.toggle('light',ui.theme==='light');document.body.classList.toggle('review-sidebar-collapsed',ui.collapsed);if(typeof isDark!=='undefined')isDark=ui.theme==='dark';document.documentElement.style.colorScheme=ui.theme;document.body.style.colorScheme=ui.theme;
  const originalToggleTheme=toggleTheme;toggleTheme=function(){const result=originalToggleTheme.apply(this,arguments);ui.setTheme(document.body.classList.contains('light')?'light':'dark');return result;};
  if($('d-start'))$('d-start').value='2026-11-01';if($('d-end'))$('d-end').value='2026-11-16';
