@@ -512,5 +512,32 @@
   }
   return{compose,restore,openLibrary,isManaged:n=>moving.has(n)||n.nodeType===1&&(n.dataset.studioOwned||n.dataset.studioManaged),scan:()=>({version:3,route,revision,widgets:widgets.map(i=>({id:i.id,title:i.title,kind:i.kind,size:state.sizes[i.id]||i.size,visible:i.widget.dataset.studioHidden!=='true',required:i.required})),tables:widgets.filter(i=>i.kind==='table').length,charts:widgets.filter(i=>i.kind==='chart').length})};
  }
- window.BCReviewStudio={create};
+ // Reorganizar widgets pode desanexar a tabela e fechar o seletor nativo.
+ function presentationUpdates(refresh,uiSelector){
+  let pending=false;
+  const detectaSeletorAberto=CSS.supports('selector(select:open)');
+  function run(){
+   const frame=document.activeElement;
+   if(detectaSeletorAberto&&(document.querySelector('select:open')||
+      (frame?.tagName==='IFRAME'&&frame.contentDocument?.querySelector('select:open')))){
+    setTimeout(run,120);
+    return;
+   }
+   pending=false;
+   refresh();
+  }
+  function schedule(){
+   if(pending)return;
+   pending=true;
+   requestAnimationFrame(run);
+  }
+  document.addEventListener('click',event=>{
+   const alvo=event.target;
+   if(alvo.closest(uiSelector)||alvo.closest('select')||alvo.closest('label')?.control?.matches('select'))return;
+   schedule();
+  });
+  document.addEventListener('change',event=>{if(!event.target.closest(uiSelector))schedule();});
+  return schedule;
+ }
+ window.BCReviewStudio={create,presentationUpdates};
 })();
