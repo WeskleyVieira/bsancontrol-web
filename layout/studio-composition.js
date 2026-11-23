@@ -21,6 +21,7 @@
  function titleOf(n,fallback){return (textOf(n.querySelector(':scope>h2,:scope>h3,:scope>h4,:scope>summary,.cc-title,.chart-title,.met-quick-title h3,.kpi-eye'))||n.querySelector('canvas')?.getAttribute('aria-label')||fallback).replace(/^[^\p{L}\p{N}]+/u,'');}
  function sourceVisible(n,page){for(let p=n;p&&p!==page;p=p.parentElement){if(p.hidden||getComputedStyle(p).display==='none')return false;if(p.matches('details:not([open])')&&n!==p&&!p.querySelector(':scope>summary')?.contains(n))return false;}return true;}
  function create(options){
+  const expandedCardDetails=new Set();
   let state=null,working=false,placements=[],cleanup=[],widgets=[],host=null,primary=null,advanced=null,about=null,page=null,route='',library=null,filterText='',dragId='',revision=0;
   const moving=new WeakSet();
   let guideRoute='';
@@ -44,6 +45,19 @@
    }
    function walk(n){if(n.nodeType!==1||n.matches(skip)||!sourceVisible(n,root))return;
     if(n.matches('.bc-reading-guide'))return;
+    if(n.id==='res-market-rank'){push(n,'list',titleOf(n,'Top 10 de produtos'),true,{layoutSize:'full'});return;}
+    if(n.id==='res-overview-diagnosis'){push(n,'list',titleOf(n,'Raio-X da seleção'),true,{sequence:21,layoutSize:'full'});return;}
+    if(n.closest('#res-forecast-products')){
+     const groups=[
+      ['.fc-finder','Buscar produto',10],['.ger-context','Período e referência',11],
+      ['.ger-controls.fc-controls','Parâmetros da projeção',12],['#fc-advanced','Ajustar método e cenário',13],
+      ['details:has(.fc-operation-picker)','Operações na soma',14],['.fc-statuses','Ritmo dos produtos',15],
+      ['.fc-kpis','Resumo da seleção',16],['.fc-risk','Alertas de produtos Curva A',17]
+     ];
+     const group=groups.find(g=>n.matches(g[0]));
+     if(group){push(n,n.matches('details')?'help':'list',group[1],true,{sequence:group[2],layoutSize:'full',canExpand:false});return;}
+    }
+    if(n.closest('#res-diario')&&n.matches(cardSelector)){push(n,'kpi',titleOf(n,'Indicador'),true,{layoutSize:'third'});return;}
     if(n.id==='ger-empty'){
      if(textOf(n))controls.push(n);
      return;
@@ -66,7 +80,7 @@
      push(n,'help','Resultado da operação',false,{defaultVisible:true,sequence:12,sourceId:'ger-agenda-margin'});
      return;
     }
-    if(n.matches('.res-goal-strip')){push(n,'list',textOf(n.querySelector(':scope>strong'))||'Meta de faturamento do mês',true,{sequence:20.5,layoutSize:'third',sourceId:'res-goal-strip'});return;}
+    if(n.matches('.res-goal-strip')){push(n,'list',textOf(n.querySelector(':scope>strong'))||'Meta de faturamento do mês',true,{sequence:20.5,layoutSize:'full',sourceId:'res-goal-strip'});return;}
     if(n.querySelector(':scope>.res-share-track')){push(n,'list','Participação dos canais',true,{sequence:20.6,layoutSize:'wide',sourceId:'res-share-track'});return;}
     if(n.id==='res-forecast-pacing'){
      push(n,'list','Ritmo do mês e distância para a meta',false,{
@@ -94,6 +108,7 @@
      return;
     }
     if(n.matches('.op-context,.ger-context,.sum-intro,.res-coverage,.sum-intro-copy')){support.push(n);for(const action of n.querySelectorAll('button,a[href]'))controls.push(action);return;}
+    if(n.closest('#res-diario')&&n.matches(cardGroups)){for(const child of n.children)walk(child);return;}
     if(n.matches(cardGroups)){
      const cards=[...n.children].filter(c=>c.matches(cardSelector)||c.matches('article')&&c.querySelector('.sum-value,.kpi-val'));
      if(cards.length){
@@ -318,13 +333,23 @@
     if(route==='resultados/overview'&&/^(Ticket:|TACOS:)/.test(t))continue;
     if(p.matches('.sum-delta')||/^[+−-].*(?:R\$|%|p\.p\.)/.test(t)){
      p.classList.add('studio-kpi-comparison');
-     cleanup.push(()=>p.classList.remove('studio-kpi-comparison'));
+     if(route==='resultados/overview'&&['Faturamento','Unidades','Pedidos identificados'].includes(item.title)&&/^[+−-]/.test(t)){
+      p.dataset.overviewChange=t.startsWith('+')?'up':'down';
+     }
+     cleanup.push(()=>{p.classList.remove('studio-kpi-comparison');delete p.dataset.overviewChange;});
      continue;
     }
     move(p,details);
     count++;
    }
-   if(count){n.append(own(details));cleanup.push(()=>details.remove());const value=textOf(n.querySelector('.sum-value,.kpi-val,strong'));if(!value.includes('%')){const ratio=textOf(details).match(/[-−+]?\d[\d.,]*\s*%[^·.;]{0,28}/);if(ratio&&/margem|pos.ads|pre.ads/i.test(C.normalize(item.title))){const foot=own(make('small','studio-kpi-foot',ratio[0]));n.append(foot);cleanup.push(()=>foot.remove());}}}
+   if(count){
+    details.open=expandedCardDetails.has(item.id);
+    n.append(own(details));
+    cleanup.push(()=>{
+     if(details.open)expandedCardDetails.add(item.id);else expandedCardDetails.delete(item.id);
+     details.remove();
+    });
+    const value=textOf(n.querySelector('.sum-value,.kpi-val,strong'));if(!value.includes('%')){const ratio=textOf(details).match(/[-−+]?\d[\d.,]*\s*%[^·.;]{0,28}/);if(ratio&&/margem|pos.ads|pre.ads/i.test(C.normalize(item.title))){const foot=own(make('small','studio-kpi-foot',ratio[0]));n.append(foot);cleanup.push(()=>foot.remove());}}}
    const value=n.querySelector('.sum-value,.kpi-val,strong');if(value){const hint=textOf(details);if(/parcial/i.test(item.title+' '+hint)||/estimad|rateio/i.test(hint)){const flag=make('span','studio-estimate',/parcial/i.test(item.title+' '+hint)?'Parcial':'Estimado');n.append(own(flag));cleanup.push(()=>flag.remove());}}
    const drill=options.drilldown?.(item);if(drill&&!n.querySelector('button')){const link=own(btn(drill.label,drill.run,'studio-kpi-open studio-ui'));n.append(link);cleanup.push(()=>link.remove());}
    n.classList.add('studio-kpi-native');cleanup.push(()=>n.classList.remove('studio-kpi-native'));
@@ -392,7 +417,7 @@
    if(item.kind==='kpi'){w.classList.add('studio-kpi');compactCard(w,item);}
    else if(item.kind!=='help'){
     if(!item.keepHeadings){
-     const selector=w.matches('.res-goal-strip')?':scope>strong':':scope>h2,:scope>h3,:scope>h4,:scope>.cc-hdr .cc-title';
+     const selector=w.id==='res-forecast-pacing'?':scope>h2':w.matches('.res-goal-strip')?':scope>strong':':scope>h2,:scope>h3,:scope>h4,:scope>.cc-hdr .cc-title';
      for(const caption of w.querySelectorAll(selector)){caption.classList.add('studio-native-caption');cleanup.push(()=>caption.classList.remove('studio-native-caption'));}
     }
     w.prepend(head);
@@ -428,7 +453,7 @@
    if(!list.children.length)list.append(make('p','studio-empty-search','Nenhum widget encontrado nesta página.'));const footer=make('footer');footer.append(btn('Restaurar composição sugerida',()=>{state.mode='essential';state.items={};state.order=[];state.sizes={};state.tables={};save();renderLibrary();}),make('small','','Arraste um cartão para mudar a ordem ou use as setas.'));library.append(list,footer);if(focusId)library.querySelector('[data-widget-id="'+CSS.escape(focusId)+'"]')?.scrollIntoView({block:'nearest'});if(position!=null&&focused?.type==='search'){search.focus();search.setSelectionRange(position,position);}
   }
   function purpose(item){if(item.kind==='kpi')return'Acompanhe o valor e a referência. A composição detalhada fica em Detalhes.';if(item.kind==='table')return'Consulte os registros, ajuste colunas e abra o detalhe sem perder o recorte.';if(item.kind==='chart')return'Leia evolução e comparação; amplie para investigar os pontos da série.';if(item.kind==='form')return'Campos e ações do fluxo, com seus vínculos e validações preservados.';return'Identifique prioridades e aprofunde os itens deste recorte.';}
-  function compose(nextPage,nextRoute){if(working||!nextPage)return;working=true;working=false;restore();working=true;page=nextPage;route=nextRoute;revision++;const p=C.profile(route);state=options.settings();if(state.composition!==3){state.composition=3;state.items={};state.order=[];state.sizes={};state.tables={};state.mode='essential';options.persist();}state.sizes??={};state.tables??={};
+  function compose(nextPage,nextRoute){if(working||!nextPage)return;working=true;working=false;restore();if(route!==nextRoute)expandedCardDetails.clear();working=true;page=nextPage;route=nextRoute;revision++;const p=C.profile(route);state=options.settings();if(state.composition!==3){state.composition=3;state.items={};state.order=[];state.sizes={};state.tables={};state.mode='essential';options.persist();}state.sizes??={};state.tables??={};
    const resultSourceId=resultSources[route],source=resultSourceId?page.querySelector('#'+resultSourceId):page;
    if(resultSourceId){
     const currentPage=page;
