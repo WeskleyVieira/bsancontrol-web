@@ -819,3 +819,163 @@ body.review-integral .page.on.studio-active-page .studio-kpi.sum-card:has(.studi
 @media (prefers-reduced-motion:reduce){
  .studio-met-cost-picker .met-dia-chip[data-met-estado] {transition:none}
 }
+
+/* Visão Geral: as mesmas posições e proporções nos dois temas. */
+body.review-integral.light:has(#page-overview.on) {
+  --studio-field-border: #c4c0ca;
+  --studio-chrome: #fbfafc;
+}
+body.review-integral.light:has(#page-overview.on) #bc-global-context:not([hidden]) {
+  background: #fbfafc !important;
+  border-color: #e1dee6 !important;
+}
+body.review-integral.light:has(#page-overview.on) .review-sidebar button[aria-current=page] {
+  background: var(--a3);
+  color: var(--a);
+  box-shadow: none;
+  font-weight: 650;
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-kpi.sum-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto 1fr auto;
+  align-content: start;
+  align-items: start;
+  gap: 5px 10px;
+  padding: 17px 19px 11px !important;
+  background: var(--surf) !important;
+  border: 1px solid var(--bdr) !important;
+  box-shadow: var(--studio-shadow) !important;
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-kpi.sum-card > h3 {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  align-items: center;
+  justify-self: start;
+  gap: 7px;
+  padding: 0 !important;
+  background: transparent;
+  color: var(--t2) !important;
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-metric-icon {
+  width: 23px;
+  height: 23px;
+  border-radius: 7px;
+  background: var(--a3);
+  color: var(--a);
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-kpi.sum-card > .sum-value {
+  grid-area: 2 / 1 / 3 / -1;
+  color: var(--t) !important;
+  font-size: clamp(23px, 2.1vw, 31px) !important;
+  letter-spacing: -.035em;
+  line-height: 1.15 !important;
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-kpi.sum-card > :is(p,small,.studio-estimate) {
+  grid-area: 3 / 1 / 4 / -1;
+  justify-self: start;
+  align-self: start;
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-kpi > .studio-kpi-comparison {
+  padding: 2px 7px !important;
+  background: var(--surf2);
+}
+body.review-integral #page-overview.page.on.studio-active-page [data-overview-change=up] {
+  color: var(--bc-good) !important;
+  background: color-mix(in srgb, var(--bc-good) 10%, var(--surf)) !important;
+}
+body.review-integral #page-overview.page.on.studio-active-page [data-overview-change=down] {
+  color: var(--bc-bad) !important;
+  background: color-mix(in srgb, var(--bc-bad) 10%, var(--surf)) !important;
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-kpi > button.studio-kpi-open {
+  grid-area: 4 / 1;
+  justify-self: start;
+  align-self: center;
+  margin: 6px 0 0 !important;
+  padding: 4px 0 !important;
+  border: 0 !important;
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-kpi > .studio-kpi-detail {
+  grid-area: 4 / 2;
+  justify-self: end;
+  align-self: center;
+  margin-top: 6px;
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-kpi-detail > summary {
+  color: var(--t2);
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-kpi > .studio-kpi-detail[open] {
+  grid-area: 5 / 1 / 6 / -1;
+  justify-self: stretch;
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-kpi .studio-daily-trend {
+  position: static;
+  grid-area: 2 / 2 / 4 / 3;
+  align-self: center;
+  justify-self: end;
+  width: clamp(48px, 15cqi, 82px);
+}
+body.review-integral #page-overview.page.on.studio-active-page .studio-kpi:has(.studio-daily-trend) > :is(.sum-value,p,small) {
+  grid-column-end: 2;
+}
+@container (max-width: 320px) {
+  body.review-integral #page-overview.page.on.studio-active-page .studio-kpi .studio-daily-trend {
+    position: static;
+    display: flex;
+    grid-area: 4 / 1 / 5 / -1;
+    justify-self: start;
+    width: auto;
+  }
+  body.review-integral #page-overview.page.on.studio-active-page .studio-kpi:has(.studio-daily-trend) > :is(.sum-value,p,small) {
+    grid-column-end: -1;
+  }
+  body.review-integral #page-overview.page.on.studio-active-page .studio-kpi:has(.studio-daily-trend) > :is(button.studio-kpi-open,.studio-kpi-detail) {grid-row: 5}
+  body.review-integral #page-overview.page.on.studio-active-page .studio-kpi:has(.studio-daily-trend) > .studio-kpi-detail[open] {grid-row: 6}
+}
+
+/* O placar principal mantém as medidas pré e pós na mesma célula. */
+#res-diario .diary-compact .diary-ranking-table{min-width:0;width:100%}
+#res-diario .diary-compact .diary-ranking-table :is(th,td){min-width:0;white-space:normal;padding:8px 5px}
+#res-diario .diary-compact .diary-ranking-table :is(th,td):is(:first-child,:nth-child(2)){position:static;width:auto;min-width:0;max-width:none}
+#res-diario .diary-compact .diary-ranking-table :is(.sum-button,.op-operation){min-width:0;white-space:normal!important}
+#res-diario .diary-analysis-bars{max-height:24rem;overflow:auto;scrollbar-gutter:stable}
+body.review-integral #res-diario .diary-bubble-frame,
+body.review-integral #res-diario .diary-bubble-frame .bc-viz-frame{height:clamp(360px,36vw,520px)!important}
+#res-forecast-products .fc-finder{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+#res-forecast-products .fc-finder :is(input,select){flex:1 1 240px;min-width:0;max-width:100%}
+#res-forecast-products .fc-finder :is(.studio-widget-head,p){flex-basis:100%}
+#res-forecast-products .fc-kpis.studio-widget,#res-forecast-products .fc-statuses.studio-widget{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(9rem,calc((100% - 48px)/5))),1fr));gap:12px}
+#res-forecast-products .fc-kpis.studio-widget{grid-template-columns:repeat(auto-fit,minmax(min(100%,max(13rem,calc((100% - 24px)/3))),1fr))}
+#res-forecast-products :is(.fc-kpis,.fc-statuses,.fc-controls)>.studio-widget-head{grid-column:1/-1;flex-basis:100%}
+
+
+@media(min-width:1050px){
+  #res-diario .diary-compact .diary-ranking-table{table-layout:fixed}
+  #res-diario .diary-compact .diary-ranking-table th:nth-child(2){width:13%}
+  #res-diario .diary-compact .diary-ranking-table th:first-child{width:8%}
+  #res-diario .diary-compact :is(.diary-delta,.sum-button,.diary-value){white-space:normal!important;max-width:100%}
+}
+
+#res-diario .diary-ranking-table .diary-metric-cell{display:grid;gap:.25rem;min-width:0}
+#res-diario .diary-ranking-table .diary-metric-cell>small{display:block;white-space:normal;line-height:1.35;color:var(--bc-muted)}
+#res-diario .diary-compact .diary-ranking-table{min-width:56rem}
+#res-diario .diary-ranking-table :is(.diary-metric-cell,.diary-rank,.diary-score){overflow-wrap:break-word}
+body.review-integral .res-chart-grid>.studio-widget.studio-kind-chart{align-self:stretch}
+body.review-integral .page.on .res-chart-grid>.studio-single-chart:not([data-studio-hidden=true],[hidden]):has(>.op-chart-frame){
+  display:flex!important;flex-direction:column
+}
+body.review-integral .page.on .res-chart-grid>.studio-single-chart>.op-chart-frame{
+  flex:1 0 260px;min-height:260px!important
+}
+.res-ranking-accounts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:1rem}
+.res-ranking-account{min-width:0;border:1px solid var(--bc-border);background:var(--bc-surface);border-radius:12px;padding:1rem}
+.res-ranking-account h3{margin:0 0 .6rem;color:var(--bc-text)}
+.res-ranking-account ol{padding:0;margin:0;list-style:none;counter-reset:rank}
+.res-ranking-account li{display:grid;grid-template-columns:2ch minmax(0,1fr) auto;gap:.5rem;align-items:baseline;padding:.4rem 0;border-top:1px solid var(--bc-border);counter-increment:rank;font-variant-numeric:tabular-nums}
+.res-ranking-account li::before{content:counter(rank);color:var(--bc-muted)}
+.res-ranking-account .res-ranking-sku{min-width:0;min-height:0;padding:0;border:0;background:transparent;text-align:start;overflow-wrap:anywhere;color:var(--bc-accent);font:inherit;cursor:pointer}
+.res-ranking-sku:hover{text-decoration:underline}
+#res-forecast-products .fc-kpis.studio-widget>.fc-kpi{border:1px solid var(--bc-border);background:color-mix(in srgb,var(--fc-tone,var(--bc-info)) 4%,var(--bc-surface));padding:1rem!important}
+#res-forecast-products .fc-kpis.studio-widget .fc-kpi-value{color:var(--bc-text);line-height:1.25}
+#res-forecast-products .fc-statuses>button{width:100%;min-width:0;height:100%;justify-content:space-between}

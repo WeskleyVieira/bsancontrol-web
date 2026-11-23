@@ -26,3 +26,21 @@ test('base curta usa média, e teste com vendas zero não fabrica WAPE',()=>{con
 test('ritmo semanal repete padrões somente com histórico suficiente',()=>{const calendar=F.dates('2026-08-01','2026-09-18'),values=calendar.map(d=>new Date(d+'T00:00:00Z').getUTCDay()===0?100:10),fit=F.fit(values,calendar,'weekday');assert.equal(fit.key,'weekday');assert.equal(F.predict(values,calendar,['2026-09-20'],'weekday')[0],100);assert.equal(F.fit([1],['2026-11-01'],'weekday').key,'mean');});
 test('unidades podem dirigir a rota sem substituir a comparação de faturamento',()=>{const rows=fixture().map(r=>r.date.startsWith('2026-11')?{...r,fat:200,qtd:1}:r),fat=F.model(rows,options),qty=F.model(rows,{...options,metric:'qtd'});assert.equal(fat.items[0].status.key,'above');assert.equal(qty.items[0].status.key,'below');assert.equal(qty.items[0].projected.qtd,30);});
 test('períodos e parâmetros inválidos são recusados',()=>{assert.throws(()=>F.model(fixture(),{...options,from:'2026-02-30'}),/período/);assert.throws(()=>F.model(fixture(),{...options,variation:200}),/parâmetros/);});
+
+test('referências trimestral, semestral e anual terminam antes do mês consultado',()=>{
+ for(const [mode,start] of [['quarter','2026-08-01'],['semester','2026-05-01'],['year','2025-11-01']]){
+  const ref=F.reference('2026-11-15','2026-11-18',mode);
+  assert.equal(ref.from,start);assert.equal(ref.to,'2026-10-31');
+ }
+});
+test('treino histórico usa vendas anteriores e sinaliza uma referência com meses inteiros ausentes',()=>{
+ const days=F.dates('2026-08-01','2026-11-06');
+ const rows=days.map(d=>row(d));
+ const conf={...options,mode:'sku',method:'history',referenceMode:'quarter'};
+ const complete=F.model(rows,conf).items[0];
+ assert.equal(complete.historyTraining,true);assert.equal(complete.activeDays,6);
+ assert.equal(complete.projected.fat,3000);assert.equal(complete.fit.validation.folds,3);
+ const missing=F.model(rows.filter(r=>!r.date.startsWith('2026-09')),conf).items[0];
+ assert.equal(missing.historyTraining,false);assert.equal(missing.referenceKnown,false);
+ assert.equal(missing.status.key,'no-reference');
+});

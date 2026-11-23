@@ -121,7 +121,7 @@
  }
  function preset(mode){settings().mode=mode;settings().items={};persist();apply();}
  const modal=el('dialog','review-dialog review-ui');modal.setAttribute('aria-labelledby','review-dialog-title');document.body.append(modal);modal.addEventListener('close',restore);
- function dialog(title){restore();modal.replaceChildren();const head=el('header'),h=el('h2','',title);h.id='review-dialog-title';modal.classList.remove('review-full');
+ function dialog(title,owner=document.body){restore();if(modal.parentElement!==owner)owner.append(modal);modal.replaceChildren();const head=el('header'),h=el('h2','',title);h.id='review-dialog-title';modal.classList.remove('review-full');
   const full=button('Tela cheia',()=>{
    const large=modal.classList.toggle('review-full');
    full.textContent=large?'Restaurar tamanho':'Tela cheia';
@@ -135,8 +135,8 @@
   const scope=widget.closest('#met-root');
   const marker=el('div','review-placeholder');
   marker.style.minHeight=widget.offsetHeight+'px';
-  if(scope)scope.append(modal);
-  const host=dialog(title);
+  const owner=scope||widget.parentElement;
+  const host=dialog(title,owner);
   widget.before(marker);
   host.append(widget);
   expanded={widget,marker,scope};

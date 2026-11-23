@@ -6,7 +6,7 @@ const finished="LOWER(TRIM(COALESCE(status,''))) IN ('venda','venda_com_troca')"
 const revenue="CAST(COALESCE(receita_n,CAST(NULLIF(TRIM(CAST(receita AS TEXT)),'') AS NUMERIC)) AS DOUBLE PRECISION)";
 function parameters(q,today){
  if(!F.iso(q.de)||!F.iso(q.ate)||q.de>q.ate||F.span(q.de,q.ate)>180)throw bad('Selecione um período válido de até 180 dias.');
- const mode=q.referencia||'month';if(!['month','month-full','previous','header'].includes(mode))throw bad('Referência inválida.');
+ const mode=q.referencia||'month';if(!['month','month-full','quarter','semester','year','previous','header'].includes(mode))throw bad('Referência inválida.');
  if(mode==='header'&&(q.refDe||q.refAte)&&(!F.iso(q.refDe)||!F.iso(q.refAte)))throw bad('Datas de referência inválidas.');
  return{from:q.de,to:q.ate,limit:[q.ate,F.add(today,-1)].sort()[0],mode,chosen:q.refDe&&q.refAte?[q.refDe,q.refAte]:null};
 }
