@@ -11,7 +11,7 @@
  ['gerencial/ger-vendas','Confira as vendas da operação, do anúncio à composição financeira.','list','faturamento|unidades|pedidos|pos-ads|margem','vendas'],
  ['gerencial/diag','Uma agenda de prioridades para investigar e tratar a operação.','dashboard','itens|faturamento|margem|prioridade','agenda|prioridades|queima|tracao|diagnostico'],
  ['gerencial/produtos','Acompanhe anúncio ou SKU, posição e contribuição para a operação.','list','faturamento|itens com vendas|pos-ads|margem negativa','evolucao|resultado por anuncio|resultado por sku'],
- ['gerencial/previsao','Compare o realizado e a projeção de cada anúncio ou SKU com o esperado.','dashboard','realizado|projecao|esperado|rota','rota|projecao|anuncios|sku|acompanhamento'],
+ ['gerencial/previsao','Acompanhe a meta, o ritmo e a projeção da operação. Consulte produtos por SKU ou anúncio.','dashboard','realizado|projecao|esperado|rota','rota|projecao|anuncios|sku|acompanhamento'],
  ['gerencial/ads','Leia mídia e afiliados com suas métricas e composições próprias.','dashboard','investimento|publicidade|receita|tacos','evolucao|campanhas|anuncios|midia'],
  ['gerencial/metas','Acompanhe o objetivo, o ritmo e a posição acumulada do mês.','dashboard','hoje|semana|posicao|objetivo','resumo dos objetivos|historico|hoje|operacoes'],
  ['gerencial/full','Antecipe reposições e confira os itens que exigem ação no Full.','dashboard','itens|unidades|reposicao|estoque','necessidade|reposicao|itens|full'],
