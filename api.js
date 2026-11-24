@@ -36,6 +36,9 @@ const vendasExportacao = require('./vendas-exportacao');
 const posVenda = require('./pos-venda').createService(dbx);
 const posVendaHttp = require('./pos-venda-http').createHttp(posVenda);
 const gestaoHttp = require('./gestao').createHttp(dbx, { writeStore });   // Financeiro da Direção: fechamento, custos e carteiras
+const { criarServicoTokens, ehTokenServico } = require('./servico-tokens');   // tokens de serviço só de leitura (Otto, 24/11/2026)
+const tokensServico = criarServicoTokens(dbx);
+const leituraConsultas = require('./leitura-consultas');                     // /api/leitura/* — rotas enxutas p/ IA/integrações
 
 const PORT = process.env.PORT || 8787;
 const AUTH_REQ = process.env.AUTH_REQUIRED === "1";                      // em produção: 1 (exige login)
@@ -84,7 +87,21 @@ const body = req => new Promise(r => { let b = ""; req.on("data", c => b += c); 
 // Relê ativo e perfil no banco. O token só prova a assinatura; o perfil de doze horas atrás não vale.
 async function sessaoDe(req) {
   const h = req.headers["authorization"] || "";
-  const tok = verificaToken(h.replace(/^Bearer\s+/i, ""));
+  const bruto = h.replace(/^Bearer\s+/i, "").trim();
+  // TOKEN DE SERVIÇO (24/11/2026 — Otto): só leitura, herda perfil e restrições do usuário dono; a trava fica AQUI porque toda rota
+  // (inclusive Produtos, que resolve a sessão antes das demais) passa por esta função. Cada uso fica registrado.
+  if (ehTokenServico(bruto)) {
+    const ts = await tokensServico.resolver(bruto);
+    const pu = new URL(req.url, "http://x");
+    if (!ts) return { recusado: 401, erro: "token de serviço inválido, vencido ou revogado" };
+    const ok = tokensServico.permitido(req.method, pu.pathname);
+    tokensServico.registrar(ts.tokenId, req.method, pu.pathname, pu.search, ok);
+    if (!ok) return { recusado: 403, erro: "token de serviço é só de leitura (GET) e não alcança administração, financeiro da direção, pós-venda nem produtos" };
+    const us = await usuarios.sessao(ts.usuarioId, ts.revogacao, false);
+    if (!us) return { recusado: 401, erro: "o usuário deste token foi desativado ou teve o acesso revogado" };
+    return { ...us, trocar: false, servico: ts.tokenId, somenteLeitura: true };
+  }
+  const tok = verificaToken(bruto);
   if (!tok) return null;
   const us = await usuarios.sessao(tok.id, tok.revogacao || 0, tok.trocar === true);
   if (!us) return { recusado: 401, erro: "sessão expirada; entre novamente" };
@@ -116,6 +133,7 @@ const mapDem = r => ({ id: r.id, competencia: r.competencia, empresa: r.empresa,
 async function rotaGET(u, user) {
   if (user && !acessos.rota(user, "GET", u.pathname)) throw Object.assign(new Error("Seu acesso não permite esta consulta."), { status: 403, codigo: "PERMISSAO_NEGADA" });
   const q = Object.fromEntries(u.searchParams);
+  if (u.pathname === '/api/leitura' || u.pathname.startsWith('/api/leitura/')) return leituraConsultas.rota(dbx, u.pathname, q, user);
   if (u.pathname === '/api/financeiro/dre') return financeiroConsultas.dre(dbx, q);
   if (u.pathname === '/api/margens') return margensConsultas.carregar(dbx, q, user);
   if (u.pathname === '/api/publicidade/resumo') return publicidadeConsultas.carregar(dbx, q, user);
