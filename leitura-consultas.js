@@ -6,6 +6,7 @@
 //   GET /api/leitura                 índice das rotas
 //   GET /api/leitura/status          frescor de cada base + ALERTAS (base que não subiu, dias vazios de vendas/Ads, envios parados)
 //   GET /api/leitura/vendas-dia      vendas e margem por operação e dia, antes e depois do Ads  (?de&ate&emp&mkt; padrão: 7 dias)
+//   GET /api/leitura/produtos        vendas e margem por anúncio ou SKU, antes e depois do Ads (?de&ate&agrupar&emp&mkt&ordenar&limite)
 //   GET /api/leitura/metas           metas do mês × realizado por operação                     (?mes=AAAA-MM; padrão: mês atual)
 //   GET /api/leitura/full            Full: resumo, ruptura, não pode faltar, parado, estoque antigo, pendências (?emp&mkt&limite)
 //   GET /api/leitura/publicidade     Ads por campanha (gasto, receita, ACOS, ROAS) e TACOS da operação (?mes&emp&mkt)
@@ -126,6 +127,46 @@ async function vendasDia(db, q, user) {
     consultado_em: new Date().toISOString() };
 }
 
+// ───────────────────────────── VENDAS POR PRODUTO (SKU / ANÚNCIO) ─────────────────────────────
+// (24/11/2026, pedido do Otto: "vendas por produto agrupada por SKU e anúncio, sem exportar pela tela toda semana")
+// agrupar=anuncio (padrão): margens-consultas com itens=1 — a MESMA conta do painel, Ads alocado por anúncio.
+// agrupar=sku: resultados-consultas.skus — a consulta da tela Produtos (pedidos, devoluções, margem antes/depois do Ads).
+async function produtos(db, q, user) {
+  const hoje = hojeBR();
+  const ate = dataOk(q.ate) ? S(q.ate) : hoje, de = dataOk(q.de) ? S(q.de) : somaDias(ate, -6);
+  if (de > ate) throw erro('"de" depois de "ate"');
+  if (diasEntre(de, ate) > 62) throw erro('período máximo de 62 dias');
+  const agrupar = S(q.agrupar).toLowerCase() === 'sku' ? 'sku' : 'anuncio';
+  const lim = Math.min(Math.max(N(q.limite) || 200, 1), 3000);
+  const ORD = { faturamento: 'faturamento', margem: 'mc_pos_ads', unidades: 'unidades', ads: 'ads', margem_pct: 'mc_pos_ads_pct' };
+  const ordem = ORD[S(q.ordenar).toLowerCase()] || 'faturamento';
+  const pct = (a, b) => b ? r2(a / b * 100) : null;
+  let linhasOut, aviso = null;
+  if (agrupar === 'sku') {
+    const r = await resultados.skus(db, { de, ate, emp: S(q.emp), mkt: S(q.mkt) }, user);
+    aviso = r.financeErro || null;
+    linhasOut = (r.rows || []).map(x => ({ empresa: x.emp, canal: x.mkt, sku: x.sku, produto: S(x.titulo).slice(0, 90),
+      pedidos: N(x.ped), unidades: N(x.qtd), faturamento: r2(x.fat), mc_pre_ads: r2(x.before ?? x.mc), mc_pre_ads_pct: pct(N(x.before ?? x.mc), N(x.fat)),
+      ads: x.adsMissing ? null : r2(x.extra), mc_pos_ads: x.after == null ? null : r2(x.after), mc_pos_ads_pct: x.after == null ? null : pct(N(x.after), N(x.fat)),
+      tacos_pct: x.tacos == null ? null : r2(x.tacos), devolucoes: N(x.devN), ads_estimado: !!x.estimated }));
+  } else {
+    const m = await require('./margens-consultas').carregar(db, { de, ate, emp: S(q.emp), mkt: S(q.mkt), itens: '1', baseMargem: 'teto' }, user);
+    linhasOut = (m.produtos || []).map(x => ({ empresa: x.emp, canal: x.mkt, sku: x.sku, anuncio: x.anuncio || null, produto: S(x.titulo).slice(0, 90),
+      vendas: N(x.n), unidades: N(x.qtd), faturamento: r2(x.fat), mc_pre_ads: r2(x.pre), mc_pre_ads_pct: pct(N(x.pre), N(x.fat)),
+      ads: x.missing ? null : r2(x.ads), mc_pos_ads: x.missing || x.after == null ? null : r2(x.after), mc_pos_ads_pct: x.missing || x.after == null ? null : pct(N(x.after), N(x.fat)),
+      tacos_pct: N(x.fat) && !x.missing ? r2(N(x.ads) / N(x.fat) * 100) : null, custo_unitario: x.custoUn == null ? null : r2(x.custoUn), sem_custo: N(x.ctpMissing) > 0, ads_estimado: !!x.estimated }));
+  }
+  linhasOut.sort((a, b) => (N(b[ordem]) - N(a[ordem])));
+  const tot = linhasOut.reduce((t, x) => { t.unidades += x.unidades; t.faturamento += x.faturamento; t.mc_pre_ads += x.mc_pre_ads; if (x.ads != null) { t.ads += x.ads; t.mc_pos_ads += x.mc_pos_ads; } return t; },
+    { itens: linhasOut.length, unidades: 0, faturamento: 0, mc_pre_ads: 0, ads: 0, mc_pos_ads: 0 });
+  ['faturamento', 'mc_pre_ads', 'ads', 'mc_pos_ads'].forEach(k => { tot[k] = r2(tot[k]); });
+  tot.mc_pos_ads_pct = pct(tot.mc_pos_ads, tot.faturamento); tot.tacos_pct = pct(tot.ads, tot.faturamento);
+  return { periodo: { de, ate }, agrupar, ordenar: ordem, filtro: { emp: S(q.emp) || null, mkt: S(q.mkt) || null }, total: tot,
+    linhas: linhasOut.slice(0, lim), mostrando: Math.min(lim, linhasOut.length), aviso,
+    observacao: 'só vendas efetivadas; Ads por anúncio é o alocado pelo painel (ads_estimado = rateio quando o relatório não liga o gasto ao anúncio); custo_unitario vem da planilha de custos (sem_custo = SKU sem custo cadastrado)',
+    consultado_em: new Date().toISOString() };
+}
+
 // ───────────────────────────── METAS DO MÊS ─────────────────────────────
 async function metas(db, q) {
   const mes = mesOk(q.mes) ? S(q.mes) : hojeBR().slice(0, 7);
@@ -225,6 +266,7 @@ const INDICE = {
   rotas: {
     '/api/leitura/status': 'frescor das bases e alertas (comece por aqui: situacao = ok | aviso | erro)',
     '/api/leitura/vendas-dia?de=AAAA-MM-DD&ate=AAAA-MM-DD&emp=&mkt=': 'vendas e margem por operação e dia, antes e depois do Ads (padrão: últimos 7 dias; máx. 62)',
+    '/api/leitura/produtos?de=AAAA-MM-DD&ate=AAAA-MM-DD&agrupar=anuncio|sku&emp=&mkt=&ordenar=faturamento|margem|unidades|ads|margem_pct&limite=200': 'vendas e margem por anúncio (padrão) ou por SKU, antes e depois do Ads (máx. 62 dias)',
     '/api/leitura/metas?mes=AAAA-MM': 'metas do mês × realizado por operação',
     '/api/leitura/full?emp=&mkt=&limite=30': 'Full: resumo, ruptura, não pode faltar, parado, estoque antigo, pendências',
     '/api/leitura/publicidade?mes=AAAA-MM&emp=&mkt=': 'Ads por campanha e TACOS da operação',
@@ -237,6 +279,7 @@ async function rota(db, pathname, q, user) {
     case '/api/leitura': case '/api/leitura/': return INDICE;
     case '/api/leitura/status': return status(db);
     case '/api/leitura/vendas-dia': return vendasDia(db, q, user);
+    case '/api/leitura/produtos': return produtos(db, q, user);
     case '/api/leitura/metas': return metas(db, q);
     case '/api/leitura/full': return full(db, q);
     case '/api/leitura/publicidade': return publicidade(db, q);
@@ -245,4 +288,4 @@ async function rota(db, pathname, q, user) {
   }
 }
 
-module.exports = { rota, status, vendasDia, metas, full, publicidade, acompanhamento, INDICE };
+module.exports = { rota, status, vendasDia, produtos, metas, full, publicidade, acompanhamento, INDICE };
