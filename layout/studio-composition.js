@@ -34,7 +34,7 @@
     if(used.has(n))return;
     used.add(n);
     const layoutSize=kind==='list'&&n.matches(cardDecks)?'full':undefined;
-    found.push({n,kind,title:title||titleOf(n,names[kind]),required,layoutSize,...layout});
+    found.push({n,kind,title:title||titleOf(n,names[kind]),required:required||n.hasAttribute('data-comparison-requested'),layoutSize,...layout});
    }
    function workflowDisclosure(n){
     if(!n.matches('details'))return false;
