@@ -14766,7 +14766,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   });$('bc-cmp-add').disabled=picks.length>=4;if(focus)$(focus)?.focus();
  }
  function sameCompany(){const picks=S.picks.operacoes,emp=picks[0]?.emp||BCNav.company||companies()[0],markets=channels(emp);if(markets.length<2){$('bc-cmp-error').textContent='Esta empresa tem apenas um marketplace neste recorte. Escolha uma segunda empresa.';return;}S.picks.operacoes=[{emp,mkt:markets.includes(picks[0]?.mkt)?picks[0].mkt:markets[0]},{emp,mkt:''}];S.picks.operacoes[1].mkt=markets.find(m=>m!==S.picks.operacoes[0].mkt);renderChoices();invalidate();}
- const defs=[['fat','Faturamento','money'],['mc','Pré-Ads (R$)','money'],['pct','Margem pré-Ads (%)','percent'],['qtd','Unidades','number']];
+ const defs=[['fat','Faturamento','money'],['mc','Pré-Ads (R$)','money'],['pct','Margem pré-Ads (%)','percent'],['after','Pós-Ads (R$)','money'],['afterPct','Margem pós-Ads (%)','percent'],['qtd','Unidades','number']];
  function format(v,type){if(v==null)return 'Não disponível';if(type==='money')return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:2});return v.toLocaleString('pt-BR',{minimumFractionDigits:type==='percent'?2:0,maximumFractionDigits:type==='percent'?2:4})+(type==='percent'?'%':'');}
  async function compare(){if(!can()||S.identity!==bcNavKey()){close();return;}const picks=S.picks[S.mode],model={errors:BCComparacao.validar(picks,S.mode,catalog())};const error=$('bc-cmp-error');if(model.errors.some(Boolean)){error.textContent='Revise as seleções: '+[...new Set(model.errors.filter(Boolean))].join(' ');const idx=model.errors.findIndex(Boolean);$('bc-cmp-company-'+idx)?.focus();return;}error.textContent='';
   const host=$('bc-cmp-results'),ticket=++revision;
@@ -14781,8 +14781,28 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   host.replaceChildren(el('h3','','Resultado da comparação'),note('Cada coluna usa o mesmo período. As diferenças são em relação à primeira seleção.'));
   const wrap=el('div','bc-cmp-table-wrap'),table=el('table','bc-cmp-table'),caption=el('caption','',bcHeaderDate(S.range[0])+' a '+bcHeaderDate(S.range[1])+' · '+S.scope);table.append(caption);const head=el('thead'),hr=el('tr');hr.append(el('th','','Indicador'));
   model.items.forEach((item,i)=>{const th=el('th','',item.label);th.append(el('small','',i===0?'Referência':'Diferença para a referência'));hr.append(th);});head.append(hr);table.append(head);const body=el('tbody');
-  for(const [key,label,type]of defs){const tr=el('tr');const th=el('th','',label);th.scope='row';tr.append(th);model.items.forEach((item,i)=>{const td=el('td'),v=item.values?.[key];td.append(el('strong','',item.values?format(v,type):'Sem registros no período'));if(v!=null)td.title=String(v).replace('.',',')+(type==='percent'?'%':'');if(i&&item.values){const delta=BCComparacao.diferenca(v,model.items[0].values?.[key]);const small=el('small','',delta==null?'Sem referência para calcular':(delta>0?'+':'')+(type==='percent'?format(delta,'number')+' p.p.':format(delta,type)));td.append(small);}tr.append(td);});body.append(tr);}table.append(body);wrap.tabIndex=0;wrap.setAttribute('aria-label','Tabela de comparação, com rolagem horizontal');wrap.append(table);host.append(el('p','bc-cmp-scroll-hint','Deslize a tabela para ver as outras colunas.'),wrap);
-  host.append(note('Faturamento, unidades e margem pré-Ads seguem a base da Visão Geral.'));
+  for(const [key,label,type] of defs){
+   const tr=el('tr'),heading=el('th','',label);heading.scope='row';tr.append(heading);
+   const postAds=key==='after'||key==='afterPct',base=model.items[0].values;
+   model.items.forEach(({values},i)=>{
+    const td=el('td'),value=values?.[key];
+    td.append(el('strong','',values?format(value,type):'Sem registros no período'));
+    if(value!=null)td.title=String(value).replace('.',',')+(type==='percent'?'%':'');
+    if(postAds&&values?.partial)td.append(el('small','','Parcial · '+values.coveredOps+' de '+values.totalOps+' operações apuradas'));
+    else if(postAds&&values&&values.coveredOps===0)td.append(el('small','','Publicidade sem apuração completa'));
+    if(i&&values){
+     const partial=postAds&&(values.partial||base?.partial),delta=BCComparacao.diferenca(value,base?.[key]);
+     let difference='Sem referência para calcular';
+     if(partial)difference='Diferença indisponível · cobertura parcial';
+     else if(delta!=null)difference=(delta>0?'+':'')+(type==='percent'?format(delta,'number')+' p.p.':format(delta,type));
+     td.append(el('small','',difference));
+    }
+    tr.append(td);
+   });
+   body.append(tr);
+  }
+  table.append(body);wrap.tabIndex=0;wrap.setAttribute('aria-label','Tabela de comparação, com rolagem horizontal');wrap.append(table);host.append(el('p','bc-cmp-scroll-hint','Deslize a tabela para ver as outras colunas.'),wrap);
+  host.append(note('O Pós-Ads mostra a margem após a publicidade. Valores e percentuais seguem a mesma base da Visão Geral.'));
   host.append(note('Para comparar bônus e metas publicados, consulte Comissão. Para comparar datas diferentes, use Período → Comparar períodos.'));host.focus();
  }
  function close(){revision++;S.dialog?.close();S.origin?.focus();}
@@ -16562,6 +16582,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  const sum=(rs,k)=>C.round(rs.reduce((s,r)=>s+(R.n(r[k])??0),0)),id=(emp,mkt,sku)=>R.key(emp,mkt,String(sku||'').trim());
  function reference(from,to,custom){if(custom&&R.span(...custom))return{from:custom[0],to:custom[1],label:'Referência escolhida'};if(!R.span(from,to))throw Error('Intervalo inválido.');const full=from.endsWith('-01')&&to===R.monthEnd(from.slice(0,7));const previous=full?[R.shiftMonth(from.slice(0,7),-1)+'-01',R.add(from,-1)]:R.previous(from,to);return{from:previous[0],to:previous[1],label:full?'Mês anterior completo':'Intervalo anterior de mesma duração'};}
  function finance(o){if(!o)return{pre:null,ads:null,after:null,pctPre:null,pctAfter:null,tacos:null,missing:true,estimated:false};const missing=!!o.adsMissing,pre=o.beforeAdsMissing?null:R.n(o.before)??(o.mediaOnly?0:R.n(o.mc)==null?null:o.mc+(o.embedded||0)),ads=missing?null:C.round((o.extra||0)+(o.embedded||0)),after=missing?null:R.n(o.after)??(o.mediaOnly?-(o.extra||0):R.n(o.mc)==null?null:C.round(o.mc-(o.extra||0)));return{pre,ads,after,pctPre:C.pct(pre,o.base),pctAfter:C.pct(after,o.base),tacos:C.pct(ads,o.fat),missing,semAds:!missing&&Array.isArray(o.adsModes)&&o.adsModes.length>0&&o.adsModes.every(m=>m==='Sem Ads confirmado'),estimated:!!o.estimated||!!o.extra,tone:after<0?'bad':missing?'attention':'info'};}
+ function financialReading(total,ops){
+  const f=finance(total),covered=coverage(ops),partial=f.missing&&covered.known>0;
+  const values=partial?covered:f;
+  return {f,covered,partial,after:values.after,afterPct:values.pctAfter,ads:values.ads,tacos:values.tacos};
+ }
  function coverage(ops=[]){const readings=ops.map(o=>({o,f:finance(o)})),known=readings.filter(r=>!r.f.missing&&r.f.after!=null&&r.f.ads!=null),pending=readings.filter(r=>!known.includes(r)),add=k=>C.round(known.reduce((n,r)=>n+(R.n(r.f[k])??0),0)),base=C.round(known.reduce((n,r)=>n+(R.n(r.o.base)??0),0)),fat=C.round(known.reduce((n,r)=>n+(R.n(r.o.fat)??0),0)),after=known.length?add('after'):null,ads=known.length?add('ads'):null;return{known:known.length,total:readings.length,pending:pending.map(r=>({emp:r.o.emp,mkt:r.o.mkt,fat:r.o.fat,pre:r.f.pre})),after,ads,base,fat,pctAfter:C.pct(after,base),tacos:C.pct(ads,fat),partial:known.length>0&&pending.length>0};}
  function skuMargins(rows,financial){const costs=new Map(),map=new Map(rows.map(r=>[id(r.emp,r.mkt,r.sku),{...r}]));for(const p of financial?.produtos||[]){const k=id(p.emp,p.mkt,p.sku);if(!costs.has(k))costs.set(k,[]);costs.get(k).push(p);if(!map.has(k))map.set(k,{...R.blank(),emp:p.emp,mkt:p.mkt,sku:String(p.sku||'').trim(),titulo:p.titulo||p.sku,mediaOnly:true});}return [...map].map(([k,row])=>{const parts=costs.get(k)||[],f=parts.length?C.compose(parts.map(p=>({...p,embeddedMissing:p.pre==null}))):null,unallocated=(financial?.unallocated||[]).some(p=>p.emp===row.emp&&p.mkt===row.mkt),missing=!f||f.missing||unallocated,before=f?.pre??(/tik\s*tok/i.test(row.mkt)&&row.mediaMissing?null:row.mc+(/tik\s*tok/i.test(row.mkt)?-(row.pub||0):0));return{...row,extra:f?.extra||0,embedded:f?.embeddedAds||0,before,after:missing?null:f.after,percentBefore:C.pct(before,row.base),percentAfter:missing?null:C.pct(f.after,row.base),tacos:missing?null:f.tacos,adsMissing:missing,beforeAdsMissing:before==null,estimated:f?.estimated||false,coverage:missing?'Ads pendente':f.coverage,financeComputed:true};});}
  function selectedOperations(rows,selection){return selection==null?rows:rows.filter(r=>selection.has(R.key(r.emp,r.mkt)));}
@@ -16570,7 +16595,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  function portfolio(current,prior){const cm=new Map((current?.ops||[]).map(o=>[R.key(o.emp,o.mkt),o])),pm=new Map((prior?.ops||[]).map(o=>[R.key(o.emp,o.mkt),o])),curve=new Map(R.abc([...cm].map(([id,o])=>({...o,id})),'fat').rows.map(o=>[o.id,o.curve]));return [...new Set([...cm.keys(),...pm.keys()])].map(k=>{const a=cm.get(k),b=pm.get(k),o=a||b,f=finance(a),p=finance(b);return{id:k,emp:o.emp,mkt:o.mkt,c:a||null,p:b||null,f,priorFinance:p,curve:curve.get(k)||'N',change:R.difference(f.after,p.after),fatChange:R.difference(a?.fat,b?.fat),signal:a?opportunity(a,{curve:curve.get(k)}):{key:'absent',label:'Sem registro atual',tone:'neutral',action:'Conferir a presença desta operação no período selecionado.'}};});}
  function pacing(daily,{month,reference,today,goals=[]}={}){const first=month+'-01',end=R.monthEnd(month),limit=[reference||end,today||end,end].sort()[0],rows=daily.filter(r=>r.date>=first&&r.date<=limit),sales=rows.filter(r=>r.n_fin>0||r.ordersUnknown&&r.n_all>0&&!r.mediaOnly),latest=sales.map(r=>r.date).sort().at(-1)||null,asof=latest,elapsed=asof?R.span(first,asof):0,total=R.sum(rows),calendarComplete=!!today&&end<today,days=R.span(first,end),remaining=calendarComplete?0:asof?R.span(R.add(asof,1),end):null,projected=!calendarComplete&&elapsed>0&&total?.fat!=null?total.fat/elapsed*days:null,goalsByOp=new Map();for(const g of goals.filter(g=>g.mes===month&&R.n(g.Faturamento_obj)!=null&&g.Faturamento_obj>=0)){const values=goalsByOp.get(g.operacao)||new Set();values.add(Number(g.Faturamento_obj));goalsByOp.set(g.operacao,values);}const ambiguous=[...goalsByOp.values()].some(s=>s.size>1),target=goalsByOp.size&&!ambiguous?[...goalsByOp.values()].reduce((s,v)=>s+[...v][0],0):null,goalRows=rows.filter(r=>goalsByOp.has(r.emp+' · '+r.mkt)),present=new Set(sales.map(r=>r.emp+' · '+r.mkt)),missing=[...goalsByOp.keys()].filter(k=>!present.has(k)),goalActual=target!=null&&!missing.length?R.sum(goalRows)?.fat??null:null,gap=goalActual==null?null:Math.max(0,target-goalActual),goalProjection=!calendarComplete&&goalActual!=null&&elapsed?goalActual/elapsed*days:null;
   return{month,first,end,asof,latest,elapsed,days,remaining,total,calendarComplete,projected,recordedDays:new Set(sales.map(r=>r.date)).size,target,goalActual,goalProjection,attainment:C.pct(goalActual,target),gap,neededPerDay:gap!=null&&remaining>0?gap/remaining:null,goalOps:goalsByOp.size,missingGoalOps:missing.length,ambiguous,progress:calendarComplete?100:elapsed?100*elapsed/days:null};}
- return{reference,finance,coverage,skuMargins,selectedOperations,groups,opportunity,portfolio,pacing};
+ return{reference,finance,coverage,financialReading,skuMargins,selectedOperations,groups,opportunity,portfolio,pacing};
 });
 
 /* Resultados macro. Sem gravação, alteração de metas ou carga do detalhe completo. */
@@ -16639,7 +16664,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function resultCard(title,value,text,tone='info',fn){const c=card(title,value,text);c.dataset.marginTone=tone;if(fn){c.classList.add('res-click-card');c.append(button('Ver detalhes',fn));}return c;}
   function progress(value,tone='info'){const n=el('div','res-progress'),fill=el('span');n.dataset.tone=tone;fill.style.width=Math.max(0,Math.min(100,value||0))+'%';n.append(fill);return n;}
   function resultHeader(host,title,ranges,data){context(host,title,period([ranges[0].from,ranges[0].to])+(ranges[1]?.id!=='referencia'?' · Comparação desativada':' · '+L.reference(ranges[0].from,ranges[0].to,cmpMode?getR2():null).label+': '+period([ranges[1].from,ranges[1].to])));host.append(note(sourceNote(data)));}
-  function financialKpis(host,a,b,ops=[]){const f=L.finance(a),p=L.finance(b),covered=L.coverage(ops),partial=f.missing&&covered.known>0,after=partial?covered.after:f.after,afterPct=partial?covered.pctAfter:f.pctAfter,ads=partial?covered.ads:f.ads,tacos=partial?covered.tacos:f.tacos,coverageText=covered.known+' de '+covered.total+' operações apuradas',grid=cards(
+  function financialKpis(host,a,b,ops=[]){const {f,covered,partial,after,afterPct,ads,tacos}=L.financialReading(a,ops),p=L.finance(b),coverageText=covered.known+' de '+covered.total+' operações apuradas',grid=cards(
     resultCard('Faturamento',cash(a?.fat),comparisonText(a?.fat,b?.fat),'info'),
     resultCard(partial?'Pós-Ads apurado · parcial':'Pós-Ads',cash(after),pct(afterPct)+(partial?' da base apurada · '+coverageText+' · sem comparação de totais':' da base · '+comparisonText(f.after,p.after)),after==null?'attention':G.tomMargem(after,afterPct)),
     resultCard('Pré-Ads',cash(f.pre),pct(f.pctPre)+' da base · afiliados mantidos no líquido',G.tomMargem(f.pre,f.pctPre)),
@@ -16914,11 +16939,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   const priorZoom=bcVisualZoom;bcVisualZoom=function(canvas,button,spec){const out=priorZoom.apply(this,arguments);if(canvas?.dataset.resContext&&$('bc-viz-context'))$('bc-viz-context').textContent=canvas.dataset.resContext;return out;};
   async function comparisonValues(range,selection,channels){
     const data=await summary([{id:'atual',from:range[0],to:range[1]}],false,selection);
-    const current=data.faixas.find(item=>item.id==='atual');
-    const total=M.sum((current?.ops||[]).filter(row=>channels.includes(row.mkt)));
-    if(!total)return null;
-    const finance=L.finance(total);
-    return {fat:total.fat,mc:finance.pre,pct:finance.pctPre,qtd:total.qtd};
+    const scopedRanges=data.faixas.map(range=>({...range,ops:range.ops.filter(row=>channels.includes(row.mkt))}));
+    const current=M.rangeModel({...data,faixas:scopedRanges},'atual');
+    if(!current?.total)return null;
+    const {f,after,afterPct,partial,covered}=L.financialReading(current.total,current.ops);
+    return {fat:current.total.fat,mc:f.pre,pct:f.pctPre,qtd:current.total.qtd,after,afterPct,
+      partial,coveredOps:covered.known,totalOps:covered.total};
   }
   window.BCResultados={modelo:M,forecastOperation:forecastPage,comparisonValues};
 })();

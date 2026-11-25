@@ -64,7 +64,7 @@
   function resultCard(title,value,text,tone='info',fn){const c=card(title,value,text);c.dataset.marginTone=tone;if(fn){c.classList.add('res-click-card');c.append(button('Ver detalhes',fn));}return c;}
   function progress(value,tone='info'){const n=el('div','res-progress'),fill=el('span');n.dataset.tone=tone;fill.style.width=Math.max(0,Math.min(100,value||0))+'%';n.append(fill);return n;}
   function resultHeader(host,title,ranges,data){context(host,title,period([ranges[0].from,ranges[0].to])+(ranges[1]?.id!=='referencia'?' · Comparação desativada':' · '+L.reference(ranges[0].from,ranges[0].to,cmpMode?getR2():null).label+': '+period([ranges[1].from,ranges[1].to])));host.append(note(sourceNote(data)));}
-  function financialKpis(host,a,b,ops=[]){const f=L.finance(a),p=L.finance(b),covered=L.coverage(ops),partial=f.missing&&covered.known>0,after=partial?covered.after:f.after,afterPct=partial?covered.pctAfter:f.pctAfter,ads=partial?covered.ads:f.ads,tacos=partial?covered.tacos:f.tacos,coverageText=covered.known+' de '+covered.total+' operações apuradas',grid=cards(
+  function financialKpis(host,a,b,ops=[]){const {f,covered,partial,after,afterPct,ads,tacos}=L.financialReading(a,ops),p=L.finance(b),coverageText=covered.known+' de '+covered.total+' operações apuradas',grid=cards(
     resultCard('Faturamento',cash(a?.fat),comparisonText(a?.fat,b?.fat),'info'),
     resultCard(partial?'Pós-Ads apurado · parcial':'Pós-Ads',cash(after),pct(afterPct)+(partial?' da base apurada · '+coverageText+' · sem comparação de totais':' da base · '+comparisonText(f.after,p.after)),after==null?'attention':G.tomMargem(after,afterPct)),
     resultCard('Pré-Ads',cash(f.pre),pct(f.pctPre)+' da base · afiliados mantidos no líquido',G.tomMargem(f.pre,f.pctPre)),
@@ -339,11 +339,12 @@
   const priorZoom=bcVisualZoom;bcVisualZoom=function(canvas,button,spec){const out=priorZoom.apply(this,arguments);if(canvas?.dataset.resContext&&$('bc-viz-context'))$('bc-viz-context').textContent=canvas.dataset.resContext;return out;};
   async function comparisonValues(range,selection,channels){
     const data=await summary([{id:'atual',from:range[0],to:range[1]}],false,selection);
-    const current=data.faixas.find(item=>item.id==='atual');
-    const total=M.sum((current?.ops||[]).filter(row=>channels.includes(row.mkt)));
-    if(!total)return null;
-    const finance=L.finance(total);
-    return {fat:total.fat,mc:finance.pre,pct:finance.pctPre,qtd:total.qtd};
+    const scopedRanges=data.faixas.map(range=>({...range,ops:range.ops.filter(row=>channels.includes(row.mkt))}));
+    const current=M.rangeModel({...data,faixas:scopedRanges},'atual');
+    if(!current?.total)return null;
+    const {f,after,afterPct,partial,covered}=L.financialReading(current.total,current.ops);
+    return {fat:current.total.fat,mc:f.pre,pct:f.pctPre,qtd:current.total.qtd,after,afterPct,
+      partial,coveredOps:covered.known,totalOps:covered.total};
   }
   window.BCResultados={modelo:M,forecastOperation:forecastPage,comparisonValues};
 })();

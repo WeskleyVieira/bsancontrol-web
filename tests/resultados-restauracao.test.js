@@ -29,3 +29,21 @@ test('fonte local e SQL concordam em composição por SKU sem usar dados de pedi
 
 test('séries de marketplaces adaptam mês curto, semestre e ano sem sair do recorte',()=>{for(const [from,to,mode]of [['2026-11-01','2026-11-06','dia'],['2026-01-01','2026-04-30','semana'],['2026-01-01','2026-11-06','mes']]){const b=R.seriesBuckets(from,to);assert.equal(b.mode,mode);assert.equal(b.buckets[0].from,from);assert.equal(b.buckets.at(-1).to,to);for(let i=1;i<b.buckets.length;i++)assert.equal(b.buckets[i].from,R.add(b.buckets[i-1].to,1));}assert.equal(R.seriesBuckets('2026-10-01','2026-10-31','mes').buckets.length,1);assert.equal(R.seriesBuckets('2026-10-01','2026-11-06','mes').buckets.at(-1).partial,true);});
 test('Curva geral soma SKUs das operações selecionadas e usa a base ponderada',()=>{const a={...R.blank(),emp:'A',mkt:'Canal',sku:'S',fat:100,base:100,mc:30,before:30,after:25,extra:5,qtd:1,financeComputed:true,adsMissing:false},b={...a,emp:'B',fat:200,base:200,mc:40,before:40,after:30,extra:10,qtd:2},c={...a,emp:'C',fat:900},rows=[a,b,c],before=JSON.stringify(rows),selected=L.selectedOperations(rows,new Set([R.key('A','Canal'),R.key('B','Canal')])),g=L.groups(selected,false);assert.equal(g.length,1);assert.equal(g[0].fat,300);assert.equal(g[0].after,55);assert.equal(g[0].qtd,3);assert.equal(g[0].percentAfter,55/300*100);assert.equal(L.groups(selected,true).length,2);assert.equal(L.selectedOperations(rows,new Set()).length,0);assert.equal(L.selectedOperations(rows,new Set([R.key('Desconhecida','Canal')])).length,0);assert.equal(JSON.stringify(rows),before);});
+
+test('comparador e Visão Geral usam Pós-Ads ponderado e separam a cobertura pendente',()=>{
+ const a=row({base:100,mc:20,extra:30}),b=row({base:300,mc:60,extra:10});
+ const reading=ops=>L.financialReading(R.sum(ops),ops);
+ const complete=reading([a,b]);
+ assert.equal(complete.after,40);
+ assert.equal(complete.afterPct,10);
+ assert.equal(complete.partial,false);
+ const pending={...b,adsMissing:true},partial=reading([a,pending]);
+ assert.equal(partial.after,-10);
+ assert.equal(partial.afterPct,-10);
+ assert.equal(partial.partial,true);
+ assert.equal(partial.covered.known,1);
+ assert.equal(partial.covered.total,2);
+ assert.equal(reading([pending]).after,null);
+ assert.equal(reading([pending]).afterPct,null);
+ assert.equal(reading([row({mc:20,extra:20})]).after,0);
+});

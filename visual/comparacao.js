@@ -57,7 +57,7 @@
   });$('bc-cmp-add').disabled=picks.length>=4;if(focus)$(focus)?.focus();
  }
  function sameCompany(){const picks=S.picks.operacoes,emp=picks[0]?.emp||BCNav.company||companies()[0],markets=channels(emp);if(markets.length<2){$('bc-cmp-error').textContent='Esta empresa tem apenas um marketplace neste recorte. Escolha uma segunda empresa.';return;}S.picks.operacoes=[{emp,mkt:markets.includes(picks[0]?.mkt)?picks[0].mkt:markets[0]},{emp,mkt:''}];S.picks.operacoes[1].mkt=markets.find(m=>m!==S.picks.operacoes[0].mkt);renderChoices();invalidate();}
- const defs=[['fat','Faturamento','money'],['mc','Pré-Ads (R$)','money'],['pct','Margem pré-Ads (%)','percent'],['qtd','Unidades','number']];
+ const defs=[['fat','Faturamento','money'],['mc','Pré-Ads (R$)','money'],['pct','Margem pré-Ads (%)','percent'],['after','Pós-Ads (R$)','money'],['afterPct','Margem pós-Ads (%)','percent'],['qtd','Unidades','number']];
  function format(v,type){if(v==null)return 'Não disponível';if(type==='money')return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:2});return v.toLocaleString('pt-BR',{minimumFractionDigits:type==='percent'?2:0,maximumFractionDigits:type==='percent'?2:4})+(type==='percent'?'%':'');}
  async function compare(){if(!can()||S.identity!==bcNavKey()){close();return;}const picks=S.picks[S.mode],model={errors:BCComparacao.validar(picks,S.mode,catalog())};const error=$('bc-cmp-error');if(model.errors.some(Boolean)){error.textContent='Revise as seleções: '+[...new Set(model.errors.filter(Boolean))].join(' ');const idx=model.errors.findIndex(Boolean);$('bc-cmp-company-'+idx)?.focus();return;}error.textContent='';
   const host=$('bc-cmp-results'),ticket=++revision;
@@ -72,8 +72,28 @@
   host.replaceChildren(el('h3','','Resultado da comparação'),note('Cada coluna usa o mesmo período. As diferenças são em relação à primeira seleção.'));
   const wrap=el('div','bc-cmp-table-wrap'),table=el('table','bc-cmp-table'),caption=el('caption','',bcHeaderDate(S.range[0])+' a '+bcHeaderDate(S.range[1])+' · '+S.scope);table.append(caption);const head=el('thead'),hr=el('tr');hr.append(el('th','','Indicador'));
   model.items.forEach((item,i)=>{const th=el('th','',item.label);th.append(el('small','',i===0?'Referência':'Diferença para a referência'));hr.append(th);});head.append(hr);table.append(head);const body=el('tbody');
-  for(const [key,label,type]of defs){const tr=el('tr');const th=el('th','',label);th.scope='row';tr.append(th);model.items.forEach((item,i)=>{const td=el('td'),v=item.values?.[key];td.append(el('strong','',item.values?format(v,type):'Sem registros no período'));if(v!=null)td.title=String(v).replace('.',',')+(type==='percent'?'%':'');if(i&&item.values){const delta=BCComparacao.diferenca(v,model.items[0].values?.[key]);const small=el('small','',delta==null?'Sem referência para calcular':(delta>0?'+':'')+(type==='percent'?format(delta,'number')+' p.p.':format(delta,type)));td.append(small);}tr.append(td);});body.append(tr);}table.append(body);wrap.tabIndex=0;wrap.setAttribute('aria-label','Tabela de comparação, com rolagem horizontal');wrap.append(table);host.append(el('p','bc-cmp-scroll-hint','Deslize a tabela para ver as outras colunas.'),wrap);
-  host.append(note('Faturamento, unidades e margem pré-Ads seguem a base da Visão Geral.'));
+  for(const [key,label,type] of defs){
+   const tr=el('tr'),heading=el('th','',label);heading.scope='row';tr.append(heading);
+   const postAds=key==='after'||key==='afterPct',base=model.items[0].values;
+   model.items.forEach(({values},i)=>{
+    const td=el('td'),value=values?.[key];
+    td.append(el('strong','',values?format(value,type):'Sem registros no período'));
+    if(value!=null)td.title=String(value).replace('.',',')+(type==='percent'?'%':'');
+    if(postAds&&values?.partial)td.append(el('small','','Parcial · '+values.coveredOps+' de '+values.totalOps+' operações apuradas'));
+    else if(postAds&&values&&values.coveredOps===0)td.append(el('small','','Publicidade sem apuração completa'));
+    if(i&&values){
+     const partial=postAds&&(values.partial||base?.partial),delta=BCComparacao.diferenca(value,base?.[key]);
+     let difference='Sem referência para calcular';
+     if(partial)difference='Diferença indisponível · cobertura parcial';
+     else if(delta!=null)difference=(delta>0?'+':'')+(type==='percent'?format(delta,'number')+' p.p.':format(delta,type));
+     td.append(el('small','',difference));
+    }
+    tr.append(td);
+   });
+   body.append(tr);
+  }
+  table.append(body);wrap.tabIndex=0;wrap.setAttribute('aria-label','Tabela de comparação, com rolagem horizontal');wrap.append(table);host.append(el('p','bc-cmp-scroll-hint','Deslize a tabela para ver as outras colunas.'),wrap);
+  host.append(note('O Pós-Ads mostra a margem após a publicidade. Valores e percentuais seguem a mesma base da Visão Geral.'));
   host.append(note('Para comparar bônus e metas publicados, consulte Comissão. Para comparar datas diferentes, use Período → Comparar períodos.'));host.focus();
  }
  function close(){revision++;S.dialog?.close();S.origin?.focus();}
