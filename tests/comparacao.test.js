@@ -10,3 +10,16 @@ test('seleção duplicada, incompleta e fora do catálogo não produz resultados
 test('ausência de registro permanece ausência; zero com registros continua zero',()=>{const m=run({rows:[{...rows[0],fat:0,fatMetas:0,mc:0,qtd:0}]});assert.equal(m.items[0].values.fat,0);assert.equal(m.items[0].values.pct,null);assert.equal(m.items[1].values,null);assert.equal(C.diferenca(0,null),null);});
 test('fallback de faturamento conserva a regra da Visão Geral e informa cobertura',()=>{const m=run({rows:[{...rows[0],fatMetas:null}]});assert.equal(m.items[0].values.fat,100);assert.equal(m.items[0].fallback,true);});
 test('não modifica os dados, as seleções nem o catálogo recebido',()=>{const before=JSON.stringify({rows,ops});run();assert.equal(JSON.stringify({rows,ops}),before);});
+
+test('mesmo recorte ajusta fim de mês e ano bissexto',()=>{
+  assert.deepEqual(C.referenceRange('month','2024-03-01','2024-03-31'),['2024-02-01','2024-02-29']);
+  assert.deepEqual(C.referenceRange('year','2024-02-29','2024-02-29'),['2023-02-28','2023-02-28']);
+  assert.deepEqual(C.referenceRange('month','2026-01-01','2026-01-16'),['2025-12-01','2025-12-16']);
+});
+test('automática mantém a regra de mês completo e intervalo anterior inclusivo',()=>{
+  assert.deepEqual(C.referenceRange('auto','2026-11-01','2026-11-30'),['2026-10-01','2026-10-31']);
+  assert.deepEqual(C.referenceRange('prev','2026-11-01','2026-11-30'),['2026-10-02','2026-10-31']);
+  assert.deepEqual(C.referenceRange('auto','2026-11-01','2026-11-16'),['2026-10-16','2026-10-31']);
+  assert.equal(C.referenceRange('off','2026-11-01','2026-11-16'),null);
+  assert.equal(C.referenceRange('custom','2026-11-01','2026-11-16',['2026-11-05','2026-11-01']),null);
+});
