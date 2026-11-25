@@ -13,7 +13,7 @@
   'resultados/abc':'res-abc',
   'resultados/forecast':'res-metas'
  };
- const pageControls='.diary-period-controls,.ger-agenda,.ger-chips,.ac4-scope,.ac4-actions,.pv-heading,.bc-entry-toolbar,.fin-links,.ds-status-tabs,.met-views,.fc-tabs,.res-tabs,.ac6-tabs,.ac4-levels,.met-filtros,.fc-chart-controls,.res-abc-operation-picker,#com-ctrl,#com-kpis,#com-lancar-box,#bc-env-launch,#bc-import-launch,#vnd-filter-bar,#vnd-pager,#vrx-suggestions,#vrx-result>.ger-context:has(.sum-actions),#vrx-result .ger-rx-benchmark';
+ const pageControls='.sum-export,.diary-period-controls,.ger-agenda,.ger-chips,.ac4-scope,.ac4-actions,.pv-heading,.bc-entry-toolbar,.fin-links,.ds-status-tabs,.met-views,.fc-tabs,.res-tabs,.ac6-tabs,.ac4-levels,.met-filtros,.fc-chart-controls,.res-abc-operation-picker,#com-ctrl,#com-kpis,#com-lancar-box,#bc-env-launch,#bc-import-launch,#vnd-filter-bar,#vnd-pager,#vrx-suggestions,#vrx-result>.ger-context:has(.sum-actions),#vrx-result .ger-rx-benchmark';
  const controlGroups='.ger-controls,.op-controls,.res-controls,.ac4-controls,.ac4-filters,.perf-fbar,.ds-modes,.sum-actions,.fc-controls';
  const sections='.op-block,.ger-block,.res-block,.sum-section,.ac4-block,.ac6-block,.fin-reading,.fc-products,.pv-section,.gs-page>div';
  const textOf=n=>(n?.textContent||'').replace(/\s+/g,' ').trim();
@@ -107,7 +107,7 @@
      push(n,'form',titleOf(n,textOf(n.querySelector('h2'))||'Cadastro'),true,{keepHeadings:true,nativeTitle:true,canExpand:false});
      return;
     }
-    if(n.matches('.op-context,.ger-context,.sum-intro,.res-coverage,.sum-intro-copy')){support.push(n);for(const action of n.querySelectorAll('button,a[href]'))controls.push(action);return;}
+    if(n.matches('.op-context,.ger-context,.sum-intro,.res-coverage,.sum-intro-copy')){support.push(n);for(const action of n.querySelectorAll('.sum-export,button,a[href]')){if(!action.parentElement.closest('.sum-export')&&sourceVisible(action,root))controls.push(action);}return;}
     if(n.closest('#res-diario')&&n.matches(cardGroups)){for(const child of n.children)walk(child);return;}
     if(n.matches(cardGroups)){
      const cards=[...n.children].filter(c=>c.matches(cardSelector)||c.matches('article')&&c.querySelector('.sum-value,.kpi-val'));
@@ -463,7 +463,7 @@
    }
    const collected=collect(page,p,source);
    const refresh=route==='resultados/overview'&&collected.controls.find(n=>n.matches('button')&&textOf(n)==='Atualizar Visão Geral');
-   host=own(make('div','studio-workspace'));const tools=own(make('div','studio-page-tools studio-ui')),purposeText=make('p','studio-purpose',p.purpose),libraryButton=btn('Adicionar widgets',()=>openLibrary(),'studio-library-trigger studio-primary'),all=btn('Todas as análises',()=>{state.mode='all';state.items={};save();}),essential=btn('Visão essencial',()=>{state.mode='essential';state.items={};save();}),filterButton=btn('Filtros',()=>{state.filtersOpen=!state.filtersOpen;options.persist();page.classList.toggle('studio-filters-open',state.filtersOpen);}),aboutButton=btn('Como ler esta página',()=>{about.open=!about.open;guideRoute=about.open?route:'';if(about.open)about.scrollIntoView({block:'nearest'});},'studio-guide-button');
+   host=own(make('div','studio-workspace'));const tools=own(make('div','studio-page-tools studio-ui')),purposeText=make('p','studio-purpose',p.purpose),libraryButton=btn('Adicionar widgets',()=>openLibrary(),'studio-library-trigger studio-primary'),all=btn('Todas as análises',()=>{state.mode='all';state.items={};save();}),essential=btn('Visão essencial',()=>{state.mode='essential';state.items={};save();}),filterButton=btn('Filtros',()=>{state.filtersOpen=!state.filtersOpen;filterButton.setAttribute('aria-expanded',String(state.filtersOpen));options.persist();page.classList.toggle('studio-filters-open',state.filtersOpen);}),aboutButton=btn('Como ler esta página',()=>{about.open=!about.open;guideRoute=about.open?route:'';if(about.open)about.scrollIntoView({block:'nearest'});},'studio-guide-button');
    const views=make('div','studio-view-options');
    views.setAttribute('role','group');
    views.setAttribute('aria-label','Composição da página');
@@ -506,6 +506,13 @@
    function through(n){for(let parent=n.parentElement;parent&&parent!==page;parent=parent.parentElement){if(parent.classList.contains('studio-through'))continue;parent.classList.add('studio-through');const current=parent;cleanup.push(()=>current.classList.remove('studio-through'));}}
    for(const n of collected.controls){
     if(n===refresh)continue;
+    // Os seletores legados podem continuar no DOM depois de migrados para o cabeçalho.
+    if(n.matches(controlGroups)&&!n.innerText.trim()&&
+       ![...n.querySelectorAll('button,a[href],select,input:not([type=hidden]),textarea,[role=button]')].some(field=>sourceVisible(field,n)&&getComputedStyle(field).visibility==='visible')){
+     n.classList.add('studio-support-source');
+     cleanup.push(()=>n.classList.remove('studio-support-source'));
+     continue;
+    }
     if(n.id==='ger-empty'&&route==='gerencial/ger-vendas'){
      // Preserve the native empty state for the other Gerencial tabs.
      const prompt=own(make('section','studio-operation-prompt studio-ui'));
@@ -524,7 +531,7 @@
     const rootFilter=n.parentElement===source&&n.matches('.op-controls,.res-controls')&&p.route.startsWith('resultados/');
     const important=n.id==='ger-empty'||rootFilter||p.flow==='form'||n.matches(pageControls+',nav,p,[role=tablist],[role=status]')||
      /PRODUTO \(SKU\)|Consultar SKU|Procurar produtos|Agrupar itens|Lente|Colunas|Competência|Tentar novamente/i.test(textOf(n));
-    const presentation=important?'studio-primary-control':'studio-advanced-control';
+    const presentation=important||n.matches('button,a[href]')?'studio-primary-control':'studio-advanced-control';
     through(n);
     n.classList.add('studio-native-control',presentation);
     cleanup.push(()=>n.classList.remove('studio-native-control',presentation));
@@ -533,7 +540,7 @@
    const reference=collected.support.map(textOf).join(' ').match(/(?:refer[eê]ncia|autom[aá]tica|m[eê]s anterior)[^.]{0,100}\d{2}\/\d{2}\/\d{4}[^.]{0,100}/i);if(reference){const caption=own(make('p','studio-reference',reference[0]));host.append(caption);}
    function sourceKey(n){const path=[];for(let cur=n;cur&&cur!==page;cur=cur.parentElement){if(cur.id){path.unshift('#'+cur.id);break;}path.unshift(cur.tagName.toLowerCase()+':'+[...cur.parentElement.children].filter(c=>!c.matches('.studio-ui,.studio-workspace')).indexOf(cur));}return path.join('/');}
    const ids=new Map(),items=collected.found.map(item=>{const nativeId=item.sourceId||item.n.id||item.n.querySelector('canvas')?.id||sourceKey(item.n),base=route+'::v3:'+item.kind+':'+nativeId,count=(ids.get(base)||0)+1;ids.set(base,count);return{...item,id:base+(count>1?':'+count:''),rank:0};});
-   widgets=C.defaults(items,p).sort((a,b)=>C.rank(a,p)-C.rank(b,p));widgets.forEach((item,index)=>{item.rank=index;through(item.n);widget(item);});page.dataset.studioRoute=route;page.classList.add('studio-active-page');page.classList.toggle('studio-filters-open',state.filtersOpen===true);const composedPage=page;cleanup.push(()=>{composedPage.classList.remove('studio-active-page','studio-filters-open');delete composedPage.dataset.studioRoute;composedPage.style.removeProperty('--studio-sales-table-order');});primary.hidden=true;advanced.hidden=true;filterButton.hidden=!page.querySelector('.studio-advanced-control');aboutButton.hidden=about.hidden=!aboutBody.children.length;working=false;apply();document.dispatchEvent(new CustomEvent('bc-review-composed',{detail:{page,route}}));if(library?.open)renderLibrary();
+   widgets=C.defaults(items,p).sort((a,b)=>C.rank(a,p)-C.rank(b,p));widgets.forEach((item,index)=>{item.rank=index;through(item.n);widget(item);});page.dataset.studioRoute=route;page.classList.add('studio-active-page');page.classList.toggle('studio-filters-open',state.filtersOpen===true);const composedPage=page;cleanup.push(()=>{composedPage.classList.remove('studio-active-page','studio-filters-open');delete composedPage.dataset.studioRoute;composedPage.style.removeProperty('--studio-sales-table-order');});primary.hidden=true;advanced.hidden=true;filterButton.hidden=!page.querySelector('.studio-advanced-control');filterButton.setAttribute('aria-expanded',String(!filterButton.hidden&&state.filtersOpen===true));aboutButton.hidden=about.hidden=!aboutBody.children.length;working=false;apply();document.dispatchEvent(new CustomEvent('bc-review-composed',{detail:{page,route}}));if(library?.open)renderLibrary();
   }
   return{compose,restore,openLibrary,isManaged:n=>moving.has(n)||n.nodeType===1&&(n.dataset.studioOwned||n.dataset.studioManaged),scan:()=>({version:3,route,revision,widgets:widgets.map(i=>({id:i.id,title:i.title,kind:i.kind,size:state.sizes[i.id]||i.size,visible:i.widget.dataset.studioHidden!=='true',required:i.required})),tables:widgets.filter(i=>i.kind==='table').length,charts:widgets.filter(i=>i.kind==='chart').length})};
  }
