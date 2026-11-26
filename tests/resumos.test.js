@@ -37,9 +37,17 @@ test('esta fase retira os julgamentos universais apenas dos dois renderizadores 
  const diag=sourceBetween('function renderDiagnosis(', '// EXECUTIVE MODE'),pano=sourceBetween('function renderGerencial(){','// ── Gráficos ──');assert.doesNotMatch(diag,/META_MARGEM|65|Tudo sob controle|A régua é uma só/);assert.doesNotMatch(pano,/Concentração de risco|Queda relevante|de prejuízo/);assert.match(html,/const META_MARGEM=15/);assert.match(html,/BC_RESUMOS_LEITURA_V2/);
 });
 test('modo executivo da Visão Geral conserva a mesma base e não reintroduz metas universais',()=>{const exec=sourceBetween('function openExec(){','function closeExec(){');assert.doesNotMatch(exec,/META_MARGEM|mcBadge\(|mcCor\(|Math.round\(fatDe/);assert.match(exec,/_resumoAgrupa/);assert.match(exec,/Diferença bruto\/líquido/);assert.match(exec,/Objetivos específicos em Metas/);});
-test('atalho de comparação mantém o calendário dentro da tela mesmo com o cabeçalho fora da janela',()=>{
- const code=sourceBetween('function bcChromePeriodSync(', 'function bcChromePeriod(){');
- for(const [width,height,top,bottom,want]of [[1280,720,-500,-450,16],[1280,900,100,144,152],[1280,720,450,494,16],[390,844,100,144,16]]){
-  const panel={style:{}},range={open:true,querySelector:s=>s==='summary'?{getBoundingClientRect:()=>({top,bottom,right:width-20})}:panel},context=vm.createContext({BCChrome:{periodMounted:true},getR:()=>['2026-10-01','2026-10-28'],bcChromeText:()=>{},bcChromePeriodName:()=>'',bcChromePeriodPreview:()=>{},document:{getElementById:id=>id==='bc-range-menu'?range:{}},window:{innerWidth:width,innerHeight:height}});vm.runInContext(code,context);context.bcChromePeriodSync();assert.equal(panel.style.top,want+'px');assert.equal(parseInt(panel.style.top)+parseInt(panel.style.maxHeight),height-16);assert.equal(panel.style.right,'20px');
+test('seletor acompanha a data, abre acima quando necessário e permanece acessível fora da dobra',()=>{
+ const code=sourceBetween('function bcPositionPeriod()', 'function bcChromePeriod(){');
+ for(const [top,bottom,wantTop,wantBottom,space] of [[100,144,'150px','auto',562],[450,494,'auto','276px',436],[-500,-450,'8px','auto',704]]){
+  const values=new Map(),panel={offsetWidth:430,style:{getPropertyValue:k=>values.get(k),setProperty:(k,v)=>values.set(k,v)}};
+  const trigger={currentCSSZoom:1,getBoundingClientRect:()=>({top,bottom,right:1260})};
+  const menu={open:true,querySelector:s=>s==='summary'?trigger:panel};
+  const context=vm.createContext({document:{documentElement:{clientWidth:1280},getElementById:()=>menu},innerHeight:720});
+  vm.runInContext(code,context);context.bcPositionPeriod();
+  assert.equal(values.get('--period-top'),wantTop);
+  assert.equal(values.get('--period-bottom'),wantBottom);
+  assert.equal(values.get('--period-space'),space+'px');
+  assert.equal(values.get('--period-right'),'20px');
  }
 });

@@ -63,7 +63,26 @@ function bcChromePeriodPreview(){
 function bcChromePeriodSync(force=false){
  if(!BCChrome.periodMounted)return;const [from,to]=getR();bcChromeText(document.getElementById('bc-range-choice'),bcChromePeriodName(from,to));
  if(force){const match=bcChromeRanges().some(x=>x.from===from&&x.to===to);document.getElementById('bc-range-month').value=from.slice(0,7);BCChrome.calendarMonth=from.slice(0,7);BCChrome.monthYear=+from.slice(0,4);BCChrome.calendarPending=false;BCChrome.calendarHover='';bcChromePeriodMode(match?'quick':bcChromePeriodName(from,to)!=='Período personalizado'?'month':'custom');}bcChromePeriodPreview();
- const range=document.getElementById('bc-range-menu');if(range.open){const rect=range.querySelector('summary').getBoundingClientRect(),top=window.innerWidth<=760||rect.top<0||window.innerHeight-rect.bottom<660?16:Math.max(16,rect.bottom+8),panel=range.querySelector('.bc-period-panel'),right=Math.max(16,window.innerWidth-rect.right);for(const [key,value]of Object.entries({top:top+'px',right:right+'px',maxHeight:(window.innerHeight-top-16)+'px'}))if(panel.style[key]!==value)panel.style[key]=value;}
+ bcPositionPeriod();
+}
+function bcPositionPeriod(){
+ const menu=document.getElementById('bc-range-menu');
+ if(!menu?.open)return;
+ const panel=menu.querySelector('.bc-period-panel'),trigger=menu.querySelector('summary');
+ const rect=trigger.getBoundingClientRect(),scale=trigger.currentCSSZoom||rect.width/trigger.offsetWidth||1;
+ const viewport=document.documentElement.clientWidth,edge=8,gap=6;
+ const below=innerHeight-rect.bottom-gap-edge,above=rect.top-gap-edge;
+ const flip=below<280&&above>below;
+ const anchored=rect.bottom>edge&&rect.top<innerHeight-edge;
+ const space=anchored?(flip?above:below):innerHeight-2*edge;
+ const right=Math.max(edge,Math.min(viewport-rect.right,viewport-panel.offsetWidth*scale-edge));
+ const top=anchored&&!flip?rect.bottom+gap:edge;
+ for(const [name,value] of Object.entries({
+  '--period-top':anchored&&flip?'auto':Math.max(edge,top)/scale+'px',
+  '--period-bottom':anchored&&flip?(innerHeight-rect.top+gap)/scale+'px':'auto',
+  '--period-right':right/scale+'px','--period-space':Math.max(0,space)/scale+'px'
+ }))if(panel.style.getPropertyValue(name)!==value)panel.style.setProperty(name,value);
+
 }
 function bcChromePeriod(){
  const range=document.getElementById('bc-range-menu');if(!range||BCChrome.periodMounted)return;const panel=range.querySelector('.bc-period-panel');if(!panel)return;

@@ -12,8 +12,11 @@
 
 
 /* O painel permanece estável ao abrir as opções de comparação e ao editar datas. */
-.bc-shell #bc-range-menu>.bc-period-panel{
- position:fixed!important;inset:0!important;margin:auto!important;height:fit-content;transform:none!important;
+body.bc-shell #bc-temporal #bc-range-menu>.bc-period-panel{
+ position:fixed!important;margin:0!important;transform:none!important;
+ top:var(--period-top,8px)!important;bottom:var(--period-bottom,auto)!important;
+ right:var(--period-right,8px)!important;left:auto!important;
+ max-height:min(560px,var(--period-space,90dvh))!important;
 }
 
 /* Cores compartilhadas pela tabela original e pela ampliação. */
@@ -31,4 +34,14 @@
 .bc-cmp-table .bc-cmp-value[data-tone]{color:var(--cmp-tone)!important}
 .bc-cmp-table .bc-cmp-difference[data-tone]{display:inline-block;padding:3px 8px;border-radius:6px;background:color-mix(in srgb,var(--cmp-tone) 10%,transparent);color:var(--cmp-tone)!important;font-weight:600}
 
-.bc-shell #bc-range-menu .bc-period-body>.bc-period-compare{border-top:0;border-bottom:1px solid var(--bc-border);padding:0 0 12px}
+.bc-shell #bc-range-menu .bc-period-body>.bc-period-compare{padding:12px 0 0}
+.bc-shell #bc-range-menu .bc-period-compare>summary{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ padding:9px 12px!important;border:1px solid var(--bc-border)!important;border-radius:8px;
+ background:var(--bc-surface)!important;color:var(--bc-text)!important;cursor:pointer;
+}
+.bc-shell #bc-range-menu .bc-period-compare>summary::after{
+ content:'';width:7px;height:7px;flex:none;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);
+}
+.bc-shell #bc-range-menu .bc-period-compare[open]>summary::after{transform:rotate(225deg)}
+@media(max-width:700px){body.bc-shell #bc-temporal #bc-range-menu>.bc-period-panel{left:10px!important;right:10px!important}}
