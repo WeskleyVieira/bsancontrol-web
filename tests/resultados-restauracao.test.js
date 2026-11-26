@@ -36,10 +36,13 @@ test('comparador e Visão Geral usam Pós-Ads ponderado e separam a cobertura pe
  const complete=reading([a,b]);
  assert.equal(complete.after,40);
  assert.equal(complete.afterPct,10);
+ assert.equal(complete.tacos,20);
  assert.equal(complete.partial,false);
  const pending={...b,adsMissing:true},partial=reading([a,pending]);
  assert.equal(partial.after,-10);
  assert.equal(partial.afterPct,-10);
+ assert.equal(partial.tacos,30);
+ assert.equal(reading([pending]).tacos,null);
  assert.equal(partial.partial,true);
  assert.equal(partial.covered.known,1);
  assert.equal(partial.covered.total,2);

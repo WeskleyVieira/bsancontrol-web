@@ -342,9 +342,9 @@
     const scopedRanges=data.faixas.map(range=>({...range,ops:range.ops.filter(row=>channels.includes(row.mkt))}));
     const current=M.rangeModel({...data,faixas:scopedRanges},'atual');
     if(!current?.total)return null;
-    const {f,after,afterPct,partial,covered}=L.financialReading(current.total,current.ops);
+    const {f,after,afterPct,tacos,partial,covered}=L.financialReading(current.total,current.ops);
     return {fat:current.total.fat,mc:f.pre,pct:f.pctPre,qtd:current.total.qtd,
-      ped:current.total.ped,ticket:current.total.ticket,after,afterPct,
+      ped:current.total.ped,ticket:current.total.ticket,after,afterPct,tacos,
       partial,coveredOps:covered.known,totalOps:covered.total};
   }
   window.BCResultados={modelo:M,forecastOperation:forecastPage,comparisonValues};

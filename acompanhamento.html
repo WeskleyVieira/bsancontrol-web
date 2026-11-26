@@ -1236,6 +1236,21 @@ dialog.bc-full-viewport>header{flex:0 0 auto}dialog.bc-full-viewport :is(#bc-viz
  position:fixed!important;inset:0!important;margin:auto!important;height:fit-content;transform:none!important;
 }
 
+/* Cores compartilhadas pela tabela original e pela ampliação. */
+.bc-cmp-table{--cmp-highlight:var(--bc-accent)}
+.bc-cmp-table tr[data-metric=fat],.bc-cmp-table tr[data-metric=qtd],.bc-cmp-table tr[data-metric=ped],.bc-cmp-table tr[data-metric=ticket]{--cmp-highlight:var(--bc-info)}
+.bc-cmp-table tr[data-metric=mc],.bc-cmp-table tr[data-metric=pct],.bc-cmp-table tr[data-metric=after],.bc-cmp-table tr[data-metric=afterPct]{--cmp-highlight:var(--bc-good)}
+.bc-cmp-table .bc-cmp-metric-name{display:inline-block;padding:5px 9px;border-radius:8px;background:color-mix(in srgb,var(--cmp-highlight) 12%,transparent);color:var(--cmp-highlight);font-weight:600}
+.bc-cmp-table thead th{background:color-mix(in srgb,var(--bc-accent) 8%,var(--bc-surface))}
+.bc-cmp-table tbody td:nth-child(2){background:color-mix(in srgb,var(--bc-accent) 5%,var(--bc-surface))}
+.bc-cmp-table tr[data-metric=after] td,.bc-cmp-table tr[data-metric=afterPct] td{background:color-mix(in srgb,var(--bc-good) 5%,var(--bc-surface))}
+.bc-cmp-table [data-tone=good]{--cmp-tone:var(--bc-good)}
+.bc-cmp-table [data-tone=bad]{--cmp-tone:var(--bc-bad)}
+.bc-cmp-table [data-tone=info]{--cmp-tone:var(--bc-info)}
+.bc-cmp-table [data-tone=neutral]{--cmp-tone:var(--bc-muted)}
+.bc-cmp-table .bc-cmp-value[data-tone]{color:var(--cmp-tone)!important}
+.bc-cmp-table .bc-cmp-difference[data-tone]{display:inline-block;padding:3px 8px;border-radius:6px;background:color-mix(in srgb,var(--cmp-tone) 10%,transparent);color:var(--cmp-tone)!important;font-weight:600}
+
 .sum-intro{padding:12px 18px;background:var(--bc-surface);border:1px solid var(--bc-border);border-radius:12px;margin:0 0 16px}.sum-intro h2{font:600 20px/1.4 Inter,"Segoe UI",sans-serif;margin:0 0 8px;letter-spacing:-.3px}.sum-note,.sum-context,.sum-freshness,.sum-comparison{font-size:13px;line-height:1.7;color:var(--bc-muted);margin:8px 0}.sum-context{color:var(--bc-text);font-weight:500}.sum-freshness{font-size:12px}.sum-intro p{margin:4px 0}.sum-comparison{padding:10px 14px;border:1px solid var(--bc-border);border-radius:8px;background:var(--bc-surface)}.sum-summary-page .bc-view-heading{margin-bottom:14px}.sum-summary-page .bc-breadcrumb{margin-bottom:6px}.sum-summary-page .bc-view-heading p{margin-top:6px}.sum-summary-page .bc-secondary{padding-bottom:10px;margin-bottom:14px}
 .sum-kpis{display:grid!important;gap:16px!important;margin:0 0 18px!important}.sum-kpis-four{grid-template-columns:repeat(4,minmax(0,1fr))!important}.sum-kpis-three{grid-template-columns:repeat(3,minmax(0,1fr))!important}.sum-card{min-width:0;padding:22px 20px;border:1px solid var(--bc-border);border-radius:12px;background:var(--bc-surface);font-variant-numeric:tabular-nums}.sum-card h3{font-size:16px;font-weight:600;line-height:1.5;margin:0 0 12px;color:var(--bc-muted)}.sum-card .sum-value{display:block;font-size:32px;line-height:1.3;font-weight:600;color:var(--bc-text);white-space:nowrap;letter-spacing:-.6px}.sum-card .sum-note{min-height:44px;margin:12px 0 0;font-size:12px}.sum-delta{font-size:13px;line-height:1.6;margin:12px 0 0;color:var(--bc-muted)}.sum-delta[data-direction=up]{color:var(--bc-good)}.sum-delta[data-direction=down],.sum-negative{color:var(--bc-bad)}.sum-kpis>.sum-comparison{grid-column:1/-1;margin:0}.sum-support .sum-card{background:var(--bc-raised);padding:18px 20px}.sum-support .sum-value{font-size:25px}
 .sum-section{margin:22px 0;padding:22px 24px;border:1px solid var(--bc-border);border-radius:12px;background:var(--bc-surface)}.sum-section-head h2{font-size:18px;font-weight:600;line-height:1.5;margin:0 0 8px}.sum-section-head{margin-bottom:16px}.sum-meta-line{display:flex;align-items:baseline;gap:20px;flex-wrap:wrap;font-size:15px}.sum-meta-line strong{font-size:20px;font-weight:600}.sum-button{min-height:44px;padding:10px 14px;border:1px solid var(--bc-border);border-radius:8px;background:var(--bc-raised);color:var(--bc-text);font:600 14px/1.5 Inter,"Segoe UI",sans-serif;cursor:pointer}.sum-button:hover{background:var(--a3)}.sum-button:disabled{opacity:.5;cursor:default}.sum-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 0}.sum-coverage-attention{font-size:13px;line-height:1.7;color:var(--bc-attention);border-left:2px solid var(--bc-attention);padding:8px 12px;background:var(--bc-raised)}
@@ -14766,7 +14781,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   });$('bc-cmp-add').disabled=picks.length>=4;if(focus)$(focus)?.focus();
  }
  function sameCompany(){const picks=S.picks.operacoes,emp=picks[0]?.emp||BCNav.company||companies()[0],markets=channels(emp);if(markets.length<2){$('bc-cmp-error').textContent='Esta empresa tem apenas um marketplace neste recorte. Escolha uma segunda empresa.';return;}S.picks.operacoes=[{emp,mkt:markets.includes(picks[0]?.mkt)?picks[0].mkt:markets[0]},{emp,mkt:''}];S.picks.operacoes[1].mkt=markets.find(m=>m!==S.picks.operacoes[0].mkt);renderChoices();invalidate();}
- const defs=[['fat','Faturamento','money'],['mc','Pré-Ads (R$)','money'],['pct','Margem pré-Ads (%)','percent'],['after','Pós-Ads (R$)','money'],['afterPct','Margem pós-Ads (%)','percent'],['qtd','Unidades','number'],['ped','Pedidos identificados','number'],['ticket','Ticket médio','money']];
+ const defs=[['fat','Faturamento','money'],['mc','Pré-Ads (R$)','money'],['pct','Margem pré-Ads (%)','percent'],['after','Pós-Ads (R$)','money'],['afterPct','Margem pós-Ads (%)','percent'],['tacos','TACOS (%)','percent'],['qtd','Unidades','number'],['ped','Pedidos identificados','number'],['ticket','Ticket médio','money']];
  function format(v,type){if(v==null)return 'Não disponível';if(type==='money')return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:2});return v.toLocaleString('pt-BR',{minimumFractionDigits:type==='percent'?2:0,maximumFractionDigits:type==='percent'?2:4})+(type==='percent'?'%':'');}
  async function compare(){if(!can()||S.identity!==bcNavKey()){close();return;}const picks=S.picks[S.mode],model={errors:BCComparacao.validar(picks,S.mode,catalog())};const error=$('bc-cmp-error');if(model.errors.some(Boolean)){error.textContent='Revise as seleções: '+[...new Set(model.errors.filter(Boolean))].join(' ');const idx=model.errors.findIndex(Boolean);$('bc-cmp-company-'+idx)?.focus();return;}error.textContent='';
   const host=$('bc-cmp-results'),ticket=++revision;
@@ -14782,11 +14797,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   const wrap=el('div','bc-cmp-table-wrap'),table=el('table','bc-cmp-table'),caption=el('caption','',bcHeaderDate(S.range[0])+' a '+bcHeaderDate(S.range[1])+' · '+S.scope);table.append(caption);const head=el('thead'),hr=el('tr');hr.append(el('th','','Indicador'));
   model.items.forEach((item,i)=>{const th=el('th','',item.label);th.append(el('small','',i===0?'Referência':'Diferença para a referência'));hr.append(th);});head.append(hr);table.append(head);const body=el('tbody');
   for(const [key,label,type] of defs){
-   const tr=el('tr'),heading=el('th','',label);heading.scope='row';tr.append(heading);
-   const postAds=key==='after'||key==='afterPct',base=model.items[0].values;
+   const tr=el('tr'),heading=el('th');heading.scope='row';tr.dataset.metric=key;heading.append(el('span','bc-cmp-metric-name',label));tr.append(heading);
+   const postAds=key==='after'||key==='afterPct'||key==='tacos',base=model.items[0].values;
    model.items.forEach(({values},i)=>{
     const td=el('td'),value=values?.[key];
-    td.append(el('strong','',values?format(value,type):'Sem registros no período'));
+    const amount=el('strong','bc-cmp-value',values?format(value,type):'Sem registros no período');
+    if(value!=null&&['mc','pct','after','afterPct'].includes(key))amount.dataset.tone=value<0?'bad':value>0?'good':'neutral';
+    td.append(amount);
     if(value!=null)td.title=String(value).replace('.',',')+(type==='percent'?'%':'');
     if(postAds&&values?.partial)td.append(el('small','','Parcial · '+values.coveredOps+' de '+values.totalOps+' operações apuradas'));
     else if(postAds&&values&&values.coveredOps===0)td.append(el('small','','Publicidade sem apuração completa'));
@@ -14795,14 +14812,20 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
      let difference='Sem referência para calcular';
      if(partial)difference='Diferença indisponível · cobertura parcial';
      else if(delta!=null)difference=(delta>0?'+':'')+(type==='percent'?format(delta,'number')+' p.p.':format(delta,type));
-     td.append(el('small','',difference));
+     const badge=el('small','bc-cmp-difference',difference);
+     if(!partial&&delta!=null){
+      badge.textContent=(delta>0?'↑ ':delta<0?'↓ ':'= ')+difference;
+      const margin=['mc','pct','after','afterPct'].includes(key);
+      badge.dataset.tone=delta===0?'neutral':key==='tacos'?(delta<0?'good':'bad'):margin?(delta>0?'good':'bad'):'info';
+     }
+     td.append(badge);
     }
     tr.append(td);
    });
    body.append(tr);
   }
   table.append(body);wrap.tabIndex=0;wrap.setAttribute('aria-label','Tabela de comparação, com rolagem horizontal');wrap.append(table);host.append(el('p','bc-cmp-scroll-hint','Deslize a tabela para ver as outras colunas.'),wrap);
-  host.append(note('O Pós-Ads mostra a margem após a publicidade. O ticket médio divide o faturamento dos pedidos identificados pela quantidade desses pedidos.'));
+  host.append(note('TACOS é a publicidade considerada dividida pelo faturamento da base apurada. Nas diferenças, verde indica margem maior ou TACOS menor que a referência, e vermelho indica o inverso. As setas mostram a direção da diferença. O Pós-Ads mostra a margem após a publicidade. O ticket médio divide o faturamento dos pedidos identificados pela quantidade desses pedidos.'));
   host.append(note('Para comparar bônus e metas publicados, consulte Comissão. Para comparar datas diferentes, use Período → Comparar períodos.'));host.focus();
  }
  function close(){revision++;S.dialog?.close();S.origin?.focus();}
@@ -16942,9 +16965,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const scopedRanges=data.faixas.map(range=>({...range,ops:range.ops.filter(row=>channels.includes(row.mkt))}));
     const current=M.rangeModel({...data,faixas:scopedRanges},'atual');
     if(!current?.total)return null;
-    const {f,after,afterPct,partial,covered}=L.financialReading(current.total,current.ops);
+    const {f,after,afterPct,tacos,partial,covered}=L.financialReading(current.total,current.ops);
     return {fat:current.total.fat,mc:f.pre,pct:f.pctPre,qtd:current.total.qtd,
-      ped:current.total.ped,ticket:current.total.ticket,after,afterPct,
+      ped:current.total.ped,ticket:current.total.ticket,after,afterPct,tacos,
       partial,coveredOps:covered.known,totalOps:covered.total};
   }
   window.BCResultados={modelo:M,forecastOperation:forecastPage,comparisonValues};
