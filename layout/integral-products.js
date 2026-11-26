@@ -23,7 +23,7 @@
     full.textContent=large?'Restaurar tamanho':'Tela cheia';
     full.setAttribute('aria-pressed',String(large));
    };
-   close.textContent='Fechar';close.onclick=()=>dialog.close();h.append(t,full,close);const body=document.createElement('div');body.className='review-dialog-body';dialog.append(h,body);const marker=document.createComment('origem da análise ampliada');node.before(marker);body.append(node);expanded={node,marker};parent.postMessage({type:'bsan-produtos-table-view',open:true},location.origin);dialog.showModal();}
+   close.textContent='Fechar';close.onclick=()=>dialog.close();h.append(t,full,close);const body=document.createElement('div');body.className='review-dialog-body';dialog.append(h,body);const marker=BCReviewStudio.reserveWidgetSpace(node);node.before(marker);body.append(node);expanded={node,marker};parent.postMessage({type:'bsan-produtos-table-view',open:true},location.origin);dialog.showModal();}
   dialog.addEventListener('close',restoreZoom);
   function makeStudio(){studio=BCReviewStudio.create({settings,persist,expand,onLibrary:open=>parent.postMessage({type:'bsan-produtos-table-view',open},location.origin)});}
   function apply(){if(!studio||expanded)return;studio.compose(root,key());}
