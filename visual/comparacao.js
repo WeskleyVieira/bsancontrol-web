@@ -156,46 +156,27 @@
   finishEdit=onFinish;pendingCustom=custom;menu.open=true;bcHeaderRangeSync(true);
   const panel=menu.querySelector('.bc-period-compare');if(panel){panel.hidden=false;panel.open=true;}
   const field=custom?$('bc-compare-from'):$('cmp-sel');field.focus({preventScroll:true});
-  const body=menu.querySelector('.bc-period-body');if(body)body.scrollTop=body.scrollHeight;
- }
- function buttonForCustom(){
-  const button=document.createElement('button');button.type='button';button.id='bc-reference-edit';
-  button.className='bc-cmp-button';button.textContent='Editar datas';button.hidden=true;
-  button.onclick=event=>open(event,true);return button;
+  const body=menu.querySelector('.bc-period-body');if(body)body.scrollTop=0;
  }
  function refresh(){
   const menu=$('bc-range-menu'),native=$('cmp-sel');if(!menu||!native||!$('bc-compare-from'))return;
-  let label=$('bc-reference-control');if(!label){
-   label=document.createElement('label');label.id='bc-reference-control';
+  if(!menu.dataset.referenceMounted){
+   menu.dataset.referenceMounted='1';
    menu.addEventListener('toggle',()=>{if(!menu.open&&finishEdit){const done=finishEdit;finishEdit=null;done(false);}});
-   const title=document.createElement('span');title.textContent='Comparar com';
-   const select=document.createElement('select');select.id='bc-reference-choice';fill(select);
-   select.onchange=event=>{const value=select.value;if(value==='forecast')return;if(value==='custom'){select.value=mode;open(event,true);return;}storeMode(value,...getR());refresh();
-    if(activePage==='envios'||activePage==='gerencial'&&!document.querySelector('.studio-active-page #res-forecast-products')){
-     aplicarPeriodo(...getR(),'main');
-    }else {updatePerLabel();renderAll();}
-   };
-   label.append(title,select);menu.after(label);
-   const change=buttonForCustom();label.after(change);
   }
-  const show=available();const edit=$('bc-reference-edit');const hideEdit=!show||mode!=='custom';if(edit.hidden!==hideEdit)edit.hidden=hideEdit;if(label.hidden===show)label.hidden=!show;
-  const panel=menu.querySelector('.bc-period-compare');if(panel&&panel.hidden===show)panel.hidden=!show;
+  const show=available(),panel=menu.querySelector('.bc-period-compare');
+  if(panel&&panel.hidden===show)panel.hidden=!show;
+  if(panel&&panel.parentElement.firstElementChild!==panel)panel.parentElement.prepend(panel);
   fill(native);if(!menu.open)native.value=mode;
-  const direct=$('bc-reference-choice');
   const forecast=activePage==='metas'||activePage==='gerencial'&&GER_SUB==='previsao';
   const current=forecast&&document.querySelector('.studio-active-page [data-forecast-reference],.page.on [data-forecast-reference]')?.dataset;
   const local=current&&current.forecastReference!=='header'&&(mode!=='auto'||current.forecastReference!=='month');
-  let extra=direct.querySelector('[value="forecast"]');
-  if(local){
-   if(!extra){extra=new Option('','forecast');direct.add(extra);}
-   if(extra.text!==current.forecastLabel)extra.text=current.forecastLabel;
-  }else extra?.remove();
-  direct.value=local?'forecast':mode;
-  const [from,to]=getR();for(const option of direct.options){
-   if(option.value==='forecast')continue;
-   const value=option.value,base=choices.find(([v])=>v===value)[1],pair=value==='auto'&&activePage==='envios'?null:range(value==='auto'&&forecast?'month':value,from,to,value===mode?getR2():null);
-   const label=value==='auto'&&forecast&&current?.forecastReference==='month'?'Automática · '+current.forecastLabel:base+(pair?' · '+pair.map(d=>d.slice(8)+'/'+d.slice(5,7)+'/'+d.slice(2,4)).join(' – '):'');
-   if(option.text!==label)option.text=label;
+  let context=$('bc-reference-context');
+  if(!context&&panel){context=document.createElement('p');context.id='bc-reference-context';context.className='bc-cmp-note';context.hidden=true;panel.append(context);}
+  if(context){
+   const text=local?'O Forecast usa uma referência própria: '+current.forecastLabel+'. Altere a referência do Forecast para usar a comparação do cabeçalho.':'';
+   if(context.textContent!==text)context.textContent=text;
+   if(context.hidden===!!local)context.hidden=!local;
   }
  }
  const previousSync=bcHeaderRangeSync;

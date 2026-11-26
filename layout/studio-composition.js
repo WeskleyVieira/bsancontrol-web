@@ -565,10 +565,12 @@
   }
   document.addEventListener('click',event=>{
    const alvo=event.target;
-   if(alvo.closest(uiSelector)||alvo.closest('select')||alvo.closest('label')?.control?.matches('select'))return;
+   if(alvo.closest(uiSelector)||alvo.closest('#bc-range-menu')||alvo.closest('select')||alvo.closest('label')?.control?.matches('select'))return;
+   // Um clique na superfície de leitura não altera dados nem exige reconstruir os widgets.
+   if(!alvo.closest('button,a[href],summary,input,[role=button],[role=tab],[onclick],canvas'))return;
    schedule();
   });
-  document.addEventListener('change',event=>{if(!event.target.closest(uiSelector))schedule();});
+  document.addEventListener('change',event=>{if(!event.target.closest(uiSelector)&&!event.target.closest('#bc-range-menu'))schedule();});
   return schedule;
  }
  window.BCReviewStudio={create,presentationUpdates};
