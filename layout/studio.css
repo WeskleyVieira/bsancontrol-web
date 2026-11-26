@@ -1,6 +1,8 @@
 /* Composição de trabalho v3: grade integrada, cartões e biblioteca visual. */
 body.review-integral{--studio-gap:16px;--studio-radius:14px}
 body.review-integral .page.on.studio-active-page{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--studio-gap);align-items:start;padding-bottom:28px!important}
+/* Conteúdo nativo recém-carregado ocupa a linha até receber a largura do widget. */
+:where(.studio-active-page,.studio-through) > :where(*){grid-column:1/-1}
 .studio-workspace,.studio-grid{display:contents}.studio-through{min-width:0!important}.studio-support-source,.studio-native-caption{display:none!important}
 .studio-active-page>.review-toolbar{display:none!important}.review-integral:has(.studio-active-page) #bc-scope-note{display:none!important}
 .review-integral .bc-view-heading{padding:16px 0 8px!important}.review-integral #bc-page-title{font-size:26px!important;letter-spacing:-.7px}.review-integral #bc-breadcrumb{font-size:10px;margin-bottom:5px}

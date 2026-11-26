@@ -574,5 +574,13 @@
   document.addEventListener('change',event=>{if(!event.target.closest(uiSelector)&&!event.target.closest('#bc-range-menu'))schedule();});
   return schedule;
  }
- window.BCReviewStudio={create,presentationUpdates};
+ function reserveWidgetSpace(widget){
+  const marker=document.createElement('div'),style=getComputedStyle(widget);
+  marker.className='review-placeholder';marker.setAttribute('aria-hidden','true');
+  marker.style.gridColumn=style.gridColumn;
+  marker.style.order=style.order;
+  marker.style.height=widget.offsetHeight+'px';
+  return marker;
+ }
+ window.BCReviewStudio={create,presentationUpdates,reserveWidgetSpace};
 })();
