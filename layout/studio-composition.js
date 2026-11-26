@@ -178,7 +178,7 @@
    cleanup.push(()=>track.classList.remove('studio-pacing-track'));
    const reads=[
     [calendar,calendarBar,'Progresso do calendário','No mês aberto, conta os dias corridos até a referência.'],
-    [target,targetBar,'Meta de faturamento atingida','Realizado em relação à meta das operações com objetivo cadastrado.']
+    [target,targetBar,'Meta de faturamento atingida','Realizado em relação à meta das operações com faturamento apurado no período.']
    ];
    for(const [label,bar,title,description]of reads){
     const value=textOf(label).split(':').at(-1).trim();
@@ -462,7 +462,8 @@
     cleanup.push(()=>{currentPage.classList.remove('studio-result-page');source?.classList.remove('studio-result-source');});
    }
    const collected=collect(page,p,source);
-   const refresh=route==='resultados/overview'&&collected.controls.find(n=>n.matches('button')&&textOf(n)==='Atualizar Visão Geral');
+   const refreshLabel={'resultados/overview':'Atualizar Visão Geral','resultados/marketplaces':'Atualizar Marketplaces'}[route];
+   const refresh=refreshLabel&&collected.controls.find(n=>n.matches('button')&&textOf(n)===refreshLabel);
    host=own(make('div','studio-workspace'));const tools=own(make('div','studio-page-tools studio-ui')),purposeText=make('p','studio-purpose',p.purpose),libraryButton=btn('Adicionar widgets',()=>openLibrary(),'studio-library-trigger studio-primary'),all=btn('Todas as análises',()=>{state.mode='all';state.items={};save();}),essential=btn('Visão essencial',()=>{state.mode='essential';state.items={};save();}),filterButton=btn('Filtros',()=>{state.filtersOpen=!state.filtersOpen;filterButton.setAttribute('aria-expanded',String(state.filtersOpen));options.persist();page.classList.toggle('studio-filters-open',state.filtersOpen);}),aboutButton=btn('Como ler esta página',()=>{about.open=!about.open;guideRoute=about.open?route:'';if(about.open)about.scrollIntoView({block:'nearest'});},'studio-guide-button');
    const views=make('div','studio-view-options');
    views.setAttribute('role','group');

@@ -51,7 +51,7 @@
     dataset.backgroundColor=old.map(c=>Object.values(curves).includes(c)?c:curves[['A','B','C'][Math.min(2,unique.indexOf(c))]]);
    }
    // Situações e identidades dos canais conservam as cores da origem.
-   const categorical=/(amazon|mercado livre|shopee|shein|temu|tiktok|kwai|magazine|magalu|estrela|nicho|revisar|melhorar|negativ|preju[ií]zo|inferior|superior|esperado|meta|limite|teto)/i.test(dataset.label||'');
+   const categorical=/(amazon|mercado livre|shopee|shein|temu|tiktok|kwai|magazine|magalu|estrela|nicho|revisar|melhorar|negativ|preju[ií]zo|inferior|superior|projeção central|esperado|meta|limite|teto)/i.test(dataset.label||'');
    const uniform=!Array.isArray(dataset.backgroundColor)||dataset.backgroundColor.every(c=>c===dataset.backgroundColor[0]);
    if(['bar','line'].includes(type)&&!categorical&&uniform&&typeof dataset.backgroundColor!=='function'&&!abc){
     const secondary=/(margem|\bMC\b|lucro|contribui|p[oó]s.ads|pr[eé].ads)/i.test(dataset.label||'');const color=secondary?p.secondary:/(faturamento|receita|unidades|pedidos)/i.test(dataset.label||'')?p.primary:p.series[index%2];
@@ -78,6 +78,13 @@
   id:'bsan-review-presentation',beforeUpdate:presentation,
   afterInit(chart){state(chart);canvases.set(chart.canvas,chart);observer?.observe(chart.canvas);},
   afterUpdate(chart){if(!root)return;const s=state(chart),key=signature(chart);if(key!==s.signature){finish(chart);s.signature=key;s.progress=motion()?0:1;s.pending=motion();}},
+  beforeDatasetsDraw(chart){
+   const s=state(chart),a=chart.chartArea;
+   if(s.progress>=1||!motion()||!a||!chart.data.datasets.some(d=>d.fill==='-1'))return;
+   // O preenchimento entre séries é desenhado antes dos traçados individuais.
+   chart.ctx.save();chart.ctx.beginPath();chart.ctx.rect(a.left-5,a.top-8,(a.right-a.left+10)*s.progress,a.bottom-a.top+16);chart.ctx.clip();s.bandClip=true;
+  },
+  afterDatasetsDraw(chart){const s=state(chart);if(s.bandClip){chart.ctx.restore();s.bandClip=false;}},
   beforeDatasetDraw(chart,args){const s=state(chart);if(s.progress<1&&motion())s.restores.set(args.index,geometry(chart,args.index,s.progress));},
   afterDatasetDraw(chart,args){const s=state(chart);s.restores.get(args.index)?.();s.restores.delete(args.index);},
   afterDraw(chart){const s=state(chart);for(const fn of s.restores.values())fn();s.restores.clear();if(!motion()){finish(chart);return;}schedule(chart);},
