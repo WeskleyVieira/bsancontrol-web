@@ -188,7 +188,7 @@
  }
  document.addEventListener('close',()=>schedule(),true);
 
- const generatedChrome='.review-ui,.studio-ui,[data-studio-owned=true],.bc-reading-guide,.bc-viz-tools,.bc-table-tools';
+ const generatedChrome='#bc-global-context,.review-ui,.studio-ui,[data-studio-owned=true],.bc-reading-guide,.bc-viz-tools,.bc-table-tools';
  new MutationObserver(records=>{
   const sourceChanged=records.some(record=>!record.target.closest?.(generatedChrome)&&[...record.addedNodes].some(node=>
    node.nodeType===1&&!node.matches(generatedChrome+',.review-widget,.review-body')&&!studio?.isManaged(node)));

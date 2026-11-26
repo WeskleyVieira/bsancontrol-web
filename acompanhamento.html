@@ -1227,12 +1227,11 @@ dialog.bc-full-viewport>header{flex:0 0 auto}dialog.bc-full-viewport :is(#bc-viz
 .bc-cmp-dialog,.bc-cmp-body{background:var(--bc-surface)}.bc-cmp-choice{background:var(--bc-raised)}
 .bc-cmp-scroll-hint{display:none;font-size:12px;color:var(--bc-muted)}.bc-cmp-table-wrap:focus-visible{outline:2px solid var(--bc-accent);outline-offset:3px}@media(max-width:760px){.bc-cmp-scroll-hint{display:block}}
 
-#bc-reference-control{display:grid;gap:4px;min-width:0;max-width:100%;font:inherit}#bc-reference-control[hidden],.bc-period-compare[hidden],#bc-compare-custom button[hidden]{display:none!important}#bc-reference-control span{font-size:.82em;color:var(--bc-muted)}#bc-reference-control select{width:clamp(170px,24vw,340px);max-width:100%}#bc-temporal:has(#bc-reference-control:not([hidden])){flex-wrap:wrap;align-items:end;gap:10px}@media(max-width:700px){#bc-reference-control,#bc-reference-control select{width:100%}}
+ .bc-period-compare[hidden],#bc-compare-custom button[hidden]{display:none!important}
 
-#bc-reference-edit[hidden]{display:none!important}
 
-/* A referência pode ser aberta de um SKU abaixo da dobra. */
-.bc-shell #bc-range-menu:has(.bc-period-compare[open])>.bc-period-panel{
+/* O painel permanece estável ao abrir as opções de comparação e ao editar datas. */
+.bc-shell #bc-range-menu>.bc-period-panel{
  position:fixed!important;inset:0!important;margin:auto!important;height:fit-content;transform:none!important;
 }
 
@@ -1251,51 +1250,7 @@ dialog.bc-full-viewport>header{flex:0 0 auto}dialog.bc-full-viewport :is(#bc-viz
 .bc-cmp-table .bc-cmp-value[data-tone]{color:var(--cmp-tone)!important}
 .bc-cmp-table .bc-cmp-difference[data-tone]{display:inline-block;padding:3px 8px;border-radius:6px;background:color-mix(in srgb,var(--cmp-tone) 10%,transparent);color:var(--cmp-tone)!important;font-weight:600}
 
-/* Período e referência formam um par alinhado aos filtros de escopo. */
-body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])){
- display:flex!important;flex-wrap:wrap;align-items:end;gap:16px 20px!important;
-}
-body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])) .bc-context-fields{
- display:grid;grid-template-columns:minmax(120px,.7fr) repeat(2,minmax(0,1fr));gap:14px;
- flex:1 1 560px;min-width:0;width:auto;
-}
-body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])){
- display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:10px 14px;
- flex:1 1 700px;width:auto!important;min-width:0!important;margin-left:0;
-}
-body.bc-shell #bc-global-context #bc-temporal #bc-reference-control{
- margin:0;gap:6px;min-width:0;width:100%;
-}
-body.bc-shell #bc-global-context #bc-temporal #bc-reference-control>span,
-body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])) #bc-range-menu>summary>.bc-field-label{
- display:block!important;margin:0 0 6px;font-size:13px!important;line-height:20px!important;font-weight:500!important;color:var(--bc-muted);
-}
-body.bc-shell #bc-global-context #bc-temporal #bc-reference-control>span{margin:0}
-body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])) #bc-range-menu>summary{
- display:block!important;padding:0!important;border:0!important;background:transparent!important;
-}
-body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])) #bc-range-menu .bc-period-trigger,
-body.bc-shell #bc-global-context #bc-temporal #bc-reference-choice{
- width:100%!important;min-width:0!important;min-height:44px!important;height:44px!important;box-sizing:border-box;
- border:1px solid var(--bc-border)!important;border-radius:9px!important;background:var(--bc-surface)!important;
- font-size:14px!important;
-}
-body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])) #bc-range-menu .bc-period-trigger{padding:9px 12px!important}
-body.bc-shell #bc-global-context #bc-temporal #bc-reference-choice{padding:9px 34px 9px 12px!important;text-overflow:ellipsis}
-body.bc-shell #bc-global-context #bc-temporal #bc-reference-edit{grid-column:2;justify-self:end;min-height:32px;padding:4px 10px}
-@media(max-width:760px){
- body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])) .bc-context-fields{grid-template-columns:repeat(2,minmax(0,1fr));flex-basis:100%}
- body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])) .bc-context-fields>label:last-child{grid-column:1/-1}
- body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])){flex-basis:100%;grid-template-columns:minmax(0,1fr)}
- body.bc-shell #bc-global-context #bc-temporal #bc-reference-edit{grid-column:1}
-}
-
-body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])) .bc-context-fields>label{
- display:grid!important;gap:6px!important;margin:0;font-size:13px!important;line-height:20px!important;font-weight:500!important;
-}
-body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])) .bc-context-fields select{
- width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;font-size:14px!important;box-sizing:border-box;
-}
+.bc-shell #bc-range-menu .bc-period-body>.bc-period-compare{border-top:0;border-bottom:1px solid var(--bc-border);padding:0 0 12px}
 
 .sum-intro{padding:12px 18px;background:var(--bc-surface);border:1px solid var(--bc-border);border-radius:12px;margin:0 0 16px}.sum-intro h2{font:600 20px/1.4 Inter,"Segoe UI",sans-serif;margin:0 0 8px;letter-spacing:-.3px}.sum-note,.sum-context,.sum-freshness,.sum-comparison{font-size:13px;line-height:1.7;color:var(--bc-muted);margin:8px 0}.sum-context{color:var(--bc-text);font-weight:500}.sum-freshness{font-size:12px}.sum-intro p{margin:4px 0}.sum-comparison{padding:10px 14px;border:1px solid var(--bc-border);border-radius:8px;background:var(--bc-surface)}.sum-summary-page .bc-view-heading{margin-bottom:14px}.sum-summary-page .bc-breadcrumb{margin-bottom:6px}.sum-summary-page .bc-view-heading p{margin-top:6px}.sum-summary-page .bc-secondary{padding-bottom:10px;margin-bottom:14px}
 .sum-kpis{display:grid!important;gap:16px!important;margin:0 0 18px!important}.sum-kpis-four{grid-template-columns:repeat(4,minmax(0,1fr))!important}.sum-kpis-three{grid-template-columns:repeat(3,minmax(0,1fr))!important}.sum-card{min-width:0;padding:22px 20px;border:1px solid var(--bc-border);border-radius:12px;background:var(--bc-surface);font-variant-numeric:tabular-nums}.sum-card h3{font-size:16px;font-weight:600;line-height:1.5;margin:0 0 12px;color:var(--bc-muted)}.sum-card .sum-value{display:block;font-size:32px;line-height:1.3;font-weight:600;color:var(--bc-text);white-space:nowrap;letter-spacing:-.6px}.sum-card .sum-note{min-height:44px;margin:12px 0 0;font-size:12px}.sum-delta{font-size:13px;line-height:1.6;margin:12px 0 0;color:var(--bc-muted)}.sum-delta[data-direction=up]{color:var(--bc-good)}.sum-delta[data-direction=down],.sum-negative{color:var(--bc-bad)}.sum-kpis>.sum-comparison{grid-column:1/-1;margin:0}.sum-support .sum-card{background:var(--bc-raised);padding:18px 20px}.sum-support .sum-value{font-size:25px}
@@ -14926,46 +14881,27 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   finishEdit=onFinish;pendingCustom=custom;menu.open=true;bcHeaderRangeSync(true);
   const panel=menu.querySelector('.bc-period-compare');if(panel){panel.hidden=false;panel.open=true;}
   const field=custom?$('bc-compare-from'):$('cmp-sel');field.focus({preventScroll:true});
-  const body=menu.querySelector('.bc-period-body');if(body)body.scrollTop=body.scrollHeight;
- }
- function buttonForCustom(){
-  const button=document.createElement('button');button.type='button';button.id='bc-reference-edit';
-  button.className='bc-cmp-button';button.textContent='Editar datas';button.hidden=true;
-  button.onclick=event=>open(event,true);return button;
+  const body=menu.querySelector('.bc-period-body');if(body)body.scrollTop=0;
  }
  function refresh(){
   const menu=$('bc-range-menu'),native=$('cmp-sel');if(!menu||!native||!$('bc-compare-from'))return;
-  let label=$('bc-reference-control');if(!label){
-   label=document.createElement('label');label.id='bc-reference-control';
+  if(!menu.dataset.referenceMounted){
+   menu.dataset.referenceMounted='1';
    menu.addEventListener('toggle',()=>{if(!menu.open&&finishEdit){const done=finishEdit;finishEdit=null;done(false);}});
-   const title=document.createElement('span');title.textContent='Comparar com';
-   const select=document.createElement('select');select.id='bc-reference-choice';fill(select);
-   select.onchange=event=>{const value=select.value;if(value==='forecast')return;if(value==='custom'){select.value=mode;open(event,true);return;}storeMode(value,...getR());refresh();
-    if(activePage==='envios'||activePage==='gerencial'&&!document.querySelector('.studio-active-page #res-forecast-products')){
-     aplicarPeriodo(...getR(),'main');
-    }else {updatePerLabel();renderAll();}
-   };
-   label.append(title,select);menu.after(label);
-   const change=buttonForCustom();label.after(change);
   }
-  const show=available();const edit=$('bc-reference-edit');const hideEdit=!show||mode!=='custom';if(edit.hidden!==hideEdit)edit.hidden=hideEdit;if(label.hidden===show)label.hidden=!show;
-  const panel=menu.querySelector('.bc-period-compare');if(panel&&panel.hidden===show)panel.hidden=!show;
+  const show=available(),panel=menu.querySelector('.bc-period-compare');
+  if(panel&&panel.hidden===show)panel.hidden=!show;
+  if(panel&&panel.parentElement.firstElementChild!==panel)panel.parentElement.prepend(panel);
   fill(native);if(!menu.open)native.value=mode;
-  const direct=$('bc-reference-choice');
   const forecast=activePage==='metas'||activePage==='gerencial'&&GER_SUB==='previsao';
   const current=forecast&&document.querySelector('.studio-active-page [data-forecast-reference],.page.on [data-forecast-reference]')?.dataset;
   const local=current&&current.forecastReference!=='header'&&(mode!=='auto'||current.forecastReference!=='month');
-  let extra=direct.querySelector('[value="forecast"]');
-  if(local){
-   if(!extra){extra=new Option('','forecast');direct.add(extra);}
-   if(extra.text!==current.forecastLabel)extra.text=current.forecastLabel;
-  }else extra?.remove();
-  direct.value=local?'forecast':mode;
-  const [from,to]=getR();for(const option of direct.options){
-   if(option.value==='forecast')continue;
-   const value=option.value,base=choices.find(([v])=>v===value)[1],pair=value==='auto'&&activePage==='envios'?null:range(value==='auto'&&forecast?'month':value,from,to,value===mode?getR2():null);
-   const label=value==='auto'&&forecast&&current?.forecastReference==='month'?'Automática · '+current.forecastLabel:base+(pair?' · '+pair.map(d=>d.slice(8)+'/'+d.slice(5,7)+'/'+d.slice(2,4)).join(' – '):'');
-   if(option.text!==label)option.text=label;
+  let context=$('bc-reference-context');
+  if(!context&&panel){context=document.createElement('p');context.id='bc-reference-context';context.className='bc-cmp-note';context.hidden=true;panel.append(context);}
+  if(context){
+   const text=local?'O Forecast usa uma referência própria: '+current.forecastLabel+'. Altere a referência do Forecast para usar a comparação do cabeçalho.':'';
+   if(context.textContent!==text)context.textContent=text;
+   if(context.hidden===!!local)context.hidden=!local;
   }
  }
  const previousSync=bcHeaderRangeSync;
