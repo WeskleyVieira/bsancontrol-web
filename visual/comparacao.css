@@ -20,16 +20,19 @@ body.bc-shell #bc-temporal #bc-range-menu>.bc-period-panel{
 }
 
 /* Cores compartilhadas pela tabela original e pela ampliação. */
-.bc-cmp-table{--cmp-highlight:var(--bc-accent)}
-.bc-cmp-table tr[data-metric=fat],.bc-cmp-table tr[data-metric=qtd],.bc-cmp-table tr[data-metric=ped],.bc-cmp-table tr[data-metric=ticket]{--cmp-highlight:var(--bc-info)}
-.bc-cmp-table tr[data-metric=mc],.bc-cmp-table tr[data-metric=pct],.bc-cmp-table tr[data-metric=after],.bc-cmp-table tr[data-metric=afterPct]{--cmp-highlight:var(--bc-good)}
-.bc-cmp-table .bc-cmp-metric-name{display:inline-block;padding:5px 9px;border-radius:8px;background:color-mix(in srgb,var(--cmp-highlight) 12%,transparent);color:var(--cmp-highlight);font-weight:600}
+.bc-cmp-table .bc-cmp-metric-name{font-weight:600;color:var(--bc-text)}
+.bc-cmp-filter{margin:12px 16px;color:var(--bc-text)}
+.bc-cmp-filter summary{cursor:pointer;font-weight:600;width:fit-content;padding:6px 0}
+.bc-cmp-filter fieldset{border:1px solid var(--bc-border);border-radius:8px;padding:12px;margin:6px 0}
+.bc-cmp-filter legend{padding:0 4px;font-size:.9em}
+.bc-cmp-filter-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr));gap:4px 12px;margin-bottom:10px}
+.bc-cmp-filter-options label{display:flex;align-items:center;gap:8px;min-height:32px;cursor:pointer}
+.bc-cmp-filter-options input[type=checkbox]{width:17px;height:17px;min-height:0;margin:0;accent-color:var(--bc-accent)}
 .bc-cmp-table thead th{background:color-mix(in srgb,var(--bc-accent) 8%,var(--bc-surface))}
 .bc-cmp-table tbody td:nth-child(2){background:color-mix(in srgb,var(--bc-accent) 5%,var(--bc-surface))}
-.bc-cmp-table tr[data-metric=after] td,.bc-cmp-table tr[data-metric=afterPct] td{background:color-mix(in srgb,var(--bc-good) 5%,var(--bc-surface))}
 .bc-cmp-table [data-tone=good]{--cmp-tone:var(--bc-good)}
 .bc-cmp-table [data-tone=bad]{--cmp-tone:var(--bc-bad)}
-.bc-cmp-table [data-tone=info]{--cmp-tone:var(--bc-info)}
+.bc-cmp-table [data-tone=attention]{--cmp-tone:var(--bc-attention)}
 .bc-cmp-table [data-tone=neutral]{--cmp-tone:var(--bc-muted)}
 .bc-cmp-table .bc-cmp-value[data-tone]{color:var(--cmp-tone)!important}
 .bc-cmp-table .bc-cmp-difference[data-tone]{display:inline-block;padding:3px 8px;border-radius:6px;background:color-mix(in srgb,var(--cmp-tone) 10%,transparent);color:var(--cmp-tone)!important;font-weight:600}

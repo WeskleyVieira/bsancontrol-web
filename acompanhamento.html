@@ -1239,16 +1239,19 @@ body.bc-shell #bc-temporal #bc-range-menu>.bc-period-panel{
 }
 
 /* Cores compartilhadas pela tabela original e pela ampliação. */
-.bc-cmp-table{--cmp-highlight:var(--bc-accent)}
-.bc-cmp-table tr[data-metric=fat],.bc-cmp-table tr[data-metric=qtd],.bc-cmp-table tr[data-metric=ped],.bc-cmp-table tr[data-metric=ticket]{--cmp-highlight:var(--bc-info)}
-.bc-cmp-table tr[data-metric=mc],.bc-cmp-table tr[data-metric=pct],.bc-cmp-table tr[data-metric=after],.bc-cmp-table tr[data-metric=afterPct]{--cmp-highlight:var(--bc-good)}
-.bc-cmp-table .bc-cmp-metric-name{display:inline-block;padding:5px 9px;border-radius:8px;background:color-mix(in srgb,var(--cmp-highlight) 12%,transparent);color:var(--cmp-highlight);font-weight:600}
+.bc-cmp-table .bc-cmp-metric-name{font-weight:600;color:var(--bc-text)}
+.bc-cmp-filter{margin:12px 16px;color:var(--bc-text)}
+.bc-cmp-filter summary{cursor:pointer;font-weight:600;width:fit-content;padding:6px 0}
+.bc-cmp-filter fieldset{border:1px solid var(--bc-border);border-radius:8px;padding:12px;margin:6px 0}
+.bc-cmp-filter legend{padding:0 4px;font-size:.9em}
+.bc-cmp-filter-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr));gap:4px 12px;margin-bottom:10px}
+.bc-cmp-filter-options label{display:flex;align-items:center;gap:8px;min-height:32px;cursor:pointer}
+.bc-cmp-filter-options input[type=checkbox]{width:17px;height:17px;min-height:0;margin:0;accent-color:var(--bc-accent)}
 .bc-cmp-table thead th{background:color-mix(in srgb,var(--bc-accent) 8%,var(--bc-surface))}
 .bc-cmp-table tbody td:nth-child(2){background:color-mix(in srgb,var(--bc-accent) 5%,var(--bc-surface))}
-.bc-cmp-table tr[data-metric=after] td,.bc-cmp-table tr[data-metric=afterPct] td{background:color-mix(in srgb,var(--bc-good) 5%,var(--bc-surface))}
 .bc-cmp-table [data-tone=good]{--cmp-tone:var(--bc-good)}
 .bc-cmp-table [data-tone=bad]{--cmp-tone:var(--bc-bad)}
-.bc-cmp-table [data-tone=info]{--cmp-tone:var(--bc-info)}
+.bc-cmp-table [data-tone=attention]{--cmp-tone:var(--bc-attention)}
 .bc-cmp-table [data-tone=neutral]{--cmp-tone:var(--bc-muted)}
 .bc-cmp-table .bc-cmp-value[data-tone]{color:var(--cmp-tone)!important}
 .bc-cmp-table .bc-cmp-difference[data-tone]{display:inline-block;padding:3px 8px;border-radius:6px;background:color-mix(in srgb,var(--cmp-tone) 10%,transparent);color:var(--cmp-tone)!important;font-weight:600}
@@ -14843,6 +14846,28 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  function sameCompany(){const picks=S.picks.operacoes,emp=picks[0]?.emp||BCNav.company||companies()[0],markets=channels(emp);if(markets.length<2){$('bc-cmp-error').textContent='Esta empresa tem apenas um marketplace neste recorte. Escolha uma segunda empresa.';return;}S.picks.operacoes=[{emp,mkt:markets.includes(picks[0]?.mkt)?picks[0].mkt:markets[0]},{emp,mkt:''}];S.picks.operacoes[1].mkt=markets.find(m=>m!==S.picks.operacoes[0].mkt);renderChoices();invalidate();}
  const defs=[['fat','Faturamento','money'],['mc','Pré-Ads (R$)','money'],['pct','Margem pré-Ads (%)','percent'],['after','Pós-Ads (R$)','money'],['afterPct','Margem pós-Ads (%)','percent'],['tacos','TACOS (%)','percent'],['qtd','Unidades','number'],['ped','Pedidos identificados','number'],['ticket','Ticket médio','money']];
  function format(v,type){if(v==null)return 'Não disponível';if(type==='money')return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:2});return v.toLocaleString('pt-BR',{minimumFractionDigits:type==='percent'?2:0,maximumFractionDigits:type==='percent'?2:4})+(type==='percent'?'%':'');}
+ const selectedMetrics=new Set(defs.map(([key])=>key));
+ function metricFilter(body){
+  const rows=[...body.rows],filter=el('details','bc-cmp-filter'),title=el('summary');
+  const fields=el('fieldset'),choices=el('div','bc-cmp-filter-options');
+  const reset=button('Mostrar todos',()=>{for(const [key] of defs)selectedMetrics.add(key);apply();});
+  function apply(){
+   for(const input of choices.querySelectorAll('input')){
+    input.checked=selectedMetrics.has(input.value);
+    input.disabled=input.checked&&selectedMetrics.size===1;
+   }
+   title.textContent='Filtrar indicadores · '+selectedMetrics.size+' de '+defs.length;
+   reset.disabled=selectedMetrics.size===defs.length;
+   body.replaceChildren(...rows.filter(row=>selectedMetrics.has(row.dataset.metric)));
+  }
+  for(const [key,label] of defs){
+   const option=el('label'),input=el('input');input.type='checkbox';input.value=key;
+   input.onchange=()=>{if(input.checked)selectedMetrics.add(key);else selectedMetrics.delete(key);apply();};
+   option.append(input,document.createTextNode(label));choices.append(option);
+  }
+  fields.append(el('legend','','Indicadores visíveis'),choices,reset);
+  filter.append(title,fields);apply();return filter;
+ }
  async function compare(){if(!can()||S.identity!==bcNavKey()){close();return;}const picks=S.picks[S.mode],model={errors:BCComparacao.validar(picks,S.mode,catalog())};const error=$('bc-cmp-error');if(model.errors.some(Boolean)){error.textContent='Revise as seleções: '+[...new Set(model.errors.filter(Boolean))].join(' ');const idx=model.errors.findIndex(Boolean);$('bc-cmp-company-'+idx)?.focus();return;}error.textContent='';
   const host=$('bc-cmp-results'),ticket=++revision;
   host.replaceChildren(note('Consultando os resultados…'));
@@ -14853,8 +14878,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    }));
   }catch(e){if(ticket===revision&&S.dialog.open){host.replaceChildren();error.textContent='Falha ao consultar os resultados. Tente novamente.';}return;}
   if(ticket!==revision||!S.dialog.open||S.identity!==bcNavKey()||!can())return;
-  host.replaceChildren(el('h3','','Resultado da comparação'),note('Cada coluna usa o mesmo período. As diferenças são em relação à primeira seleção.'));
-  const wrap=el('div','bc-cmp-table-wrap'),table=el('table','bc-cmp-table'),caption=el('caption','',bcHeaderDate(S.range[0])+' a '+bcHeaderDate(S.range[1])+' · '+S.scope);table.append(caption);const head=el('thead'),hr=el('tr');hr.append(el('th','','Indicador'));
+  host.replaceChildren(el('h3','','Resultado da comparação'),note('As setas comparam cada coluna com a primeira seleção no mesmo período. Verde indica uma diferença favorável, vermelho indica uma diferença desfavorável e âmbar indica igualdade. Para TACOS, um valor menor é favorável.'));
+  const wrap=el('div','bc-cmp-table-wrap bc-table-scroll'),table=el('table','bc-cmp-table'),caption=el('caption','',bcHeaderDate(S.range[0])+' a '+bcHeaderDate(S.range[1])+' · '+S.scope);table.append(caption);const head=el('thead'),hr=el('tr');hr.append(el('th','','Indicador'));
   model.items.forEach((item,i)=>{const th=el('th','',item.label);th.append(el('small','',i===0?'Referência':'Diferença para a referência'));hr.append(th);});head.append(hr);table.append(head);const body=el('tbody');
   for(const [key,label,type] of defs){
    const tr=el('tr'),heading=el('th');heading.scope='row';tr.dataset.metric=key;heading.append(el('span','bc-cmp-metric-name',label));tr.append(heading);
@@ -14862,21 +14887,29 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    model.items.forEach(({values},i)=>{
     const td=el('td'),value=values?.[key];
     const amount=el('strong','bc-cmp-value',values?format(value,type):'Sem registros no período');
-    if(value!=null&&['mc','pct','after','afterPct'].includes(key))amount.dataset.tone=value<0?'bad':value>0?'good':'neutral';
+    if(value!=null&&!(postAds&&values.partial)){
+     const G=window.BCGerencialModelo;
+     if(key==='tacos')amount.dataset.tone=G.tomTacos(value);
+     if(key==='mc'||key==='pct')amount.dataset.tone=G.tomMargem(values.mc,values.pct);
+     if(key==='after'||key==='afterPct')amount.dataset.tone=G.tomMargem(values.after,values.afterPct);
+    }
+    if(amount.dataset.tone)amount.title=({good:'Faixa favorável',attention:'Faixa de atenção',bad:'Faixa crítica',neutral:'Sem classificação'})[amount.dataset.tone];
     td.append(amount);
     if(value!=null)td.title=String(value).replace('.',',')+(type==='percent'?'%':'');
     if(postAds&&values?.partial)td.append(el('small','','Parcial · '+values.coveredOps+' de '+values.totalOps+' operações apuradas'));
     else if(postAds&&values&&values.coveredOps===0)td.append(el('small','','Publicidade sem apuração completa'));
     if(i&&values){
-     const partial=postAds&&(values.partial||base?.partial),delta=BCComparacao.diferenca(value,base?.[key]);
+     const partial=postAds&&(values.partial||base?.partial),rawDelta=BCComparacao.diferenca(value,base?.[key]);
+     const delta=rawDelta==null?null:Number(rawDelta.toFixed(type==='number'?0:2))||0;
      let difference='Sem referência para calcular';
      if(partial)difference='Diferença indisponível · cobertura parcial';
      else if(delta!=null)difference=(delta>0?'+':'')+(type==='percent'?format(delta,'number')+' p.p.':format(delta,type));
      const badge=el('small','bc-cmp-difference',difference);
      if(!partial&&delta!=null){
       badge.textContent=(delta>0?'↑ ':delta<0?'↓ ':'= ')+difference;
-      const margin=['mc','pct','after','afterPct'].includes(key);
-      badge.dataset.tone=delta===0?'neutral':key==='tacos'?(delta<0?'good':'bad'):margin?(delta>0?'good':'bad'):'info';
+      const favorable=key==='tacos'?delta<0:delta>0;
+      badge.dataset.tone=delta===0?'attention':favorable?'good':'bad';
+      badge.title=delta===0?'Igual à referência':favorable?'Favorável frente à referência':'Desfavorável frente à referência';
      }
      td.append(badge);
     }
@@ -14884,12 +14917,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    });
    body.append(tr);
   }
-  table.append(body);wrap.tabIndex=0;wrap.setAttribute('aria-label','Tabela de comparação, com rolagem horizontal');wrap.append(table);host.append(el('p','bc-cmp-scroll-hint','Deslize a tabela para ver as outras colunas.'),wrap);
-  host.append(note('TACOS é a publicidade considerada dividida pelo faturamento da base apurada. Nas diferenças, verde indica margem maior ou TACOS menor que a referência, e vermelho indica o inverso. As setas mostram a direção da diferença. O Pós-Ads mostra a margem após a publicidade. O ticket médio divide o faturamento dos pedidos identificados pela quantidade desses pedidos.'));
+  table.append(body);wrap.tabIndex=0;wrap.setAttribute('aria-label','Tabela de comparação, com rolagem horizontal');wrap.append(metricFilter(body),table);host.append(el('p','bc-cmp-scroll-hint','Deslize a tabela para ver as outras colunas.'),wrap);
+  host.append(note('Margens abaixo de 10% ou com prejuízo aparecem em vermelho. De 10% a menos de 20%, aparecem em âmbar. A partir de 20%, em verde. Para TACOS, a faixa verde fica abaixo de 3%, a âmbar vai de 3% a menos de 5% e a vermelha começa em 5%. O ticket médio usa apenas pedidos identificados.'));
   host.append(note('Para comparar bônus e metas publicados, consulte Comissão. Para comparar datas diferentes, use Período → Comparar períodos.'));host.focus();
  }
  function close(){revision++;S.dialog?.close();S.origin?.focus();}
- function open(seed){if(!can())return;S.origin=document.activeElement;capture();S.picks={empresas:null,operacoes:null};if(!S.dialog){const d=el('dialog','bc-cmp-dialog');d.id='bc-results-comparison';d.setAttribute('aria-labelledby','bc-cmp-title');d.innerHTML='<header class="bc-cmp-heading"><div><p class="bc-cmp-eyebrow">RESULTADOS / COMPARAÇÃO</p><h2 id="bc-cmp-title">Comparar empresas e marketplaces</h2><p id="bc-cmp-context"></p></div><div id="bc-cmp-close-slot"></div></header><div class="bc-cmp-body"><section><h3>1. O que você quer comparar?</h3><p class="bc-cmp-note">No modo Empresas, os marketplaces disponíveis de cada empresa são reunidos. No modo Marketplaces, escolha operações específicas, inclusive da mesma empresa.</p><div id="bc-cmp-modes" class="bc-cmp-modes" role="group" aria-label="Tipo de comparação"></div></section><section><div class="bc-cmp-select-heading"><h3>2. Escolha de duas a quatro seleções</h3><div id="bc-cmp-tools"></div></div><div id="bc-cmp-choices" class="bc-cmp-choices"></div></section><div class="bc-cmp-apply"><p id="bc-cmp-error" role="alert"></p><div id="bc-cmp-apply-slot"></div></div><section id="bc-cmp-results" tabindex="-1" aria-label="Resultado da comparação"></section></div>';
+ function open(seed){if(!can())return;S.origin=document.activeElement;selectedMetrics.clear();for(const [key] of defs)selectedMetrics.add(key);capture();S.picks={empresas:null,operacoes:null};if(!S.dialog){const d=el('dialog','bc-cmp-dialog');d.id='bc-results-comparison';d.setAttribute('aria-labelledby','bc-cmp-title');d.innerHTML='<header class="bc-cmp-heading"><div><p class="bc-cmp-eyebrow">RESULTADOS / COMPARAÇÃO</p><h2 id="bc-cmp-title">Comparar empresas e marketplaces</h2><p id="bc-cmp-context"></p></div><div id="bc-cmp-close-slot"></div></header><div class="bc-cmp-body"><section><h3>1. O que você quer comparar?</h3><p class="bc-cmp-note">No modo Empresas, os marketplaces disponíveis de cada empresa são reunidos. No modo Marketplaces, escolha operações específicas, inclusive da mesma empresa.</p><div id="bc-cmp-modes" class="bc-cmp-modes" role="group" aria-label="Tipo de comparação"></div></section><section><div class="bc-cmp-select-heading"><h3>2. Escolha de duas a quatro seleções</h3><div id="bc-cmp-tools"></div></div><div id="bc-cmp-choices" class="bc-cmp-choices"></div></section><div class="bc-cmp-apply"><p id="bc-cmp-error" role="alert"></p><div id="bc-cmp-apply-slot"></div></div><section id="bc-cmp-results" tabindex="-1" aria-label="Resultado da comparação"></section></div>';
    document.body.append(d);S.dialog=d;d.addEventListener('cancel',e=>{e.preventDefault();close();});$('bc-cmp-close-slot').append(button('Voltar à consulta',close));for(const [mode,title]of [['empresas','Empresas'],['operacoes','Marketplaces / operações']]){const b=button(title,()=>setMode(mode));b.dataset.mode=mode;$('bc-cmp-modes').append(b);}const same=button('Comparar marketplaces da mesma empresa',sameCompany);same.id='bc-cmp-same-company';const add=button('Adicionar seleção',()=>{S.picks[S.mode].push({emp:'',mkt:''});renderChoices();invalidate();});add.id='bc-cmp-add';$('bc-cmp-tools').append(same,add);$('bc-cmp-apply-slot').append(button('Comparar resultados',compare,'bc-cmp-button bc-cmp-primary'));}
   $('bc-cmp-context').textContent=S.scope+' · '+bcHeaderDate(S.range[0])+' a '+bcHeaderDate(S.range[1])+' · período igual para todas as seleções';if(seed?.emp)S.picks.operacoes=[{emp:seed.emp,mkt:seed.mkt},{emp:'',mkt:''}];setMode(seed?.emp||BCNav.company?'operacoes':'empresas');S.dialog.showModal();$('bc-cmp-modes').querySelector('[aria-pressed="true"]').focus();
  }
