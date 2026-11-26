@@ -111,7 +111,7 @@
  }
  window.bcCompareOperation=(emp,mkt)=>open({emp,mkt});
  window.bcCompareRefresh=function(){const heading=document.querySelector('.bc-view-title-row');if(!heading)return;let b=$('bc-compare-results');if(!b){b=button('Comparar empresas e marketplaces',open);b.id='bc-compare-results';heading.append(b);}const visible=can()&&(['overview','marketplaces'].includes(activePage)||activePage==='gerencial'&&GER_SUB==='panorama');if(b.hidden===visible)b.hidden=!visible;b.disabled=!bcNavCatalogue(activePage).length;
-  const summary=document.querySelector('.bc-period-compare>summary');if(summary&&summary.textContent!=='Comparar períodos')summary.textContent='Comparar períodos';const cmpLabel=$('bc-compare-label');if(cmpLabel&&cmpLabel.textContent!=='Período de referência')cmpLabel.textContent='Período de referência';
+  const summary=document.querySelector('.bc-period-compare>summary');const cmpLabel=$('bc-compare-label');if(cmpLabel&&cmpLabel.textContent!=='Período de referência')cmpLabel.textContent='Período de referência';
   const scope=$('bc-scope-note');if(scope){const text=scope.textContent.replace('A comparação fica dentro do seletor de período.',visible?'Use Período para comparar datas. O botão Comparar empresas e marketplaces abre a leitura lado a lado.':'Use Período para comparar datas. A comparação de empresas fica em Resultados → Visão Geral.');if(text!==scope.textContent)scope.textContent=text;}
   window.BCPeriodoComparacao?.refresh();
   let help=$('bc-comparison-help');if(!help&&summary){help=note('Compara a consulta atual com outra janela de datas, mantendo a empresa e o marketplace escolhidos no cabeçalho.');help.id='bc-comparison-help';summary.after(help);}
@@ -156,7 +156,7 @@
   finishEdit=onFinish;pendingCustom=custom;menu.open=true;bcHeaderRangeSync(true);
   const panel=menu.querySelector('.bc-period-compare');if(panel){panel.hidden=false;panel.open=true;}
   const field=custom?$('bc-compare-from'):$('cmp-sel');field.focus({preventScroll:true});
-  const body=menu.querySelector('.bc-period-body');if(body)body.scrollTop=0;
+  const body=menu.querySelector('.bc-period-body');if(body&&panel)body.scrollTop=panel.offsetTop-body.offsetTop;
  }
  function refresh(){
   const menu=$('bc-range-menu'),native=$('cmp-sel');if(!menu||!native||!$('bc-compare-from'))return;
@@ -166,8 +166,11 @@
   }
   const show=available(),panel=menu.querySelector('.bc-period-compare');
   if(panel&&panel.hidden===show)panel.hidden=!show;
-  if(panel&&panel.parentElement.firstElementChild!==panel)panel.parentElement.prepend(panel);
+
   fill(native);if(!menu.open)native.value=mode;
+  const summary=panel?.querySelector('summary');
+  const caption='Comparar períodos · '+(choices.find(([key])=>key===(menu.open?native.value:mode))?.[1]||'Automática');
+  if(summary&&summary.textContent!==caption)summary.textContent=caption;
   const forecast=activePage==='metas'||activePage==='gerencial'&&GER_SUB==='previsao';
   const current=forecast&&document.querySelector('.studio-active-page [data-forecast-reference],.page.on [data-forecast-reference]')?.dataset;
   const local=current&&current.forecastReference!=='header'&&(mode!=='auto'||current.forecastReference!=='month');
@@ -185,7 +188,7 @@
   if(!menu.open)pendingCustom=false;
   syncDraft(force||!menu.open?(pendingCustom?'custom':mode):$('cmp-sel').value);
  };
- bcHeaderComparison=value=>{pendingCustom=false;syncDraft(value);};
+ bcHeaderComparison=value=>{pendingCustom=false;syncDraft(value);refresh();};
  bcHeaderApplyRange=function(){
   const from=$('bc-range-from'),to=$('bc-range-to');
   if(!bcHeaderValidate(from,to))return;

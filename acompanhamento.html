@@ -1231,8 +1231,11 @@ dialog.bc-full-viewport>header{flex:0 0 auto}dialog.bc-full-viewport :is(#bc-viz
 
 
 /* O painel permanece estável ao abrir as opções de comparação e ao editar datas. */
-.bc-shell #bc-range-menu>.bc-period-panel{
- position:fixed!important;inset:0!important;margin:auto!important;height:fit-content;transform:none!important;
+body.bc-shell #bc-temporal #bc-range-menu>.bc-period-panel{
+ position:fixed!important;margin:0!important;transform:none!important;
+ top:var(--period-top,8px)!important;bottom:var(--period-bottom,auto)!important;
+ right:var(--period-right,8px)!important;left:auto!important;
+ max-height:min(560px,var(--period-space,90dvh))!important;
 }
 
 /* Cores compartilhadas pela tabela original e pela ampliação. */
@@ -1250,7 +1253,17 @@ dialog.bc-full-viewport>header{flex:0 0 auto}dialog.bc-full-viewport :is(#bc-viz
 .bc-cmp-table .bc-cmp-value[data-tone]{color:var(--cmp-tone)!important}
 .bc-cmp-table .bc-cmp-difference[data-tone]{display:inline-block;padding:3px 8px;border-radius:6px;background:color-mix(in srgb,var(--cmp-tone) 10%,transparent);color:var(--cmp-tone)!important;font-weight:600}
 
-.bc-shell #bc-range-menu .bc-period-body>.bc-period-compare{border-top:0;border-bottom:1px solid var(--bc-border);padding:0 0 12px}
+.bc-shell #bc-range-menu .bc-period-body>.bc-period-compare{padding:12px 0 0}
+.bc-shell #bc-range-menu .bc-period-compare>summary{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ padding:9px 12px!important;border:1px solid var(--bc-border)!important;border-radius:8px;
+ background:var(--bc-surface)!important;color:var(--bc-text)!important;cursor:pointer;
+}
+.bc-shell #bc-range-menu .bc-period-compare>summary::after{
+ content:'';width:7px;height:7px;flex:none;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);
+}
+.bc-shell #bc-range-menu .bc-period-compare[open]>summary::after{transform:rotate(225deg)}
+@media(max-width:700px){body.bc-shell #bc-temporal #bc-range-menu>.bc-period-panel{left:10px!important;right:10px!important}}
 
 .sum-intro{padding:12px 18px;background:var(--bc-surface);border:1px solid var(--bc-border);border-radius:12px;margin:0 0 16px}.sum-intro h2{font:600 20px/1.4 Inter,"Segoe UI",sans-serif;margin:0 0 8px;letter-spacing:-.3px}.sum-note,.sum-context,.sum-freshness,.sum-comparison{font-size:13px;line-height:1.7;color:var(--bc-muted);margin:8px 0}.sum-context{color:var(--bc-text);font-weight:500}.sum-freshness{font-size:12px}.sum-intro p{margin:4px 0}.sum-comparison{padding:10px 14px;border:1px solid var(--bc-border);border-radius:8px;background:var(--bc-surface)}.sum-summary-page .bc-view-heading{margin-bottom:14px}.sum-summary-page .bc-breadcrumb{margin-bottom:6px}.sum-summary-page .bc-view-heading p{margin-top:6px}.sum-summary-page .bc-secondary{padding-bottom:10px;margin-bottom:14px}
 .sum-kpis{display:grid!important;gap:16px!important;margin:0 0 18px!important}.sum-kpis-four{grid-template-columns:repeat(4,minmax(0,1fr))!important}.sum-kpis-three{grid-template-columns:repeat(3,minmax(0,1fr))!important}.sum-card{min-width:0;padding:22px 20px;border:1px solid var(--bc-border);border-radius:12px;background:var(--bc-surface);font-variant-numeric:tabular-nums}.sum-card h3{font-size:16px;font-weight:600;line-height:1.5;margin:0 0 12px;color:var(--bc-muted)}.sum-card .sum-value{display:block;font-size:32px;line-height:1.3;font-weight:600;color:var(--bc-text);white-space:nowrap;letter-spacing:-.6px}.sum-card .sum-note{min-height:44px;margin:12px 0 0;font-size:12px}.sum-delta{font-size:13px;line-height:1.6;margin:12px 0 0;color:var(--bc-muted)}.sum-delta[data-direction=up]{color:var(--bc-good)}.sum-delta[data-direction=down],.sum-negative{color:var(--bc-bad)}.sum-kpis>.sum-comparison{grid-column:1/-1;margin:0}.sum-support .sum-card{background:var(--bc-raised);padding:18px 20px}.sum-support .sum-value{font-size:25px}
@@ -14414,7 +14427,26 @@ function bcChromePeriodPreview(){
 function bcChromePeriodSync(force=false){
  if(!BCChrome.periodMounted)return;const [from,to]=getR();bcChromeText(document.getElementById('bc-range-choice'),bcChromePeriodName(from,to));
  if(force){const match=bcChromeRanges().some(x=>x.from===from&&x.to===to);document.getElementById('bc-range-month').value=from.slice(0,7);BCChrome.calendarMonth=from.slice(0,7);BCChrome.monthYear=+from.slice(0,4);BCChrome.calendarPending=false;BCChrome.calendarHover='';bcChromePeriodMode(match?'quick':bcChromePeriodName(from,to)!=='Período personalizado'?'month':'custom');}bcChromePeriodPreview();
- const range=document.getElementById('bc-range-menu');if(range.open){const rect=range.querySelector('summary').getBoundingClientRect(),top=window.innerWidth<=760||rect.top<0||window.innerHeight-rect.bottom<660?16:Math.max(16,rect.bottom+8),panel=range.querySelector('.bc-period-panel'),right=Math.max(16,window.innerWidth-rect.right);for(const [key,value]of Object.entries({top:top+'px',right:right+'px',maxHeight:(window.innerHeight-top-16)+'px'}))if(panel.style[key]!==value)panel.style[key]=value;}
+ bcPositionPeriod();
+}
+function bcPositionPeriod(){
+ const menu=document.getElementById('bc-range-menu');
+ if(!menu?.open)return;
+ const panel=menu.querySelector('.bc-period-panel'),trigger=menu.querySelector('summary');
+ const rect=trigger.getBoundingClientRect(),scale=trigger.currentCSSZoom||rect.width/trigger.offsetWidth||1;
+ const viewport=document.documentElement.clientWidth,edge=8,gap=6;
+ const below=innerHeight-rect.bottom-gap-edge,above=rect.top-gap-edge;
+ const flip=below<280&&above>below;
+ const anchored=rect.bottom>edge&&rect.top<innerHeight-edge;
+ const space=anchored?(flip?above:below):innerHeight-2*edge;
+ const right=Math.max(edge,Math.min(viewport-rect.right,viewport-panel.offsetWidth*scale-edge));
+ const top=anchored&&!flip?rect.bottom+gap:edge;
+ for(const [name,value] of Object.entries({
+  '--period-top':anchored&&flip?'auto':Math.max(edge,top)/scale+'px',
+  '--period-bottom':anchored&&flip?(innerHeight-rect.top+gap)/scale+'px':'auto',
+  '--period-right':right/scale+'px','--period-space':Math.max(0,space)/scale+'px'
+ }))if(panel.style.getPropertyValue(name)!==value)panel.style.setProperty(name,value);
+
 }
 function bcChromePeriod(){
  const range=document.getElementById('bc-range-menu');if(!range||BCChrome.periodMounted)return;const panel=range.querySelector('.bc-period-panel');if(!panel)return;
@@ -14836,7 +14868,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  }
  window.bcCompareOperation=(emp,mkt)=>open({emp,mkt});
  window.bcCompareRefresh=function(){const heading=document.querySelector('.bc-view-title-row');if(!heading)return;let b=$('bc-compare-results');if(!b){b=button('Comparar empresas e marketplaces',open);b.id='bc-compare-results';heading.append(b);}const visible=can()&&(['overview','marketplaces'].includes(activePage)||activePage==='gerencial'&&GER_SUB==='panorama');if(b.hidden===visible)b.hidden=!visible;b.disabled=!bcNavCatalogue(activePage).length;
-  const summary=document.querySelector('.bc-period-compare>summary');if(summary&&summary.textContent!=='Comparar períodos')summary.textContent='Comparar períodos';const cmpLabel=$('bc-compare-label');if(cmpLabel&&cmpLabel.textContent!=='Período de referência')cmpLabel.textContent='Período de referência';
+  const summary=document.querySelector('.bc-period-compare>summary');const cmpLabel=$('bc-compare-label');if(cmpLabel&&cmpLabel.textContent!=='Período de referência')cmpLabel.textContent='Período de referência';
   const scope=$('bc-scope-note');if(scope){const text=scope.textContent.replace('A comparação fica dentro do seletor de período.',visible?'Use Período para comparar datas. O botão Comparar empresas e marketplaces abre a leitura lado a lado.':'Use Período para comparar datas. A comparação de empresas fica em Resultados → Visão Geral.');if(text!==scope.textContent)scope.textContent=text;}
   window.BCPeriodoComparacao?.refresh();
   let help=$('bc-comparison-help');if(!help&&summary){help=note('Compara a consulta atual com outra janela de datas, mantendo a empresa e o marketplace escolhidos no cabeçalho.');help.id='bc-comparison-help';summary.after(help);}
@@ -14881,7 +14913,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   finishEdit=onFinish;pendingCustom=custom;menu.open=true;bcHeaderRangeSync(true);
   const panel=menu.querySelector('.bc-period-compare');if(panel){panel.hidden=false;panel.open=true;}
   const field=custom?$('bc-compare-from'):$('cmp-sel');field.focus({preventScroll:true});
-  const body=menu.querySelector('.bc-period-body');if(body)body.scrollTop=0;
+  const body=menu.querySelector('.bc-period-body');if(body&&panel)body.scrollTop=panel.offsetTop-body.offsetTop;
  }
  function refresh(){
   const menu=$('bc-range-menu'),native=$('cmp-sel');if(!menu||!native||!$('bc-compare-from'))return;
@@ -14891,8 +14923,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
   const show=available(),panel=menu.querySelector('.bc-period-compare');
   if(panel&&panel.hidden===show)panel.hidden=!show;
-  if(panel&&panel.parentElement.firstElementChild!==panel)panel.parentElement.prepend(panel);
+
   fill(native);if(!menu.open)native.value=mode;
+  const summary=panel?.querySelector('summary');
+  const caption='Comparar períodos · '+(choices.find(([key])=>key===(menu.open?native.value:mode))?.[1]||'Automática');
+  if(summary&&summary.textContent!==caption)summary.textContent=caption;
   const forecast=activePage==='metas'||activePage==='gerencial'&&GER_SUB==='previsao';
   const current=forecast&&document.querySelector('.studio-active-page [data-forecast-reference],.page.on [data-forecast-reference]')?.dataset;
   const local=current&&current.forecastReference!=='header'&&(mode!=='auto'||current.forecastReference!=='month');
@@ -14910,7 +14945,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(!menu.open)pendingCustom=false;
   syncDraft(force||!menu.open?(pendingCustom?'custom':mode):$('cmp-sel').value);
  };
- bcHeaderComparison=value=>{pendingCustom=false;syncDraft(value);};
+ bcHeaderComparison=value=>{pendingCustom=false;syncDraft(value);refresh();};
  bcHeaderApplyRange=function(){
   const from=$('bc-range-from'),to=$('bc-range-to');
   if(!bcHeaderValidate(from,to))return;
