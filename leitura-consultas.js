@@ -11,6 +11,8 @@
 //   GET /api/leitura/full            Full: resumo, ruptura, não pode faltar, parado, estoque antigo, pendências (?emp&mkt&limite)
 //   GET /api/leitura/publicidade     Ads por campanha (gasto, receita, ACOS, ROAS) e TACOS da operação (?mes&emp&mkt)
 //   GET /api/leitura/acompanhamento  demandas por gestor: estados, atrasadas, R$ em risco, desfechos  (?competencia&gestor&limite)
+//   GET /api/leitura/estoque         estoque por SKU: saldo, disponível, reservado, Full, venda/dia, cobertura (?sku&ponto&conta&agrupar&ordenar&limite)
+//   GET /api/leitura/vendas-sku      unidades por SKU em 7d/30d/período, canais, última venda; série diária opcional (?ate&dias&sku&ponto&emp&mkt&serie&limite)
 const resultados = require('./resultados-consultas');
 
 const S = v => String(v == null ? '' : v).trim();
@@ -167,6 +169,92 @@ async function produtos(db, q, user) {
     consultado_em: new Date().toISOString() };
 }
 
+// ───────────────────────────── ESTOQUE POR SKU ─────────────────────────────
+// (26/11/2026, pedido do Otto: "estoque por SKU direto do control, sem planilha no Drive" — p/ o alerta de ruptura)
+// Fonte: o dataset 'estoque' do db-sync (foto da Olist do atualizar: Tiny_Estoque Por_Produto/Estoque) — a mesma da tela Operação.
+// agrupar=ponto (padrão): soma as empresas do mesmo ponto (Bsan + Jowcase = estoque real multiempresa); agrupar=conta: uma linha por empresa.
+async function estoque(db, q, user) {
+  const acessos = require('./acessos');
+  if (user && !acessos.pode(user, 'estoque.ver')) throw erro('sem permissão de estoque', 403);
+  const r = await require('./operacao-consultas').estoque(db);
+  const alvo = S(q.sku) ? new Set(S(q.sku).split(',').map(x => x.trim().toUpperCase()).filter(Boolean)) : null;
+  const skusDe = x => [S(x.sku).toUpperCase(), ...S(x.SKUs).split(/[,;|\s]+/).map(s => s.trim().toUpperCase())].filter(Boolean);
+  let rows = (r.rows || []).filter(x => (!q.ponto || S(x.ponto) === S(q.ponto)) && (!q.conta || S(x.conta).toLowerCase() === S(q.conta).toLowerCase()) && (!alvo || skusDe(x).some(s => alvo.has(s))));
+  const agrupar = S(q.agrupar).toLowerCase() === 'conta' ? 'conta' : 'ponto';
+  const lim = Math.min(Math.max(N(q.limite) || 500, 1), 5000);
+  const nn = v => v == null ? null : N(v);
+  let out;
+  if (agrupar === 'conta') {
+    out = rows.map(x => ({ ponto: x.ponto, conta: x.conta, sku: x.sku, skus: x.SKUs || x.sku, produto: S(x.produto).slice(0, 90), nivel: x.nivel || null,
+      saldo: nn(x.saldoGeral), disponivel: nn(x.dispGeral), reservado: nn(x.reservado), full_ml: nn(x.fullML),
+      vendas_dia: nn(x.vendaDia), un_90d: nn(x.un90d), cobertura_dias: nn(x.coberturaDias), cobertura_full_dias: nn(x.cobFull), cobertura_cd_dias: nn(x.cobCD),
+      veredito: x.veredito || null, acao_canal: x.acaoCanal || null }));
+  } else {
+    const g = {};
+    rows.forEach(x => { const k = S(x.ponto) + '|' + S(x.sku).toUpperCase();
+      const o = g[k] || (g[k] = { ponto: x.ponto, sku: x.sku, skus: x.SKUs || x.sku, produto: S(x.produto).slice(0, 90), saldo: 0, disponivel: 0, reservado: 0,
+        full_ml: null, vendas_dia: null, un_90d: null, contas: [], vereditos: [] });
+      o.saldo += N(x.saldoGeral); o.disponivel += N(x.dispGeral); o.reservado += N(x.reservado);
+      // Full, venda/dia e 90d são do PRODUTO (iguais nas duas linhas) — não somar
+      if (x.fullML != null) o.full_ml = Math.max(N(o.full_ml), N(x.fullML));
+      if (x.vendaDia != null) o.vendas_dia = Math.max(N(o.vendas_dia), N(x.vendaDia));
+      if (x.un90d != null) o.un_90d = Math.max(N(o.un_90d), N(x.un90d));
+      o.contas.push({ conta: x.conta, saldo: nn(x.saldoGeral), disponivel: nn(x.dispGeral), reservado: nn(x.reservado) });
+      if (x.veredito) o.vereditos.push(x.conta + ': ' + x.veredito); });
+    out = Object.values(g).map(o => ({ ...o, vendas_dia: o.vendas_dia == null ? null : r2(o.vendas_dia),
+      cobertura_dias: o.vendas_dia ? r2(Math.max(0, o.disponivel) / o.vendas_dia) : null,
+      cobertura_com_full_dias: o.vendas_dia ? r2((Math.max(0, o.disponivel) + N(o.full_ml)) / o.vendas_dia) : null }));
+  }
+  const ORD = { cobertura: 'cobertura_dias', vendas: 'vendas_dia', saldo: 'disponivel' };
+  const ord = ORD[S(q.ordenar).toLowerCase()] || null;
+  if (ord === 'cobertura_dias') out.sort((a, b) => (a.cobertura_dias == null ? 1e9 : a.cobertura_dias) - (b.cobertura_dias == null ? 1e9 : b.cobertura_dias));
+  else if (ord) out.sort((a, b) => N(b[ord]) - N(a[ord]));
+  return { posicao_de: r.meta && r.meta.sincronizadoEm || null, agrupar, filtro: { sku: S(q.sku) || null, ponto: S(q.ponto) || null, conta: S(q.conta) || null },
+    total_linhas: out.length, mostrando: Math.min(lim, out.length), linhas: out.slice(0, lim),
+    observacao: 'foto da Olist da última atualização (posicao_de). Ponto Bsan = Bsan + Jowcase (multiempresa: a Jowcase fica negativa porque vende do estoque da Bsan) — agrupar=ponto soma as duas e é o estoque real do CD. full_ml = unidades no Full do ML (fora do CD). vendas_dia = média dos últimos 90 dias do produto. cobertura_dias = disponível no CD ÷ vendas_dia; cobertura_com_full_dias soma o Full',
+    consultado_em: new Date().toISOString() };
+}
+
+// ───────────────────────────── VENDAS POR SKU ─────────────────────────────
+// (26/11/2026, pedido do Otto, junto do estoque por SKU) unidades vendidas por SKU em 7 dias, 30 dias e no período (?dias=, máx. 120),
+// por ponto, com canais e última venda; ?serie=1 (com até 30 SKUs no ?sku=) acrescenta a série diária. Só vendas efetivadas.
+async function vendasSku(db, q) {
+  const ate = dataOk(q.ate) ? S(q.ate) : hojeBR();
+  const dias = Math.min(Math.max(N(q.dias) || 30, 7), 120);
+  const de = somaDias(ate, -(dias - 1)), d7 = somaDias(ate, -6), d30 = somaDias(ate, -29);
+  const alvo = S(q.sku) ? S(q.sku).split(',').map(x => x.trim().toUpperCase()).filter(Boolean).slice(0, 500) : [];
+  const base = de < d30 ? de : d30;   // lê o que for maior: o período pedido ou os 30 dias (un_7d/un_30d valem sempre)
+  const where = ["data>=?", "data<=?", "status IN ('venda','venda_com_troca')", "TRIM(COALESCE(sku,''))<>''"], args = [base, ate];
+  if (S(q.ponto)) { where.push('ponto=?'); args.push(S(q.ponto)); }
+  if (S(q.emp)) { where.push('empresa=?'); args.push(S(q.emp)); }
+  if (S(q.mkt)) { where.push('canal=?'); args.push(S(q.mkt)); }
+  if (alvo.length) { where.push('UPPER(TRIM(sku)) IN (' + alvo.map(() => '?').join(',') + ')'); args.push(...alvo); }
+  const qt = 'COALESCE(qtd,0)', fat = 'CAST(COALESCE(receita_n,CAST(receita AS NUMERIC),0) AS DOUBLE PRECISION)';
+  const sql = `SELECT COALESCE(NULLIF(TRIM(ponto),''),'(sem ponto)') AS ponto, UPPER(TRIM(sku)) AS sku, MAX(titulo) AS titulo, canal,
+      SUM(CASE WHEN data>=? THEN ${qt} ELSE 0 END) AS un, SUM(CASE WHEN data>=? THEN ${qt} ELSE 0 END) AS un7, SUM(CASE WHEN data>=? THEN ${qt} ELSE 0 END) AS un30,
+      SUM(CASE WHEN data>=? THEN ${fat} ELSE 0 END) AS fat, SUM(CASE WHEN data>=? THEN 1 ELSE 0 END) AS vendas, MAX(data) AS ultima
+    FROM vendas WHERE ${where.join(' AND ')} GROUP BY 1, 2, canal`;
+  const rs = await db.all(sql, [de, d7, d30, de, de, ...args]);
+  const g = {};
+  rs.forEach(x => { const k = x.ponto + '|' + x.sku; const o = g[k] || (g[k] = { ponto: x.ponto, sku: x.sku, produto: S(x.titulo).slice(0, 90), un_7d: 0, un_30d: 0, un_periodo: 0, faturamento_periodo: 0, vendas_periodo: 0, ultima_venda: null, canais: {} });
+    o.un_7d += N(x.un7); o.un_30d += N(x.un30); o.un_periodo += N(x.un); o.faturamento_periodo += N(x.fat); o.vendas_periodo += N(x.vendas);
+    if (!o.ultima_venda || S(x.ultima) > o.ultima_venda) o.ultima_venda = S(x.ultima).slice(0, 10);
+    o.canais[x.canal] = (o.canais[x.canal] || 0) + N(x.un); });
+  let out = Object.values(g).filter(o => o.un_periodo > 0 || o.un_30d > 0).map(o => ({ ...o, canais: Object.fromEntries(Object.entries(o.canais).filter(([, u]) => u > 0)), faturamento_periodo: r2(o.faturamento_periodo), vel_dia_7d: r2(o.un_7d / 7), vel_dia_30d: r2(o.un_30d / 30) }))
+    .sort((a, b) => b.un_30d - a.un_30d || b.un_periodo - a.un_periodo);
+  const lim = Math.min(Math.max(N(q.limite) || 500, 1), 5000);
+  let serie = null;
+  if (S(q.serie) === '1') {
+    if (!alvo.length || alvo.length > 30) throw erro('serie=1 pede de 1 a 30 SKUs em ?sku=');
+    const sd = await db.all(`SELECT UPPER(TRIM(sku)) AS sku, data, SUM(${qt}) AS un FROM vendas WHERE ${where.join(' AND ')} AND data>=? GROUP BY 1, 2 ORDER BY 1, 2`, [...args, de]);
+    serie = {}; sd.forEach(x => { (serie[x.sku] = serie[x.sku] || []).push({ data: S(x.data).slice(0, 10), unidades: N(x.un) }); });
+  }
+  return { periodo: { de, ate, dias }, filtro: { sku: alvo.length ? alvo : null, ponto: S(q.ponto) || null, emp: S(q.emp) || null, mkt: S(q.mkt) || null },
+    total_skus: out.length, mostrando: Math.min(lim, out.length), linhas: out.slice(0, lim), serie_diaria: serie,
+    observacao: 'unidades de vendas efetivadas (venda/venda_com_troca) em todos os canais, inclusive Full; SKU = o do anúncio na venda (kit conta como o SKU do kit). vel_dia_7d/30d = unidades ÷ dias. Vendas do dia corrente entram só após a atualização',
+    consultado_em: new Date().toISOString() };
+}
+
 // ───────────────────────────── METAS DO MÊS ─────────────────────────────
 async function metas(db, q) {
   const mes = mesOk(q.mes) ? S(q.mes) : hojeBR().slice(0, 7);
@@ -270,7 +358,9 @@ const INDICE = {
     '/api/leitura/metas?mes=AAAA-MM': 'metas do mês × realizado por operação',
     '/api/leitura/full?emp=&mkt=&limite=30': 'Full: resumo, ruptura, não pode faltar, parado, estoque antigo, pendências',
     '/api/leitura/publicidade?mes=AAAA-MM&emp=&mkt=': 'Ads por campanha e TACOS da operação',
-    '/api/leitura/acompanhamento?competencia=AAAA-MM&gestor=&limite=30': 'demandas por gestor: estados, atrasadas, R$ em risco, desfechos'
+    '/api/leitura/acompanhamento?competencia=AAAA-MM&gestor=&limite=30': 'demandas por gestor: estados, atrasadas, R$ em risco, desfechos',
+    '/api/leitura/estoque?sku=A,B&ponto=&conta=&agrupar=ponto|conta&ordenar=cobertura|vendas|saldo&limite=500': 'estoque por SKU (foto da Olist da última atualização): saldo, disponível, reservado, Full ML, venda/dia e cobertura',
+    '/api/leitura/vendas-sku?ate=AAAA-MM-DD&dias=30&sku=A,B&ponto=&emp=&mkt=&serie=1&limite=500': 'unidades vendidas por SKU em 7d, 30d e no período (máx. 120 dias), canais e última venda; serie=1 = série diária (até 30 SKUs)'
   }
 };
 
@@ -284,8 +374,10 @@ async function rota(db, pathname, q, user) {
     case '/api/leitura/full': return full(db, q);
     case '/api/leitura/publicidade': return publicidade(db, q);
     case '/api/leitura/acompanhamento': return acompanhamento(db, q);
+    case '/api/leitura/estoque': return estoque(db, q, user);
+    case '/api/leitura/vendas-sku': return vendasSku(db, q);
     default: return null;
   }
 }
 
-module.exports = { rota, status, vendasDia, produtos, metas, full, publicidade, acompanhamento, INDICE };
+module.exports = { rota, status, vendasDia, produtos, metas, full, publicidade, acompanhamento, estoque, vendasSku, INDICE };
