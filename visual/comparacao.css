@@ -31,3 +31,49 @@
 .bc-cmp-table [data-tone=neutral]{--cmp-tone:var(--bc-muted)}
 .bc-cmp-table .bc-cmp-value[data-tone]{color:var(--cmp-tone)!important}
 .bc-cmp-table .bc-cmp-difference[data-tone]{display:inline-block;padding:3px 8px;border-radius:6px;background:color-mix(in srgb,var(--cmp-tone) 10%,transparent);color:var(--cmp-tone)!important;font-weight:600}
+
+/* Período e referência formam um par alinhado aos filtros de escopo. */
+body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])){
+ display:flex!important;flex-wrap:wrap;align-items:end;gap:16px 20px!important;
+}
+body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])) .bc-context-fields{
+ display:grid;grid-template-columns:minmax(120px,.7fr) repeat(2,minmax(0,1fr));gap:14px;
+ flex:1 1 560px;min-width:0;width:auto;
+}
+body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])){
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:10px 14px;
+ flex:1 1 700px;width:auto!important;min-width:0!important;margin-left:0;
+}
+body.bc-shell #bc-global-context #bc-temporal #bc-reference-control{
+ margin:0;gap:6px;min-width:0;width:100%;
+}
+body.bc-shell #bc-global-context #bc-temporal #bc-reference-control>span,
+body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])) #bc-range-menu>summary>.bc-field-label{
+ display:block!important;margin:0 0 6px;font-size:13px!important;line-height:20px!important;font-weight:500!important;color:var(--bc-muted);
+}
+body.bc-shell #bc-global-context #bc-temporal #bc-reference-control>span{margin:0}
+body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])) #bc-range-menu>summary{
+ display:block!important;padding:0!important;border:0!important;background:transparent!important;
+}
+body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])) #bc-range-menu .bc-period-trigger,
+body.bc-shell #bc-global-context #bc-temporal #bc-reference-choice{
+ width:100%!important;min-width:0!important;min-height:44px!important;height:44px!important;box-sizing:border-box;
+ border:1px solid var(--bc-border)!important;border-radius:9px!important;background:var(--bc-surface)!important;
+ font-size:14px!important;
+}
+body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])) #bc-range-menu .bc-period-trigger{padding:9px 12px!important}
+body.bc-shell #bc-global-context #bc-temporal #bc-reference-choice{padding:9px 34px 9px 12px!important;text-overflow:ellipsis}
+body.bc-shell #bc-global-context #bc-temporal #bc-reference-edit{grid-column:2;justify-self:end;min-height:32px;padding:4px 10px}
+@media(max-width:760px){
+ body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])) .bc-context-fields{grid-template-columns:repeat(2,minmax(0,1fr));flex-basis:100%}
+ body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])) .bc-context-fields>label:last-child{grid-column:1/-1}
+ body.bc-shell #bc-global-context #bc-temporal:has(#bc-reference-control:not([hidden])){flex-basis:100%;grid-template-columns:minmax(0,1fr)}
+ body.bc-shell #bc-global-context #bc-temporal #bc-reference-edit{grid-column:1}
+}
+
+body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])) .bc-context-fields>label{
+ display:grid!important;gap:6px!important;margin:0;font-size:13px!important;line-height:20px!important;font-weight:500!important;
+}
+body.bc-shell #bc-global-context:has(#bc-reference-control:not([hidden])) .bc-context-fields select{
+ width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;font-size:14px!important;box-sizing:border-box;
+}
