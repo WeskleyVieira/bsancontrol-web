@@ -352,8 +352,28 @@ function bcVisualChartTypography(chart){
  }
  for(const scale of Object.values(o.scales||{})){if(scale.ticks)scale.ticks.font=bcVisualFont(scale.ticks.font,12);if(scale.title)scale.title.font=bcVisualFont(scale.title.font,13);}
 }
+// Chart.js recebe offsets físicos em navegadores que aplicam zoom CSS ao painel.
+const bcChartPointer={
+ id:'bcChartPointer',
+ beforeUpdate(chart){
+  const interaction=chart.options.interaction;
+  if(chart.options.indexAxis==='y'&&interaction?.mode==='index')interaction.axis='y';
+ },
+ beforeEvent(chart,args){
+  const event=args.event,native=event.native;
+  if(!native||event.type==='mouseout')return;
+  const point=native.touches?.[0]||native.changedTouches?.[0]||native;
+  if(!Number.isFinite(point.clientX)||!Number.isFinite(point.clientY))return;
+  const rect=chart.canvas.getBoundingClientRect();
+  if(!rect.width||!rect.height)return;
+  if(Math.abs(rect.width-chart.width)<1&&Math.abs(rect.height-chart.height)<1)return;
+  event.x=(point.clientX-rect.left)*chart.width/rect.width;
+  event.y=(point.clientY-rect.top)*chart.height/rect.height;
+  args.inChartArea=chart.isPointInArea(event);
+ }
+};
 function bcVisualTypeStart(){
- if(typeof Chart==='function'){Object.assign(Chart.defaults.font,{family:BCType.family,size:12,lineHeight:1.5});Chart.register({id:'bcTypography',beforeInit:bcVisualChartTypography,beforeUpdate:bcVisualChartTypography},{id:'bcSemanticColors',beforeUpdate:bcVisualChartColors});
+ if(typeof Chart==='function'){Object.assign(Chart.defaults.font,{family:BCType.family,size:12,lineHeight:1.5});Chart.register(bcChartPointer,{id:'bcTypography',beforeInit:bcVisualChartTypography,beforeUpdate:bcVisualChartTypography},{id:'bcSemanticColors',beforeUpdate:bcVisualChartColors});
   for(const canvas of document.querySelectorAll('canvas')){const chart=bcVisualChart(canvas);if(chart){bcVisualChartTypography(chart);chart.update('none');}}
   document.fonts?.ready.then(()=>{for(const canvas of document.querySelectorAll('canvas')){const chart=bcVisualChart(canvas);if(chart&&bcVisualVisible(canvas)){chart.resize();chart.update('none');}}});
  }
